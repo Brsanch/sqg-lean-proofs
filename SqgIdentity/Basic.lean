@@ -72,6 +72,31 @@ theorem sqg_shear_vorticity_identity
     let ω : ℂ := I * (k1 * u2 - k2 * u1)
     let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
     S_nt - ω / 2 = (absk : ℂ) * ((Real.sin (α - β))^2 : ℝ) * θ := by
-  sorry
+  have hne : (absk : ℂ) ≠ 0 := by exact_mod_cast habsk.ne'
+  -- After clearing /absk denominators and simplifying I² = -1, both sides reduce
+  -- to a polynomial in ↑sinα, ↑cosα, ↑sinβ, ↑cosβ, ↑absk, θ.
+  -- The only non-ring constraint needed is sin²β + cos²β = 1.
+  have hβ : (Real.sin β : ℂ) ^ 2 + (Real.cos β : ℂ) ^ 2 = 1 := by
+    exact_mod_cast Real.sin_sq_add_cos_sq β
+  -- Expand sin²(α - β) on the RHS so both sides are polynomial in sin/cos.
+  rw [show ((Real.sin (α - β)) ^ 2 : ℝ) =
+      (Real.sin α * Real.cos β - Real.cos α * Real.sin β) ^ 2 from by
+    rw [Real.sin_sub]]
+  -- Unfold all let bindings.
+  simp only []
+  -- Push ℝ→ℂ coercions inward.
+  push_cast
+  -- Clear the /absk denominators in u1, u2.
+  field_simp [hne]
+  -- Simplify I² = -1, and unify notation:
+  -- push_cast may have introduced Complex.cos/sin; rewrite back to ↑(Real.cos/sin).
+  simp only [I_sq, neg_mul, ← Complex.ofReal_cos, ← Complex.ofReal_sin]
+  -- Normalize the polynomial.
+  ring_nf
+  -- After normalization the goal factors as
+  --   θ · (↑cosα² + ↑sinα²) · (1 − ↑cosβ² − ↑sinβ²) · (1 − ↑absk/2) = 0.
+  -- Both the "(1 − ↑cosβ² − ↑sinβ²)" and the ↑absk·(↑sinβ²+↑cosβ²−1)/2 terms
+  -- vanish by sin²β + cos²β = 1.  Coefficient from hand calculation:
+  linear_combination -(θ * ((Real.cos α : ℂ) ^ 2 + (Real.sin α : ℂ) ^ 2)) * hβ
 
 end SqgIdentity
