@@ -1,0 +1,23 @@
+{
+  "title": "Machine-Verified SQG Shear-Vorticity Identity (Lean 4)",
+  "description": "Lean 4 + mathlib formalization of the SQG shear-vorticity identity (D14 Theorem 1). Two lemmas are fully machine-verified with zero sorry: one_sub_cos_two_mul (1 - cos(2x) = 2 sin²(x)) and half_times_one_sub_cos ((|k|/2)(1-cos(2φ)) = |k|·sin²(φ)). The main theorem statement typechecks; algebraic reduction body is in progress. Mathematical theorem by Bryan Sanchez (independent researcher); Lean formalization by Bryan Sanchez with AI assistance.",
+  "creators": [
+    {
+      "name": "Sanchez, Bryan",
+      "affiliation": "Independent"
+    }
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "keywords": [
+    "Lean 4",
+    "mathlib",
+    "formal verification",
+    "SQG",
+    "Surface Quasi-Geostrophic equation",
+    "fluid dynamics",
+    "shear-vorticity identity",
+    "interactive theorem proving"
+  ],
+  "version": "0.1.0"
+}
