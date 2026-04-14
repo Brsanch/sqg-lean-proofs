@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this formalization, please cite it as below."
+type: software
+title: "Machine-Verified SQG Shear-Vorticity Identity (Lean 4)"
+authors:
+  - family-names: Sanchez
+    given-names: Bryan
+    alias: SolomonB14D3
+version: 0.1.0
+date-released: "2026-04-14"
+url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
+license: MIT
+abstract: >
+  Lean 4 + mathlib formalization of the SQG shear-vorticity identity
+  (Theorem 1 from D14). The half-angle identity and its rescaled form
+  are fully machine-verified. The main theorem statement (algebraic
+  identity in Fourier space for the Surface Quasi-Geostrophic equation)
+  typechecks; the algebraic reduction proof is in progress.
+  Mathematical theorem by Bryan Sanchez; Lean formalization by
+  Bryan Sanchez with AI assistance.
+keywords:
+  - Lean 4
+  - mathlib
+  - formal proof
+  - SQG
+  - Surface Quasi-Geostrophic
+  - fluid dynamics
+  - shear-vorticity identity
