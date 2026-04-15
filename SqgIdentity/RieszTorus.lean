@@ -94,6 +94,31 @@ lemma sq_le_latticeNorm_sq {d : Type*} [Fintype d] (n : d → ℤ) (j : d) :
   exact Finset.single_le_sum (f := fun i : d => ((n i : ℝ)) ^ 2)
     (fun _ _ => sq_nonneg _) (Finset.mem_univ j)
 
+/-- **Integer-lattice lower bound.** Every nonzero integer lattice point
+has Euclidean norm at least `1`, because the sum of squares of integers
+not all zero is at least `1`. -/
+lemma latticeNorm_ge_one_of_ne_zero {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) : 1 ≤ latticeNorm n := by
+  -- Pick `j` with `n j ≠ 0`, then `(n j : ℝ)² ≥ 1` from integrality,
+  -- and `Σ_i (n_i : ℝ)² ≥ (n j : ℝ)² ≥ 1`.
+  have hexj : ∃ j, n j ≠ 0 := by
+    by_contra habs
+    exact hn (funext fun j => not_not.mp (fun hnot => habs ⟨j, hnot⟩))
+  obtain ⟨j, hj⟩ := hexj
+  have hsq_ge_one : (1 : ℝ) ≤ (n j : ℝ) ^ 2 := by
+    have hnz : (n j : ℝ) ≠ 0 := by exact_mod_cast hj
+    have habs : (1 : ℝ) ≤ |(n j : ℝ)| := by
+      have hZ : (1 : ℤ) ≤ |n j| := Int.one_le_abs hj
+      have : ((1 : ℤ) : ℝ) ≤ ((|n j| : ℤ) : ℝ) := by exact_mod_cast hZ
+      simpa [Int.cast_abs] using this
+    have h0 : 0 ≤ |(n j : ℝ)| := abs_nonneg _
+    nlinarith [habs, h0, sq_abs (n j : ℝ)]
+  have hle : (1 : ℝ) ≤ (latticeNorm n) ^ 2 := by
+    calc (1 : ℝ) ≤ (n j : ℝ) ^ 2 := hsq_ge_one
+      _ ≤ (latticeNorm n) ^ 2 := sq_le_latticeNorm_sq n j
+  have hLpos : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+  nlinarith [hle, hLpos, sq_nonneg (latticeNorm n - 1), sq_nonneg (latticeNorm n + 1)]
+
 /-! ### The Riesz symbol `m_j(n) = -i nⱼ/‖n‖` -/
 
 /-- The Riesz transform symbol on `𝕋ᵈ`:
@@ -1076,6 +1101,58 @@ lemma fracDerivSymbol_add_sq {d : Type*} [Fintype d]
         fracDerivSymbol_of_ne_zero _ hn,
         Real.rpow_add hpos s t]
     ring
+
+/-! ### Monotonicity of `fracDerivSymbol` and `hsSeminormSq` in `s` -/
+
+/-- **Monotonicity of `fracDerivSymbol` in the exponent.** On the integer
+lattice, for every `n`, if `s ≤ t` then `σ_s(n) ≤ σ_t(n)`. At `n = 0`
+both sides are `0`; off zero `‖n‖ ≥ 1` (integer-lattice fact) makes
+`‖n‖^s ≤ ‖n‖^t`. -/
+lemma fracDerivSymbol_mono_of_le {d : Type*} [Fintype d]
+    {s t : ℝ} (hst : s ≤ t) (n : d → ℤ) :
+    fracDerivSymbol s n ≤ fracDerivSymbol t n := by
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero]
+  · rw [fracDerivSymbol_of_ne_zero _ hn, fracDerivSymbol_of_ne_zero _ hn]
+    exact Real.rpow_le_rpow_of_exponent_le
+      (latticeNorm_ge_one_of_ne_zero hn) hst
+
+/-- **Squared monotonicity of `fracDerivSymbol`.** Convenience form of
+`fracDerivSymbol_mono_of_le`, kept in the squared shape used inside
+`hsSeminormSq`. -/
+lemma fracDerivSymbol_sq_mono_of_le {d : Type*} [Fintype d]
+    {s t : ℝ} (hst : s ≤ t) (n : d → ℤ) :
+    (fracDerivSymbol s n) ^ 2 ≤ (fracDerivSymbol t n) ^ 2 := by
+  have h := fracDerivSymbol_mono_of_le hst n
+  have h0 : 0 ≤ fracDerivSymbol s n := fracDerivSymbol_nonneg s n
+  nlinarith [h, h0]
+
+/-- **Monotonicity of the Ḣˢ seminorm in `s`.** On the torus, the
+Ḣˢ-seminorm is monotone in `s`: if `s ≤ t` and the Ḣᵗ tail of `f` is
+summable, then
+
+    `‖f‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣᵗ}`.
+
+Monotonicity comes from `‖n‖ ≥ 1` off zero, which gives
+`σ_s(n)² ≤ σ_t(n)²` at every nonzero lattice point. -/
+theorem hsSeminormSq_mono_of_le
+    {d : Type*} [Fintype d]
+    {s t : ℝ} (hst : s ≤ t)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hsumm_t : Summable
+        (fun n ↦ (fracDerivSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s f ≤ hsSeminormSq t f := by
+  unfold hsSeminormSq
+  -- Per-mode: σ_s(n)² · ‖f̂(n)‖² ≤ σ_t(n)² · ‖f̂(n)‖² since σ_s² ≤ σ_t² and ‖f̂‖² ≥ 0.
+  have hmode : ∀ n, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
+                  ≤ (fracDerivSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+    fun n => mul_le_mul_of_nonneg_right
+      (fracDerivSymbol_sq_mono_of_le hst n) (sq_nonneg _)
+  have hsumm_s : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by
+    refine hsumm_t.of_nonneg_of_le (fun n => ?_) hmode
+    exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  exact Summable.tsum_le_tsum hmode hsumm_s hsumm_t
 
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
