@@ -10,10 +10,13 @@ identity in Fourier space for the Surface Quasi-Geostrophic equation).
 | Item | Status |
 |---|---|
 | Lean 4.29.0 + mathlib v4.29.0 project set up | ✅ Builds |
-| Sanity check: `(1 : ℂ) + 1 = 2` | ✅ Proven |
 | `one_sub_cos_two_mul`: `1 - cos(2x) = 2 sin²(x)` | ✅ Proven |
 | `half_times_one_sub_cos`: `(\|k\|/2)·(1 - cos(2φ)) = \|k\|·sin²(φ)` | ✅ Proven |
-| `sqg_shear_vorticity_identity` (main theorem) | ✅ **Proven** (zero `sorry`) |
+| **Theorem 1**: `sqg_shear_vorticity_identity` | ✅ **Proven** (zero `sorry`) |
+| Corollary — half-angle form: `sqg_shear_vorticity_identity_halfangle` | ✅ Proven |
+| Corollary — aligned case (β = α → 0): `sqg_shear_aligned` | ✅ Proven |
+| Corollary — perpendicular case (β = α − π/2 → \|k\|·θ̂): `sqg_shear_perpendicular` | ✅ Proven |
+| **Theorem 2 (bound form)**: `sqg_selection_rule_bound` — `‖Ŝ_nt − ω̂/2‖ ≤ \|k\|·‖θ̂‖` | ✅ Proven |
 
 ## The theorem
 
@@ -61,8 +64,8 @@ which vanishes exactly when sin²β+cos²β=1.
 
 ## Next steps
 
-1. Theorem 2 (selection rule) — the next piece of the D14 proof.
-2. Theorem 3 (regularity) — after §9's propositions are formalized individually.
+1. Theorem 2 (equality case) — prove that the bound `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` is attained iff `sin²(α−β) = 1`, i.e., β = α ± π/2 modulo π.
+2. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
 
 ## Credit
 
