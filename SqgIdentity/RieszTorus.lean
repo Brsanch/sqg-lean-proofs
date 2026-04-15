@@ -1050,6 +1050,88 @@ lemma fracDerivSymbol_add_sq {d : Type*} [Fintype d]
         Real.rpow_add hpos s t]
     ring
 
+/-! ### Parseval multiplier identity in Ḣˢ form -/
+
+/-- **Ḣˢ-level Parseval for Fourier multipliers.** If `ĝ(n) = m(n)·f̂(n)`
+and the Ḣˢ tail of `f` weighted by `‖m(n)‖²` is summable, then
+
+    `HasSum (fun n ↦ σ_s(n)² · ‖m(n)‖² · ‖f̂(n)‖²) ‖g‖²_{Ḣˢ}`.
+
+Lifts `hasSum_sq_multiplier` from the L² integral to the Ḣˢ seminorm. -/
+theorem hasSum_sq_multiplier_Hs
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : (d → ℤ) → ℂ)
+    (hcoeff : ∀ n, mFourierCoeff g n = m n * mFourierCoeff f n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2
+                   * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2))) :
+    HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2
+                 * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2))
+      (hsSeminormSq s g) := by
+  -- Rewrite the summand to the `g`-shape and apply Ḣˢ HasSum via the
+  -- definition of `hsSeminormSq`.
+  have hfun : (fun n ↦ (fracDerivSymbol s n) ^ 2
+                         * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2))
+            = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff g n‖ ^ 2) := by
+    funext n
+    rw [hcoeff n, norm_mul, mul_pow]
+  rw [hfun]
+  unfold hsSeminormSq
+  rw [hfun] at hsumm
+  exact hsumm.hasSum
+
+/-- **Integrated Ḣˢ multiplier Parseval.** Closed-form of the Ḣˢ seminorm
+of `g = m·f` as the weighted tsum of `f`-Fourier coefficients. -/
+theorem hsSeminormSq_eq_multiplier_tsum
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : (d → ℤ) → ℂ)
+    (hcoeff : ∀ n, mFourierCoeff g n = m n * mFourierCoeff f n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2
+                   * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2))) :
+    hsSeminormSq s g
+      = ∑' n, (fracDerivSymbol s n) ^ 2
+                  * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+  (hasSum_sq_multiplier_Hs s f g m hcoeff hsumm).tsum_eq.symm
+
+/-! ### Ḣˢ-isometry for unit-modulus multipliers -/
+
+/-- **Ḣˢ-isometry for unit-modulus Fourier multipliers.** If `‖m(n)‖ = 1`
+pointwise, `ĝ = m·f̂`, and `f` is Ḣˢ-summable, then
+
+    `‖g‖²_{Ḣˢ} = ‖f‖²_{Ḣˢ}`.
+
+Lifts `L2_isometry_of_unit_symbol` to every regularity level. -/
+theorem Hs_isometry_of_unit_symbol
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : (d → ℤ) → ℂ)
+    (hm : ∀ n, ‖m n‖ = 1)
+    (hcoeff : ∀ n, mFourierCoeff g n = m n * mFourierCoeff f n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s g = hsSeminormSq s f := by
+  -- Pointwise the multiplied summand equals the θ summand, since ‖m(n)‖² = 1.
+  have hptfun : (fun n ↦ (fracDerivSymbol s n) ^ 2
+                           * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2))
+              = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by
+    funext n; rw [hm n]; ring
+  have hsumm' : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2
+                 * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) := by
+    rw [hptfun]; exact hsumm
+  have hg_hasSum :=
+    hasSum_sq_multiplier_Hs s f g m hcoeff hsumm'
+  rw [hptfun] at hg_hasSum
+  have hf_hasSum : HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+      (hsSeminormSq s f) := by
+    unfold hsSeminormSq; exact hsumm.hasSum
+  exact hg_hasSum.unique hf_hasSum
+
 /-! ### SQG selection rule in Ḣˢ form -/
 
 /-- **Ḣˢ-contractivity of bounded Fourier multipliers.** If two L²
