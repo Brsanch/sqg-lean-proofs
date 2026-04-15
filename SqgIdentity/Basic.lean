@@ -242,4 +242,75 @@ theorem sqg_selection_rule_bound
         exact mul_le_mul_of_nonneg_left hsin2 habsk.le
     _ = absk * ‖θ‖ := by ring
 
+/-- **Exact magnitude** of the shear-vorticity excess:
+    `‖Ŝ_nt − ω̂/2‖ = |k| · sin²(α−β) · ‖θ̂‖`.
+    Refines `sqg_selection_rule_bound` by computing the norm exactly
+    rather than just bounding it. -/
+theorem sqg_shear_vorticity_norm
+    (absk α β : ℝ) (θ : ℂ) (habsk : 0 < absk) :
+    let k1 : ℂ := (absk * Real.cos α : ℝ)
+    let k2 : ℂ := (absk * Real.sin α : ℝ)
+    let n1 : ℂ := (Real.cos β : ℝ)
+    let n2 : ℂ := (Real.sin β : ℝ)
+    let t1 : ℂ := (-Real.sin β : ℝ)
+    let t2 : ℂ := (Real.cos β : ℝ)
+    let u1 : ℂ := -I * k2 * θ / (absk : ℂ)
+    let u2 : ℂ := I * k1 * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * (k1 * u1 + k1 * u1)
+    let S12 : ℂ := (I / 2) * (k1 * u2 + k2 * u1)
+    let S22 : ℂ := (I / 2) * (k2 * u2 + k2 * u2)
+    let ω : ℂ := I * (k1 * u2 - k2 * u1)
+    let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
+    ‖S_nt - ω / 2‖ = absk * (Real.sin (α - β))^2 * ‖θ‖ := by
+  have h := sqg_shear_vorticity_identity absk α β θ habsk
+  simp only [] at h ⊢
+  rw [h]
+  rw [show ((absk : ℂ) * ((Real.sin (α - β))^2 : ℝ) * θ) =
+      ((absk * (Real.sin (α - β))^2 : ℝ) : ℂ) * θ from by push_cast; ring]
+  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ absk * (Real.sin (α - β))^2)]
+
+/-- **Theorem 2, equality case**: the selection-rule bound
+    `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` is saturated if and only if either
+    `sin²(α−β) = 1` (i.e., `α − β ≡ π/2 mod π`, the wavevector is
+    perpendicular to the front normal) or `θ̂ = 0` (trivial case).
+    This characterizes exactly which Fourier modes and orientations
+    realize the worst-case strain growth. -/
+theorem sqg_selection_rule_saturated_iff
+    (absk α β : ℝ) (θ : ℂ) (habsk : 0 < absk) :
+    let k1 : ℂ := (absk * Real.cos α : ℝ)
+    let k2 : ℂ := (absk * Real.sin α : ℝ)
+    let n1 : ℂ := (Real.cos β : ℝ)
+    let n2 : ℂ := (Real.sin β : ℝ)
+    let t1 : ℂ := (-Real.sin β : ℝ)
+    let t2 : ℂ := (Real.cos β : ℝ)
+    let u1 : ℂ := -I * k2 * θ / (absk : ℂ)
+    let u2 : ℂ := I * k1 * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * (k1 * u1 + k1 * u1)
+    let S12 : ℂ := (I / 2) * (k1 * u2 + k2 * u1)
+    let S22 : ℂ := (I / 2) * (k2 * u2 + k2 * u2)
+    let ω : ℂ := I * (k1 * u2 - k2 * u1)
+    let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
+    ‖S_nt - ω / 2‖ = absk * ‖θ‖ ↔ (Real.sin (α - β))^2 = 1 ∨ θ = 0 := by
+  have hN := sqg_shear_vorticity_norm absk α β θ habsk
+  simp only [] at hN ⊢
+  rw [hN]
+  constructor
+  · intro heq
+    by_cases hθ : θ = 0
+    · right; exact hθ
+    · left
+      have hθ_ne : ‖θ‖ ≠ 0 := fun h => hθ (norm_eq_zero.mp h)
+      -- From absk * sin² * ‖θ‖ = absk * ‖θ‖, conclude sin² = 1.
+      have hfactored :
+          absk * ((Real.sin (α - β))^2 - 1) * ‖θ‖ = 0 := by linarith
+      rcases mul_eq_zero.mp hfactored with hab | hθ0
+      · rcases mul_eq_zero.mp hab with habk0 | hsq0
+        · exact absurd habk0 habsk.ne'
+        · linarith
+      · exact absurd hθ0 hθ_ne
+  · rintro (h1 | h2)
+    · rw [h1]; ring
+    · rw [h2, norm_zero]; ring
+
 end SqgIdentity

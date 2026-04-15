@@ -17,6 +17,8 @@ identity in Fourier space for the Surface Quasi-Geostrophic equation).
 | Corollary — aligned case (β = α → 0): `sqg_shear_aligned` | ✅ Proven |
 | Corollary — perpendicular case (β = α − π/2 → \|k\|·θ̂): `sqg_shear_perpendicular` | ✅ Proven |
 | **Theorem 2 (bound form)**: `sqg_selection_rule_bound` — `‖Ŝ_nt − ω̂/2‖ ≤ \|k\|·‖θ̂‖` | ✅ Proven |
+| Exact magnitude: `sqg_shear_vorticity_norm` — `‖Ŝ_nt − ω̂/2‖ = \|k\|·sin²(α−β)·‖θ̂‖` | ✅ Proven |
+| **Theorem 2 (equality case)**: `sqg_selection_rule_saturated_iff` — bound saturated iff `sin²(α−β) = 1 ∨ θ̂ = 0` | ✅ Proven |
 
 ## The theorem
 
@@ -64,8 +66,9 @@ which vanishes exactly when sin²β+cos²β=1.
 
 ## Next steps
 
-1. Theorem 2 (equality case) — prove that the bound `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` is attained iff `sin²(α−β) = 1`, i.e., β = α ± π/2 modulo π.
-2. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
+1. Arbitrary-Cartesian form — restate Theorem 1 and the selection rule for `k = (k₁, k₂)` with `|k| = √(k₁² + k₂²)`, removing the polar-coordinate parameterization. Mostly bookkeeping.
+2. Summability form — lift the per-mode inequality to `ℓ²`/`Hˢ` Sobolev spaces via Parseval, yielding the integrated bound needed for Theorem 3. Requires `tsum` machinery.
+3. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
 
 ## Credit
 
