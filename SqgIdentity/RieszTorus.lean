@@ -157,6 +157,44 @@ lemma rieszSymbol_of_ne_zero {d : Type*} [Fintype d]
     rieszSymbol j n = -I * ((n j : ℝ) : ℂ) / ((latticeNorm n : ℝ) : ℂ) := by
   simp [rieszSymbol, hn]
 
+/-- **Complex-valued Riesz identity**: `Σⱼ (m_j(n))² = -1` for `n ≠ 0`.
+
+This is the Fourier-multiplier form of the operator identity
+`Σⱼ R_j² = -Id` on zero-mean functions, i.e., `-Δ = -Σⱼ ∂_j²` expressed
+via the factorisation `∂_j = (-Δ)^{1/2}·R_j`. Note the sign vs. the
+norm Pythagorean identity: `|m_j|² = (-n_j²)/‖n‖² · (-1)` absorbs the
+`-I² = 1` into absolute value, but the raw complex square keeps it. -/
+theorem rieszSymbol_sum_sq_complex {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) :
+    ∑ j, (rieszSymbol j n) ^ 2 = -1 := by
+  have hpos : 0 < latticeNorm n := latticeNorm_pos hn
+  have hne : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast ne_of_gt hpos
+  have hne2 : ((latticeNorm n : ℝ) : ℂ) ^ 2 ≠ 0 := pow_ne_zero 2 hne
+  -- Key: each squared term, times ‖n‖², equals -n_j²
+  have hterm : ∀ j, (rieszSymbol j n) ^ 2 * ((latticeNorm n : ℝ) : ℂ) ^ 2
+             = -(((n j : ℝ) : ℂ) ^ 2) := by
+    intro j
+    rw [rieszSymbol_of_ne_zero hn]
+    field_simp
+    have hI : Complex.I ^ 2 = -1 := Complex.I_sq
+    linear_combination ((n j : ℝ) : ℂ) ^ 2 * hI
+  -- Sum the per-j equalities and divide by ‖n‖²
+  have hsum_real : ∑ j, ((n j : ℝ) : ℂ) ^ 2 = ((latticeNorm n : ℝ) : ℂ) ^ 2 := by
+    have h1 : (∑ j, ((n j : ℝ) : ℂ) ^ 2)
+            = ((∑ j, ((n j : ℝ)) ^ 2 : ℝ) : ℂ) := by push_cast; rfl
+    rw [h1, ← latticeNorm_sq]
+    push_cast; rfl
+  have hmul : (∑ j, (rieszSymbol j n) ^ 2) * ((latticeNorm n : ℝ) : ℂ) ^ 2
+           = (-1) * ((latticeNorm n : ℝ) : ℂ) ^ 2 := by
+    rw [Finset.sum_mul]
+    calc ∑ j, (rieszSymbol j n) ^ 2 * ((latticeNorm n : ℝ) : ℂ) ^ 2
+        = ∑ j, -(((n j : ℝ) : ℂ) ^ 2) := Finset.sum_congr rfl (fun j _ => hterm j)
+      _ = -(∑ j, ((n j : ℝ) : ℂ) ^ 2) := by rw [Finset.sum_neg_distrib]
+      _ = -(((latticeNorm n : ℝ) : ℂ) ^ 2) := by rw [hsum_real]
+      _ = (-1) * ((latticeNorm n : ℝ) : ℂ) ^ 2 := by ring
+  exact mul_right_cancel₀ hne2 hmul
+
 /-! ### SQG velocity symbol isometry on `𝕋²` -/
 
 /-- **SQG velocity symbol isometry on `𝕋²`.** For any `z ∈ ℂ` and any
