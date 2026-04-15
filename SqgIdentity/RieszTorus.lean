@@ -543,6 +543,46 @@ theorem hsSeminormSq_eq_L2_of_multiplier
   rw [heq] at hsum
   exact hsum.tsum_eq.symm
 
+/-! ### Riesz-transform total-energy identity on `𝕋ᵈ` -/
+
+/-- **Sum-of-Riesz L²-isometry on `𝕋ᵈ`.** If `f ∈ L²(𝕋ᵈ)` has zero mean
+and `(R_j f) ∈ L²(𝕋ᵈ)` are functions whose Fourier coefficients are
+given by the Riesz multiplier, then
+
+    Σⱼ ‖R_j f‖²_{L²(𝕋ᵈ)} = ‖f‖²_{L²(𝕋ᵈ)}.
+
+This is the `d`-dimensional generalisation of `sqg_velocity_L2_isometry`
+and expresses the fact that the vector Riesz transform `(R₁, …, R_d)`
+is an L²-isometry on zero-mean data. -/
+theorem riesz_sum_L2_isometry
+    {d : Type*} [Fintype d]
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (Rj_f : d → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hf_mean : mFourierCoeff f 0 = 0)
+    (hcoeff : ∀ j n, mFourierCoeff (Rj_f j) n
+                     = rieszSymbol j n * mFourierCoeff f n) :
+    ∑ j, (∫ t, ‖(Rj_f j) t‖ ^ 2) = ∫ t, ‖f t‖ ^ 2 := by
+  have hper : ∀ j, HasSum
+      (fun n ↦ ‖rieszSymbol j n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+      (∫ t, ‖(Rj_f j) t‖ ^ 2) := by
+    intro j
+    exact hasSum_sq_multiplier f (Rj_f j) (rieszSymbol j) (hcoeff j)
+  have hsum :
+      HasSum (fun n ↦ ∑ j, ‖rieszSymbol j n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+        (∑ j, (∫ t, ‖(Rj_f j) t‖ ^ 2)) := hasSum_sum (fun j _ => hper j)
+  have hfun : (fun n : (d → ℤ) ↦
+                  ∑ j, ‖rieszSymbol j n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+            = (fun n ↦ ‖mFourierCoeff f n‖ ^ 2) := by
+    funext n
+    rw [← Finset.sum_mul]
+    by_cases hn : n = 0
+    · simp [hn, hf_mean]
+    · rw [rieszSymbol_sum_sq hn, one_mul]
+  rw [hfun] at hsum
+  have hf_parseval : HasSum (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)
+      (∫ t, ‖f t‖ ^ 2) := hasSum_sq_mFourierCoeff f
+  exact hsum.unique hf_parseval
+
 /-! ### Gradient L²-norm equals the Ḣ¹ seminorm -/
 
 /-- **Plancherel for the gradient.** If `θ ∈ L²(𝕋ᵈ)` and functions
