@@ -583,6 +583,33 @@ theorem riesz_sum_L2_isometry
       (∫ t, ‖f t‖ ^ 2) := hasSum_sq_mFourierCoeff f
   exact hsum.unique hf_parseval
 
+/-! ### Double-Riesz Fourier identity `Σⱼ R_j² = -I` -/
+
+/-- **Double-Riesz Fourier identity.** At the Fourier-coefficient level,
+if each `g_j ∈ L²(𝕋ᵈ)` is built from `f ∈ L²(𝕋ᵈ)` by the double Riesz
+symbol `ĝ_j(n) = (m_j(n))²·f̂(n)` and `f` has zero mean, then
+
+    `Σⱼ ĝ_j(n) = -f̂(n)` for every `n`.
+
+This is the Fourier-side statement of the classical L² identity
+`Σⱼ R_j² = -I` on zero-mean fields. At `n = 0` the zero-mean hypothesis
+collapses both sides to zero; off zero the result follows from
+`rieszSymbol_sum_sq_complex` (`Σⱼ (m_j(n))² = -1`). -/
+theorem riesz_double_sum_symbol
+    {d : Type*} [Fintype d]
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (g : d → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hcoeff : ∀ j n, mFourierCoeff (g j) n
+                      = (rieszSymbol j n) ^ 2 * mFourierCoeff f n)
+    (hf_mean : mFourierCoeff f 0 = 0) :
+    ∀ n, (∑ j, mFourierCoeff (g j) n) = -mFourierCoeff f n := by
+  intro n
+  rw [Finset.sum_congr rfl (fun j (_ : j ∈ (Finset.univ : Finset d)) => hcoeff j n),
+      ← Finset.sum_mul]
+  by_cases hn : n = 0
+  · rw [hn, hf_mean]; simp
+  · rw [rieszSymbol_sum_sq_complex hn]; ring
+
 /-! ### Gradient L²-norm equals the Ḣ¹ seminorm -/
 
 /-- **Plancherel for the gradient.** If `θ ∈ L²(𝕋ᵈ)` and functions
