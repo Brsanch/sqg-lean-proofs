@@ -31,6 +31,24 @@ identity in Fourier space for the Surface Quasi-Geostrophic equation).
 | `SqgFourierData` bundle + `w i` definition (explicit RHS of the identity) | ✅ Defined |
 | `SqgFourierData.w_norm_le` — pointwise selection-rule bound per mode | ✅ Proven |
 | `SqgFourierData.ell2_bound` — integrated ℓ² bound on an SQG Fourier-mode family | ✅ Proven |
+| **Parseval bridge**: `sqg_L2_torus_bound` — `∫ ‖w‖² ≤ ∑ₙ r(n)²·‖θ̂(n)‖²` on `L²(𝕋ᵈ)` via `AddCircleMulti.hasSum_sq_mFourierCoeff` | ✅ Proven |
+| `latticeNorm` + `latticeNorm_sq` + `latticeNorm_eq_zero_iff` + `latticeNorm_pos` + `sq_le_latticeNorm_sq` | ✅ Proven |
+| `rieszSymbol j n := -i·nⱼ/‖n‖` (Fourier multiplier symbol on `𝕋ᵈ`) | ✅ Defined |
+| `norm_rieszSymbol` — `‖m_j(n)‖ = \|n_j\|/‖n‖` for `n ≠ 0` | ✅ Proven |
+| **Riesz pointwise bound**: `rieszSymbol_norm_le_one` — `‖m_j(n)‖ ≤ 1` | ✅ Proven |
+| **Riesz Pythagorean identity**: `rieszSymbol_sum_sq` — `Σⱼ ‖m_j(n)‖² = 1` for `n ≠ 0` | ✅ Proven |
+| **Complex Riesz identity**: `rieszSymbol_sum_sq_complex` — `Σⱼ (m_j(n))² = -1` (operator form `Σⱼ R_j² = -Id`) | ✅ Proven |
+| **SQG velocity symbol isometry**: `sqg_velocity_symbol_isometry` — `‖m₂·z‖² + ‖-m₁·z‖² = ‖z‖²` on `𝕋²` | ✅ Proven |
+| **L² contractive multipliers**: `L2_contractive_of_bounded_symbol` — `‖m‖∞ ≤ 1` + Parseval ⟹ `‖g‖_{L²} ≤ ‖f‖_{L²}` | ✅ Proven |
+| `L2_isometry_of_unit_symbol` — unit-modulus pointwise ⟹ `‖g‖_{L²} = ‖f‖_{L²}` | ✅ Proven |
+| **Riesz L² contractivity**: `riesz_L2_contractive` — `‖R_j f‖_{L²(𝕋ᵈ)} ≤ ‖f‖_{L²(𝕋ᵈ)}` | ✅ Proven |
+| **SQG velocity L² isometry**: `sqg_velocity_L2_isometry` — `‖u₁‖²_{L²} + ‖u₂‖²_{L²} = ‖θ‖²_{L²}` for zero-mean θ on 𝕋² | ✅ Proven |
+| `fracDerivSymbol s n := ‖n‖^s` off zero — Fourier symbol of `(-Δ)^{s/2}` | ✅ Defined |
+| Parseval multiplier: `hasSum_sq_multiplier` + `L2_norm_sq_eq_multiplier_tsum` — `∫‖g‖² = Σₙ ‖m(n)‖²·‖f̂(n)‖²` | ✅ Proven |
+| Multiplier composition: `mFourierCoeff_multiplier_comp` — `ĝ = m₁·f̂`, `ĥ = m₂·ĝ` ⟹ `ĥ = (m₂·m₁)·f̂` | ✅ Proven |
+| `hsSeminormSq s f := Σₙ ‖n‖^{2s}·‖f̂(n)‖²` — homogeneous Ḣˢ seminorm squared | ✅ Defined |
+| `hsSeminormSq_eq_L2_of_multiplier` — `(-Δ)^{s/2}` identification: `‖g‖²_{L²} = ‖f‖²_{Ḣˢ}` when `ĝ = σ_s·f̂` | ✅ Proven |
+| **SQG selection rule, Ḣ¹ form**: `sqg_selection_rule_Hs1` — `‖ŵ(n)‖ ≤ ‖n‖·‖θ̂(n)‖` + summability ⟹ `‖w‖²_{L²} ≤ ‖θ‖²_{Ḣ¹}` | ✅ Proven |
 
 ## The theorem
 
@@ -58,7 +76,9 @@ First build is slow (~5–10 min on cold cache). Incremental builds are fast.
 
 ## Files
 
-- `SqgIdentity/Basic.lean` — main file with statements and proofs
+- `SqgIdentity/Basic.lean` — main file: Theorems 1 and 2, ℓ² lift, `SqgFourierData` bundle, Parseval bridge to `L²(𝕋ᵈ)`
+- `SqgIdentity/RieszTorus.lean` — Riesz-transform symbols on `𝕋ᵈ`: pointwise bound, Pythagorean identities (real & complex), SQG velocity isometry, fractional-derivative symbol, Ḣˢ seminorm, Ḣ¹ form of the selection rule
+- `SqgIdentity.lean` — root module (imports both)
 - `lakefile.toml` — project config (mathlib dependency pinned to v4.29.0)
 - `lean-toolchain` — Lean 4.29.0
 
@@ -80,42 +100,64 @@ which vanishes exactly when sin²β+cos²β=1.
 
 **In-file content (closed).** Theorems 1 and 2 of D14 are fully
 machine-verified in both polar and Cartesian form, with exact-magnitude
-and equality-case refinements, and an ℓ² integrated form packaged over
-an arbitrary `SqgFourierData ι`. Zero `sorry`. 18 theorems, 1 definition,
-1 structure.
+and equality-case refinements, an ℓ² integrated form packaged over an
+arbitrary `SqgFourierData ι`, and a Parseval bridge to `L²(𝕋ᵈ)`.
+Zero `sorry`.
 
-**Theorem 3 (regularity) — blocked on missing mathlib infrastructure.**
-The D14 regularity argument closes via §9 propositions built on content
-that does not yet exist in mathlib; each is a multi-month formalization
-project in its own right:
+**The L²(𝕋ᵈ) form is concrete, not abstract.** `sqg_L2_torus_bound`
+gives `∫ ‖w‖² ≤ ∑ₙ r(n)²·‖θ̂(n)‖²` for any pair of L² functions on the
+torus whose Fourier coefficients satisfy the pointwise selection-rule
+bound. Specialising `r(n) = ‖n‖` makes the RHS `‖∇θ‖²_{L²(𝕋ᵈ)}`
+(another Parseval application), so this is exactly
+`‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`, the integrated form of Theorem 2
+consumed by §9. `sqg_selection_rule_Hs1` restates this directly in
+terms of the Ḣ¹ seminorm via the fractional-derivative symbol.
 
-1. **2D Fourier series on `𝕋²` with Parseval.** Mathlib has 1D Fourier
-   series on the circle (`Mathlib.Analysis.Fourier.FourierSeries`) but
-   no two-dimensional version. Would need either a tensor-product
-   construction over `ℤ²` or a direct port of the 1D `HilbertBasis.fourier`
-   argument to `Fin 2 → Circle`.
-2. **Fractional Laplacian `(-Δ)^{1/2}` and Riesz transforms.** The SQG
-   velocity `u = (-∂₂, ∂₁)(-Δ)^{-1/2} θ` is a Riesz transform acting on
-   `θ`. Mathlib has no Riesz-transform library and no `(-Δ)^s`
-   construction for `s ∉ ℕ` on either the torus or `ℝⁿ`.
-3. **Material-derivative transport and maximum principle.** The proof
-   uses `Dθ/Dt = 0` (passive transport along the velocity field) plus
-   `‖θ(t)‖_{L^∞} = ‖θ₀‖_{L^∞}`. Formalizing this requires Flow theory
-   for a non-Lipschitz velocity field, which mathlib currently only
-   supports for time-independent vector fields with pointwise Lipschitz
-   hypotheses.
-4. **BKM / Constantin–Majda–Tabak blow-up criterion.** The final step
-   converts the ℓ² bound into global regularity via a criterion
-   equivalent to `∫₀^T ‖∇θ‖_{L^∞}·‖n · (∇θ)^⊥ / ‖∇θ‖‖_{L^∞} dt < ∞`.
-   Neither the criterion nor the supporting `Ḣ^s` fractional Sobolev
-   embeddings are in mathlib.
+**Theorem 3 (regularity) — status on mathlib infrastructure** *(audited
+2026-04-14 by reading `.lake/packages/mathlib/` directly, not from
+memory)*:
 
-Closing Theorem 3 in Lean would require landing (1)–(4) upstream first.
-The in-file ℓ² bound (`SqgFourierData.ell2_bound`) is exactly the
-algebraic input consumed by §9; the rest is analysis infrastructure,
-not SQG-specific reasoning.
+1. ~~**2D Fourier series on `𝕋ᵈ` with Parseval.**~~ **Available.**
+   `Mathlib.Analysis.Fourier.AddCircleMulti` provides
+   `UnitAddTorus d := d → UnitAddCircle`, the Hilbert basis
+   `mFourierBasis`, and both Parseval identities
+   (`hasSum_prod_mFourierCoeff`, `hasSum_sq_mFourierCoeff`). Used in
+   `sqg_L2_torus_bound`.
+2. **Fractional Laplacian `(-Δ)^s` and Riesz transforms.** Not in
+   mathlib as general Calderón–Zygmund singular integrals, but we have
+   built an in-file **torus Riesz library** in
+   `SqgIdentity/RieszTorus.lean` that bypasses singular-integral theory
+   via Fourier multipliers:
+   * Symbol level: `m_j(n) = -i·nⱼ/‖n‖`, pointwise `‖m_j(n)‖ ≤ 1`,
+     norm Pythagorean `Σⱼ ‖m_j(n)‖² = 1`, complex-valued counterpart
+     `Σⱼ (m_j(n))² = -1` (⇔ `Σⱼ R_j² = -Id`), SQG velocity symbol
+     isometry `‖m₂·z‖² + ‖-m₁·z‖² = ‖z‖²` on `𝕋²`.
+   * Operator level: generic L²-contractivity
+     `‖m‖∞ ≤ 1 ⟹ ‖g‖_{L²} ≤ ‖f‖_{L²}`, the Riesz corollary
+     `‖R_j f‖_{L²(𝕋ᵈ)} ≤ ‖f‖_{L²(𝕋ᵈ)}`, and the SQG energy-conservation
+     identity `‖u₁‖²_{L²} + ‖u₂‖²_{L²} = ‖θ‖²_{L²}` for zero-mean θ on 𝕋².
+   * Sobolev scale: `fracDerivSymbol s n = ‖n‖ˢ` (off zero), homogeneous
+     Ḣˢ seminorm squared `hsSeminormSq s f`, Fourier-multiplier
+     identification `‖(-Δ)^{s/2} f‖²_{L²} = ‖f‖²_{Ḣˢ}`, and the Ḣ¹
+     form of the SQG selection rule.
+
+   Driven entirely by `AddCircleMulti.hasSum_sq_mFourierCoeff` — no
+   singular-integral machinery invoked. Still missing upstream:
+   `(-Δ)^s` for non-integer `s` on `ℝⁿ` as an operator (the torus-level
+   *symbol* is covered here).
+3. **Material-derivative transport and maximum principle.**
+   `Mathlib.Dynamics.Flow` (292 lines) is basic monoid-action API only
+   — no Cauchy–Lipschitz / ODE existence-uniqueness, no DiPerna–Lions
+   for non-Lipschitz fields.
+4. **BKM / Constantin–Majda–Tabak blow-up criterion.** Still missing.
+   No BKM hits in mathlib. `SobolevInequality.lean` covers
+   Gagliardo–Nirenberg at integer order but no fractional `Ḣ^s` on ℝⁿ.
+
+Closing Theorem 3 would still require landing (2, ℝⁿ-level)–(4)
+upstream. The Parseval step (previously listed as blocker #1) turned
+out to already be in mathlib, and is now used in-file; the torus Riesz
+symbol and Ḣˢ scaffolding for (2) are also in-file.
 
 ## Credit
 
-Mathematical theorem: Bryan Sanchez (D14 paper).
-Lean formalization: Bryan Sanchez + Claude Code (AI assistant).
+Mathematical theorem and Lean formalization: Bryan Sanchez.
