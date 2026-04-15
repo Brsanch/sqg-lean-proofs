@@ -178,6 +178,53 @@ theorem sqg_velocity_symbol_isometry {n : Fin 2 → ℤ} (hn : n ≠ 0) (z : ℂ
     rw [norm_mul, norm_neg, mul_pow]
   rw [h1, h2, ← add_mul, hsum, one_mul]
 
+/-! ### Fractional-derivative symbol `σ_s(n) = ‖n‖ˢ` -/
+
+/-- The Fourier multiplier symbol of `(-Δ)^{s/2}` on `𝕋ᵈ`, defined as
+`‖n‖^s` off zero and `0` at `n = 0` (the zero-mean convention that makes
+it a genuine seminorm). -/
+noncomputable def fracDerivSymbol {d : Type*} [Fintype d]
+    (s : ℝ) (n : d → ℤ) : ℝ :=
+  if n = 0 then 0 else (latticeNorm n) ^ s
+
+@[simp]
+lemma fracDerivSymbol_zero {d : Type*} [Fintype d] (s : ℝ) :
+    fracDerivSymbol s (0 : d → ℤ) = 0 := by
+  simp [fracDerivSymbol]
+
+lemma fracDerivSymbol_of_ne_zero {d : Type*} [Fintype d] (s : ℝ)
+    {n : d → ℤ} (hn : n ≠ 0) :
+    fracDerivSymbol s n = (latticeNorm n) ^ s := by
+  simp [fracDerivSymbol, hn]
+
+lemma fracDerivSymbol_nonneg {d : Type*} [Fintype d] (s : ℝ) (n : d → ℤ) :
+    0 ≤ fracDerivSymbol s n := by
+  by_cases hn : n = 0
+  · simp [fracDerivSymbol, hn]
+  · rw [fracDerivSymbol_of_ne_zero s hn]
+    exact Real.rpow_nonneg (latticeNorm_nonneg n) s
+
+lemma fracDerivSymbol_pos {d : Type*} [Fintype d] (s : ℝ)
+    {n : d → ℤ} (hn : n ≠ 0) :
+    0 < fracDerivSymbol s n := by
+  rw [fracDerivSymbol_of_ne_zero s hn]
+  exact Real.rpow_pos_of_pos (latticeNorm_pos hn) s
+
+/-- At `s = 1`, `fracDerivSymbol` is just `‖n‖` off zero. -/
+lemma fracDerivSymbol_one_eq {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) :
+    fracDerivSymbol 1 n = latticeNorm n := by
+  rw [fracDerivSymbol_of_ne_zero 1 hn, Real.rpow_one]
+
+/-- At `s = 2`, `fracDerivSymbol` is `‖n‖²` off zero. -/
+lemma fracDerivSymbol_two_eq {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) :
+    fracDerivSymbol 2 n = (latticeNorm n) ^ 2 := by
+  rw [fracDerivSymbol_of_ne_zero 2 hn]
+  have h : (latticeNorm n) ^ (2 : ℝ) = (latticeNorm n) ^ (2 : ℕ) :=
+    Real.rpow_natCast (latticeNorm n) 2
+  simpa using h
+
 /-! ### Measure-theoretic setup for torus L² integrals -/
 
 -- Replicate the file-local instance from `Mathlib.Analysis.Fourier.AddCircleMulti`
@@ -306,5 +353,94 @@ theorem sqg_velocity_L2_isometry
     funext hpt
   rw [heq] at hsum_add
   exact hsum_add.unique hθ_parseval
+
+/-! ### Parseval energy identities for Fourier multipliers -/
+
+/-- **Parseval-side multiplier identity.** If `ĝ = m·f̂` on the Fourier
+side, then `∫ ‖g‖² = Σₙ ‖m(n)‖² · ‖f̂(n)‖²`. -/
+theorem hasSum_sq_multiplier
+    {d : Type*} [Fintype d]
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : (d → ℤ) → ℂ)
+    (hcoeff : ∀ n, mFourierCoeff g n = m n * mFourierCoeff f n) :
+    HasSum (fun n ↦ ‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2) (∫ t, ‖g t‖ ^ 2) := by
+  have hg_parseval : HasSum (fun n ↦ ‖mFourierCoeff g n‖ ^ 2)
+      (∫ t, ‖g t‖ ^ 2) := hasSum_sq_mFourierCoeff g
+  have heq : (fun n ↦ ‖mFourierCoeff g n‖ ^ 2)
+           = (fun n ↦ ‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by
+    funext n
+    rw [hcoeff n, norm_mul, mul_pow]
+  rw [heq] at hg_parseval
+  exact hg_parseval
+
+/-- Integrated form of the multiplier Parseval identity. -/
+theorem L2_norm_sq_eq_multiplier_tsum
+    {d : Type*} [Fintype d]
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : (d → ℤ) → ℂ)
+    (hcoeff : ∀ n, mFourierCoeff g n = m n * mFourierCoeff f n) :
+    (∫ t, ‖g t‖ ^ 2) = ∑' n, ‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+  (hasSum_sq_multiplier f g m hcoeff).tsum_eq.symm
+
+/-! ### Multiplier composition and Ḣˢ seminorm -/
+
+/-- **Composition of Fourier multipliers.** If `ĝ = m₁·f̂` and `ĥ = m₂·ĝ`
+on the Fourier side, then `ĥ = (m₂·m₁)·f̂`. -/
+theorem mFourierCoeff_multiplier_comp
+    {d : Type*} [Fintype d]
+    (f g h : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m₁ m₂ : (d → ℤ) → ℂ)
+    (hg : ∀ n, mFourierCoeff g n = m₁ n * mFourierCoeff f n)
+    (hh : ∀ n, mFourierCoeff h n = m₂ n * mFourierCoeff g n) :
+    ∀ n, mFourierCoeff h n = (m₂ n * m₁ n) * mFourierCoeff f n := by
+  intro n
+  rw [hh n, hg n, ← mul_assoc]
+
+/-- **Ḣˢ seminorm squared** on `L²(𝕋ᵈ)` via the Fourier multiplier
+`σ_s(n) = ‖n‖ˢ`. The zero mode `n = 0` contributes `0`, so this is a
+true seminorm (vanishing on constants). -/
+noncomputable def hsSeminormSq
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d))) : ℝ :=
+  ∑' n, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
+
+/-- Fourier-multiplier identification of `(-Δ)^{s/2}`: if `ĝ = σ_s·f̂`
+then `∫ ‖g‖² = ‖f‖²_{Ḣˢ}`. -/
+theorem hsSeminormSq_eq_L2_of_multiplier
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hcoeff : ∀ n, mFourierCoeff g n
+        = ((fracDerivSymbol s n : ℝ) : ℂ) * mFourierCoeff f n) :
+    (∫ t, ‖g t‖ ^ 2) = hsSeminormSq s f := by
+  unfold hsSeminormSq
+  have hsum := hasSum_sq_multiplier f g
+      (fun n ↦ ((fracDerivSymbol s n : ℝ) : ℂ)) hcoeff
+  have hnorm : ∀ n : (d → ℤ),
+      ‖((fracDerivSymbol s n : ℝ) : ℂ)‖ = fracDerivSymbol s n := by
+    intro n
+    rw [Complex.norm_real, Real.norm_eq_abs,
+        abs_of_nonneg (fracDerivSymbol_nonneg s n)]
+  have heq : (fun n ↦ ‖((fracDerivSymbol s n : ℝ) : ℂ)‖ ^ 2
+                   * ‖mFourierCoeff f n‖ ^ 2)
+           = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by
+    funext n; rw [hnorm n]
+  rw [heq] at hsum
+  exact hsum.tsum_eq.symm
+
+/-! ### SQG selection rule in Ḣ¹ form -/
+
+/-- **SQG selection rule, Ḣ¹ form.** If `‖ŵ(n)‖ ≤ ‖n‖·‖θ̂(n)‖` pointwise
+and the RHS is summable, then `‖w‖²_{L²} ≤ ‖θ‖²_{Ḣ¹}`. Equivalently,
+`‖S_nt - ω/2‖_{L²(𝕋²)} ≤ ‖∇θ‖_{L²(𝕋²)}` after identifying the gradient
+norm via Parseval. -/
+theorem sqg_selection_rule_Hs1
+    {d : Type*} [Fintype d]
+    (θ w : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hbound : ∀ n, ‖mFourierCoeff w n‖ ≤ (fracDerivSymbol 1 n) * ‖mFourierCoeff θ n‖)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∫ t, ‖w t‖ ^ 2) ≤ hsSeminormSq 1 θ := by
+  unfold hsSeminormSq
+  exact sqg_L2_torus_bound θ w (fun n ↦ fracDerivSymbol 1 n)
+    (fun n ↦ fracDerivSymbol_nonneg 1 n) hbound hsum
 
 end SqgIdentity
