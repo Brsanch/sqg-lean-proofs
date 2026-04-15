@@ -1,6 +1,8 @@
 # SQG Shear-Vorticity Identity — Lean 4 Formalization
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583257.svg)](https://doi.org/10.5281/zenodo.19583257)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
+
+Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
 
 First formalization target: **Theorem 1** from paper D14 (shear-vorticity
 identity in Fourier space for the Surface Quasi-Geostrophic equation).

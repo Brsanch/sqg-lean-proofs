@@ -6,11 +6,17 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.1.0
-date-released: "2026-04-14"
+version: 0.2.0
+date-released: "2026-04-15"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
-doi: 10.5281/zenodo.19583257
+doi: 10.5281/zenodo.19583256
 identifiers:
+  - type: doi
+    value: 10.5281/zenodo.19583256
+    description: Zenodo concept DOI (always points to latest version)
+  - type: doi
+    value: 10.5281/zenodo.19583417
+    description: Zenodo archive of v0.2.0
   - type: doi
     value: 10.5281/zenodo.19583257
     description: Zenodo archive of v0.1.0
