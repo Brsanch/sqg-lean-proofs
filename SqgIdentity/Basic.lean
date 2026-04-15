@@ -101,4 +101,145 @@ theorem sqg_shear_vorticity_identity
   -- vanish by sin²β + cos²β = 1.  Coefficient from hand calculation:
   linear_combination -(θ * ((Real.cos α : ℂ) ^ 2 + (Real.sin α : ℂ) ^ 2)) * hβ
 
+/-! ## Corollaries of Theorem 1
+
+These are the physical content of the shear-vorticity identity:
+(1) half-angle form,
+(2) vanishing when the wavevector is aligned with the front normal,
+(3) maximum value when the wavevector is perpendicular to the front normal.
+-/
+
+/-- Half-angle restatement of Theorem 1:
+    `Ŝ_nt - ω̂/2 = (|k|/2)·(1 - cos(2(α-β)))·θ̂`.
+    Equivalent to the `sin²` form via `one_sub_cos_two_mul`; useful when
+    the per-mode statement needs to be integrated against Fourier weights. -/
+theorem sqg_shear_vorticity_identity_halfangle
+    (absk α β : ℝ) (θ : ℂ) (habsk : 0 < absk) :
+    let k1 : ℂ := (absk * Real.cos α : ℝ)
+    let k2 : ℂ := (absk * Real.sin α : ℝ)
+    let n1 : ℂ := (Real.cos β : ℝ)
+    let n2 : ℂ := (Real.sin β : ℝ)
+    let t1 : ℂ := (-Real.sin β : ℝ)
+    let t2 : ℂ := (Real.cos β : ℝ)
+    let u1 : ℂ := -I * k2 * θ / (absk : ℂ)
+    let u2 : ℂ := I * k1 * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * (k1 * u1 + k1 * u1)
+    let S12 : ℂ := (I / 2) * (k1 * u2 + k2 * u1)
+    let S22 : ℂ := (I / 2) * (k2 * u2 + k2 * u2)
+    let ω : ℂ := I * (k1 * u2 - k2 * u1)
+    let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
+    S_nt - ω / 2 = ((absk : ℂ) / 2) * ((1 - Real.cos (2 * (α - β))) : ℝ) * θ := by
+  have h := sqg_shear_vorticity_identity absk α β θ habsk
+  -- Complex-valued half-angle identity.
+  have hc : ∀ z : ℂ, 1 - Complex.cos (2 * z) = 2 * (Complex.sin z)^2 := fun z => by
+    have h1 := Complex.cos_two_mul z
+    have h2 := Complex.sin_sq_add_cos_sq z
+    linear_combination -h1 - 2 * h2
+  simp only [] at h ⊢
+  rw [h]
+  push_cast
+  rw [hc ((α : ℂ) - (β : ℂ))]
+  ring
+
+/-- **Aligned case**: when the wavevector is parallel to the front normal
+    (β = α), `sin²(α - β) = 0` and the shear-vorticity combination vanishes.
+    Physically: along-front modes neither strain nor spin the front. -/
+theorem sqg_shear_aligned
+    (absk α : ℝ) (θ : ℂ) (habsk : 0 < absk) :
+    let k1 : ℂ := (absk * Real.cos α : ℝ)
+    let k2 : ℂ := (absk * Real.sin α : ℝ)
+    let n1 : ℂ := (Real.cos α : ℝ)
+    let n2 : ℂ := (Real.sin α : ℝ)
+    let t1 : ℂ := (-Real.sin α : ℝ)
+    let t2 : ℂ := (Real.cos α : ℝ)
+    let u1 : ℂ := -I * k2 * θ / (absk : ℂ)
+    let u2 : ℂ := I * k1 * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * (k1 * u1 + k1 * u1)
+    let S12 : ℂ := (I / 2) * (k1 * u2 + k2 * u1)
+    let S22 : ℂ := (I / 2) * (k2 * u2 + k2 * u2)
+    let ω : ℂ := I * (k1 * u2 - k2 * u1)
+    let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
+    S_nt - ω / 2 = 0 := by
+  have h := sqg_shear_vorticity_identity absk α α θ habsk
+  simp only [sub_self, Real.sin_zero] at h
+  simp only [] at h ⊢
+  rw [h]
+  push_cast
+  ring
+
+/-- **Perpendicular case**: when the wavevector is perpendicular to the
+    front normal (β = α - π/2, so `sin(α - β) = 1`), the shear-vorticity
+    combination attains its maximum: `Ŝ_nt - ω̂/2 = |k| · θ̂`.
+    Physically: cross-front modes contribute the full `|k|·θ̂` to front
+    sharpening — this is the "worst case" for regularity analysis. -/
+theorem sqg_shear_perpendicular
+    (absk α : ℝ) (θ : ℂ) (habsk : 0 < absk) :
+    let β := α - Real.pi / 2
+    let k1 : ℂ := (absk * Real.cos α : ℝ)
+    let k2 : ℂ := (absk * Real.sin α : ℝ)
+    let n1 : ℂ := (Real.cos β : ℝ)
+    let n2 : ℂ := (Real.sin β : ℝ)
+    let t1 : ℂ := (-Real.sin β : ℝ)
+    let t2 : ℂ := (Real.cos β : ℝ)
+    let u1 : ℂ := -I * k2 * θ / (absk : ℂ)
+    let u2 : ℂ := I * k1 * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * (k1 * u1 + k1 * u1)
+    let S12 : ℂ := (I / 2) * (k1 * u2 + k2 * u1)
+    let S22 : ℂ := (I / 2) * (k2 * u2 + k2 * u2)
+    let ω : ℂ := I * (k1 * u2 - k2 * u1)
+    let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
+    S_nt - ω / 2 = (absk : ℂ) * θ := by
+  have h := sqg_shear_vorticity_identity absk α (α - Real.pi / 2) θ habsk
+  have hsin : Real.sin (α - (α - Real.pi / 2)) = 1 := by
+    rw [show α - (α - Real.pi / 2) = Real.pi / 2 from by ring]
+    exact Real.sin_pi_div_two
+  rw [hsin] at h
+  simp only [one_pow, Complex.ofReal_one, mul_one] at h
+  simp only [] at h ⊢
+  rw [h]
+
+/-- **Theorem 2 — Selection rule (bound form)**:
+    over every choice of front-normal angle β, the shear-vorticity
+    combination obeys
+        `‖Ŝ_nt - ω̂/2‖ ≤ |k| · ‖θ̂‖`.
+    This bound is saturated at `β = α ± π/2` (see `sqg_shear_perpendicular`)
+    and vanishes at `β = α` (see `sqg_shear_aligned`).
+
+    In the regularity analysis of D14, this controls the worst-case
+    per-mode contribution to strain growth. -/
+theorem sqg_selection_rule_bound
+    (absk α β : ℝ) (θ : ℂ) (habsk : 0 < absk) :
+    let k1 : ℂ := (absk * Real.cos α : ℝ)
+    let k2 : ℂ := (absk * Real.sin α : ℝ)
+    let n1 : ℂ := (Real.cos β : ℝ)
+    let n2 : ℂ := (Real.sin β : ℝ)
+    let t1 : ℂ := (-Real.sin β : ℝ)
+    let t2 : ℂ := (Real.cos β : ℝ)
+    let u1 : ℂ := -I * k2 * θ / (absk : ℂ)
+    let u2 : ℂ := I * k1 * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * (k1 * u1 + k1 * u1)
+    let S12 : ℂ := (I / 2) * (k1 * u2 + k2 * u1)
+    let S22 : ℂ := (I / 2) * (k2 * u2 + k2 * u2)
+    let ω : ℂ := I * (k1 * u2 - k2 * u1)
+    let S_nt : ℂ := n1 * t1 * S11 + n1 * t2 * S12 + n2 * t1 * S12 + n2 * t2 * S22
+    ‖S_nt - ω / 2‖ ≤ absk * ‖θ‖ := by
+  have h := sqg_shear_vorticity_identity absk α β θ habsk
+  simp only [] at h ⊢
+  rw [h]
+  -- Combine the real factors absk and sin²(α-β) into one real cast.
+  rw [show ((absk : ℂ) * ((Real.sin (α - β))^2 : ℝ) * θ) =
+      ((absk * (Real.sin (α - β))^2 : ℝ) : ℂ) * θ from by push_cast; ring]
+  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ absk * (Real.sin (α - β))^2)]
+  have hsin2 : (Real.sin (α - β))^2 ≤ 1 := by
+    have hpy := Real.sin_sq_add_cos_sq (α - β)
+    nlinarith [sq_nonneg (Real.cos (α - β))]
+  have hθ : 0 ≤ ‖θ‖ := norm_nonneg θ
+  -- absk * sin²(α-β) * ‖θ‖ ≤ absk * 1 * ‖θ‖ = absk * ‖θ‖.
+  calc absk * (Real.sin (α - β))^2 * ‖θ‖
+      ≤ absk * 1 * ‖θ‖ := by
+        apply mul_le_mul_of_nonneg_right _ hθ
+        exact mul_le_mul_of_nonneg_left hsin2 habsk.le
+    _ = absk * ‖θ‖ := by ring
+
 end SqgIdentity
