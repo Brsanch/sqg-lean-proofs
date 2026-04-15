@@ -625,6 +625,105 @@ theorem gradient_L2_eq_hsSeminormSq_one
   unfold hsSeminormSq
   exact hsum.tsum_eq.symm
 
+/-! ### Gradient Ḣˢ-norm equals the Ḣ^{s+1} seminorm -/
+
+/-- **Index shift for `fracDerivSymbol`.** For every `n` and every `s`,
+
+    `(σ_{s+1}(n))² = (σ_s(n))² · ‖n‖²`.
+
+At `n = 0` both sides vanish; off zero this is `Real.rpow_add_one`. -/
+lemma fracDerivSymbol_add_one_sq {d : Type*} [Fintype d]
+    (s : ℝ) (n : d → ℤ) :
+    (fracDerivSymbol (s + 1) n) ^ 2
+      = (fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 := by
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero]
+  · have hpos : 0 < latticeNorm n := latticeNorm_pos hn
+    rw [fracDerivSymbol_of_ne_zero _ hn, fracDerivSymbol_of_ne_zero _ hn,
+        Real.rpow_add_one (ne_of_gt hpos) s]
+    ring
+
+/-- **Plancherel for the gradient in Ḣˢ.** If `θ ∈ L²(𝕋ᵈ)` and functions
+`dθ j ∈ L²(𝕋ᵈ)` represent its partial derivatives at the symbol level,
+then summing their Ḣˢ-seminorms-squared recovers the Ḣ^{s+1}-seminorm
+of `θ`:
+
+    `Σⱼ ‖∂ⱼθ‖²_{Ḣˢ} = ‖θ‖²_{Ḣ^{s+1}}`.
+
+At `s = 0` this specialises to `gradient_L2_eq_hsSeminormSq_one`. -/
+theorem gradient_Hs_eq_hsSeminormSq_add_one
+    {d : Type*} [Fintype d] (s : ℝ)
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (dθ : d → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hcoeff : ∀ j n, mFourierCoeff (dθ j) n = derivSymbol j n * mFourierCoeff θ n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    ∑ j, hsSeminormSq s (dθ j) = hsSeminormSq (s + 1) θ := by
+  -- Per-component pointwise identity: σ_s(n)² · ‖d̂θ_j(n)‖²
+  -- = σ_s(n)² · |derivSymbol j n|² · ‖θ̂(n)‖²  (absorb the derivative symbol).
+  have hmode : ∀ j n,
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2
+      = (fracDerivSymbol s n) ^ 2
+          * ((n j : ℝ) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+    intro j n
+    rw [hcoeff j n, norm_mul, mul_pow, norm_derivSymbol_sq]
+  -- Per-component Ḣˢ summability follows from the Ḣ^{s+1} summability on θ
+  -- because |n_j|² ≤ ‖n‖² and σ_{s+1}(n)² = σ_s(n)² · ‖n‖² (the index shift).
+  have hsumj : ∀ j, Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2) := by
+    intro j
+    refine hsumm.of_nonneg_of_le
+      (fun n => by rw [hmode j n];
+                   exact mul_nonneg (sq_nonneg _)
+                     (mul_nonneg (sq_nonneg _) (sq_nonneg _)))
+      (fun n => ?_)
+    rw [hmode j n, fracDerivSymbol_add_one_sq s n]
+    have hθsq : 0 ≤ ‖mFourierCoeff θ n‖ ^ 2 := sq_nonneg _
+    have hσs : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+    have hnj : (n j : ℝ) ^ 2 ≤ (latticeNorm n) ^ 2 :=
+      sq_le_latticeNorm_sq n j
+    calc (fracDerivSymbol s n) ^ 2 * ((n j : ℝ) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+        = ((fracDerivSymbol s n) ^ 2 * (n j : ℝ) ^ 2)
+            * ‖mFourierCoeff θ n‖ ^ 2 := by ring
+      _ ≤ ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2)
+            * ‖mFourierCoeff θ n‖ ^ 2 :=
+          mul_le_mul_of_nonneg_right
+            (mul_le_mul_of_nonneg_left hnj hσs) hθsq
+  -- Per-component HasSum against hsSeminormSq s (dθ j).
+  have hper : ∀ j, HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2)
+      (hsSeminormSq s (dθ j)) := by
+    intro j; unfold hsSeminormSq; exact (hsumj j).hasSum
+  -- Combine the finite family of per-component HasSums.
+  have hsum_all : HasSum
+      (fun n ↦ ∑ j,
+          (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2)
+      (∑ j, hsSeminormSq s (dθ j)) := hasSum_sum (fun j _ => hper j)
+  -- Pointwise Pythagoras: Σⱼ σ_s² · ‖d̂θ_j‖² = σ_s² · ‖n‖² · ‖θ̂‖² = σ_{s+1}² · ‖θ̂‖².
+  have hpt : ∀ n,
+        (∑ j, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2)
+      = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+    intro n
+    have hrewrite : (∑ j,
+          (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2)
+        = (fracDerivSymbol s n) ^ 2
+            * ((∑ j, (n j : ℝ) ^ 2) * ‖mFourierCoeff θ n‖ ^ 2) := by
+      rw [Finset.sum_congr rfl (fun j _ => hmode j n),
+          ← Finset.mul_sum, ← Finset.sum_mul]
+    rw [hrewrite, ← latticeNorm_sq, fracDerivSymbol_add_one_sq]
+    ring
+  -- Substitute pointwise identity into the combined HasSum and match RHS.
+  have heq : (fun n ↦ ∑ j,
+                  (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (dθ j) n‖ ^ 2)
+           = (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2
+                        * ‖mFourierCoeff θ n‖ ^ 2) := funext hpt
+  rw [heq] at hsum_all
+  have hrhs : HasSum
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+      (hsSeminormSq (s + 1) θ) := by
+    unfold hsSeminormSq; exact hsumm.hasSum
+  exact hsum_all.unique hrhs
+
 /-! ### Ḣˢ-contractivity of a single Riesz transform -/
 
 /-- **Ḣˢ-contractivity of the Riesz transform.** If `R_j f` has the
