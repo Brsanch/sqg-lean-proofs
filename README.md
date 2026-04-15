@@ -24,15 +24,14 @@ Paper proof (D14 §2.2): direct computation after substituting the SQG
 velocity `û = (-i k₂/|k|, i k₁/|k|)·θ̂`, plus the half-angle identity
 `1 - cos(2x) = 2 sin²(x)`.
 
-The half-angle identity is now machine-verified (`one_sub_cos_two_mul`).
-The algebraic reduction from `Ŝ_nt - ω̂/2` to `(|k|/2)(1 - cos(2(α-β)))·θ̂`
-is mechanical; closing it is the remaining work.
+The half-angle identity is machine-verified (`one_sub_cos_two_mul`), and
+the full algebraic reduction from `Ŝ_nt - ω̂/2` to `|k|·sin²(α-β)·θ̂` is
+now closed — see `sqg_shear_vorticity_identity` (zero `sorry`).
 
 ## Build
 
 ```bash
 export PATH="$HOME/.elan/bin:$PATH"
-cd lean_proofs/sqg_identity
 lake build
 ```
 

@@ -12,12 +12,11 @@ url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 license: MIT
 abstract: >
   Lean 4 + mathlib formalization of the SQG shear-vorticity identity
-  (Theorem 1 from D14). The half-angle identity and its rescaled form
-  are fully machine-verified. The main theorem statement (algebraic
-  identity in Fourier space for the Surface Quasi-Geostrophic equation)
-  typechecks; the algebraic reduction proof is in progress.
-  Mathematical theorem by Bryan Sanchez; Lean formalization by
-  Bryan Sanchez with AI assistance.
+  (Theorem 1 from D14): an algebraic identity in Fourier space for the
+  Surface Quasi-Geostrophic equation. Fully machine-verified with zero
+  `sorry`, including the half-angle identity, its rescaled form, and
+  the main theorem. Mathematical theorem by Bryan Sanchez; Lean
+  formalization by Bryan Sanchez with AI assistance.
 keywords:
   - Lean 4
   - mathlib
