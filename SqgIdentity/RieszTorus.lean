@@ -662,6 +662,82 @@ theorem riesz_Hs_contractive
     exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
   exact Summable.tsum_le_tsum hmode hsumm_Rj hsumm
 
+/-! ### Ḣˢ-isometry of the vector Riesz transform -/
+
+/-- **Vector Riesz transform is an Ḣˢ-isometry.** If `(R_j f) ∈ L²(𝕋ᵈ)`
+have the Riesz-multiplier Fourier coefficients of `f` and the Ḣˢ series
+of `f` is summable, then the sum of the Ḣˢ-seminorms-squared of the
+components equals that of `f`:
+
+    Σⱼ ‖R_j f‖²_{Ḣˢ} = ‖f‖²_{Ḣˢ}. -/
+theorem riesz_sum_Hs_isometry
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (Rj_f : d → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hcoeff : ∀ j n, mFourierCoeff (Rj_f j) n
+                     = rieszSymbol j n * mFourierCoeff f n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    ∑ j, hsSeminormSq s (Rj_f j) = hsSeminormSq s f := by
+  -- Per-component summability from the single-Riesz bound.
+  have hsumj : ∀ j, Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (Rj_f j) n‖ ^ 2) := by
+    intro j
+    refine hsumm.of_nonneg_of_le
+      (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+      (fun n => ?_)
+    rw [hcoeff j n, norm_mul, mul_pow]
+    have hm1 : ‖rieszSymbol j n‖ ^ 2 ≤ 1 := by
+      have h0 : 0 ≤ ‖rieszSymbol j n‖ := norm_nonneg _
+      nlinarith [rieszSymbol_norm_le_one j n, h0]
+    have hrest : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+      mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    calc (fracDerivSymbol s n) ^ 2
+            * (‖rieszSymbol j n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+        = ‖rieszSymbol j n‖ ^ 2
+            * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
+      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right hm1 hrest
+      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  -- Per-component HasSum bundle.
+  have hper : ∀ j, HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (Rj_f j) n‖ ^ 2)
+      (hsSeminormSq s (Rj_f j)) := by
+    intro j
+    unfold hsSeminormSq
+    exact (hsumj j).hasSum
+  -- Finite sum of per-component HasSums.
+  have hsum_all : HasSum
+      (fun n ↦ ∑ j,
+          (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (Rj_f j) n‖ ^ 2)
+      (∑ j, hsSeminormSq s (Rj_f j)) := hasSum_sum (fun j _ => hper j)
+  -- Pointwise Pythagorean identity: Σⱼ σ²·‖m_j·f̂‖² = σ²·‖f̂‖².
+  have hpt : ∀ n,
+      (∑ j, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (Rj_f j) n‖ ^ 2)
+        = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
+    intro n
+    have hmode : ∀ j, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (Rj_f j) n‖ ^ 2
+               = ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+                   * ‖rieszSymbol j n‖ ^ 2 := by
+      intro j
+      rw [hcoeff j n, norm_mul, mul_pow]; ring
+    rw [Finset.sum_congr rfl (fun j _ => hmode j), ← Finset.mul_sum]
+    by_cases hn : n = 0
+    · simp [hn]
+    · rw [rieszSymbol_sum_sq hn, mul_one]
+  -- Substitute the pointwise identity into the combined HasSum.
+  have heq : (fun n ↦ ∑ j,
+                  (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (Rj_f j) n‖ ^ 2)
+           = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+    funext hpt
+  rw [heq] at hsum_all
+  -- RHS as a HasSum and uniqueness.
+  have hrhs : HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+      (hsSeminormSq s f) := by
+    unfold hsSeminormSq; exact hsumm.hasSum
+  exact hsum_all.unique hrhs
+
 /-! ### SQG selection rule in Ḣ¹ form -/
 
 /-- **SQG selection rule, Ḣ¹ form.** If `‖ŵ(n)‖ ≤ ‖n‖·‖θ̂(n)‖` pointwise
