@@ -625,6 +625,43 @@ theorem gradient_L2_eq_hsSeminormSq_one
   unfold hsSeminormSq
   exact hsum.tsum_eq.symm
 
+/-! ### Ḣˢ-contractivity of a single Riesz transform -/
+
+/-- **Ḣˢ-contractivity of the Riesz transform.** If `R_j f` has the
+Riesz-multiplier Fourier coefficients of `f` and the Ḣˢ series of `f`
+is summable, then `‖R_j f‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣˢ}`. -/
+theorem riesz_Hs_contractive
+    {d : Type*} [Fintype d] (s : ℝ) (j : d)
+    (f Rj_f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hcoeff : ∀ n, mFourierCoeff Rj_f n = rieszSymbol j n * mFourierCoeff f n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s Rj_f ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  -- Per-mode: ‖(R_j f)̂(n)‖² = ‖m_j(n)‖² · ‖f̂(n)‖² ≤ ‖f̂(n)‖².
+  have hmode : ∀ n, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff Rj_f n‖ ^ 2
+                  ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n, norm_mul, mul_pow]
+    have hm1 : ‖rieszSymbol j n‖ ^ 2 ≤ 1 := by
+      have h0 : 0 ≤ ‖rieszSymbol j n‖ := norm_nonneg _
+      nlinarith [rieszSymbol_norm_le_one j n, h0]
+    have hrest : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+      mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    calc (fracDerivSymbol s n) ^ 2
+            * (‖rieszSymbol j n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+        = ‖rieszSymbol j n‖ ^ 2
+            * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
+      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right hm1 hrest
+      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  -- Summability of the R_j f side from pointwise bound.
+  have hsumm_Rj : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff Rj_f n‖ ^ 2) := by
+    refine hsumm.of_nonneg_of_le (fun n => ?_) hmode
+    exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  exact Summable.tsum_le_tsum hmode hsumm_Rj hsumm
+
 /-! ### SQG selection rule in Ḣ¹ form -/
 
 /-- **SQG selection rule, Ḣ¹ form.** If `‖ŵ(n)‖ ≤ ‖n‖·‖θ̂(n)‖` pointwise
