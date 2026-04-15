@@ -1029,4 +1029,112 @@ theorem sqg_selection_rule_Hs1
   exact sqg_L2_torus_bound θ w (fun n ↦ fracDerivSymbol 1 n)
     (fun n ↦ fracDerivSymbol_nonneg 1 n) hbound hsum
 
+/-! ### Multiplicative splitting of the `fracDerivSymbol` -/
+
+/-- **Additive-in-exponent splitting of the fractional derivative symbol.**
+For every `n` and every `s, t`,
+
+    `(σ_{s+t}(n))² = (σ_s(n))² · (σ_t(n))²`.
+
+At `n = 0` both sides vanish; off zero this is `Real.rpow_add`. -/
+lemma fracDerivSymbol_add_sq {d : Type*} [Fintype d]
+    (s t : ℝ) (n : d → ℤ) :
+    (fracDerivSymbol (s + t) n) ^ 2
+      = (fracDerivSymbol s n) ^ 2 * (fracDerivSymbol t n) ^ 2 := by
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero]
+  · have hpos : 0 < latticeNorm n := latticeNorm_pos hn
+    rw [fracDerivSymbol_of_ne_zero _ hn,
+        fracDerivSymbol_of_ne_zero _ hn,
+        fracDerivSymbol_of_ne_zero _ hn,
+        Real.rpow_add hpos s t]
+    ring
+
+/-! ### SQG selection rule in Ḣˢ form -/
+
+/-- **Ḣˢ-contractivity of bounded Fourier multipliers.** If two L²
+functions `f, g` on `𝕋ᵈ` satisfy `ĝ(n) = m(n)·f̂(n)` with `‖m(n)‖ ≤ 1`
+and `f` has Ḣˢ-summable Fourier coefficients, then `‖g‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣˢ}`.
+This generalises `riesz_Hs_contractive` beyond the Riesz multiplier. -/
+theorem Hs_contractive_of_bounded_symbol
+    {d : Type*} [Fintype d] (s : ℝ)
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : (d → ℤ) → ℂ)
+    (hm : ∀ n, ‖m n‖ ≤ 1)
+    (hcoeff : ∀ n, mFourierCoeff g n = m n * mFourierCoeff f n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s g ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  -- Per-mode: ‖ĝ(n)‖² = ‖m(n)‖² · ‖f̂(n)‖² ≤ ‖f̂(n)‖², multiplied by σ_s(n)² ≥ 0.
+  have hmode : ∀ n, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff g n‖ ^ 2
+                  ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n, norm_mul, mul_pow]
+    have hm1 : ‖m n‖ ^ 2 ≤ 1 := by
+      have h0 : 0 ≤ ‖m n‖ := norm_nonneg _
+      nlinarith [hm n, h0]
+    have hrest : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+      mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    calc (fracDerivSymbol s n) ^ 2
+            * (‖m n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+        = ‖m n‖ ^ 2
+            * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
+      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right hm1 hrest
+      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  have hsumm_g : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff g n‖ ^ 2) := by
+    refine hsumm.of_nonneg_of_le (fun n => ?_) hmode
+    exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  exact Summable.tsum_le_tsum hmode hsumm_g hsumm
+
+/-- **SQG selection rule, Ḣˢ form.** If `‖ŵ(n)‖ ≤ σ_k(n)·‖θ̂(n)‖` pointwise
+(the selection-rule shape with any regularity exponent `k`) and the
+weighted tail is Ḣˢ-summable in the scaled form below, then
+
+    `‖w‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+k}}`.
+
+At `s = 0, k = 1` this recovers `sqg_selection_rule_Hs1`. -/
+theorem sqg_selection_rule_Hs
+    {d : Type*} [Fintype d] (s k : ℝ)
+    (θ w : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hbound : ∀ n,
+        ‖mFourierCoeff w n‖ ≤ (fracDerivSymbol k n) * ‖mFourierCoeff θ n‖)
+    (hsum : Summable
+        (fun n ↦ (fracDerivSymbol (s + k) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s w ≤ hsSeminormSq (s + k) θ := by
+  -- Pointwise in the Ḣˢ weight: σ_s(n)² · ‖ŵ(n)‖²
+  -- ≤ σ_s(n)² · σ_k(n)² · ‖θ̂(n)‖² = σ_{s+k}(n)² · ‖θ̂(n)‖².
+  have hmode : ∀ n,
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff w n‖ ^ 2
+      ≤ (fracDerivSymbol (s + k) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+    intro n
+    have hσs : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+    have h_w_nn : 0 ≤ ‖mFourierCoeff w n‖ := norm_nonneg _
+    have hσk_nn : 0 ≤ (fracDerivSymbol k n) := fracDerivSymbol_nonneg k n
+    have h_rhs_nn :
+        0 ≤ (fracDerivSymbol k n) * ‖mFourierCoeff θ n‖ :=
+      mul_nonneg hσk_nn (norm_nonneg _)
+    have hsq_w : ‖mFourierCoeff w n‖ ^ 2
+                ≤ ((fracDerivSymbol k n) * ‖mFourierCoeff θ n‖) ^ 2 := by
+      have := hbound n
+      nlinarith [this, h_w_nn, h_rhs_nn]
+    calc (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff w n‖ ^ 2
+        ≤ (fracDerivSymbol s n) ^ 2
+            * ((fracDerivSymbol k n) * ‖mFourierCoeff θ n‖) ^ 2 :=
+          mul_le_mul_of_nonneg_left hsq_w hσs
+      _ = ((fracDerivSymbol s n) ^ 2 * (fracDerivSymbol k n) ^ 2)
+            * ‖mFourierCoeff θ n‖ ^ 2 := by ring
+      _ = (fracDerivSymbol (s + k) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+          rw [← fracDerivSymbol_add_sq]
+  -- Summability of the `w` Ḣˢ series from the pointwise bound.
+  have hsumm_w : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff w n‖ ^ 2) := by
+    refine hsum.of_nonneg_of_le (fun n => ?_) hmode
+    exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  -- Both sides as tsums under hsSeminormSq.
+  unfold hsSeminormSq
+  exact Summable.tsum_le_tsum hmode hsumm_w hsum
+
 end SqgIdentity
