@@ -313,4 +313,49 @@ theorem sqg_selection_rule_saturated_iff
     · rw [h1]; ring
     · rw [h2, norm_zero]; ring
 
+/-! ## Cartesian form
+
+The polar-parameterized theorems above use `k = |k|(cos α, sin α)` and
+`n̂ = (cos β, sin β)`. Downstream applications typically have the
+wavevector in Cartesian form `k = (k₁, k₂)`. The following theorem
+restates Theorem 1 without the polar parameterization, using the
+2D cross product `k × n̂ = k₂ n₁ − k₁ n₂` (which equals `|k| sin(α−β)`
+in the polar parameterization).
+-/
+
+/-- **Theorem 1, Cartesian form**:
+    For an arbitrary Cartesian wavevector `k = (k₁, k₂) ≠ (0, 0)` and
+    unit front normal `n̂ = (n₁, n₂)` with `n₁² + n₂² = 1`,
+    the shear-vorticity identity reads
+
+        Ŝ_nt − ω̂/2 = (k₂ n₁ − k₁ n₂)² / |k| · θ̂
+
+    where `(k₂ n₁ − k₁ n₂)` is the 2D cross product `k × n̂`, satisfying
+    `|k × n̂| = |k| · |sin(angle between k and n̂)|`. The polar theorem
+    `sqg_shear_vorticity_identity` is the special case
+    `k = |k|(cos α, sin α)`, `n̂ = (cos β, sin β)`.
+-/
+theorem sqg_shear_vorticity_identity_cartesian
+    (k1 k2 n1 n2 absk : ℝ) (θ : ℂ)
+    (hk : absk^2 = k1^2 + k2^2) (habsk : 0 < absk)
+    (hn : n1^2 + n2^2 = 1) :
+    let u1 : ℂ := -I * (k2 : ℂ) * θ / (absk : ℂ)
+    let u2 : ℂ := I * (k1 : ℂ) * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * ((k1 : ℂ) * u1 + (k1 : ℂ) * u1)
+    let S12 : ℂ := (I / 2) * ((k1 : ℂ) * u2 + (k2 : ℂ) * u1)
+    let S22 : ℂ := (I / 2) * ((k2 : ℂ) * u2 + (k2 : ℂ) * u2)
+    let ω : ℂ := I * ((k1 : ℂ) * u2 - (k2 : ℂ) * u1)
+    let S_nt : ℂ := (n1 : ℂ) * (-(n2 : ℂ)) * S11 + (n1 : ℂ) * (n1 : ℂ) * S12
+                    + (n2 : ℂ) * (-(n2 : ℂ)) * S12 + (n2 : ℂ) * (n1 : ℂ) * S22
+    S_nt - ω / 2 = ((k2 * n1 - k1 * n2)^2 : ℝ) / (absk : ℂ) * θ := by
+  have hne : (absk : ℂ) ≠ 0 := by exact_mod_cast habsk.ne'
+  have hkℂ : (absk : ℂ)^2 = (k1 : ℂ)^2 + (k2 : ℂ)^2 := by exact_mod_cast hk
+  have hnℂ : (n1 : ℂ)^2 + (n2 : ℂ)^2 = 1 := by exact_mod_cast hn
+  simp only []
+  push_cast
+  field_simp [hne]
+  simp only [I_sq, neg_mul]
+  ring_nf
+  linear_combination (-θ * ((k1 : ℂ)^2 + (k2 : ℂ)^2)) * hnℂ
+
 end SqgIdentity
