@@ -494,4 +494,69 @@ theorem sqg_selection_rule_saturated_iff_cartesian
       rw [this]
     · rw [hθ0, norm_zero]; ring
 
+/-! ## ℓ² summability lift
+
+The pointwise selection-rule bound
+    `‖Ŝ_nt(k) − ω̂(k)/2‖ ≤ |k|·‖θ̂(k)‖`
+holds at each Fourier mode (polar: `sqg_selection_rule_bound`, Cartesian:
+`sqg_selection_rule_bound_cartesian`). Squaring and summing over modes
+yields the integrated ℓ² bound
+    `Σ_k ‖Ŝ_nt(k) − ω̂(k)/2‖² ≤ Σ_k |k|²·‖θ̂(k)‖²`
+which, by Parseval, is the statement
+    `‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`
+needed for Theorem 3's regularity analysis.
+
+The content below is the general squaring-and-summing step, with the
+concrete Fourier-basis packaging deferred to a future file.
+-/
+
+/-- **ℓ² lift of a pointwise norm bound**: given a pointwise inequality
+    `‖x i‖ ≤ r i · ‖y i‖` with `r i ≥ 0`, and summability of the weighted
+    squared family `(r i)² · ‖y i‖²`, the squared family `‖x i‖²` is
+    summable and satisfies the integrated bound.
+
+    Applied to `x i = Ŝ_nt(kᵢ) − ω̂(kᵢ)/2`, `r i = |kᵢ|`, `y i = θ̂(kᵢ)`,
+    together with `sqg_selection_rule_bound_cartesian`, this yields
+    Theorem 2 in ℓ² form. -/
+theorem pointwise_bound_to_ell2 {ι : Type*}
+    (x y : ι → ℂ) (r : ι → ℝ)
+    (hr : ∀ i, 0 ≤ r i)
+    (hpointwise : ∀ i, ‖x i‖ ≤ r i * ‖y i‖)
+    (hsum : Summable (fun i => (r i)^2 * ‖y i‖^2)) :
+    Summable (fun i => ‖x i‖^2) ∧
+    (∑' i, ‖x i‖^2) ≤ ∑' i, (r i)^2 * ‖y i‖^2 := by
+  have hsq : ∀ i, ‖x i‖^2 ≤ (r i)^2 * ‖y i‖^2 := by
+    intro i
+    have hxnn : 0 ≤ ‖x i‖ := norm_nonneg _
+    have hpoint := hpointwise i
+    calc ‖x i‖^2
+        = ‖x i‖ * ‖x i‖ := by ring
+      _ ≤ (r i * ‖y i‖) * (r i * ‖y i‖) := by
+          exact mul_self_le_mul_self hxnn hpoint
+      _ = (r i)^2 * ‖y i‖^2 := by ring
+  have hnn : ∀ i, 0 ≤ ‖x i‖^2 := fun i => sq_nonneg _
+  have hsumm : Summable (fun i => ‖x i‖^2) :=
+    hsum.of_nonneg_of_le hnn hsq
+  exact ⟨hsumm, hsumm.tsum_le_tsum hsq hsum⟩
+
+/-- **Theorem 2 (ℓ² form)**: Concrete specialization — given a family of
+    SQG Fourier modes indexed by `ι`, where at each index `i` the
+    pointwise selection-rule bound is given, and the weighted amplitudes
+    `|kᵢ|²·‖θ̂ᵢ‖²` are summable, the shear-vorticity excess is ℓ²
+    summable with
+        `Σᵢ ‖ŵᵢ‖² ≤ Σᵢ |kᵢ|²·‖θ̂ᵢ‖²`
+    where `ŵᵢ` denotes `Ŝ_nt(kᵢ) − ω̂(kᵢ)/2`.
+
+    (The hypothesis `hpointwise` is what
+    `sqg_selection_rule_bound_cartesian` supplies per-mode; this lemma
+    does the ℓ² packaging.) -/
+theorem sqg_selection_rule_ell2 {ι : Type*}
+    (w : ι → ℂ) (θ : ι → ℂ) (absk : ι → ℝ)
+    (habsk_nn : ∀ i, 0 ≤ absk i)
+    (hpointwise : ∀ i, ‖w i‖ ≤ absk i * ‖θ i‖)
+    (hsum : Summable (fun i => (absk i)^2 * ‖θ i‖^2)) :
+    Summable (fun i => ‖w i‖^2) ∧
+    (∑' i, ‖w i‖^2) ≤ ∑' i, (absk i)^2 * ‖θ i‖^2 :=
+  pointwise_bound_to_ell2 w θ absk habsk_nn hpointwise hsum
+
 end SqgIdentity

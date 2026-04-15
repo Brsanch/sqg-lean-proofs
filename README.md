@@ -26,6 +26,8 @@ identity in Fourier space for the Surface Quasi-Geostrophic equation).
 | Cartesian perpendicular (`k · n̂ = 0` → LHS = \|k\|·θ̂): `sqg_shear_perpendicular_cartesian` | ✅ Proven |
 | **Theorem 2 (Cartesian bound)**: `sqg_selection_rule_bound_cartesian` — `‖Ŝ_nt − ω̂/2‖ ≤ \|k\|·‖θ̂‖` | ✅ Proven |
 | **Theorem 2 (Cartesian equality)**: `sqg_selection_rule_saturated_iff_cartesian` — bound saturated iff `k·n̂ = 0 ∨ θ̂ = 0` | ✅ Proven |
+| ℓ² lift lemma: `pointwise_bound_to_ell2` — pointwise `‖x‖ ≤ r·‖y‖` + summability of `r²·‖y‖²` ⟹ summability of `‖x‖²` + integrated bound | ✅ Proven |
+| **Theorem 2 (ℓ² form)**: `sqg_selection_rule_ell2` — `Σᵢ ‖ŵᵢ‖² ≤ Σᵢ \|kᵢ\|²·‖θ̂ᵢ‖²` | ✅ Proven |
 
 ## The theorem
 
@@ -73,7 +75,7 @@ which vanishes exactly when sin²β+cos²β=1.
 
 ## Next steps
 
-1. Summability form — lift the per-mode inequality to `ℓ²`/`Hˢ` Sobolev spaces via Parseval, yielding the integrated bound needed for Theorem 3. Requires `tsum` machinery.
+1. Fourier-basis packaging — instantiate `sqg_selection_rule_ell2` to a concrete Fourier basis (either `ℤ²` for the torus or `EuclideanSpace ℝ (Fin 2)` for `ℝ²`), so that `w i` is literally `Ŝ_nt(kᵢ) − ω̂(kᵢ)/2` as constructed in `sqg_selection_rule_bound_cartesian`. Then invoke Parseval to get `‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`.
 2. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
 
 ## Credit
