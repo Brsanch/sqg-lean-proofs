@@ -298,6 +298,49 @@ lemma rieszSymbol_mul_fracDeriv_one {d : Type*} [Fintype d] (j : d)
   rw [rieszSymbol_of_ne_zero hn, fracDerivSymbol_one_eq hn]
   field_simp
 
+/-! ### Derivative symbol `∂_j ↔ i·n_j` and the Ḣ¹ identification -/
+
+/-- The Fourier multiplier symbol of `∂_j` on `𝕋ᵈ`, i.e. `i · n_j`
+(the usual convention `f̂(n) = ∫ f·e^{-2πi n·x} dx` is hidden in the
+torus library; here we track the symbol modulo the `2π` convention). -/
+noncomputable def derivSymbol {d : Type*} [Fintype d]
+    (j : d) (n : d → ℤ) : ℂ := I * ((n j : ℝ) : ℂ)
+
+@[simp]
+lemma derivSymbol_zero {d : Type*} [Fintype d] (j : d) :
+    derivSymbol j (0 : d → ℤ) = 0 := by
+  simp [derivSymbol]
+
+lemma norm_derivSymbol {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
+    ‖derivSymbol j n‖ = |(n j : ℝ)| := by
+  unfold derivSymbol
+  rw [norm_mul, Complex.norm_I, one_mul, Complex.norm_real, Real.norm_eq_abs]
+
+lemma norm_derivSymbol_sq {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
+    ‖derivSymbol j n‖ ^ 2 = (n j : ℝ) ^ 2 := by
+  rw [norm_derivSymbol, sq_abs]
+
+/-- **Pythagorean identity for the derivative symbol.** The sum over
+coordinate directions of `‖i·n_j‖²` recovers `‖n‖²`. -/
+lemma sum_norm_derivSymbol_sq {d : Type*} [Fintype d] (n : d → ℤ) :
+    ∑ j, ‖derivSymbol j n‖ ^ 2 = (latticeNorm n) ^ 2 := by
+  rw [latticeNorm_sq]
+  exact Finset.sum_congr rfl (fun j _ => norm_derivSymbol_sq j n)
+
+/-- **Symbol-level factorisation** `∂_j = (-Δ)^{1/2} · R_j`. For every
+lattice point `n` (including `n = 0`), the Riesz multiplier `m_j(n)`
+times the `(-Δ)^{1/2}` multiplier `‖n‖` equals the derivative symbol
+`-i · n_j = -derivSymbol j n`. -/
+lemma rieszSymbol_mul_fracDeriv_one_eq_neg_derivSymbol
+    {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
+    rieszSymbol j n * ((fracDerivSymbol 1 n : ℝ) : ℂ)
+      = -derivSymbol j n := by
+  by_cases hn : n = 0
+  · simp [hn, derivSymbol]
+  · rw [rieszSymbol_mul_fracDeriv_one j hn]
+    unfold derivSymbol
+    ring
+
 /-! ### Measure-theoretic setup for torus L² integrals -/
 
 -- Replicate the file-local instance from `Mathlib.Analysis.Fourier.AddCircleMulti`
@@ -498,6 +541,48 @@ theorem hsSeminormSq_eq_L2_of_multiplier
            = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by
     funext n; rw [hnorm n]
   rw [heq] at hsum
+  exact hsum.tsum_eq.symm
+
+/-! ### Gradient L²-norm equals the Ḣ¹ seminorm -/
+
+/-- **Plancherel for the gradient.** If `θ ∈ L²(𝕋ᵈ)` and functions
+`dθ j ∈ L²(𝕋ᵈ)` represent its partial derivatives with Fourier
+coefficients `(dθ j).̂(n) = (i·n_j)·θ̂(n)` (i.e. they are the images of `θ`
+under the Fourier multiplier `derivSymbol j`), then the sum of their
+L²-norms squared equals the Ḣ¹-seminorm squared of `θ`:
+
+    Σⱼ ∫ ‖dθ j‖² = Σₙ ‖n‖² · ‖θ̂(n)‖² = hsSeminormSq 1 θ. -/
+theorem gradient_L2_eq_hsSeminormSq_one
+    {d : Type*} [Fintype d]
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (dθ : d → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hcoeff : ∀ j n, mFourierCoeff (dθ j) n = derivSymbol j n * mFourierCoeff θ n) :
+    ∑ j, (∫ t, ‖(dθ j) t‖ ^ 2) = hsSeminormSq 1 θ := by
+  -- Per-component Parseval identity using the derivative multiplier.
+  have hper : ∀ j, HasSum
+      (fun n ↦ ‖derivSymbol j n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+      (∫ t, ‖(dθ j) t‖ ^ 2) := by
+    intro j
+    exact hasSum_sq_multiplier θ (dθ j) (derivSymbol j) (hcoeff j)
+  -- Sum the finitely many per-component HasSums into one HasSum.
+  have hsum :
+      HasSum (fun n ↦ ∑ j, ‖derivSymbol j n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+        (∑ j, (∫ t, ‖(dθ j) t‖ ^ 2)) := hasSum_sum (fun j _ => hper j)
+  -- Collapse the inner sum via `sum_norm_derivSymbol_sq`.
+  have hfun : (fun n ↦ ∑ j, ‖derivSymbol j n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+            = (fun n ↦ (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+    funext n
+    rw [← Finset.sum_mul, sum_norm_derivSymbol_sq]
+  rw [hfun] at hsum
+  -- Identify `‖n‖² = (fracDerivSymbol 1 n)²` so the tsum matches `hsSeminormSq 1`.
+  have hfrac : (fun n : (d → ℤ) ↦ (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+             = (fun n ↦ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+    funext n
+    by_cases hn : n = 0
+    · simp [hn, latticeNorm, fracDerivSymbol]
+    · rw [fracDerivSymbol_one_eq hn]
+  rw [hfrac] at hsum
+  unfold hsSeminormSq
   exact hsum.tsum_eq.symm
 
 /-! ### SQG selection rule in Ḣ¹ form -/
