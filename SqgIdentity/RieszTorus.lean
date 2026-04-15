@@ -761,6 +761,90 @@ theorem riesz_Hs_contractive
     exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
   exact Summable.tsum_le_tsum hmode hsumm_Rj hsumm
 
+/-! ### Generic unitary vector-multiplier Ḣˢ-isometry -/
+
+/-- **Unitary vector-multiplier Ḣˢ-isometry.** Abstract kernel of
+`riesz_sum_Hs_isometry` and `sqg_velocity_Hs_isometry`: if `u_j ∈ L²(𝕋ᵈ)`
+are built from `f ∈ L²(𝕋ᵈ)` by a family of Fourier multipliers `m_j`
+that is pointwise unitary in `j` off the zero mode,
+
+    `Σⱼ ‖m_j(n)‖² = 1` for `n ≠ 0`,
+
+each `m_j` is bounded (`‖m_j(n)‖ ≤ 1`), and `f̂(0) = 0`, then under
+Ḣˢ-summability of `f`,
+
+    `Σⱼ ‖u_j‖²_{Ḣˢ} = ‖f‖²_{Ḣˢ}`.
+
+The proof bundles per-component HasSums against `hsSeminormSq` and
+closes the combined HasSum via `hasSum.unique`, pulling the unitarity
+identity through the pointwise product `σ_s(n)² · (Σⱼ ‖m_j(n)‖²) · ‖f̂(n)‖²`. -/
+theorem unitary_vec_mul_Hs_isometry
+    {d ι : Type*} [Fintype d] [Fintype ι] (s : ℝ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (u : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : ι → (d → ℤ) → ℂ)
+    (hcoeff : ∀ j n, mFourierCoeff (u j) n = m j n * mFourierCoeff f n)
+    (hbound : ∀ j n, ‖m j n‖ ≤ 1)
+    (hunit : ∀ {n : d → ℤ}, n ≠ 0 → ∑ j, ‖m j n‖ ^ 2 = 1)
+    (hf_mean : mFourierCoeff f 0 = 0)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    ∑ j, hsSeminormSq s (u j) = hsSeminormSq s f := by
+  -- Per-component Ḣˢ summability from the ‖m_j(n)‖ ≤ 1 bound.
+  have hsumj : ∀ j, Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (u j) n‖ ^ 2) := by
+    intro j
+    refine hsumm.of_nonneg_of_le
+      (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _)) (fun n => ?_)
+    rw [hcoeff j n, norm_mul, mul_pow]
+    have hm1 : ‖m j n‖ ^ 2 ≤ 1 := by
+      have h0 : 0 ≤ ‖m j n‖ := norm_nonneg _
+      nlinarith [hbound j n, h0]
+    have hrest : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+      mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    calc (fracDerivSymbol s n) ^ 2
+            * (‖m j n‖ ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+        = ‖m j n‖ ^ 2
+            * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
+      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right hm1 hrest
+      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  -- Per-component HasSum against hsSeminormSq s (u j).
+  have hper : ∀ j, HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (u j) n‖ ^ 2)
+      (hsSeminormSq s (u j)) := by
+    intro j; unfold hsSeminormSq; exact (hsumj j).hasSum
+  -- Combine finitely many per-component HasSums.
+  have hsum_all : HasSum
+      (fun n ↦ ∑ j,
+          (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (u j) n‖ ^ 2)
+      (∑ j, hsSeminormSq s (u j)) := hasSum_sum (fun j _ => hper j)
+  -- Pointwise identity: Σⱼ σ²·‖m_j·f̂‖² = σ²·‖f̂‖², by unitarity (off 0) or trivially (at 0).
+  have hpt : ∀ n,
+        (∑ j, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (u j) n‖ ^ 2)
+      = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
+    intro n
+    have hmode : ∀ j,
+          (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (u j) n‖ ^ 2
+        = ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+            * ‖m j n‖ ^ 2 := by
+      intro j; rw [hcoeff j n, norm_mul, mul_pow]; ring
+    rw [Finset.sum_congr rfl (fun j _ => hmode j), ← Finset.mul_sum]
+    by_cases hn : n = 0
+    · simp [hn, hf_mean]
+    · rw [hunit hn, mul_one]
+  -- Substitute and conclude via HasSum.unique.
+  have heq : (fun n ↦ ∑ j,
+                  (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (u j) n‖ ^ 2)
+           = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+    funext hpt
+  rw [heq] at hsum_all
+  have hrhs : HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+      (hsSeminormSq s f) := by
+    unfold hsSeminormSq; exact hsumm.hasSum
+  exact hsum_all.unique hrhs
+
 /-! ### Ḣˢ-isometry of the vector Riesz transform -/
 
 /-- **Vector Riesz transform is an Ḣˢ-isometry.** If `(R_j f) ∈ L²(𝕋ᵈ)`
