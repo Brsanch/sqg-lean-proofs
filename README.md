@@ -22,6 +22,10 @@ identity in Fourier space for the Surface Quasi-Geostrophic equation).
 | Exact magnitude: `sqg_shear_vorticity_norm` — `‖Ŝ_nt − ω̂/2‖ = \|k\|·sin²(α−β)·‖θ̂‖` | ✅ Proven |
 | **Theorem 2 (equality case)**: `sqg_selection_rule_saturated_iff` — bound saturated iff `sin²(α−β) = 1 ∨ θ̂ = 0` | ✅ Proven |
 | **Theorem 1, Cartesian form**: `sqg_shear_vorticity_identity_cartesian` — `Ŝ_nt − ω̂/2 = (k₂n₁ − k₁n₂)² / \|k\| · θ̂` | ✅ Proven |
+| Cartesian aligned (`k × n̂ = 0` → LHS = 0): `sqg_shear_aligned_cartesian` | ✅ Proven |
+| Cartesian perpendicular (`k · n̂ = 0` → LHS = \|k\|·θ̂): `sqg_shear_perpendicular_cartesian` | ✅ Proven |
+| **Theorem 2 (Cartesian bound)**: `sqg_selection_rule_bound_cartesian` — `‖Ŝ_nt − ω̂/2‖ ≤ \|k\|·‖θ̂‖` | ✅ Proven |
+| **Theorem 2 (Cartesian equality)**: `sqg_selection_rule_saturated_iff_cartesian` — bound saturated iff `k·n̂ = 0 ∨ θ̂ = 0` | ✅ Proven |
 
 ## The theorem
 
@@ -69,9 +73,8 @@ which vanishes exactly when sin²β+cos²β=1.
 
 ## Next steps
 
-1. Cartesian-form corollaries — port `sqg_shear_aligned`, `sqg_shear_perpendicular`, `sqg_selection_rule_bound` and the saturation iff to the Cartesian setting (replacing `sin²(α−β) = 1` with `(k · n̂) = 0`, i.e., `k₁ n₁ + k₂ n₂ = 0`).
-2. Summability form — lift the per-mode inequality to `ℓ²`/`Hˢ` Sobolev spaces via Parseval, yielding the integrated bound needed for Theorem 3. Requires `tsum` machinery.
-3. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
+1. Summability form — lift the per-mode inequality to `ℓ²`/`Hˢ` Sobolev spaces via Parseval, yielding the integrated bound needed for Theorem 3. Requires `tsum` machinery.
+2. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
 
 ## Credit
 

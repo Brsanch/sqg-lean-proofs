@@ -358,4 +358,140 @@ theorem sqg_shear_vorticity_identity_cartesian
   ring_nf
   linear_combination (-θ * ((k1 : ℂ)^2 + (k2 : ℂ)^2)) * hnℂ
 
+/-! ## Cartesian-form corollaries
+
+Mirrors the polar corollaries (aligned / perpendicular / bound /
+saturation iff) in the Cartesian parameterization. The substitutions:
+  polar `sin(α−β) = 0`  ↔  Cartesian `k × n̂ = 0`  (i.e., `k₂n₁ − k₁n₂ = 0`)
+  polar `sin²(α−β) = 1` ↔  Cartesian `k · n̂ = 0`  (i.e., `k₁n₁ + k₂n₂ = 0`)
+The key identity `(k·n̂)² + (k×n̂)² = |k|²·|n̂|²` (which equals `|k|²`
+when `|n̂| = 1`) converts between them.
+-/
+
+/-- **Cartesian aligned**: if `k × n̂ = 0` (k parallel to n̂) then the
+    shear-vorticity combination vanishes: `Ŝ_nt − ω̂/2 = 0`. -/
+theorem sqg_shear_aligned_cartesian
+    (k1 k2 n1 n2 absk : ℝ) (θ : ℂ)
+    (hk : absk^2 = k1^2 + k2^2) (habsk : 0 < absk)
+    (hn : n1^2 + n2^2 = 1)
+    (hcross : k2 * n1 - k1 * n2 = 0) :
+    let u1 : ℂ := -I * (k2 : ℂ) * θ / (absk : ℂ)
+    let u2 : ℂ := I * (k1 : ℂ) * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * ((k1 : ℂ) * u1 + (k1 : ℂ) * u1)
+    let S12 : ℂ := (I / 2) * ((k1 : ℂ) * u2 + (k2 : ℂ) * u1)
+    let S22 : ℂ := (I / 2) * ((k2 : ℂ) * u2 + (k2 : ℂ) * u2)
+    let ω : ℂ := I * ((k1 : ℂ) * u2 - (k2 : ℂ) * u1)
+    let S_nt : ℂ := (n1 : ℂ) * (-(n2 : ℂ)) * S11 + (n1 : ℂ) * (n1 : ℂ) * S12
+                    + (n2 : ℂ) * (-(n2 : ℂ)) * S12 + (n2 : ℂ) * (n1 : ℂ) * S22
+    S_nt - ω / 2 = 0 := by
+  have h := sqg_shear_vorticity_identity_cartesian k1 k2 n1 n2 absk θ hk habsk hn
+  have hsq : (k2 * n1 - k1 * n2)^2 = 0 := by rw [hcross]; ring
+  simp only [] at h ⊢
+  rw [h, hsq]
+  push_cast
+  simp
+
+/-- **Cartesian perpendicular**: if `k · n̂ = 0` (k perpendicular to n̂)
+    then `Ŝ_nt − ω̂/2 = |k| · θ̂`. -/
+theorem sqg_shear_perpendicular_cartesian
+    (k1 k2 n1 n2 absk : ℝ) (θ : ℂ)
+    (hk : absk^2 = k1^2 + k2^2) (habsk : 0 < absk)
+    (hn : n1^2 + n2^2 = 1)
+    (hdot : k1 * n1 + k2 * n2 = 0) :
+    let u1 : ℂ := -I * (k2 : ℂ) * θ / (absk : ℂ)
+    let u2 : ℂ := I * (k1 : ℂ) * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * ((k1 : ℂ) * u1 + (k1 : ℂ) * u1)
+    let S12 : ℂ := (I / 2) * ((k1 : ℂ) * u2 + (k2 : ℂ) * u1)
+    let S22 : ℂ := (I / 2) * ((k2 : ℂ) * u2 + (k2 : ℂ) * u2)
+    let ω : ℂ := I * ((k1 : ℂ) * u2 - (k2 : ℂ) * u1)
+    let S_nt : ℂ := (n1 : ℂ) * (-(n2 : ℂ)) * S11 + (n1 : ℂ) * (n1 : ℂ) * S12
+                    + (n2 : ℂ) * (-(n2 : ℂ)) * S12 + (n2 : ℂ) * (n1 : ℂ) * S22
+    S_nt - ω / 2 = (absk : ℂ) * θ := by
+  have h := sqg_shear_vorticity_identity_cartesian k1 k2 n1 n2 absk θ hk habsk hn
+  -- (k×n̂)² = |k|² when k·n̂ = 0 and |n̂| = 1:
+  have hsq : (k2 * n1 - k1 * n2)^2 = absk^2 := by
+    have hid : (k1*n1 + k2*n2)^2 + (k2*n1 - k1*n2)^2 = (k1^2+k2^2)*(n1^2+n2^2) := by ring
+    nlinarith [hdot, hn, hk, hid]
+  simp only [] at h ⊢
+  rw [h, hsq]
+  have hne : (absk : ℂ) ≠ 0 := by exact_mod_cast habsk.ne'
+  push_cast
+  field_simp
+
+/-- **Theorem 2 — Selection rule bound (Cartesian form)**:
+    `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` for arbitrary Cartesian wavevector
+    `k = (k₁, k₂) ≠ 0` and unit front normal `n̂`. -/
+theorem sqg_selection_rule_bound_cartesian
+    (k1 k2 n1 n2 absk : ℝ) (θ : ℂ)
+    (hk : absk^2 = k1^2 + k2^2) (habsk : 0 < absk)
+    (hn : n1^2 + n2^2 = 1) :
+    let u1 : ℂ := -I * (k2 : ℂ) * θ / (absk : ℂ)
+    let u2 : ℂ := I * (k1 : ℂ) * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * ((k1 : ℂ) * u1 + (k1 : ℂ) * u1)
+    let S12 : ℂ := (I / 2) * ((k1 : ℂ) * u2 + (k2 : ℂ) * u1)
+    let S22 : ℂ := (I / 2) * ((k2 : ℂ) * u2 + (k2 : ℂ) * u2)
+    let ω : ℂ := I * ((k1 : ℂ) * u2 - (k2 : ℂ) * u1)
+    let S_nt : ℂ := (n1 : ℂ) * (-(n2 : ℂ)) * S11 + (n1 : ℂ) * (n1 : ℂ) * S12
+                    + (n2 : ℂ) * (-(n2 : ℂ)) * S12 + (n2 : ℂ) * (n1 : ℂ) * S22
+    ‖S_nt - ω / 2‖ ≤ absk * ‖θ‖ := by
+  have h := sqg_shear_vorticity_identity_cartesian k1 k2 n1 n2 absk θ hk habsk hn
+  have hsq : (k2 * n1 - k1 * n2)^2 ≤ absk^2 := by
+    have hid : (k1*n1 + k2*n2)^2 + (k2*n1 - k1*n2)^2 = (k1^2+k2^2)*(n1^2+n2^2) := by ring
+    nlinarith [sq_nonneg (k1*n1 + k2*n2), hn, hk, hid]
+  simp only [] at h ⊢
+  rw [h, norm_mul, norm_div, Complex.norm_real, Complex.norm_real,
+      Real.norm_eq_abs, Real.norm_eq_abs,
+      abs_of_nonneg (sq_nonneg (k2*n1 - k1*n2)),
+      abs_of_pos habsk]
+  -- Goal: (k2*n1 - k1*n2)^2 / absk * ‖θ‖ ≤ absk * ‖θ‖
+  have hbound : (k2 * n1 - k1 * n2)^2 / absk ≤ absk := by
+    rw [div_le_iff₀ habsk]
+    nlinarith [hsq]
+  exact mul_le_mul_of_nonneg_right hbound (norm_nonneg θ)
+
+/-- **Theorem 2, equality case (Cartesian form)**: the selection-rule
+    bound is saturated iff `k · n̂ = 0` (wavevector perpendicular to
+    front normal) or `θ̂ = 0` (trivial). -/
+theorem sqg_selection_rule_saturated_iff_cartesian
+    (k1 k2 n1 n2 absk : ℝ) (θ : ℂ)
+    (hk : absk^2 = k1^2 + k2^2) (habsk : 0 < absk)
+    (hn : n1^2 + n2^2 = 1) :
+    let u1 : ℂ := -I * (k2 : ℂ) * θ / (absk : ℂ)
+    let u2 : ℂ := I * (k1 : ℂ) * θ / (absk : ℂ)
+    let S11 : ℂ := (I / 2) * ((k1 : ℂ) * u1 + (k1 : ℂ) * u1)
+    let S12 : ℂ := (I / 2) * ((k1 : ℂ) * u2 + (k2 : ℂ) * u1)
+    let S22 : ℂ := (I / 2) * ((k2 : ℂ) * u2 + (k2 : ℂ) * u2)
+    let ω : ℂ := I * ((k1 : ℂ) * u2 - (k2 : ℂ) * u1)
+    let S_nt : ℂ := (n1 : ℂ) * (-(n2 : ℂ)) * S11 + (n1 : ℂ) * (n1 : ℂ) * S12
+                    + (n2 : ℂ) * (-(n2 : ℂ)) * S12 + (n2 : ℂ) * (n1 : ℂ) * S22
+    ‖S_nt - ω / 2‖ = absk * ‖θ‖ ↔ k1 * n1 + k2 * n2 = 0 ∨ θ = 0 := by
+  have h := sqg_shear_vorticity_identity_cartesian k1 k2 n1 n2 absk θ hk habsk hn
+  have hid : (k1*n1 + k2*n2)^2 + (k2*n1 - k1*n2)^2 = (k1^2+k2^2)*(n1^2+n2^2) := by ring
+  simp only [] at h ⊢
+  rw [h, norm_mul, norm_div, Complex.norm_real, Complex.norm_real,
+      Real.norm_eq_abs, Real.norm_eq_abs,
+      abs_of_nonneg (sq_nonneg (k2*n1 - k1*n2)),
+      abs_of_pos habsk]
+  constructor
+  · intro heq
+    by_cases hθ : θ = 0
+    · right; exact hθ
+    · left
+      have hθ_ne : ‖θ‖ ≠ 0 := fun h => hθ (norm_eq_zero.mp h)
+      have hA : (k2*n1 - k1*n2)^2 / absk = absk :=
+        mul_right_cancel₀ hθ_ne heq
+      have hB : (k2*n1 - k1*n2)^2 = absk^2 := by
+        have h1 : (k2*n1 - k1*n2)^2 = absk * absk := (div_eq_iff habsk.ne').mp hA
+        nlinarith [h1]
+      have hC : (k1*n1 + k2*n2)^2 = 0 := by nlinarith [hid, hB, hk, hn]
+      exact sq_eq_zero_iff.mp hC
+  · rintro (hdot | hθ0)
+    · have hC : (k1*n1 + k2*n2)^2 = 0 := by rw [hdot]; ring
+      have hB : (k2*n1 - k1*n2)^2 = absk^2 := by nlinarith [hid, hC, hk, hn]
+      rw [hB]
+      have : absk^2 / absk = absk := by
+        rw [sq, mul_div_assoc, div_self habsk.ne', mul_one]
+      rw [this]
+    · rw [hθ0, norm_zero]; ring
+
 end SqgIdentity
