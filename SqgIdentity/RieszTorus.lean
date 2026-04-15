@@ -738,6 +738,98 @@ theorem riesz_sum_Hs_isometry
     unfold hsSeminormSq; exact hsumm.hasSum
   exact hsum_all.unique hrhs
 
+/-! ### SQG velocity Ḣˢ-isometry on `𝕋²` -/
+
+/-- **SQG velocity is an Ḣˢ-isometry on `𝕋²`.** If `θ : L²(𝕋²)` has zero
+mean and `u₁, u₂ : L²(𝕋²)` are the components of the SQG velocity at the
+Fourier-symbol level,
+
+    `û₁(n) = rieszSymbol 1 n · θ̂(n)`,
+    `û₂(n) = -rieszSymbol 0 n · θ̂(n)`,
+
+and the Ḣˢ series of `θ` is summable, then
+
+    `‖u₁‖²_{Ḣˢ} + ‖u₂‖²_{Ḣˢ} = ‖θ‖²_{Ḣˢ}`.
+
+This is the Ḣˢ upgrade of `sqg_velocity_L2_isometry` and expresses that
+SQG energy is conserved at every regularity level, because the velocity
+is obtained from `θ` by a unitary symbol. -/
+theorem sqg_velocity_Hs_isometry
+    (s : ℝ)
+    (θ u₁ u₂ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ_mean : mFourierCoeff θ 0 = 0)
+    (hu₁ : ∀ n, mFourierCoeff u₁ n = rieszSymbol 1 n * mFourierCoeff θ n)
+    (hu₂ : ∀ n, mFourierCoeff u₂ n = -rieszSymbol 0 n * mFourierCoeff θ n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u₁ + hsSeminormSq s u₂ = hsSeminormSq s θ := by
+  -- Bounded-multiplier Ḣˢ summability helper.
+  have hbound_summ : ∀ (m : (Fin 2 → ℤ) → ℂ) (hB : ∀ n, ‖m n‖ ≤ 1)
+      (g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+      (hg : ∀ n, mFourierCoeff g n = m n * mFourierCoeff θ n),
+      Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff g n‖ ^ 2) := by
+    intro m hB g hg
+    refine hsumm.of_nonneg_of_le
+      (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _)) (fun n => ?_)
+    rw [hg n, norm_mul, mul_pow]
+    have hm1 : ‖m n‖ ^ 2 ≤ 1 := by
+      have h0 : 0 ≤ ‖m n‖ := norm_nonneg _
+      nlinarith [hB n, h0]
+    have hrest : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 :=
+      mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    calc (fracDerivSymbol s n) ^ 2
+            * (‖m n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+        = ‖m n‖ ^ 2
+            * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by ring
+      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right hm1 hrest
+      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := one_mul _
+  -- Per-component summability from the symbol bound ‖rieszSymbol‖ ≤ 1.
+  have hsumm₁ : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₁ n‖ ^ 2) :=
+    hbound_summ (rieszSymbol 1) (rieszSymbol_norm_le_one 1) u₁ hu₁
+  have hsumm₂ : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₂ n‖ ^ 2) := by
+    refine hbound_summ (fun n ↦ -rieszSymbol 0 n) ?_ u₂ hu₂
+    intro n; rw [norm_neg]; exact rieszSymbol_norm_le_one 0 n
+  -- Per-component and reference HasSums against hsSeminormSq.
+  have hu₁_hasSum : HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₁ n‖ ^ 2)
+      (hsSeminormSq s u₁) := by
+    unfold hsSeminormSq; exact hsumm₁.hasSum
+  have hu₂_hasSum : HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₂ n‖ ^ 2)
+      (hsSeminormSq s u₂) := by
+    unfold hsSeminormSq; exact hsumm₂.hasSum
+  have hθ_hasSum : HasSum
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+      (hsSeminormSq s θ) := by
+    unfold hsSeminormSq; exact hsumm.hasSum
+  -- Pointwise Pythagorean identity per mode.
+  have hpt : ∀ n,
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₁ n‖ ^ 2
+      + (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₂ n‖ ^ 2
+      = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+    intro n
+    by_cases hn : n = 0
+    · -- At n = 0, θ̂(0) = 0 forces all three terms to 0.
+      rw [hu₁ n, hu₂ n, hn, hθ_mean]
+      simp
+    · -- Off zero, multiply the symbol isometry by σ_s(n)².
+      have hiso := sqg_velocity_symbol_isometry hn (mFourierCoeff θ n)
+      rw [hu₁ n, hu₂ n]
+      linear_combination (fracDerivSymbol s n) ^ 2 * hiso
+  -- Combine the two per-component HasSums.
+  have hsum_add := hu₁_hasSum.add hu₂_hasSum
+  have heq : (fun n ↦
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₁ n‖ ^ 2
+      + (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u₂ n‖ ^ 2)
+           = (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+    funext hpt
+  rw [heq] at hsum_add
+  exact hsum_add.unique hθ_hasSum
+
 /-! ### SQG selection rule in Ḣ¹ form -/
 
 /-- **SQG selection rule, Ḣ¹ form.** If `‖ŵ(n)‖ ≤ ‖n‖·‖θ̂(n)‖` pointwise
