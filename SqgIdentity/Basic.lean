@@ -53,8 +53,10 @@ Then:   Ŝ_nt - ω̂/2 = |k| · sin²(α - β) · θ̂
 
 where Ŝ_nt = n̂_i Ŝ_ij t̂_j is the shear in the (n̂, t̂) frame.
 
-STATUS: statement typechecks; proof body is `sorry`. The algebraic reduction
-to `half_times_one_sub_cos` is mechanical but lengthy in raw Lean tactics.
+STATUS: fully proven (zero `sorry`). The algebraic reduction uses the
+standard Lean tactics `push_cast`, `field_simp`, `ring_nf`, and
+`linear_combination` with the Pythagorean identity as the sole closing
+hypothesis.
 -/
 theorem sqg_shear_vorticity_identity
     (absk α β : ℝ) (θ : ℂ) (habsk : 0 < absk) :
