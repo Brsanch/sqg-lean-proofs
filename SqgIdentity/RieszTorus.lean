@@ -195,6 +195,26 @@ theorem rieszSymbol_sum_sq_complex {d : Type*} [Fintype d]
       _ = (-1) * ((latticeNorm n : ℝ) : ℂ) ^ 2 := by ring
   exact mul_right_cancel₀ hne2 hmul
 
+/-! ### SQG velocity divergence-free at the symbol level -/
+
+/-- **SQG velocity is divergence-free at the symbol level.** On `𝕋²`,
+for any `z ∈ ℂ` and any lattice point `n ∈ ℤ²`,
+
+    n₁ · (m₂(n)·z) + n₂ · (-m₁(n)·z) = 0,
+
+i.e. `k · û(k) = 0` when `û = (m₂·θ̂, -m₁·θ̂)`. -/
+theorem sqg_velocity_divergence_free_symbol
+    (n : Fin 2 → ℤ) (z : ℂ) :
+    ((n 0 : ℝ) : ℂ) * (rieszSymbol 1 n * z)
+      + ((n 1 : ℝ) : ℂ) * ((-rieszSymbol 0 n) * z) = 0 := by
+  by_cases hn : n = 0
+  · simp [hn]
+  · have hpos : 0 < latticeNorm n := latticeNorm_pos hn
+    have hne : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hpos
+    rw [rieszSymbol_of_ne_zero hn (j := 1), rieszSymbol_of_ne_zero hn (j := 0)]
+    field_simp
+    ring
+
 /-! ### SQG velocity symbol isometry on `𝕋²` -/
 
 /-- **SQG velocity symbol isometry on `𝕋²`.** For any `z ∈ ℂ` and any
@@ -262,6 +282,21 @@ lemma fracDerivSymbol_two_eq {d : Type*} [Fintype d]
   have h : (latticeNorm n) ^ (2 : ℝ) = (latticeNorm n) ^ (2 : ℕ) :=
     Real.rpow_natCast (latticeNorm n) 2
   simpa using h
+
+/-! ### Symbol-level identity `∂_j = (-Δ)^{1/2} · R_j` -/
+
+/-- **Symbol factorisation** `∂_j = (-Δ)^{1/2} · R_j`. Off the zero
+mode, `m_j(n) · ‖n‖ = -i · n_j`, i.e. the Riesz multiplier times the
+`(-Δ)^{1/2}` multiplier recovers the symbol of the partial derivative
+`∂_j` (with the usual `-i` convention). -/
+lemma rieszSymbol_mul_fracDeriv_one {d : Type*} [Fintype d] (j : d)
+    {n : d → ℤ} (hn : n ≠ 0) :
+    rieszSymbol j n * ((fracDerivSymbol 1 n : ℝ) : ℂ)
+      = -I * ((n j : ℝ) : ℂ) := by
+  have hpos : 0 < latticeNorm n := latticeNorm_pos hn
+  have hne : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hpos
+  rw [rieszSymbol_of_ne_zero hn, fracDerivSymbol_one_eq hn]
+  field_simp
 
 /-! ### Measure-theoretic setup for torus L² integrals -/
 
