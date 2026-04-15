@@ -559,4 +559,88 @@ theorem sqg_selection_rule_ell2 {ι : Type*}
     (∑' i, ‖w i‖^2) ≤ ∑' i, (absk i)^2 * ‖θ i‖^2 :=
   pointwise_bound_to_ell2 w θ absk habsk_nn hpointwise hsum
 
+/-! ## Fourier-mode packaging
+
+Bundles per-mode SQG Fourier data (wavevector, front normal, temperature
+amplitude) into a single structure so the ℓ² bound can be invoked on a
+concrete family of modes without re-supplying per-mode hypotheses.
+
+The `w` field is the explicit RHS of Theorem 1 in Cartesian form —
+equal to the velocity-based LHS `Ŝ_nt(kᵢ) − ω̂(kᵢ)/2` by
+`sqg_shear_vorticity_identity_cartesian`. Users who need the formal
+tie-back can invoke that theorem directly at each mode.
+-/
+
+/-- SQG per-mode Fourier data indexed by `ι`: wavevectors `k : ι → ℝ²`,
+    unit front normals `n : ι → ℝ²`, temperature amplitudes `θ : ι → ℂ`,
+    and their magnitudes `absk : ι → ℝ`. The three hypotheses record
+    `|kᵢ|² = k₁ᵢ² + k₂ᵢ²`, `|kᵢ| > 0`, and `|nᵢ| = 1`. -/
+structure SqgFourierData (ι : Type*) where
+  /-- Wavevector at mode `i`. -/
+  k : ι → ℝ × ℝ
+  /-- Unit front normal at mode `i`. -/
+  n : ι → ℝ × ℝ
+  /-- Temperature Fourier amplitude at mode `i`. -/
+  θ : ι → ℂ
+  /-- Wavevector magnitude at mode `i`. -/
+  absk : ι → ℝ
+  /-- `|kᵢ|² = k₁ᵢ² + k₂ᵢ²`. -/
+  habsk_sq : ∀ i, (absk i) ^ 2 = (k i).1 ^ 2 + (k i).2 ^ 2
+  /-- `|kᵢ| > 0`. -/
+  habsk_pos : ∀ i, 0 < absk i
+  /-- Front normal is a unit vector. -/
+  hn_unit : ∀ i, (n i).1 ^ 2 + (n i).2 ^ 2 = 1
+
+namespace SqgFourierData
+
+variable {ι : Type*} (D : SqgFourierData ι)
+
+/-- Shear-vorticity excess per mode,
+    `ŵᵢ = Ŝ_nt(kᵢ) − ω̂(kᵢ)/2 = (k₂ᵢn₁ᵢ − k₁ᵢn₂ᵢ)² / |kᵢ| · θ̂ᵢ`.
+
+    This is the explicit RHS of `sqg_shear_vorticity_identity_cartesian`;
+    equality with the velocity-based LHS at mode `i` is obtained by
+    invoking that theorem with the unpacked hypotheses from `D`. -/
+noncomputable def w (i : ι) : ℂ :=
+  ((((D.k i).2 * (D.n i).1 - (D.k i).1 * (D.n i).2) ^ 2 / D.absk i : ℝ) : ℂ) * D.θ i
+
+/-- **Pointwise selection-rule bound per mode**: `‖ŵᵢ‖ ≤ |kᵢ| · ‖θ̂ᵢ‖`.
+    Proof reuses the Lagrange-like identity
+    `(k·n)² + (k×n)² = (k₁²+k₂²)(n₁²+n₂²)` and `|n| = 1`. -/
+theorem w_norm_le (i : ι) : ‖D.w i‖ ≤ D.absk i * ‖D.θ i‖ := by
+  have habsk := D.habsk_pos i
+  have hk := D.habsk_sq i
+  have hn := D.hn_unit i
+  set k1 := (D.k i).1
+  set k2 := (D.k i).2
+  set n1 := (D.n i).1
+  set n2 := (D.n i).2
+  have hnonneg : (0 : ℝ) ≤ (k2 * n1 - k1 * n2) ^ 2 / D.absk i := by positivity
+  unfold w
+  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg hnonneg]
+  -- Lagrange 2D identity bounds the cross product by the magnitude:
+  have hsq : (k2 * n1 - k1 * n2) ^ 2 ≤ (D.absk i) ^ 2 := by
+    have hid : (k1 * n1 + k2 * n2) ^ 2 + (k2 * n1 - k1 * n2) ^ 2
+             = (k1 ^ 2 + k2 ^ 2) * (n1 ^ 2 + n2 ^ 2) := by ring
+    nlinarith [sq_nonneg (k1 * n1 + k2 * n2), hn, hk, hid]
+  have hbound : (k2 * n1 - k1 * n2) ^ 2 / D.absk i ≤ D.absk i := by
+    rw [div_le_iff₀ habsk]; nlinarith [hsq]
+  exact mul_le_mul_of_nonneg_right hbound (norm_nonneg _)
+
+/-- **Integrated ℓ² bound** for an SQG Fourier-mode family:
+    if the weighted Fourier power `Σᵢ |kᵢ|²·‖θ̂ᵢ‖²` is summable
+    (equivalently, `θ ∈ Ḣ¹` by Parseval), then so is `Σᵢ ‖ŵᵢ‖²`, with
+        `Σᵢ ‖ŵᵢ‖² ≤ Σᵢ |kᵢ|² · ‖θ̂ᵢ‖²`.
+
+    Under Plancherel this reads `‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`, the
+    form of Theorem 2 consumed by §9's regularity argument. -/
+theorem ell2_bound
+    (hsum : Summable fun i => (D.absk i) ^ 2 * ‖D.θ i‖ ^ 2) :
+    Summable (fun i => ‖D.w i‖ ^ 2) ∧
+    (∑' i, ‖D.w i‖ ^ 2) ≤ ∑' i, (D.absk i) ^ 2 * ‖D.θ i‖ ^ 2 :=
+  pointwise_bound_to_ell2 D.w D.θ D.absk
+    (fun i => (D.habsk_pos i).le) (fun i => D.w_norm_le i) hsum
+
+end SqgFourierData
+
 end SqgIdentity

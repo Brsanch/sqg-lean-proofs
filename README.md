@@ -28,6 +28,9 @@ identity in Fourier space for the Surface Quasi-Geostrophic equation).
 | **Theorem 2 (Cartesian equality)**: `sqg_selection_rule_saturated_iff_cartesian` — bound saturated iff `k·n̂ = 0 ∨ θ̂ = 0` | ✅ Proven |
 | ℓ² lift lemma: `pointwise_bound_to_ell2` — pointwise `‖x‖ ≤ r·‖y‖` + summability of `r²·‖y‖²` ⟹ summability of `‖x‖²` + integrated bound | ✅ Proven |
 | **Theorem 2 (ℓ² form)**: `sqg_selection_rule_ell2` — `Σᵢ ‖ŵᵢ‖² ≤ Σᵢ \|kᵢ\|²·‖θ̂ᵢ‖²` | ✅ Proven |
+| `SqgFourierData` bundle + `w i` definition (explicit RHS of the identity) | ✅ Defined |
+| `SqgFourierData.w_norm_le` — pointwise selection-rule bound per mode | ✅ Proven |
+| `SqgFourierData.ell2_bound` — integrated ℓ² bound on an SQG Fourier-mode family | ✅ Proven |
 
 ## The theorem
 
@@ -73,10 +76,44 @@ The key insight: after steps 1–6 the goal factors as
   θ·(cos²α+sin²α)·(sin²β+cos²β−1)·(−1) = 0,
 which vanishes exactly when sin²β+cos²β=1.
 
-## Next steps
+## Scope
 
-1. Fourier-basis packaging — instantiate `sqg_selection_rule_ell2` to a concrete Fourier basis (either `ℤ²` for the torus or `EuclideanSpace ℝ (Fin 2)` for `ℝ²`), so that `w i` is literally `Ŝ_nt(kᵢ) − ω̂(kᵢ)/2` as constructed in `sqg_selection_rule_bound_cartesian`. Then invoke Parseval to get `‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`.
-2. Theorem 3 (regularity) — after §9's propositions are formalized individually. Requires Sobolev embeddings, material-derivative infrastructure, and a maximum principle that are not yet in mathlib's fluid-dynamics-adjacent content.
+**In-file content (closed).** Theorems 1 and 2 of D14 are fully
+machine-verified in both polar and Cartesian form, with exact-magnitude
+and equality-case refinements, and an ℓ² integrated form packaged over
+an arbitrary `SqgFourierData ι`. Zero `sorry`. 18 theorems, 1 definition,
+1 structure.
+
+**Theorem 3 (regularity) — blocked on missing mathlib infrastructure.**
+The D14 regularity argument closes via §9 propositions built on content
+that does not yet exist in mathlib; each is a multi-month formalization
+project in its own right:
+
+1. **2D Fourier series on `𝕋²` with Parseval.** Mathlib has 1D Fourier
+   series on the circle (`Mathlib.Analysis.Fourier.FourierSeries`) but
+   no two-dimensional version. Would need either a tensor-product
+   construction over `ℤ²` or a direct port of the 1D `HilbertBasis.fourier`
+   argument to `Fin 2 → Circle`.
+2. **Fractional Laplacian `(-Δ)^{1/2}` and Riesz transforms.** The SQG
+   velocity `u = (-∂₂, ∂₁)(-Δ)^{-1/2} θ` is a Riesz transform acting on
+   `θ`. Mathlib has no Riesz-transform library and no `(-Δ)^s`
+   construction for `s ∉ ℕ` on either the torus or `ℝⁿ`.
+3. **Material-derivative transport and maximum principle.** The proof
+   uses `Dθ/Dt = 0` (passive transport along the velocity field) plus
+   `‖θ(t)‖_{L^∞} = ‖θ₀‖_{L^∞}`. Formalizing this requires Flow theory
+   for a non-Lipschitz velocity field, which mathlib currently only
+   supports for time-independent vector fields with pointwise Lipschitz
+   hypotheses.
+4. **BKM / Constantin–Majda–Tabak blow-up criterion.** The final step
+   converts the ℓ² bound into global regularity via a criterion
+   equivalent to `∫₀^T ‖∇θ‖_{L^∞}·‖n · (∇θ)^⊥ / ‖∇θ‖‖_{L^∞} dt < ∞`.
+   Neither the criterion nor the supporting `Ḣ^s` fractional Sobolev
+   embeddings are in mathlib.
+
+Closing Theorem 3 in Lean would require landing (1)–(4) upstream first.
+The in-file ℓ² bound (`SqgFourierData.ell2_bound`) is exactly the
+algebraic input consumed by §9; the rest is analysis infrastructure,
+not SQG-specific reasoning.
 
 ## Credit
 
