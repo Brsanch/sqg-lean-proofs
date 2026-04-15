@@ -1,7 +1,7 @@
 -- Copyright (c) 2026 Bryan Sanchez. All rights reserved.
 -- Released under MIT License (see LICENSE in repo root).
 -- Machine-verified formalization of D14 Theorem 1.
--- Mathematical theorem by Bryan Sanchez; Lean formalization by Bryan Sanchez + Claude Code.
+-- Mathematical theorem and Lean formalization by Bryan Sanchez.
 
 /-
 Formalization target: Theorem 1 (Shear-Vorticity Identity) from paper D14.
@@ -642,5 +642,67 @@ theorem ell2_bound
     (fun i => (D.habsk_pos i).le) (fun i => D.w_norm_le i) hsum
 
 end SqgFourierData
+
+/-! ### Parseval bridge to `L²(𝕋ᵈ)`
+
+The theorem below turns the pointwise Fourier-side selection-rule bound
+(e.g. `‖ŵ(n)‖ ≤ ‖n‖·‖θ̂(n)‖`) into a concrete `L²`-integral bound on the
+`d`-dimensional unit torus `𝕋ᵈ`, by combining the abstract ℓ² lift with
+`hasSum_sq_mFourierCoeff` (Parseval for norms) from
+`Mathlib.Analysis.Fourier.AddCircleMulti`.
+-/
+
+-- Make `volume` on `UnitAddCircle` available in this file (the instance is
+-- `local` inside `Mathlib.Analysis.Fourier.AddCircleMulti`, so we replicate it).
+open MeasureTheory in
+noncomputable local instance basicMeasureSpace :
+    MeasureSpace UnitAddCircle := ⟨AddCircle.haarAddCircle⟩
+
+open MeasureTheory in
+local instance basicHaar :
+    MeasureTheory.Measure.IsAddHaarMeasure (volume : Measure UnitAddCircle) :=
+  inferInstanceAs (Measure.IsAddHaarMeasure AddCircle.haarAddCircle)
+
+open MeasureTheory in
+local instance basicProb :
+    MeasureTheory.IsProbabilityMeasure (volume : Measure UnitAddCircle) :=
+  inferInstanceAs (IsProbabilityMeasure AddCircle.haarAddCircle)
+
+open MeasureTheory UnitAddTorus in
+/-- **Parseval form of the SQG selection rule on `L²(𝕋ᵈ)`.**
+
+Given two L²-integrable functions `θ_fn`, `w_fn` on the `d`-dimensional
+unit torus whose Fourier coefficients satisfy the pointwise bound
+`‖ŵ(n)‖ ≤ r(n)·‖θ̂(n)‖` for some non-negative weight `r`, with
+`∑ₙ r(n)²·‖θ̂(n)‖²` summable, the L² norm of `w_fn` is bounded:
+
+    ∫ ‖w_fn(t)‖² dt ≤ ∑ₙ r(n)² · ‖θ̂(n)‖².
+
+Specialising `r(n) = ‖n‖` makes the RHS `‖∇θ‖²_{L²(𝕋ᵈ)}` via another
+Parseval identity, recovering the integrated form of Theorem 2:
+
+    ‖w_fn‖_{L²} ≤ ‖∇θ‖_{L²}.
+
+The proof is a one-line transport: `hasSum_sq_mFourierCoeff` converts
+the L² integral of `w_fn` into the ℓ² sum of its Fourier coefficients;
+the abstract lift `pointwise_bound_to_ell2` then compares it against the
+weighted sum. -/
+theorem sqg_L2_torus_bound
+    {d : Type*} [Fintype d]
+    (θ_fn w_fn : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (r : (d → ℤ) → ℝ)
+    (hr : ∀ n, 0 ≤ r n)
+    (hpointwise : ∀ n, ‖mFourierCoeff w_fn n‖ ≤ r n * ‖mFourierCoeff θ_fn n‖)
+    (hsum : Summable (fun n => (r n) ^ 2 * ‖mFourierCoeff θ_fn n‖ ^ 2)) :
+    (∫ t, ‖w_fn t‖ ^ 2) ≤ ∑' n, (r n) ^ 2 * ‖mFourierCoeff θ_fn n‖ ^ 2 := by
+  have hw_parseval : HasSum (fun n ↦ ‖mFourierCoeff w_fn n‖ ^ 2)
+      (∫ t, ‖w_fn t‖ ^ 2) :=
+    hasSum_sq_mFourierCoeff w_fn
+  have hlift := pointwise_bound_to_ell2
+      (fun n => mFourierCoeff w_fn n)
+      (fun n => mFourierCoeff θ_fn n)
+      r hr hpointwise hsum
+  rw [← hw_parseval.tsum_eq]
+  exact hlift.2
 
 end SqgIdentity
