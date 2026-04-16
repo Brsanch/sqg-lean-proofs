@@ -3191,6 +3191,84 @@ theorem sqgStrain_Frobenius_L2_eq_Hs1_half {n : Fin 2 → ℤ} (hn : n ≠ 0)
   rw [hfactor, sqgStrain_frobenius_tight hn, fracDerivSymbol_one_eq hn]
   ring
 
+/-! ## Riesz transform Ḣˢ properties
+
+Each Riesz transform `R_j : Lp ℂ 2 → Lp ℂ 2` is an isometry modulo zero modes,
+and the transfer of fractional derivatives commutes with Riesz transforms.
+We establish mode-level properties.
+-/
+
+/-- **Riesz symbol preserves Ḣˢ weight norm.** At each nonzero mode:
+
+    `σ_s(n)² · ‖R_j(n) · c‖² = ‖R_j(n)‖² · σ_s(n)² · ‖c‖²`
+
+which is trivial algebra but useful for sum manipulations. -/
+theorem rieszSymbol_Hs_mode_factor (s : ℝ) (n : Fin 2 → ℤ)
+    (j : Fin 2) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖rieszSymbol j n * c‖ ^ 2
+    = ‖rieszSymbol j n‖ ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) := by
+  rw [norm_mul, mul_pow]; ring
+
+/-- **Riesz Ḣˢ bound per component.** For each `j` and `n ≠ 0`:
+
+    `σ_s(n)² · ‖R_j(n) · c‖² ≤ σ_s(n)² · ‖c‖²`
+
+This is the mode-level Ḣˢ contractivity of each Riesz transform. -/
+theorem rieszSymbol_Hs_mode_bound (s : ℝ) {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (j : Fin 2) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖rieszSymbol j n * c‖ ^ 2
+    ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := by
+  rw [rieszSymbol_Hs_mode_factor s n j c]
+  have hR : ‖rieszSymbol j n‖ ^ 2 ≤ 1 := by
+    have := rieszSymbol_sum_sq hn
+    have hR_j_nn : 0 ≤ ‖rieszSymbol j n‖ ^ 2 := sq_nonneg _
+    have hR_other_nn : ∀ k : Fin 2, 0 ≤ ‖rieszSymbol k n‖ ^ 2 :=
+      fun _ ↦ sq_nonneg _
+    -- ‖R_j‖² ≤ Σ ‖R_k‖² = 1
+    calc ‖rieszSymbol j n‖ ^ 2
+        ≤ ∑ k : Fin 2, ‖rieszSymbol k n‖ ^ 2 := by
+          rw [show (‖rieszSymbol j n‖ ^ 2)
+              = ∑ k ∈ ({j} : Finset (Fin 2)), ‖rieszSymbol k n‖ ^ 2 from by simp]
+          exact Finset.sum_le_sum_of_subset_of_nonneg
+            (by simp : ({j} : Finset (Fin 2)) ⊆ Finset.univ)
+            (fun k _ _ ↦ hR_other_nn k)
+      _ = 1 := this
+  have hprod_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+    mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  calc ‖rieszSymbol j n‖ ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2)
+      ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hR hprod_nn
+    _ = (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := one_mul _
+
+/-- **Derivative symbol preserves Ḣˢ**: `σ_s² · |∂̂_j · c|² ≤ σ_{s+1}² · |c|²` -/
+theorem derivSymbol_Hs_mode_bound (s : ℝ) (n : Fin 2 → ℤ)
+    (j : Fin 2) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖derivSymbol j n * c‖ ^ 2
+    ≤ (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    simp [derivSymbol, fracDerivSymbol_zero]
+  rw [norm_mul, mul_pow]
+  rw [show (fracDerivSymbol (s + 1) n) ^ 2
+      = (fracDerivSymbol s n) ^ 2 * (fracDerivSymbol 1 n) ^ 2 from
+    fracDerivSymbol_add_sq s 1 n]
+  rw [fracDerivSymbol_one_eq hn]
+  have h_deriv : ‖derivSymbol j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 := by
+    unfold derivSymbol
+    rw [show ‖Complex.I * (((n j : ℤ) : ℝ) : ℂ)‖ = |((n j : ℤ) : ℝ)| from by
+      rw [norm_mul, Complex.norm_I, one_mul, Complex.norm_real, Real.norm_eq_abs]]
+    rw [sq_abs]
+    exact sq_le_latticeNorm_sq n j
+  have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hprod_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+    mul_nonneg hσs_nn hc_nn
+  calc (fracDerivSymbol s n) ^ 2 * (‖derivSymbol j n‖ ^ 2 * ‖c‖ ^ 2)
+      = ‖derivSymbol j n‖ ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) := by ring
+    _ ≤ (latticeNorm n) ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right h_deriv hprod_nn
+    _ = (fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
