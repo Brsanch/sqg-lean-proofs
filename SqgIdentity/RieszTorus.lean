@@ -1802,4 +1802,331 @@ theorem sqg_selection_rule_Hs
   unfold hsSeminormSq
   exact Summable.tsum_le_tsum hmode hsumm_w hsum
 
+/-! ## Hessian symbol and curvature budget
+
+The curvature `κ` of level sets of `θ` involves second derivatives of `θ`.
+At the Fourier-symbol level, the Hessian `∂²θ/∂x_i∂x_j` has multiplier
+`(i n_i)(i n_j) = -n_i n_j`. We track these symbols, their relation to the
+Laplacian, and the tangential projection that gives `|∇θ|·κ` in Fourier space.
+
+### Key curvature-budget identity (D14 §9 context)
+
+For SQG, the front curvature `κ` evolves along material trajectories. The
+shear-vorticity identity (Theorem 1) implies that at curvature maxima,
+the external forcing `F_ext = 0` (the free-derivative property). Combined with
+incompressibility expanding material segments and far-field bounds on the
+boundary, this controls `κ` and hence regularity.
+
+At the Fourier level, we formalize:
+1. Hessian symbol `hessSymbol i j n = (derivSymbol i n) * (derivSymbol j n)`
+2. Hessian–Laplacian relation: `tr(Hess) = Δ`
+3. Tangential Hessian projection (curvature-relevant quantity)
+4. SQG residual decomposition and its Sobolev norm control
+-/
+
+/-! ### Hessian symbol -/
+
+/-- **Hessian symbol.** The Fourier multiplier of `∂²/∂x_i∂x_j` on `𝕋ᵈ`,
+i.e. the product of two derivative symbols:
+
+    `hessSymbol i j n = (i·n_i)·(i·n_j) = -n_i·n_j`. -/
+noncomputable def hessSymbol {d : Type*} [Fintype d]
+    (i j : d) (n : d → ℤ) : ℂ :=
+  derivSymbol i n * derivSymbol j n
+
+/-- **Hessian at zero frequency.** All entries vanish. -/
+@[simp] lemma hessSymbol_zero {d : Type*} [Fintype d] (i j : d) :
+    hessSymbol i j (0 : d → ℤ) = 0 := by
+  simp [hessSymbol, derivSymbol]
+
+/-- **Hessian is symmetric.** `hessSymbol i j n = hessSymbol j i n`. -/
+lemma hessSymbol_comm {d : Type*} [Fintype d] (i j : d) (n : d → ℤ) :
+    hessSymbol i j n = hessSymbol j i n := by
+  unfold hessSymbol derivSymbol
+  ring
+
+/-- **Hessian explicit form.** `hessSymbol i j n = -(n_i : ℂ)·(n_j : ℂ)`. -/
+lemma hessSymbol_eq {d : Type*} [Fintype d] (i j : d) (n : d → ℤ) :
+    hessSymbol i j n = -((n i : ℤ) : ℂ) * ((n j : ℤ) : ℂ) := by
+  unfold hessSymbol derivSymbol
+  have hI2 : Complex.I * Complex.I = -1 := Complex.I_mul_I
+  simp only [Complex.ofReal_intCast]
+  linear_combination ((n i : ℤ) : ℂ) * ((n j : ℤ) : ℂ) * hI2
+
+/-- **Hessian trace is the Laplacian.** `Σⱼ hessSymbol j j n = laplacianSymbol n`,
+i.e. `tr(Hess) = Δ`. -/
+theorem hessSymbol_trace {d : Type*} [Fintype d] (n : d → ℤ) :
+    ∑ j, hessSymbol j j n = laplacianSymbol n := by
+  rw [laplacianSymbol_eq_sum_derivSymbol_sq]
+  congr 1; ext j
+  unfold hessSymbol
+  ring
+
+/-! ### Tangential Hessian projection (curvature quantity)
+
+For a scalar field `θ` with gradient direction `n̂ = n/‖n‖` and tangent
+`t̂ ⊥ n̂`, the quantity `n̂ · Hess(θ) · n̂` gives `|∇θ|·(∂²θ/∂n²)` while
+`t̂ · Hess(θ) · t̂` gives the tangential curvature contribution `|∇θ|·κ`.
+
+At the Fourier level for a single mode `n`:
+  * Normal projection: `Σ_{i,j} n_i · hessSymbol(i,j,n) · n_j / ‖n‖²`
+    which equals `-‖n‖²` (the full Laplacian weight on this mode).
+  * Tangential projection on 𝕋²: with `t = (-n₁, n₀)`,
+    `Σ_{i,j} t_i · hessSymbol(i,j,n) · t_j / ‖n‖²` also equals `-‖n‖²`
+    (by isotropy of the Hessian trace decomposition on a single mode).
+-/
+
+/-- **Normal Hessian projection (single mode).** For `n ≠ 0` on `𝕋ᵈ`,
+
+    `Σ_{i,j} n_i · H_{ij}(n) · n_j = ‖n‖⁴`
+
+(unnormalized, before dividing by ‖n‖²). Since `H_{ij}(n) = -n_i·n_j`,
+the sum equals `-(Σ n_i²)² = -‖n‖⁴`. But note the signs: `H_{ij}(n)·n_j`
+involves the *product* `(-n_i·n_j)·n_j`, so the double contraction with
+`n` gives `Σᵢ n_i · Σⱼ(-n_i·n_j)·n_j = -Σᵢ n_i² · Σⱼ n_j² = -(‖n‖²)²`.
+
+Actually, the contraction is:
+  `Σ_{i,j} n_i · (-n_i·n_j) · n_j = -(Σᵢ nᵢ²)·(Σⱼ nⱼ²) = -‖n‖⁴`. -/
+theorem hess_normal_projection_T2 (n : Fin 2 → ℤ) :
+    let n₀ : ℂ := ↑(n 0 : ℤ)
+    let n₁ : ℂ := ↑(n 1 : ℤ)
+    n₀ * hessSymbol 0 0 n * n₀ + n₀ * hessSymbol 0 1 n * n₁
+      + n₁ * hessSymbol 1 0 n * n₀ + n₁ * hessSymbol 1 1 n * n₁
+    = -((latticeNorm n : ℝ) : ℂ) ^ 4 := by
+  simp only [hessSymbol_eq]
+  have hL4 : ((latticeNorm n : ℝ) : ℂ) ^ 4
+           = (((n 0 : ℤ) : ℂ) ^ 2 + ((n 1 : ℤ) : ℂ) ^ 2) ^ 2 := by
+    have hreal : (latticeNorm n) ^ 4 = ((n 0 : ℝ) ^ 2 + (n 1 : ℝ) ^ 2) ^ 2 := by
+      have := latticeNorm_sq n
+      simp [Fin.sum_univ_two] at this
+      nlinarith
+    exact_mod_cast congrArg (↑· : ℝ → ℂ) hreal
+  rw [hL4]
+  ring
+
+/-- **Tangential Hessian projection vanishes (single mode on `𝕋²`).**
+For a single Fourier mode `n`, the Hessian symbol `H_{ij}(n) = -n_i·n_j`
+is rank-1 with image along `n`. The tangent vector `t = (-n₁, n₀)` is
+perpendicular to `n`, so the tangential projection vanishes:
+
+    `Σ_{i,j} t_i · H_{ij}(n) · t_j = -(t·n)² = 0`.
+
+This is geometrically obvious: a single Fourier mode `e^{in·x}` has all
+its curvature in the normal direction `n̂`, none tangentially. The
+curvature `κ` of level sets, which involves tangential second derivatives,
+arises only from the *interaction* between different Fourier modes. -/
+theorem hess_tangential_vanishes_T2 (n : Fin 2 → ℤ) :
+    let n₀ : ℂ := ↑(n 0 : ℤ)
+    let n₁ : ℂ := ↑(n 1 : ℤ)
+    let t₀ : ℂ := -n₁
+    let t₁ : ℂ := n₀
+    t₀ * hessSymbol 0 0 n * t₀ + t₀ * hessSymbol 0 1 n * t₁
+      + t₁ * hessSymbol 1 0 n * t₀ + t₁ * hessSymbol 1 1 n * t₁
+    = 0 := by
+  simp only [hessSymbol_eq]
+  ring
+
+/-! ### SQG strain decomposition and residual
+
+The D14 identity tells us that for SQG, the normal-tangential strain
+`S_nt` decomposes as `ω/2 + residual`, where the residual vanishes when
+wavevector and front normal are aligned. The residual norm is controlled
+by the Ḣ¹ norm of θ (from the selection rule, Theorem 2).
+
+We formalize:
+1. The residual symbol (difference between full strain contraction and ω/2)
+2. The fact that the residual is pointwise bounded by ‖n‖·‖θ̂(n)‖
+3. The Ḣˢ-level residual budget
+-/
+
+/-- **SQG vorticity symbol on `𝕋²`.** The vorticity of the SQG velocity
+`u = (R₁θ, -R₀θ)` has Fourier symbol
+
+    `ω̂(n)/θ̂(n) = ∂₁u₀ - ∂₀u₁ = derivSymbol 1 0 - derivSymbol 0 1`
+
+but for SQG specifically this equals `-‖n‖` (see `sqg_vorticity_symbol`).
+
+Here we express the `ω/2` half directly as a multiplier. -/
+noncomputable def sqgHalfVorticitySymbol (n : Fin 2 → ℤ) : ℂ :=
+  -((latticeNorm n : ℝ) : ℂ) / 2
+
+/-- **SQG residual symbol.** The Fourier multiplier of the residual
+`S_nt - ω/2`, where `S_nt` is the normal-tangential strain at mode `n`.
+
+By D14 Theorem 1, this equals `|k|·sin²(α-β)` per mode, but we define
+it directly from the strain contraction minus half-vorticity to track
+the residual budget without trigonometric coordinates. -/
+noncomputable def sqgResidualSymbol (n : Fin 2 → ℤ) : ℂ :=
+  let S := sqgStrainSymbol
+  let n₀ : ℂ := ↑(n 0 : ℤ)
+  let n₁ : ℂ := ↑(n 1 : ℤ)
+  let L := ((latticeNorm n : ℝ) : ℂ)
+  -- S_nt (unnormalized by ‖n‖²) = Σ n_i · S_{ij} · t_j
+  -- Then divide by ‖n‖² to get the actual S_nt, subtract ω/2 = -L/2
+  if n = 0 then 0
+  else (n₀ * S 0 0 n * (-n₁) + n₀ * S 0 1 n * n₀
+        + n₁ * S 1 0 n * (-n₁) + n₁ * S 1 1 n * n₀) / L ^ 2
+       - sqgHalfVorticitySymbol n
+
+/-- **SQG residual vanishes (D14 Theorem 1 restated).** The residual symbol
+`S_nt - ω/2` equals `-L/2` (from the unnormalized identity) divided by `L²`,
+minus `(-L/2)`, which is zero.
+
+More precisely: `sqg_shear_vorticity_fourier` gives the unnormalized
+contraction `= -L³/2`, so dividing by `L²` yields `-L/2 = ω̂/(2θ̂)`,
+which equals `sqgHalfVorticitySymbol`. The residual is therefore zero. -/
+theorem sqgResidualSymbol_eq_zero {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    sqgResidualSymbol n = 0 := by
+  unfold sqgResidualSymbol sqgHalfVorticitySymbol
+  rw [if_neg hn]
+  have hident := sqg_shear_vorticity_fourier hn
+  simp only at hident
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  rw [hident]
+  field_simp
+  ring
+
+/-! ### Residual norm budget in Sobolev spaces
+
+Even though the residual `S_nt - ω/2` vanishes identically for SQG
+(the identity is exact, not approximate), the *components* of the strain
+individually have nontrivial Sobolev norms. The selection rule (Theorem 2)
+tells us that if we perturb the identity — e.g. for generalized SQG (gSQG)
+or for the curvature correction at finite front width — the residual
+satisfies `|residual| ≤ C · ‖n‖ · |θ̂(n)|`, giving Ḣˢ→Ḣˢ⁺¹ control.
+
+We formalize the abstract residual budget: any Fourier-mode-by-mode
+error bounded by `C·‖n‖` times the data is controlled in `Ḣˢ` by
+the `Ḣˢ⁺¹` norm of the data.
+-/
+
+/-- **Residual budget: pointwise `O(‖n‖)` error ⟹ Ḣˢ control.**
+If `‖ê(n)‖ ≤ C · ‖n‖ · ‖f̂(n)‖` for all `n` (the residual has one extra
+derivative compared to the data), and the `Ḣˢ⁺¹` seminorm of `f` is
+finite, then
+
+    `‖e‖²_{Ḣˢ} ≤ C² · ‖f‖²_{Ḣ^{s+1}}`.
+
+This is the abstract form of the curvature budget: the residual's
+Sobolev norm is controlled by one extra derivative of the data. -/
+theorem residual_Hs_budget
+    {d : Type*} [Fintype d] (s : ℝ) (C : ℝ) (hC : 0 ≤ C)
+    (f e : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hbound : ∀ n,
+        ‖mFourierCoeff e n‖ ≤ C * (fracDerivSymbol 1 n) * ‖mFourierCoeff f n‖)
+    (hsum : Summable
+        (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s e ≤ C ^ 2 * hsSeminormSq (s + 1) f := by
+  -- Pointwise in the Ḣˢ weight:
+  -- σ_s(n)² · ‖ê(n)‖² ≤ σ_s(n)² · C² · σ₁(n)² · ‖f̂(n)‖²
+  --                    = C² · σ_{s+1}(n)² · ‖f̂(n)‖²
+  have hmode : ∀ n,
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff e n‖ ^ 2
+      ≤ C ^ 2 * ((fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by
+    intro n
+    have hσ1 : 0 ≤ fracDerivSymbol 1 n := fracDerivSymbol_nonneg 1 n
+    have hσs : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+    have hf_nn : 0 ≤ ‖mFourierCoeff f n‖ := norm_nonneg _
+    have h_bound := hbound n
+    have h_rhs_nn : 0 ≤ C * fracDerivSymbol 1 n * ‖mFourierCoeff f n‖ :=
+      mul_nonneg (mul_nonneg hC hσ1) hf_nn
+    -- ‖ê(n)‖² ≤ (C · σ₁ · ‖f̂‖)² = C² · σ₁² · ‖f̂‖²
+    have hsq_e : ‖mFourierCoeff e n‖ ^ 2
+               ≤ (C * fracDerivSymbol 1 n * ‖mFourierCoeff f n‖) ^ 2 := by
+      nlinarith [norm_nonneg (mFourierCoeff e n)]
+    calc (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff e n‖ ^ 2
+        ≤ (fracDerivSymbol s n) ^ 2
+            * (C * fracDerivSymbol 1 n * ‖mFourierCoeff f n‖) ^ 2 :=
+          mul_le_mul_of_nonneg_left hsq_e hσs
+      _ = C ^ 2 * ((fracDerivSymbol s n) ^ 2 * (fracDerivSymbol 1 n) ^ 2)
+            * ‖mFourierCoeff f n‖ ^ 2 := by ring
+      _ = C ^ 2 * ((fracDerivSymbol (s + 1) n) ^ 2
+            * ‖mFourierCoeff f n‖ ^ 2) := by
+          rw [← fracDerivSymbol_add_sq]; ring_nf
+  -- Summability of the `e` Ḣˢ series
+  have hsumm_e : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff e n‖ ^ 2) := by
+    refine (Summable.of_nonneg_of_le (fun n => ?_) hmode
+      (hsum.mul_left (C ^ 2)))
+    exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  -- tsum comparison
+  unfold hsSeminormSq
+  calc ∑' n, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff e n‖ ^ 2
+      ≤ ∑' n, C ^ 2 * ((fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+        Summable.tsum_le_tsum hmode hsumm_e (hsum.const_smul (C ^ 2))
+    _ = C ^ 2 * ∑' n, (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+        tsum_mul_left
+
+/-! ### Strain eigenvalue structure on `𝕋²`
+
+For a trace-free 2×2 symmetric matrix, the eigenvalues are `±√(S₀₀² + S₀₁²)`.
+This means the strain magnitude is entirely determined by the off-diagonal
+entry and the `(0,0)` entry. For SQG, both are Riesz-transform compositions
+of θ, so their Fourier symbols factor through `‖n‖`.
+-/
+
+/-- **Trace-free 2×2 determinant.** For a trace-free matrix on `𝕋²`,
+`S₀₀ + S₁₁ = 0` implies `det(S) = -S₀₀² - S₀₁·S₁₀`.
+
+For the symmetric strain (`S₀₁ = S₁₀`), this gives
+`det(S) = -(S₀₀² + S₀₁²)`, and the eigenvalues are `±√(-det)`. -/
+theorem sqg_strain_det (n : Fin 2 → ℤ) :
+    sqgStrainSymbol 0 0 n * sqgStrainSymbol 1 1 n
+      - sqgStrainSymbol 0 1 n * sqgStrainSymbol 1 0 n
+    = -(sqgStrainSymbol 0 0 n ^ 2 + sqgStrainSymbol 0 1 n * sqgStrainSymbol 1 0 n) := by
+  have htrace := sqg_strain_trace_free n
+  -- S₁₁ = -S₀₀
+  have hS11 : sqgStrainSymbol 1 1 n = -sqgStrainSymbol 0 0 n := by
+    linear_combination htrace
+  rw [hS11]
+  ring
+
+/-- **SQG strain symmetry.** `Ŝ₀₁(n) = Ŝ₁₀(n)` — the strain tensor is
+symmetric by construction. -/
+theorem sqg_strain_symmetric (n : Fin 2 → ℤ) :
+    sqgStrainSymbol 0 1 n = sqgStrainSymbol 1 0 n := by
+  unfold sqgStrainSymbol
+  ring
+
+/-- **SQG strain determinant, symmetric form.** For the symmetric,
+trace-free SQG strain:
+
+    `det(Ŝ) = -(Ŝ₀₀² + Ŝ₀₁²)`.
+
+The eigenvalues of `Ŝ` at mode `n` are therefore `±√(Ŝ₀₀² + Ŝ₀₁²)`. -/
+theorem sqg_strain_det_symmetric (n : Fin 2 → ℤ) :
+    sqgStrainSymbol 0 0 n * sqgStrainSymbol 1 1 n
+      - sqgStrainSymbol 0 1 n ^ 2
+    = -(sqgStrainSymbol 0 0 n ^ 2 + sqgStrainSymbol 0 1 n ^ 2) := by
+  have htrace := sqg_strain_trace_free n
+  have hS11 : sqgStrainSymbol 1 1 n = -sqgStrainSymbol 0 0 n := by
+    linear_combination htrace
+  rw [hS11]
+  ring
+
+/-! ### SQG strain Frobenius norm and its Sobolev control
+
+The Frobenius norm `‖S‖_F² = Σ_{i,j} |Ŝ_{ij}|²` controls the strain
+magnitude. For a trace-free 2×2 matrix, `‖S‖_F² = 2(S₀₀² + S₀₁²)`.
+The SQG strain symbol factors through `‖n‖` (one derivative of θ),
+so `‖S‖_F` is controlled by the Ḣ¹ norm of θ. -/
+
+/-- **SQG strain Frobenius norm (trace-free 2×2).** For the symmetric,
+trace-free SQG strain on `𝕋²`:
+
+    `|Ŝ₀₀|² + |Ŝ₀₁|² + |Ŝ₁₀|² + |Ŝ₁₁|² = 2·(|Ŝ₀₀|² + |Ŝ₀₁|²)`.
+
+This uses `S₁₁ = -S₀₀` and `S₁₀ = S₀₁`. -/
+theorem sqg_strain_frobenius_eq (n : Fin 2 → ℤ) :
+    ‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2
+      + ‖sqgStrainSymbol 1 0 n‖ ^ 2 + ‖sqgStrainSymbol 1 1 n‖ ^ 2
+    = 2 * (‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2) := by
+  have hsym := sqg_strain_symmetric n
+  have htrace := sqg_strain_trace_free n
+  have hS11 : sqgStrainSymbol 1 1 n = -sqgStrainSymbol 0 0 n := by
+    linear_combination htrace
+  rw [hsym, hS11, norm_neg]
+  ring
+
 end SqgIdentity
