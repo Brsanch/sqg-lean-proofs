@@ -3085,6 +3085,48 @@ theorem sqg_grad_strain_vort_partition {n : Fin 2 → ℤ} (hn : n ≠ 0) :
       sqgVorticitySymbol_norm hn]
   ring
 
+/-- **Strain eigenvalue tight upper bound.** Each strain eigenvalue `λ`
+satisfies `|λ| ≤ ‖n‖/2`, so `|λ|² ≤ ‖n‖²/4`. This is the tight form
+of the strain spectral bound. -/
+theorem sqgStrain_00_sq_le_quarter {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgStrainSymbol 0 0 n‖ ^ 2 ≤ (latticeNorm n) ^ 2 / 4 := by
+  have htight := sqgStrain_eigenvalue_tight hn
+  have h01_nn : 0 ≤ ‖sqgStrainSymbol 0 1 n‖ ^ 2 := sq_nonneg _
+  linarith
+
+/-- **Off-diagonal strain eigenvalue tight upper bound.** -/
+theorem sqgStrain_01_sq_le_quarter {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgStrainSymbol 0 1 n‖ ^ 2 ≤ (latticeNorm n) ^ 2 / 4 := by
+  have htight := sqgStrain_eigenvalue_tight hn
+  have h00_nn : 0 ≤ ‖sqgStrainSymbol 0 0 n‖ ^ 2 := sq_nonneg _
+  linarith
+
+/-- **Tight Ḣˢ strain bound.** For each strain component and each `s`:
+
+    `‖S_{ij}(n)‖² · σ_s(n)² ≤ σ_{s+1}(n)²·‖θ̂(n)‖²/4`
+
+This is a sharper form of `sqgStrain_Hs_le`, reflecting that each
+individual strain component is bounded by `L/2`, not just `L`. -/
+theorem sqgStrain_tight_Hs_mode_bound {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (s : ℝ) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖sqgStrainSymbol 0 0 n * c‖ ^ 2
+    ≤ (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 / 4 := by
+  rw [norm_mul, mul_pow]
+  have h00 := sqgStrain_00_sq_le_quarter hn
+  have hfrac := fracDerivSymbol_add_sq s 1 n
+  have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+    rw [fracDerivSymbol_one_eq hn]
+  have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hprod_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+    mul_nonneg hσs_nn hc_nn
+  calc (fracDerivSymbol s n) ^ 2 * (‖sqgStrainSymbol 0 0 n‖ ^ 2 * ‖c‖ ^ 2)
+      = ‖sqgStrainSymbol 0 0 n‖ ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) := by ring
+    _ ≤ ((latticeNorm n) ^ 2 / 4) * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right h00 hprod_nn
+    _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 / 4 := by
+        rw [hfrac, hfrac1]; ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
