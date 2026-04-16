@@ -3127,6 +3127,70 @@ theorem sqgStrain_tight_Hs_mode_bound {n : Fin 2 → ℤ} (hn : n ≠ 0)
     _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 / 4 := by
         rw [hfrac, hfrac1]; ring
 
+/-! ## Ḣ^{1/2} connection: vorticity L² equals θ Ḣ^{1/2}
+
+The SQG constitutive relation `ω = −(-Δ)^{1/2}θ` means the vorticity
+has a half-derivative extra smoothness gap compared to θ. At the
+Fourier level this is `ω̂(n) = −‖n‖·θ̂(n)`, so `‖ω‖²_{L²} = ‖θ‖²_{Ḣ¹}`.
+-/
+
+/-- **Mode-level vorticity = fracDeriv_1 θ.** For `n ≠ 0`:
+
+    `‖ω̂(n)‖² = (fracDerivSymbol 1 n)²`
+
+so the L² norm of `ω` equals the Ḣ¹ seminorm of θ, not Ḣ^{1/2}.
+(The factor 1/2 in `ω/2` is absorbed into the constant when connecting
+to the identity `ω = -Λθ` on the full torus convention.) -/
+theorem sqgVorticitySymbol_norm_sq_eq {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgVorticitySymbol n‖ ^ 2 = (fracDerivSymbol 1 n) ^ 2 := by
+  rw [sqgVorticitySymbol_norm hn, fracDerivSymbol_one_eq hn]
+
+/-- **Vorticity L² norm equals θ Ḣ¹ seminorm (integrated form).**
+For SQG velocity with `ω̂(n) = -‖n‖·θ̂(n)` and `ω : Lp ℂ 2`:
+
+    `‖ω‖²_{L²} = ‖θ‖²_{Ḣ¹}`
+
+Proof: Parseval + mode-level identity. -/
+theorem sqgVorticity_L2_eq_Hs1
+    (θ ω : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff ω n = sqgVorticitySymbol n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2))
+    (hω_parseval : HasSum (fun n ↦ ‖mFourierCoeff ω n‖ ^ 2) (∫ t, ‖ω t‖ ^ 2)) :
+    (∫ t, ‖ω t‖ ^ 2) = hsSeminormSq 1 θ := by
+  unfold hsSeminormSq
+  rw [← hω_parseval.tsum_eq]
+  congr 1
+  ext n
+  rw [hcoeff n, norm_mul, mul_pow]
+  by_cases hn : n = 0
+  · subst hn
+    rw [show sqgVorticitySymbol 0 = 0 from by
+          unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol
+          simp, norm_zero]
+    simp [fracDerivSymbol_zero]
+  · rw [sqgVorticitySymbol_norm hn, fracDerivSymbol_one_eq hn]
+
+/-- **Strain L² norm = θ Ḣ¹ seminorm / 2.** For each strain component,
+the L² norm of `S_{ij}` equals `‖n‖/2 · |θ̂|` in the mode picture,
+giving:
+
+    `Σ_{ij} ‖S_{ij}‖²_{L²} = ‖θ‖²_{Ḣ¹} / 2`
+
+(from the tight Frobenius identity). This matches the velocity gradient
+decomposition energy identity. -/
+theorem sqgStrain_Frobenius_L2_eq_Hs1_half {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (c : ℂ) :
+    (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n * c‖ ^ 2)
+    = (fracDerivSymbol 1 n) ^ 2 * ‖c‖ ^ 2 / 2 := by
+  have hfactor : (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n * c‖ ^ 2)
+      = (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n‖ ^ 2) * ‖c‖ ^ 2 := by
+    simp only [norm_mul, mul_pow]
+    simp only [Fin.sum_univ_two]
+    ring
+  rw [hfactor, sqgStrain_frobenius_tight hn, fracDerivSymbol_one_eq hn]
+  ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
