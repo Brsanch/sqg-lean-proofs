@@ -3269,6 +3269,69 @@ theorem derivSymbol_Hs_mode_bound (s : ℝ) (n : Fin 2 → ℤ)
         mul_le_mul_of_nonneg_right h_deriv hprod_nn
     _ = (fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2 := by ring
 
+/-! ## Strain-Ḣˢ tight identity
+
+Using the tight strain Frobenius identity Σ‖S_ij‖² = ‖n‖²/2 at each
+mode, we can derive the sharp Ḣˢ strain identity for the sum of all
+strain components at once.
+-/
+
+/-- **Mode-level strain Frobenius Ḣˢ tight bound.** For `n ≠ 0` and any
+coefficient `c`:
+
+    `σ_s(n)² · Σ_{ij} ‖S_{ij}(n)·c‖² = σ_{s+1}(n)²·‖c‖²/2`
+
+This is the tight form: the strain Frobenius norm at frequency `n`
+equals exactly `σ_1(n)/√2 · |c|`. -/
+theorem sqgStrain_Frobenius_Hs_tight {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (s : ℝ) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2
+      * (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n * c‖ ^ 2)
+    = (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 / 2 := by
+  rw [sqgStrain_Frobenius_L2_eq_Hs1_half hn c]
+  rw [show (fracDerivSymbol (s + 1) n) ^ 2
+      = (fracDerivSymbol s n) ^ 2 * (fracDerivSymbol 1 n) ^ 2 from
+    fracDerivSymbol_add_sq s 1 n]
+  ring
+
+/-- **Mode-level gradient Frobenius Ḣˢ tight bound.** For `n ≠ 0`:
+
+    `σ_s(n)² · Σ_{ij} ‖∂̂_i u_j(n)·c‖² = σ_{s+1}(n)²·‖c‖²`
+
+So the velocity gradient tensor has the exact Ḣˢ scale `Ḣ^{s+1}(θ)`. -/
+theorem sqgGrad_Frobenius_Hs_tight {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (s : ℝ) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2
+      * (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgGradSymbol i j n * c‖ ^ 2)
+    = (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 := by
+  have hfactor : (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgGradSymbol i j n * c‖ ^ 2)
+      = (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgGradSymbol i j n‖ ^ 2) * ‖c‖ ^ 2 := by
+    simp only [norm_mul, mul_pow]
+    simp only [Fin.sum_univ_two]
+    ring
+  rw [hfactor, sqgGrad_frobenius_tight hn]
+  rw [show (fracDerivSymbol (s + 1) n) ^ 2
+      = (fracDerivSymbol s n) ^ 2 * (fracDerivSymbol 1 n) ^ 2 from
+    fracDerivSymbol_add_sq s 1 n]
+  rw [fracDerivSymbol_one_eq hn]
+  ring
+
+/-- **Vorticity Ḣˢ tight identity.** For `n ≠ 0`:
+
+    `σ_s(n)² · ‖ω̂(n)·c‖² = σ_{s+1}(n)²·‖c‖²`
+
+The vorticity has the exact Ḣˢ scale `Ḣ^{s+1}(θ)`. -/
+theorem sqgVorticity_Hs_tight {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (s : ℝ) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖sqgVorticitySymbol n * c‖ ^ 2
+    = (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, sqgVorticitySymbol_norm hn]
+  rw [show (fracDerivSymbol (s + 1) n) ^ 2
+      = (fracDerivSymbol s n) ^ 2 * (fracDerivSymbol 1 n) ^ 2 from
+    fracDerivSymbol_add_sq s 1 n]
+  rw [fracDerivSymbol_one_eq hn]
+  ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
