@@ -3361,6 +3361,50 @@ theorem sqgVorticity_Hs_eq_Hs1
   · rw [hcoeff n]
     exact sqgVorticity_Hs_tight hn s (mFourierCoeff θ n)
 
+/-- **Strain 0,0 component Ḣˢ tight bound (integrated).** The (0,0)
+component of the strain matrix satisfies:
+
+    `‖S₀₀‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}} / 4`
+
+This is 4× sharper than `sqgStrain_Hs_le` (which gives ≤ ‖θ‖²_{Ḣ^{s+1}}).
+The factor 1/4 comes from the tight eigenvalue bound `|S₀₀|² ≤ ‖n‖²/4`. -/
+theorem sqgStrain_00_Hs_le_quarter
+    (s : ℝ)
+    (θ S : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff S n = sqgStrainSymbol 0 0 n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s S ≤ hsSeminormSq (s + 1) θ / 4 := by
+  unfold hsSeminormSq
+  rw [show (∑' (n : Fin 2 → ℤ),
+        fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2) / 4
+      = ∑' (n : Fin 2 → ℤ),
+        fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 from by
+    rw [← tsum_div_const]]
+  apply Summable.tsum_le_tsum (f := fun n ↦
+    fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S) n‖ ^ 2)
+  · intro n
+    by_cases hn : n = 0
+    · subst hn
+      rw [hcoeff 0]
+      simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+        fracDerivSymbol_zero]
+    · rw [hcoeff n]
+      have := sqgStrain_tight_Hs_mode_bound hn s (mFourierCoeff θ n)
+      convert this using 1
+  · apply (hsum.div_const 4).of_nonneg_of_le
+    · intro n
+      exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      by_cases hn : n = 0
+      · subst hn
+        rw [hcoeff 0]
+        simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+          fracDerivSymbol_zero]
+      · rw [hcoeff n]
+        have := sqgStrain_tight_Hs_mode_bound hn s (mFourierCoeff θ n)
+        convert this using 1
+  · exact hsum.div_const 4
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
