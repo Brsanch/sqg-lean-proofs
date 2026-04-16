@@ -2681,4 +2681,166 @@ theorem fracDerivSymbol_high_freq_bound {d : Type*} [Fintype d]
     (Real.rpow_le_rpow_of_nonpos hN hn_high (by linarith))
     (Real.rpow_nonneg (latticeNorm_nonneg n) _)
 
+/-! ## Sobolev interpolation inequality
+
+On the torus, the integer lattice gives `‖n‖ ≥ 1` for `n ≠ 0`, which
+makes the Ḣˢ scale monotone. A stronger form is the interpolation
+inequality: for `t ≤ s ≤ u` with `s = (1−α)·t + α·u`:
+
+    `‖f‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣᵗ}^{1−α} · ‖f‖²_{Ḣᵘ}^α`
+
+We prove this at the mode level first.
+-/
+
+/-- **Mode-level interpolation.** For `0 ≤ α ≤ 1` and `t ≤ u`, the
+weight `σ_s(n)²` (with `s = (1−α)·t + α·u`) is bounded by the
+geometric mean of the `t`- and `u`-weights:
+
+    `σ_s(n)² ≤ (σ_t(n)²)^{1−α} · (σ_u(n)²)^α` -/
+lemma fracDerivSymbol_sq_interpolate {d : Type*} [Fintype d]
+    {t u α : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (htu : t ≤ u)
+    (n : d → ℤ) :
+    (fracDerivSymbol ((1 - α) * t + α * u) n) ^ 2 =
+    ((fracDerivSymbol t n) ^ 2) ^ (1 - α) *
+    ((fracDerivSymbol u n) ^ 2) ^ α := by
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero]
+    rcases eq_or_lt_of_le hα0 with rfl | hα_pos
+    · simp
+    · rw [zero_rpow (ne_of_gt hα_pos), mul_zero]
+  · rw [fracDerivSymbol_of_ne_zero _ hn,
+        fracDerivSymbol_of_ne_zero _ hn,
+        fracDerivSymbol_of_ne_zero _ hn]
+    have hL := latticeNorm_pos hn
+    -- LHS: (‖n‖^s)^2 = ‖n‖^{2s}
+    rw [show (latticeNorm n ^ ((1 - α) * t + α * u)) ^ 2
+          = latticeNorm n ^ (2 * ((1 - α) * t + α * u)) from by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul (le_of_lt hL)]; ring_nf]
+    -- RHS factors
+    rw [show (latticeNorm n ^ t) ^ 2 = latticeNorm n ^ (2 * t) from by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul (le_of_lt hL)]; ring_nf,
+        show (latticeNorm n ^ u) ^ 2 = latticeNorm n ^ (2 * u) from by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul (le_of_lt hL)]; ring_nf]
+    rw [← Real.rpow_mul (le_of_lt hL),
+        ← Real.rpow_mul (le_of_lt hL)]
+    rw [← Real.rpow_add hL]
+    ring_nf
+
+/-! ## Gradient symbol decomposition
+
+The full velocity gradient `∂_i u_j` decomposes into strain + rotation:
+`∂_i u_j = S_{ij} + Ω_{ij}` where `Ω_{01} = -Ω_{10} = ω/2`. We
+formalize this at the symbol level.
+-/
+
+/-- **Vorticity symbol.** The vorticity `ω = ∂₀u₁ − ∂₁u₀` has Fourier
+symbol following the convention of `sqg_vorticity_symbol`:
+
+    `ω̂(n)/θ̂(n) = sqgGradSymbol 0 1 n - sqgGradSymbol 1 0 n = -‖n‖`. -/
+noncomputable def sqgVorticitySymbol (n : Fin 2 → ℤ) : ℂ :=
+  sqgGradSymbol 0 1 n - sqgGradSymbol 1 0 n
+
+/-- **Vorticity symbol equals -|n|.** The vorticity multiplier simplifies
+to `-‖n‖`, matching `ω̂ = −|k|·θ̂` (the SQG constitutive relation
+`ω = -(-Δ)^{1/2}θ`). -/
+theorem sqgVorticitySymbol_eq {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    sqgVorticitySymbol n = -((latticeNorm n : ℝ) : ℂ) := by
+  unfold sqgVorticitySymbol sqgGradSymbol
+  simp only [show (1 : Fin 2) ≠ 0 from by omega, ite_true, ite_false]
+  exact sqg_vorticity_symbol hn
+
+/-- **Strain-rotation decomposition at symbol level.** For each `(i,j)`,
+the velocity gradient equals strain plus rotation:
+
+    `∂_i u_j = S_{ij} + Ω_{ij}`
+
+where `S` is the symmetric part and `Ω` is antisymmetric. This identity
+holds per Fourier mode: `sqgGradSymbol i j n = sqgStrainSymbol i j n + Ω_{ij}(n)`.
+
+Here we prove it for the diagonal (where Ω vanishes). -/
+theorem sqgGrad_eq_strain_diag (i : Fin 2) (n : Fin 2 → ℤ) :
+    sqgGradSymbol i i n = sqgStrainSymbol i i n := by
+  unfold sqgStrainSymbol
+  ring
+
+/-- **Strain symmetry at the symbol level.** `S_{ij}(n) = S_{ji}(n)`. -/
+theorem sqgStrainSymbol_comm (i j : Fin 2) (n : Fin 2 → ℤ) :
+    sqgStrainSymbol i j n = sqgStrainSymbol j i n := by
+  unfold sqgStrainSymbol
+  ring
+
+/-- **Antisymmetric part of gradient is vorticity/2.**
+
+    `(sqgGradSymbol 1 0 n - sqgGradSymbol 0 1 n) / 2 =
+     sqgVorticitySymbol n / 2`
+
+which is trivially true by definition. The nontrivial content is that
+`sqgGradSymbol i j n - sqgStrainSymbol i j n` equals `±ω/2` for off-diagonal. -/
+theorem sqgGrad_antisym_eq_half_vort (n : Fin 2 → ℤ) :
+    (sqgGradSymbol 0 1 n - sqgGradSymbol 1 0 n) / 2
+    = sqgVorticitySymbol n / 2 := by
+  rfl
+
+/-- **Off-diagonal gradient decomposition.** For `(i,j) = (1,0)`:
+
+    `sqgGradSymbol 1 0 n = sqgStrainSymbol 1 0 n - sqgVorticitySymbol n / 2`
+
+(note: since `sqgVorticitySymbol = sqgGrad 0 1 - sqgGrad 1 0`,
+the rotation matrix `Ω_{10} = -ω/2`.) -/
+theorem sqgGrad_10_decomposition (n : Fin 2 → ℤ) :
+    sqgGradSymbol 1 0 n =
+      sqgStrainSymbol 1 0 n - sqgVorticitySymbol n / 2 := by
+  unfold sqgStrainSymbol sqgVorticitySymbol
+  ring
+
+/-- **Off-diagonal gradient decomposition.** For `(i,j) = (0,1)`:
+
+    `sqgGradSymbol 0 1 n = sqgStrainSymbol 0 1 n + sqgVorticitySymbol n / 2`  -/
+theorem sqgGrad_01_decomposition (n : Fin 2 → ℤ) :
+    sqgGradSymbol 0 1 n =
+      sqgStrainSymbol 0 1 n + sqgVorticitySymbol n / 2 := by
+  unfold sqgStrainSymbol sqgVorticitySymbol
+  ring
+
+/-! ### Vorticity norm bound -/
+
+/-- **Vorticity symbol norm.** `‖ω̂(n)‖ = ‖n‖` for `n ≠ 0`. -/
+theorem sqgVorticitySymbol_norm {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgVorticitySymbol n‖ = latticeNorm n := by
+  rw [sqgVorticitySymbol_eq hn, norm_neg, Complex.norm_real,
+    Real.norm_of_nonneg (latticeNorm_nonneg n)]
+
+/-- **Half-vorticity norm bound.** `‖ω̂(n)/2‖ = ‖n‖/2` for `n ≠ 0`. -/
+theorem sqgHalfVorticitySymbol_norm {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgVorticitySymbol n / 2‖ = latticeNorm n / 2 := by
+  rw [norm_div, sqgVorticitySymbol_norm hn]
+  norm_num
+
+/-! ## Summary: Full curvature budget at all Sobolev levels
+
+The library now provides a complete Fourier-space curvature budget:
+
+1. **Symbols**: `hessSymbol`, `sqgGradSymbol`, `sqgStrainSymbol`,
+   `sqgVorticitySymbol`, `fracDerivSymbol`, `thirdDerivSymbol`
+
+2. **Pointwise bounds**: every symbol is controlled by powers of `‖n‖`,
+   giving Sobolev embeddings via `sqg_selection_rule_Hs`
+
+3. **L² bounds**: strain and velocity gradient are in `Ḣ¹(θ)`
+
+4. **Ḣˢ bounds**: strain `Ḣˢ ≤ θ Ḣˢ⁺¹`, velocity `Ḣˢ ≤ θ Ḣˢ`
+
+5. **Bernstein estimates**: frequency-localised control of Sobolev
+   weights via `fracDerivSymbol_low/high_freq_bound`
+
+6. **Interpolation**: mode-level geometric mean bound
+   `fracDerivSymbol_sq_interpolate`
+
+7. **Gradient decomposition**: `∂u = S + Ω` with `Ω = ω/2` and
+   the D14 identity killing the `S_{nt}` residual
+
+8. **Incompressibility**: `div u = 0` ensures material transport
+   preserves the Jacobian
+-/
+
 end SqgIdentity
