@@ -1102,6 +1102,23 @@ lemma fracDerivSymbol_add_sq {d : Type*} [Fintype d]
         Real.rpow_add hpos s t]
     ring
 
+/-- **Multiplicative additivity of `fracDerivSymbol` (unsquared).**
+For every `n` and every `s, t`,
+
+    `σ_{s+t}(n) = σ_s(n) · σ_t(n)`.
+
+At `n = 0` both sides are `0`; off zero this is `Real.rpow_add`. -/
+lemma fracDerivSymbol_mul {d : Type*} [Fintype d]
+    (s t : ℝ) (n : d → ℤ) :
+    fracDerivSymbol (s + t) n = fracDerivSymbol s n * fracDerivSymbol t n := by
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero]
+  · have hpos : 0 < latticeNorm n := latticeNorm_pos hn
+    rw [fracDerivSymbol_of_ne_zero _ hn,
+        fracDerivSymbol_of_ne_zero _ hn,
+        fracDerivSymbol_of_ne_zero _ hn,
+        Real.rpow_add hpos s t]
+
 /-! ### Monotonicity of `fracDerivSymbol` and `hsSeminormSq` in `s` -/
 
 /-- **Monotonicity of `fracDerivSymbol` in the exponent.** On the integer
@@ -1153,6 +1170,38 @@ theorem hsSeminormSq_mono_of_le
     refine hsumm_t.of_nonneg_of_le (fun n => ?_) hmode
     exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
   exact Summable.tsum_le_tsum hmode hsumm_s hsumm_t
+
+/-- **Nonnegativity of the Ḣˢ squared seminorm.**
+Each summand `σ_s(n)² · ‖f̂(n)‖²` is nonneg, so the tsum is nonneg
+(or 0 when not summable, by `tsum_eq_zero_of_not_summable`). -/
+theorem hsSeminormSq_nonneg {d : Type*} [Fintype d] (s : ℝ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d))) :
+    0 ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  exact tsum_nonneg (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+
+/-! ### Riesz product symbol -/
+
+/-- **Product of Riesz symbols.** For `n ≠ 0`,
+
+    `R̂_j(n) · R̂_k(n) = - (n_j · n_k) / ‖n‖²`.
+
+This is the Fourier symbol of the composition `R_j ∘ R_k`; summing over
+`j = k` recovers `riesz_double_sum_symbol` (= −1). The off-diagonal
+entries are the building blocks of the **Leray projector**
+`P̂_{jk} = δ_{jk} - n̂_j n̂_k = δ_{jk} + R̂_j R̂_k`. -/
+theorem riesz_product_symbol {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) (j k : d) :
+    rieszSymbol j n * rieszSymbol k n
+      = -(↑(n j : ℤ) * ↑(n k : ℤ)) / (↑(latticeNorm n) ^ 2 : ℂ) := by
+  rw [rieszSymbol_of_ne_zero hn j, rieszSymbol_of_ne_zero hn k]
+  have hL : (↑(latticeNorm n) : ℂ) ≠ 0 := by
+    have := latticeNorm_pos hn
+    exact_mod_cast this.ne'
+  field_simp
+  rw [show (I : ℂ) ^ 2 = -1 from Complex.I_sq]
+  push_cast
+  ring
 
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
