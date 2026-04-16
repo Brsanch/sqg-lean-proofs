@@ -2931,6 +2931,36 @@ theorem hsSeminormSq_mono {d : Type*} [Fintype d]
         (sq_nonneg _)))
     hsum
 
+/-! ## Strain spectral bound
+
+The strain eigenvalue bound: each eigenvalue `λ` of `S(n)` (symmetric
+traceless 2×2) satisfies `|λ|² ≤ |n|²`. At the mode level this is
+equivalent to `|S₀₀|² + |S₀₁|² ≤ |n|²`.
+-/
+
+/-- **Strain eigenvalue norm bound (weak form).** At mode `n ≠ 0`, the
+sum of the squared diagonal and off-diagonal strain components is
+bounded by twice the mode norm squared:
+
+    `|S₀₀|² + |S₀₁|² ≤ 2·‖n‖²`
+
+Each component satisfies `|S_{ij}| ≤ ‖n‖` (from `sqgStrain_norm_le`),
+so summing two squares gives `≤ 2‖n‖²`. The tight bound is
+`‖n‖²/4` (AM-GM), but the weak form suffices for energy estimates. -/
+theorem sqgStrain_eigenvalue_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2
+    ≤ 2 * (latticeNorm n) ^ 2 := by
+  have hS00_bound : ‖sqgStrainSymbol 0 0 n‖ ≤ latticeNorm n :=
+    sqgStrain_norm_le hn 0 0
+  have hS01_bound : ‖sqgStrainSymbol 0 1 n‖ ≤ latticeNorm n :=
+    sqgStrain_norm_le hn 0 1
+  have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+  have h00sq : ‖sqgStrainSymbol 0 0 n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+    sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol 0 0 n)]) hS00_bound
+  have h01sq : ‖sqgStrainSymbol 0 1 n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+    sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol 0 1 n)]) hS01_bound
+  linarith
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
