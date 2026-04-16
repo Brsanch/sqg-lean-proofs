@@ -402,6 +402,37 @@ theorem laplacianSymbol_eq_neg_fracDeriv_one_sq {d : Type*} [Fintype d]
   · simp [hn, laplacianSymbol, fracDerivSymbol_zero, latticeNorm]
   · simp only [laplacianSymbol, fracDerivSymbol_one_eq hn]
 
+/-- **Commutativity of Riesz and fractional derivative at symbol level.**
+Since both are scalar Fourier multipliers, their product commutes:
+
+    `R̂_j(n) · σ_s(n) = σ_s(n) · R̂_j(n)`.
+
+This is the symbol-level statement of `[R_j, (-Δ)^{s/2}] = 0`. -/
+theorem rieszSymbol_comm_fracDeriv {d : Type*} [Fintype d]
+    (j : d) (s : ℝ) (n : d → ℤ) :
+    rieszSymbol j n * (↑(fracDerivSymbol s n) : ℂ)
+      = (↑(fracDerivSymbol s n) : ℂ) * rieszSymbol j n :=
+  mul_comm _ _
+
+/-- **Inverse Laplacian symbol.** For `n ≠ 0`, the symbol of `Δ⁻¹`
+(the Green's function / Biot–Savart kernel on `𝕋ᵈ`) is `−1/‖n‖²`.
+This is the reciprocal of `laplacianSymbol`. -/
+noncomputable def invLaplacianSymbol {d : Type*} [Fintype d]
+    (n : d → ℤ) : ℂ :=
+  if n = 0 then 0 else -1 / ((latticeNorm n : ℝ) : ℂ) ^ 2
+
+/-- **Inverse Laplacian inverts the Laplacian.** For `n ≠ 0`,
+
+    `Δ̂(n) · Δ̂⁻¹(n) = 1`. -/
+theorem laplacian_mul_inv {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) :
+    laplacianSymbol n * invLaplacianSymbol n = 1 := by
+  simp only [laplacianSymbol, invLaplacianSymbol, hn, ite_false]
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  have hL2 : ((latticeNorm n : ℝ) : ℂ) ^ 2 ≠ 0 := pow_ne_zero 2 hL
+  field_simp
+
 /-! ### Measure-theoretic setup for torus L² integrals -/
 
 -- Replicate the file-local instance from `Mathlib.Analysis.Fourier.AddCircleMulti`
