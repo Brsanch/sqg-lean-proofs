@@ -1398,6 +1398,38 @@ theorem leray_kills_longitudinal {d : Type*} [Fintype d] [DecidableEq d]
   rw [show (Complex.I : ℂ) ^ 2 = -1 from Complex.I_sq]
   push_cast; ring
 
+/-- **Leray preserves transverse modes.** For `n ≠ 0`, if the vector
+`v` is transverse to `n` (i.e. `Σ_k n_k · v_k = 0`), then
+
+    `Σ_k P̂_{jk}(n) · v_k = v_j`.
+
+Together with `leray_kills_longitudinal` this characterises the Leray
+projector: it acts as the identity on the `(d−1)`-dimensional transverse
+subspace and annihilates the longitudinal direction. -/
+theorem leray_preserves_transverse {d : Type*} [Fintype d] [DecidableEq d]
+    {n : d → ℤ} (hn : n ≠ 0) (v : d → ℂ)
+    (hv : ∑ k, (↑(n k : ℤ) : ℂ) * v k = 0) (j : d) :
+    ∑ k, leraySymbol j k n * v k = v j := by
+  -- Expand: Σ_k (δ_{jk} + R̂_j R̂_k) v_k = v_j + R̂_j · Σ_k R̂_k v_k
+  have hexpand : ∀ k, leraySymbol j k n * v k
+      = (if j = k then v k else 0)
+        + rieszSymbol j n * (rieszSymbol k n * v k) := by
+    intro k; unfold leraySymbol; split_ifs <;> ring
+  simp_rw [hexpand, Finset.sum_add_distrib]
+  -- First sum: Σ_k δ_{jk} v_k = v_j
+  rw [(Finset.sum_ite_eq Finset.univ j _).trans (if_pos (Finset.mem_univ j))]
+  -- Second sum: R̂_j · Σ_k R̂_k v_k. Factor R̂_k = -I n_k / ‖n‖.
+  rw [← Finset.mul_sum]
+  -- Σ_k R̂_k v_k = (-I/‖n‖) Σ_k n_k v_k = 0
+  have hRv : ∑ k, rieszSymbol k n * v k = 0 := by
+    have hL : (↑(latticeNorm n) : ℂ) ≠ 0 := by
+      exact_mod_cast (latticeNorm_pos hn).ne'
+    have hfactor : ∀ k, rieszSymbol k n * v k
+        = (-Complex.I / (↑(latticeNorm n) : ℂ)) * ((↑(n k : ℤ) : ℂ) * v k) := by
+      intro k; rw [rieszSymbol_of_ne_zero hn k]; field_simp; push_cast; ring
+    simp_rw [hfactor, ← Finset.mul_sum, hv, mul_zero]
+  rw [hRv, mul_zero, add_zero]
+
 /-- **Self-adjointness of the Leray symbol.** `P̂_{jk}(n) = P̂_{kj}(n)`,
 since `R̂_j · R̂_k = R̂_k · R̂_j` (complex multiplication commutes). -/
 theorem leray_self_adjoint {d : Type*} [Fintype d] [DecidableEq d]
