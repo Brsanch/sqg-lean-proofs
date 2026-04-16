@@ -2961,6 +2961,65 @@ theorem sqgStrain_eigenvalue_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) :
     sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol 0 1 n)]) hS01_bound
   linarith
 
+/-- **Strain tight identity: |S₀₀|² + |S₀₁|² = ‖n‖²/4.**
+This is the sharp identity: combining the explicit formulas
+`S₀₀·‖n‖ = n₀·n₁` and `S₀₁·‖n‖ = (n₁² - n₀²)/2` gives
+
+    `(S₀₀·‖n‖)² + (S₀₁·‖n‖)² = n₀²n₁² + (n₁²-n₀²)²/4 = (n₀²+n₁²)²/4 = ‖n‖⁴/4`
+
+So `|S₀₀|² + |S₀₁|² = ‖n‖²/4`. This is the tight form of
+`sqgStrain_eigenvalue_norm_le`. -/
+theorem sqgStrain_eigenvalue_tight {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2
+    = (latticeNorm n) ^ 2 / 4 := by
+  have hL_pos := latticeNorm_pos hn
+  have hL_ne : (latticeNorm n : ℝ) ≠ 0 := ne_of_gt hL_pos
+  have hLc : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by exact_mod_cast hL_ne
+  have h00 := sqg_strain_00_explicit hn
+  have h01 := sqg_strain_01_explicit hn
+  have hL_sq : (latticeNorm n) ^ 2 = ((n 0 : ℤ) : ℝ) ^ 2 + ((n 1 : ℤ) : ℝ) ^ 2 := by
+    rw [latticeNorm_sq]; simp [Fin.sum_univ_two]
+  -- Multiply both sides by L²
+  have key : ((latticeNorm n) ^ 2) *
+      (‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2)
+    = (latticeNorm n) ^ 4 / 4 := by
+    have h00_sq : ‖sqgStrainSymbol 0 0 n * ((latticeNorm n : ℝ) : ℂ)‖ ^ 2
+        = (latticeNorm n) ^ 2 * ‖sqgStrainSymbol 0 0 n‖ ^ 2 := by
+      rw [norm_mul, mul_pow, Complex.norm_real, Real.norm_of_nonneg (latticeNorm_nonneg n)]
+      ring
+    have h01_sq : ‖sqgStrainSymbol 0 1 n * ((latticeNorm n : ℝ) : ℂ)‖ ^ 2
+        = (latticeNorm n) ^ 2 * ‖sqgStrainSymbol 0 1 n‖ ^ 2 := by
+      rw [norm_mul, mul_pow, Complex.norm_real, Real.norm_of_nonneg (latticeNorm_nonneg n)]
+      ring
+    have h00_val : ‖sqgStrainSymbol 0 0 n * ((latticeNorm n : ℝ) : ℂ)‖ ^ 2
+        = (((n 0 : ℤ) : ℝ) * ((n 1 : ℤ) : ℝ)) ^ 2 := by
+      rw [h00, norm_mul, Complex.norm_intCast, Complex.norm_intCast]
+      rw [← abs_mul, sq_abs]
+    have h01_val : ‖sqgStrainSymbol 0 1 n * ((latticeNorm n : ℝ) : ℂ)‖ ^ 2
+        = ((((n 1 : ℤ) : ℝ) ^ 2 - ((n 0 : ℤ) : ℝ) ^ 2) / 2) ^ 2 := by
+      rw [h01]
+      have hcast : (((n 1 : ℤ) : ℂ) ^ 2 - ((n 0 : ℤ) : ℂ) ^ 2) / 2
+          = ((((n 1 : ℤ) : ℝ) ^ 2 - ((n 0 : ℤ) : ℝ) ^ 2) / 2 : ℝ) := by
+        push_cast; ring
+      rw [hcast, Complex.norm_real, Real.norm_eq_abs, sq_abs]
+    -- Now we have:
+    -- L² · (‖S₀₀‖² + ‖S₀₁‖²) = ‖S₀₀·L‖² + ‖S₀₁·L‖²  (from h00_sq, h01_sq)
+    --                        = (n₀n₁)² + ((n₁²-n₀²)/2)²
+    -- = n₀²n₁² + (n₁⁴ - 2n₀²n₁² + n₀⁴)/4
+    -- = (4n₀²n₁² + n₁⁴ - 2n₀²n₁² + n₀⁴)/4
+    -- = (n₀⁴ + 2n₀²n₁² + n₁⁴)/4
+    -- = (n₀² + n₁²)²/4
+    -- = L⁴/4
+    rw [mul_add, ← h00_sq, ← h01_sq, h00_val, h01_val]
+    have hL4 : (latticeNorm n) ^ 4 = ((latticeNorm n) ^ 2) ^ 2 := by ring
+    rw [hL4, hL_sq]
+    ring
+  -- Divide both sides by L²
+  have hL_sq_pos : 0 < (latticeNorm n) ^ 2 := by positivity
+  have hL_sq_ne : (latticeNorm n) ^ 2 ≠ 0 := ne_of_gt hL_sq_pos
+  field_simp at key
+  linarith [key, pow_nonneg (latticeNorm_nonneg n) 4]
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
