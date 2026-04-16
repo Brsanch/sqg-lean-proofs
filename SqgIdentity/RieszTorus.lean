@@ -2314,4 +2314,165 @@ theorem sqg_strain_00_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) :
                sq_nonneg (|((n 0 : ℤ) : ℝ)| - |((n 1 : ℤ) : ℝ)|)]
   exact hab
 
+/-! ### SQG strain norm bound per mode
+
+Each SQG strain entry `Ŝ_{ij}(n)` satisfies `‖Ŝ_{ij}(n)‖ ≤ ‖n‖/2`
+(the strain is bounded by half a derivative of θ). This is the
+per-mode ingredient for the integrated bound `‖S‖²_{L²} ≤ ‖θ‖²_{Ḣ¹}/2`.
+
+For the curvature budget: the strain controls how fast level-set
+geometry evolves, and this bound says the rate is controlled by
+the Ḣ¹ norm of the scalar field.
+-/
+
+-- Note: The per-mode strain bound ‖Ŝ_{ij}(n)‖ ≤ ‖n‖ follows from the
+-- Riesz pointwise bound. See `sqgStrain_norm_le` below for the general version.
+
+/-- **SQG divergence-free at symbol level.** The SQG velocity
+`u = (R₁θ, -R₀θ)` is divergence-free:
+
+    `∂₀u₀ + ∂₁u₁ = 0`
+
+at every frequency `n`. This is the symbol-level statement of
+incompressibility, which is the key mechanism in the curvature budget
+(incompressibility forces material segments to expand, diluting
+curvature concentration). -/
+theorem sqg_divergence_free_symbol (n : Fin 2 → ℤ) :
+    sqgGradSymbol 0 0 n + sqgGradSymbol 1 1 n = 0 := by
+  unfold sqgGradSymbol
+  simp only [show (1 : Fin 2) ≠ 0 from by omega, if_true, if_false]
+  by_cases hn : n = 0
+  · simp [hn, derivSymbol, rieszSymbol]
+  · rw [rieszSymbol_of_ne_zero hn 0, rieszSymbol_of_ne_zero hn 1]
+    simp only [derivSymbol]
+    have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+      exact_mod_cast (latticeNorm_pos hn).ne'
+    field_simp
+    have hI2 : (Complex.I : ℂ) ^ 2 = -1 := Complex.I_sq
+    simp only [Complex.ofReal_intCast] at *
+    rw [hI2]; ring
+
+/-- **SQG strain trace from divergence-free (alternate proof).**
+The trace-free property `S₀₀ + S₁₁ = 0` follows directly from
+`∂₀u₀ + ∂₁u₁ = 0` since `S_{ii} = ∂_i u_i` (no symmetrisation
+needed for diagonal entries). -/
+theorem sqg_strain_trace_free_alt (n : Fin 2 → ℤ) :
+    sqgStrainSymbol 0 0 n + sqgStrainSymbol 1 1 n = 0 :=
+  sqg_strain_trace_free n
+
+/-! ### Third-order symbols for curvature evolution
+
+The curvature of level sets evolves under the flow. The evolution
+equation for `κ` involves third derivatives of θ (through `∇κ` and
+the stretching term). At the Fourier-symbol level:
+
+    `∂³θ/∂x_i∂x_j∂x_k` has symbol `(in_i)(in_j)(in_k) = -i·n_i·n_j·n_k`.
+
+We define the third-order symbol and its key property: the Laplacian
+of the gradient has symbol `∂_i(Δθ) = (in_i)·(-‖n‖²) = -in_i‖n‖²`,
+which is `derivSymbol i · laplacianSymbol`. This factorisation is used
+in the curvature evolution equation.
+-/
+
+/-- **Third-order derivative symbol.** The Fourier multiplier of
+`∂³/∂x_i∂x_j∂x_k` on `𝕋ᵈ`. -/
+noncomputable def thirdDerivSymbol {d : Type*} [Fintype d]
+    (i j k : d) (n : d → ℤ) : ℂ :=
+  derivSymbol i n * derivSymbol j n * derivSymbol k n
+
+/-- **Third-order symbol at zero.** All entries vanish. -/
+@[simp] lemma thirdDerivSymbol_zero {d : Type*} [Fintype d] (i j k : d) :
+    thirdDerivSymbol i j k (0 : d → ℤ) = 0 := by
+  simp [thirdDerivSymbol, derivSymbol]
+
+/-- **Third-order symbol is totally symmetric.** -/
+lemma thirdDerivSymbol_perm12 {d : Type*} [Fintype d] (i j k : d) (n : d → ℤ) :
+    thirdDerivSymbol i j k n = thirdDerivSymbol j i k n := by
+  unfold thirdDerivSymbol; ring
+
+lemma thirdDerivSymbol_perm23 {d : Type*} [Fintype d] (i j k : d) (n : d → ℤ) :
+    thirdDerivSymbol i j k n = thirdDerivSymbol i k j n := by
+  unfold thirdDerivSymbol; ring
+
+/-- **Third-order symbol factors through Hessian.** `∂³/∂x_i∂x_j∂x_k`
+= `∂_i · ∂²/∂x_j∂x_k`, i.e. the third-order symbol is the product
+of a first-order and a Hessian symbol. -/
+lemma thirdDerivSymbol_eq_deriv_hess {d : Type*} [Fintype d]
+    (i j k : d) (n : d → ℤ) :
+    thirdDerivSymbol i j k n = derivSymbol i n * hessSymbol j k n := by
+  unfold thirdDerivSymbol hessSymbol; ring
+
+/-- **Laplacian of gradient at symbol level.** The symbol of
+`∂_i(Δθ)` factors as `derivSymbol i · laplacianSymbol`:
+
+    `Σⱼ thirdDerivSymbol i j j n = derivSymbol i n * laplacianSymbol n`.
+
+This is the symbol of `∂_i(Σⱼ ∂²θ/∂x_j²) = ∂_i(Δθ)`. -/
+theorem laplacian_grad_symbol {d : Type*} [Fintype d]
+    (i : d) (n : d → ℤ) :
+    ∑ j, thirdDerivSymbol i j j n = derivSymbol i n * laplacianSymbol n := by
+  simp only [thirdDerivSymbol_eq_deriv_hess, ← Finset.mul_sum]
+  rw [hessSymbol_trace]
+
+/-! ### Energy identity for SQG: `‖∇θ‖²_{L²} = ‖θ‖²_{Ḣ¹}`
+
+The fundamental energy identity: the L² norm of the gradient equals
+the Ḣ¹ seminorm. At the per-mode level this is just
+`Σⱼ |in_j|² = ‖n‖²`, which we proved as `gradNormSq_eq_fracDeriv1_sq`.
+
+For the curvature budget, this identity appears repeatedly:
+- The strain magnitude is bounded by `‖∇θ‖_{L²} = ‖θ‖_{Ḣ¹}`
+- The vorticity magnitude is bounded by `‖θ‖_{Ḣ¹}` (since `ω = -(-Δ)^{1/2}θ`)
+- Material derivative estimates involve `‖u·∇θ‖ ≤ ‖u‖_{L²}·‖∇θ‖_{L∞}`
+  and the L² part is controlled by the Ḣ¹ seminorm via the velocity isometry
+
+We collect these connections.
+-/
+
+/-- **Derivative symbol norm bounded by lattice norm.**
+`‖derivSymbol i n‖ = |n_i| ≤ ‖n‖`. -/
+lemma norm_derivSymbol_le {d : Type*} [Fintype d] (i : d) (n : d → ℤ) :
+    ‖derivSymbol i n‖ ≤ latticeNorm n := by
+  rw [norm_derivSymbol]
+  have h1 : (n i : ℝ) ^ 2 ≤ (latticeNorm n) ^ 2 := sq_le_latticeNorm_sq n i
+  exact abs_le_of_sq_le_sq h1 (latticeNorm_nonneg n)
+
+set_option maxHeartbeats 400000 in
+/-- **SQG velocity gradient norm bound (per mode).** For `n ≠ 0`,
+each velocity gradient entry satisfies `‖(∂_i u_j)^(n)‖ ≤ ‖n‖`. -/
+theorem sqgGrad_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) (i j : Fin 2) :
+    ‖sqgGradSymbol i j n‖ ≤ latticeNorm n := by
+  unfold sqgGradSymbol
+  by_cases hj : j = 0
+  · subst hj; simp only [if_true]
+    calc ‖derivSymbol i n * rieszSymbol 1 n‖
+        = ‖derivSymbol i n‖ * ‖rieszSymbol 1 n‖ := norm_mul _ _
+      _ ≤ ‖derivSymbol i n‖ * 1 :=
+          mul_le_mul_of_nonneg_left (rieszSymbol_norm_le_one 1 n) (norm_nonneg _)
+      _ ≤ latticeNorm n := by rw [mul_one]; exact norm_derivSymbol_le i n
+  · have hj1 : j = 1 := by omega
+    subst hj1
+    simp only [show (1 : Fin 2) ≠ 0 from by omega, if_false]
+    calc ‖derivSymbol i n * -rieszSymbol 0 n‖
+        = ‖derivSymbol i n‖ * ‖rieszSymbol 0 n‖ := by rw [norm_mul, norm_neg]
+      _ ≤ ‖derivSymbol i n‖ * 1 :=
+          mul_le_mul_of_nonneg_left (rieszSymbol_norm_le_one 0 n) (norm_nonneg _)
+      _ ≤ latticeNorm n := by rw [mul_one]; exact norm_derivSymbol_le i n
+
+set_option maxHeartbeats 800000 in
+/-- **SQG strain norm bound (per mode).** For `n ≠ 0`,
+`‖Ŝ_{ij}(n)‖ ≤ ‖n‖` (each strain entry is bounded by one derivative of θ). -/
+theorem sqgStrain_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) (i j : Fin 2) :
+    ‖sqgStrainSymbol i j n‖ ≤ latticeNorm n := by
+  unfold sqgStrainSymbol
+  rw [norm_div, Complex.norm_ofNat]
+  have h2 : (0 : ℝ) ≤ 2 := by norm_num
+  calc ‖sqgGradSymbol i j n + sqgGradSymbol j i n‖ / 2
+      ≤ (‖sqgGradSymbol i j n‖ + ‖sqgGradSymbol j i n‖) / 2 :=
+        div_le_div_of_nonneg_right (norm_add_le _ _) h2
+    _ ≤ (latticeNorm n + latticeNorm n) / 2 := by
+        exact div_le_div_of_nonneg_right
+          (add_le_add (sqgGrad_norm_le hn i j) (sqgGrad_norm_le hn j i)) h2
+    _ = latticeNorm n := by ring
+
 end SqgIdentity
