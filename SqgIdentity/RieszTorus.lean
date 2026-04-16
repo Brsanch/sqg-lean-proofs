@@ -3665,6 +3665,88 @@ theorem heatSymbol_grad_smoothing_mode {t : ℝ} (ht : 0 < t)
         exact mul_le_mul_of_nonneg_right hheat_le_one hc_nn
     _ = (Real.exp (-1) / t) * ‖c‖ ^ 2 := by ring
 
+/-! ## Parabolic smoothing at Hessian level (k=2)
+
+Bootstrap from the k=1 case: apply the k=1 bound at time `t/2`,
+square both sides, and use `exp(a) · exp(a) = exp(2a)` to get the
+`k=2` bound `‖n‖^4 · exp(-t‖n‖²) ≤ 4·exp(-2)/t²`.
+-/
+
+/-- **Parabolic smoothing at Hessian level.** For `t > 0`:
+
+    `‖n‖^4 · exp(-t·‖n‖²) ≤ 4·exp(-2)/t²`
+
+The max of `y² · exp(-y)` is `4/e²` at `y = 2`. -/
+theorem latticeNorm_4_mul_heat_le {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ 4 * heatSymbol t n
+      ≤ 4 * Real.exp (-2) / t ^ 2 := by
+  -- Use k=1 bound at time t/2: L² · exp(-(t/2)L²) ≤ exp(-1)/(t/2) = 2·exp(-1)/t
+  have ht_half : 0 < t / 2 := half_pos ht
+  have h := latticeNorm_sq_mul_heat_le ht_half n
+  -- h: L² · heatSymbol (t/2) n ≤ exp(-1) / (t/2)
+  -- i.e., L² · exp(-(t/2)·L²) ≤ 2·exp(-1)/t
+  have hL_sq_nn : 0 ≤ (latticeNorm n) ^ 2 := sq_nonneg _
+  have hheat_nn : 0 ≤ heatSymbol (t/2) n := heatSymbol_nonneg _ _
+  have hprod_nn : 0 ≤ (latticeNorm n) ^ 2 * heatSymbol (t/2) n :=
+    mul_nonneg hL_sq_nn hheat_nn
+  have hrhs_nn : 0 ≤ Real.exp (-1) / (t / 2) :=
+    div_nonneg (Real.exp_pos _).le ht_half.le
+  -- Square both sides of h:
+  -- (L² · heat(t/2))² ≤ (exp(-1)/(t/2))²
+  -- LHS = L^4 · heat(t/2)² = L^4 · heat(t)  (since heat(t/2)² = heat(t))
+  -- RHS = (exp(-1))² / (t/2)² = exp(-2) / (t²/4) = 4·exp(-2)/t²
+  have hsq : ((latticeNorm n) ^ 2 * heatSymbol (t/2) n) ^ 2
+          ≤ (Real.exp (-1) / (t / 2)) ^ 2 := by
+    exact sq_le_sq' (by linarith [hprod_nn, hrhs_nn]) h
+  -- Simplify LHS: (L² · heat(t/2))² = L^4 · heat(t/2)² = L^4 · heat(t)
+  have h_lhs_eq : ((latticeNorm n) ^ 2 * heatSymbol (t/2) n) ^ 2
+      = (latticeNorm n) ^ 4 * heatSymbol t n := by
+    rw [mul_pow]
+    congr 1
+    · ring
+    · -- heatSymbol (t/2) n ^ 2 = heatSymbol t n
+      unfold heatSymbol
+      rw [sq, ← Real.exp_add]
+      congr 1; ring
+  -- Simplify RHS: (exp(-1)/(t/2))² = 4·exp(-2)/t²
+  have h_rhs_eq : (Real.exp (-1) / (t / 2)) ^ 2 = 4 * Real.exp (-2) / t ^ 2 := by
+    rw [div_pow]
+    have hexp_sq : (Real.exp (-1)) ^ 2 = Real.exp (-2) := by
+      rw [sq, ← Real.exp_add]; congr 1; ring
+    rw [hexp_sq]
+    have ht_ne : t ≠ 0 := ht.ne'
+    field_simp
+    ring
+  rw [h_lhs_eq] at hsq
+  rw [h_rhs_eq] at hsq
+  exact hsq
+
+/-- **Parabolic smoothing: fracDerivSymbol 2 form.** For `t > 0`:
+
+    `σ_2(n)² · heat(t, n) ≤ 4·exp(-2)/t²`. -/
+theorem fracDerivSymbol_2_sq_mul_heat_le {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (fracDerivSymbol 2 n) ^ 2 * heatSymbol t n
+      ≤ 4 * Real.exp (-2) / t ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have : (fracDerivSymbol 2 (0 : Fin 2 → ℤ)) = 0 := fracDerivSymbol_zero 2
+    rw [this]
+    simp
+    positivity
+  · -- σ_2(n)² = L^4
+    have h_σ2_sq : (fracDerivSymbol 2 n) ^ 2 = (latticeNorm n) ^ 4 := by
+      rw [fracDerivSymbol_of_ne_zero 2 hn]
+      have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+      rw [show ((latticeNorm n) ^ (2 : ℝ)) ^ 2
+          = latticeNorm n ^ (2 * 2 : ℝ) from by
+        rw [← Real.rpow_natCast, ← Real.rpow_mul hL_nn]; norm_num]
+      rw [show ((2 : ℝ) * 2) = (4 : ℕ) from by norm_num]
+      rw [Real.rpow_natCast]
+    rw [h_σ2_sq]
+    exact latticeNorm_4_mul_heat_le ht n
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
