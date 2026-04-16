@@ -1203,6 +1203,47 @@ theorem riesz_product_symbol {d : Type*} [Fintype d]
   push_cast
   ring
 
+/-! ### Leray–Helmholtz projector symbol -/
+
+/-- **Leray–Helmholtz projector symbol.** On the integer lattice
+`ℤᵈ \ {0}`, define
+
+    `P̂_{jk}(n) = δ_{jk} + R̂_j(n)·R̂_k(n)
+              = δ_{jk} - n_j·n_k / ‖n‖²`.
+
+`P̂` projects Fourier modes onto the divergence-free subspace; it is the
+Fourier-side representation of the Leray projector `P = Id + R⊗R`. -/
+noncomputable def leraySymbol {d : Type*} [Fintype d] [DecidableEq d]
+    (j k : d) (n : d → ℤ) : ℂ :=
+  if j = k then 1 + rieszSymbol j n * rieszSymbol k n
+  else rieszSymbol j n * rieszSymbol k n
+
+/-- **Leray symbol for `n = 0`.** Every entry is `δ_{jk}` at the
+zero frequency (since all Riesz symbols vanish there). -/
+lemma leraySymbol_zero {d : Type*} [Fintype d] [DecidableEq d]
+    (j k : d) : leraySymbol j k (0 : d → ℤ) = if j = k then 1 else 0 := by
+  simp [leraySymbol, rieszSymbol_zero]
+
+/-- **Trace of the Leray symbol.** For `n ≠ 0`,
+
+    `Σⱼ P̂_{jj}(n) = d − 1`.
+
+This counts the number of independent divergence-free polarisations
+of a Fourier mode on `𝕋ᵈ`: every nonzero `n` has `d − 1` transverse
+directions. The proof uses `rieszSymbol_sum_sq_complex` (Σ R̂_j² = −1). -/
+theorem leray_trace {d : Type*} [Fintype d] [DecidableEq d]
+    {n : d → ℤ} (hn : n ≠ 0) :
+    ∑ j : d, leraySymbol j j n = (Fintype.card d : ℂ) - 1 := by
+  simp only [leraySymbol, if_true]
+  rw [Finset.sum_add_distrib, Finset.sum_const, nsmul_eq_mul, mul_one]
+  -- Σ R̂_j · R̂_j = Σ R̂_j² = -1
+  have hRR : ∑ j : d, rieszSymbol j n * rieszSymbol j n
+           = ∑ j : d, (rieszSymbol j n) ^ 2 := by
+    congr 1; ext j; ring
+  rw [hRR, rieszSymbol_sum_sq_complex hn]
+  simp [Finset.card_univ]
+  ring
+
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
 /-- **Ḣˢ-level Parseval for Fourier multipliers.** If `ĝ(n) = m(n)·f̂(n)`
