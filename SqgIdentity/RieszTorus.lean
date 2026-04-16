@@ -2475,4 +2475,83 @@ theorem sqgStrain_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) (i j : Fin 2) :
           (add_le_add (sqgGrad_norm_le hn i j) (sqgGrad_norm_le hn j i)) h2
     _ = latticeNorm n := by ring
 
+/-! ### SQG strain L²-contractivity: `‖S_{ij}‖_{L²} ≤ ‖θ‖_{Ḣ¹}`
+
+The pointwise bound `‖Ŝ_{ij}(n)‖ ≤ ‖n‖` combined with Parseval gives
+the integrated bound: if `θ ∈ L²(𝕋²)` has Ḣ¹-summable Fourier tail, then
+the L² norm of each strain component is bounded by the Ḣ¹ seminorm of θ.
+
+This is the curvature budget's workhorse estimate: it says the strain
+(which drives level-set deformation) is controlled by one derivative of θ.
+-/
+
+set_option maxHeartbeats 400000 in
+/-- **SQG strain L² bound (per component).** If `ĝ(n) = Ŝ_{ij}(n)·θ̂(n)`
+and the Ḣ¹ tail of θ is summable, then `‖g‖²_{L²} ≤ ‖θ‖²_{Ḣ¹}`.
+Uses `‖Ŝ_{ij}(n)‖ ≤ ‖n‖` from `sqgStrain_norm_le`. -/
+theorem sqg_strain_L2_le_Hs1 (i j : Fin 2)
+    (θ g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff g n = sqgStrainSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable
+        (fun n ↦ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∫ t, ‖g t‖ ^ 2) ≤ hsSeminormSq 1 θ := by
+  -- Parseval for g
+  have hg_parseval := hasSum_sq_mFourierCoeff g
+  -- Pointwise: ‖ĝ(n)‖² = ‖Ŝ(n)‖² · ‖θ̂(n)‖² ≤ ‖n‖² · ‖θ̂(n)‖²
+  have hpt : ∀ n : Fin 2 → ℤ,
+      ‖mFourierCoeff g n‖ ^ 2
+      ≤ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n, norm_mul, mul_pow]
+    by_cases hn : n = 0
+    · subst hn
+      simp [fracDerivSymbol_zero, sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol]
+    · have h_le : ‖sqgStrainSymbol i j n‖ ^ 2 ≤ (fracDerivSymbol 1 n) ^ 2 := by
+        have hb := sqgStrain_norm_le hn i j
+        rw [fracDerivSymbol_one_eq hn]
+        exact sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol i j n)]) hb
+      exact mul_le_mul_of_nonneg_right h_le (sq_nonneg _)
+  -- Sum comparison
+  have hsumm_g : Summable (fun n ↦ ‖mFourierCoeff g n‖ ^ 2) := hg_parseval.summable
+  calc (∫ t, ‖g t‖ ^ 2)
+      = ∑' n, ‖mFourierCoeff g n‖ ^ 2 := hg_parseval.tsum_eq.symm
+    _ ≤ ∑' n, (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 :=
+        Summable.tsum_le_tsum hpt hsumm_g hsum
+    _ = hsSeminormSq 1 θ := rfl
+
+/-! ### Summary: Curvature budget components formalized
+
+We have now formalized the following curvature-budget ingredients:
+
+1. **Hessian symbol** (`hessSymbol`): second derivatives of θ at the
+   Fourier level, with trace = Laplacian identity.
+
+2. **Tangential Hessian vanishes per mode** (`hess_tangential_vanishes_T2`):
+   front curvature is a multi-mode phenomenon. This is the geometric
+   reason the curvature budget requires controlling mode interactions.
+
+3. **SQG strain ↔ Hessian connection** (`sqgGrad_from_hess_0/1`):
+   the strain is the Hessian rotated by 90° and divided by |∇θ|-scale.
+
+4. **Residual S_nt - ω/2 = 0** (`sqgResidualSymbol_eq_zero`): the D14
+   identity kills the residual exactly. For generalized SQG (gSQG), the
+   residual is O(‖n‖) and controlled by `residual_Hs_budget`.
+
+5. **Strain norm bound** (`sqgStrain_norm_le`): `‖Ŝ_{ij}(n)‖ ≤ ‖n‖`,
+   so strain is controlled by one derivative of θ.
+
+6. **Strain L² bound** (`sqg_strain_L2_le_Hs1`): the integrated strain
+   norm `‖S_{ij}‖²_{L²} ≤ ‖θ‖²_{Ḣ¹}`.
+
+7. **Incompressibility** (`sqg_divergence_free_symbol`): `div u = 0`,
+   the mechanism that forces material-segment expansion.
+
+8. **Third-order symbols** (`thirdDerivSymbol`, `laplacian_grad_symbol`):
+   infrastructure for the curvature evolution equation `Dκ/Dt`.
+
+Together these establish that the strain field (which drives curvature
+evolution) is controlled by the Ḣ¹ norm of θ, and that the D14 identity
+eliminates the dangerous term in the curvature budget.
+-/
+
 end SqgIdentity
