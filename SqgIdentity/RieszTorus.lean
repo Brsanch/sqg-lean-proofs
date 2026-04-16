@@ -2861,6 +2861,76 @@ theorem riesz_times_norm_eq_neg_deriv {d : Type*} [Fintype d]
   have hLc : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hL
   field_simp
 
+/-! ## Strain eigenvalue analysis
+
+For 2D SQG, the strain matrix `S` is a symmetric 2×2 traceless matrix
+(traceless because `div u = 0`). Its eigenvalues are therefore `±|S|`
+where `|S|` is the Frobenius norm divided by √2. At the symbol level
+this means the strain controls stretching by exactly its Frobenius norm.
+-/
+
+/-- **Strain Frobenius norm squared.** For the SQG strain matrix at
+mode `n ≠ 0`, the sum of squared entries equals twice the squared
+off-diagonal entry plus twice the squared diagonal entry, and by
+tracelessness `S₀₀ = -S₁₁`, the Frobenius norm squared is
+`2·(S₀₀² + S₀₁²)`. -/
+theorem sqgStrain_frobenius_explicit (n : Fin 2 → ℤ) :
+    ∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n‖ ^ 2
+    = 2 * (‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2) := by
+  simp only [Fin.sum_univ_two]
+  have hsymm : sqgStrainSymbol 1 0 n = sqgStrainSymbol 0 1 n :=
+    sqgStrainSymbol_comm 1 0 n
+  have h11 : sqgStrainSymbol 1 1 n = -sqgStrainSymbol 0 0 n := by
+    linear_combination sqg_strain_trace_free n
+  rw [hsymm, h11, norm_neg]; ring
+
+/-- **Strain tracelessness implies eigenvalue structure.** The
+trace-free condition `S₀₀ + S₁₁ = 0` means `S₁₁ = −S₀₀`, so the
+2×2 strain matrix has the form `[[a, b], [b, -a]]` with characteristic
+polynomial `λ² - (a² + b²) = 0`, giving eigenvalues `±√(a² + b²)`.
+
+We prove the intermediate step: `S₀₀² + S₀₁² = S₀₀ · S₁₁ + S₀₁²`
+with a sign (since `S₁₁ = -S₀₀`). -/
+theorem sqgStrain_eigenvalue_sq (n : Fin 2 → ℤ) :
+    sqgStrainSymbol 0 0 n * sqgStrainSymbol 1 1 n
+    - sqgStrainSymbol 0 1 n * sqgStrainSymbol 1 0 n
+    = -(sqgStrainSymbol 0 0 n ^ 2 + sqgStrainSymbol 0 1 n ^ 2) := by
+  have h11 : sqgStrainSymbol 1 1 n = -sqgStrainSymbol 0 0 n := by
+    linear_combination sqg_strain_trace_free n
+  have h10 : sqgStrainSymbol 1 0 n = sqgStrainSymbol 0 1 n :=
+    sqgStrainSymbol_comm 1 0 n
+  rw [h11, h10]; ring
+
+/-! ## Sobolev embedding and torus-specific bounds
+
+On `𝕋ᵈ`, the lattice norm satisfies `‖n‖ ≥ 1` for `n ≠ 0` (integer
+lattice property). This gives the torus-specific embedding: higher
+Sobolev norms dominate lower ones. We already have `fracDerivSymbol_mono_of_le`;
+here we add the integrated form.
+-/
+
+/-- **Ḣˢ seminorm dominance on the torus.** For `s ≤ t` on `𝕋ᵈ`:
+
+    `‖f‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣᵗ}`
+
+This is stronger than on ℝᵈ because integer lattice modes have `‖n‖ ≥ 1`. -/
+theorem hsSeminormSq_mono {d : Type*} [Fintype d]
+    {s t : ℝ} (hst : s ≤ t)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (hsum : Summable (fun n ↦ (fracDerivSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s f ≤ hsSeminormSq t f := by
+  unfold hsSeminormSq
+  exact Summable.tsum_le_tsum
+    (fun n ↦ mul_le_mul_of_nonneg_right
+      (fracDerivSymbol_sq_mono_of_le hst n)
+      (sq_nonneg _))
+    (hsum.of_nonneg_of_le
+      (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _))
+      (fun n ↦ mul_le_mul_of_nonneg_right
+        (fracDerivSymbol_sq_mono_of_le hst n)
+        (sq_nonneg _)))
+    hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
