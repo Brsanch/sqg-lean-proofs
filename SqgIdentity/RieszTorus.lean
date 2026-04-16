@@ -3405,6 +3405,63 @@ theorem sqgStrain_00_Hs_le_quarter
         convert this using 1
   · exact hsum.div_const 4
 
+/-- **Strain 0,1 component tight Ḣˢ mode bound.** -/
+theorem sqgStrain_01_tight_Hs_mode_bound {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (s : ℝ) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖sqgStrainSymbol 0 1 n * c‖ ^ 2
+    ≤ (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 / 4 := by
+  rw [norm_mul, mul_pow]
+  have h01 := sqgStrain_01_sq_le_quarter hn
+  have hfrac := fracDerivSymbol_add_sq s 1 n
+  have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+    rw [fracDerivSymbol_one_eq hn]
+  have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hprod_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+    mul_nonneg hσs_nn hc_nn
+  calc (fracDerivSymbol s n) ^ 2 * (‖sqgStrainSymbol 0 1 n‖ ^ 2 * ‖c‖ ^ 2)
+      = ‖sqgStrainSymbol 0 1 n‖ ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) := by ring
+    _ ≤ ((latticeNorm n) ^ 2 / 4) * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right h01 hprod_nn
+    _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖c‖ ^ 2 / 4 := by
+        rw [hfrac, hfrac1]; ring
+
+/-- **Strain 0,1 component Ḣˢ tight bound (integrated).** -/
+theorem sqgStrain_01_Hs_le_quarter
+    (s : ℝ)
+    (θ S : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff S n = sqgStrainSymbol 0 1 n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s S ≤ hsSeminormSq (s + 1) θ / 4 := by
+  unfold hsSeminormSq
+  rw [show (∑' (n : Fin 2 → ℤ),
+        fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2) / 4
+      = ∑' (n : Fin 2 → ℤ),
+        fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 from by
+    rw [← tsum_div_const]]
+  apply Summable.tsum_le_tsum (f := fun n ↦
+    fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S) n‖ ^ 2)
+  · intro n
+    by_cases hn : n = 0
+    · subst hn
+      rw [hcoeff 0]
+      simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+        fracDerivSymbol_zero]
+    · rw [hcoeff n]
+      exact sqgStrain_01_tight_Hs_mode_bound hn s (mFourierCoeff θ n)
+  · apply (hsum.div_const 4).of_nonneg_of_le
+    · intro n
+      exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      by_cases hn : n = 0
+      · subst hn
+        rw [hcoeff 0]
+        simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+          fracDerivSymbol_zero]
+      · rw [hcoeff n]
+        exact sqgStrain_01_tight_Hs_mode_bound hn s (mFourierCoeff θ n)
+  · exact hsum.div_const 4
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
