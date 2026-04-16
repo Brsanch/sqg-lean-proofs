@@ -3332,6 +3332,35 @@ theorem sqgVorticity_Hs_tight {n : Fin 2 → ℤ} (hn : n ≠ 0)
   rw [fracDerivSymbol_one_eq hn]
   ring
 
+/-! ## Integrated Ḣˢ tight identities (Parseval/tsum form)
+
+Lifting the mode-level tight identities to integrated Ḣˢ seminorms.
+-/
+
+/-- **Vorticity Ḣˢ tight identity.** For `ω̂(n) = sqgVorticitySymbol n · θ̂(n)`:
+
+    `‖ω‖²_{Ḣˢ} = ‖θ‖²_{Ḣ^{s+1}}`
+
+The proof is by Parseval plus the mode-level `sqgVorticity_Hs_tight`. -/
+theorem sqgVorticity_Hs_eq_Hs1
+    (s : ℝ)
+    (θ ω : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff ω n = sqgVorticitySymbol n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s ω = hsSeminormSq (s + 1) θ := by
+  unfold hsSeminormSq
+  congr 1
+  ext n
+  by_cases hn : n = 0
+  · subst hn
+    have h0 : sqgVorticitySymbol 0 = 0 := by
+      unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol
+      simp
+    rw [hcoeff 0, h0, zero_mul, norm_zero]
+    simp [fracDerivSymbol_zero]
+  · rw [hcoeff n]
+    exact sqgVorticity_Hs_tight hn s (mFourierCoeff θ n)
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
