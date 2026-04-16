@@ -1312,6 +1312,74 @@ theorem leray_kills_longitudinal {d : Type*} [Fintype d] [DecidableEq d]
   rw [show (Complex.I : ℂ) ^ 2 = -1 from Complex.I_sq]
   push_cast; ring
 
+/-- **Self-adjointness of the Leray symbol.** `P̂_{jk}(n) = P̂_{kj}(n)`,
+since `R̂_j · R̂_k = R̂_k · R̂_j` (complex multiplication commutes). -/
+theorem leray_self_adjoint {d : Type*} [Fintype d] [DecidableEq d]
+    (j k : d) (n : d → ℤ) :
+    leraySymbol j k n = leraySymbol k j n := by
+  unfold leraySymbol
+  by_cases hjk : j = k
+  · rw [hjk]
+  · rw [if_neg hjk, if_neg (Ne.symm hjk)]; ring
+
+/-- **Idempotency of the Leray projector.** For `n ≠ 0`,
+
+    `Σ_l  P̂_{jl}(n) · P̂_{lk}(n) = P̂_{jk}(n)`.
+
+Proof: expand `P̂ = δ + R̂⊗R̂` to get four sums. The cross terms each give
+`R̂_j R̂_k` and the quadruple-product sum gives `R̂_j · (Σ R̂_l²) · R̂_k = -R̂_j R̂_k`.
+The three contributions `R̂_j R̂_k + R̂_j R̂_k + (-R̂_j R̂_k) = R̂_j R̂_k`
+combine with the `δ_{jk}` term to reproduce `P̂_{jk}`. -/
+theorem leray_idempotent {d : Type*} [Fintype d] [DecidableEq d]
+    {n : d → ℤ} (hn : n ≠ 0) (j k : d) :
+    ∑ l, leraySymbol j l n * leraySymbol l k n = leraySymbol j k n := by
+  -- Expand leraySymbol into δ + R̂⊗R̂ form
+  have hexpand : ∀ a b, leraySymbol a b n
+      = (if a = b then 1 else 0) + rieszSymbol a n * rieszSymbol b n := by
+    intro a b; unfold leraySymbol; split_ifs <;> ring
+  simp_rw [hexpand]
+  -- Distribute the product: (δ_jl + R̂_j R̂_l)(δ_lk + R̂_l R̂_k)
+  -- = δ_jl δ_lk + δ_jl R̂_l R̂_k + R̂_j R̂_l δ_lk + R̂_j R̂_l R̂_l R̂_k
+  have hdist : ∀ l,
+      ((if j = l then (1 : ℂ) else 0) + rieszSymbol j n * rieszSymbol l n)
+    * ((if l = k then (1 : ℂ) else 0) + rieszSymbol l n * rieszSymbol k n)
+    = (if j = l then 1 else 0) * (if l = k then 1 else 0)
+    + (if j = l then 1 else 0) * (rieszSymbol l n * rieszSymbol k n)
+    + rieszSymbol j n * rieszSymbol l n * (if l = k then 1 else 0)
+    + rieszSymbol j n * (rieszSymbol l n ^ 2) * rieszSymbol k n := by
+    intro l; ring
+  simp_rw [hdist]
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_add_distrib]
+  -- Term 1: Σ_l δ_{jl} δ_{lk} = δ_{jk}
+  have h1 : ∑ l, (if j = l then (1 : ℂ) else 0) * (if l = k then 1 else 0)
+           = if j = k then 1 else 0 := by
+    have : (fun l => (if j = l then (1 : ℂ) else 0) * (if l = k then 1 else 0))
+         = (fun l => if j = l then (if l = k then 1 else 0) else 0) := by
+      ext l; split_ifs <;> simp
+    rw [this, (Finset.sum_ite_eq Finset.univ j _).trans (if_pos (Finset.mem_univ j))]
+  -- Term 2: Σ_l δ_{jl} (R̂_l R̂_k) = R̂_j R̂_k
+  have h2 : ∑ l, (if j = l then (1 : ℂ) else 0) * (rieszSymbol l n * rieszSymbol k n)
+           = rieszSymbol j n * rieszSymbol k n := by
+    have : (fun l => (if j = l then (1 : ℂ) else 0) * (rieszSymbol l n * rieszSymbol k n))
+         = (fun l => if j = l then rieszSymbol l n * rieszSymbol k n else 0) := by
+      ext l; split_ifs <;> simp
+    rw [this, (Finset.sum_ite_eq Finset.univ j _).trans (if_pos (Finset.mem_univ j))]
+  -- Term 3: Σ_l R̂_j R̂_l δ_{lk} = R̂_j R̂_k
+  have h3 : ∑ l, rieszSymbol j n * rieszSymbol l n * (if l = k then (1 : ℂ) else 0)
+           = rieszSymbol j n * rieszSymbol k n := by
+    have : (fun l => rieszSymbol j n * rieszSymbol l n * (if l = k then (1 : ℂ) else 0))
+         = (fun l => if l = k then rieszSymbol j n * rieszSymbol l n else 0) := by
+      ext l; split_ifs <;> ring
+    rw [this, (Finset.sum_ite_eq' Finset.univ k _).trans (if_pos (Finset.mem_univ k))]
+  -- Term 4: Σ_l R̂_j R̂_l² R̂_k = R̂_j (Σ_l R̂_l²) R̂_k = -R̂_j R̂_k
+  have h4 : ∑ l, rieszSymbol j n * (rieszSymbol l n ^ 2) * rieszSymbol k n
+           = -(rieszSymbol j n * rieszSymbol k n) := by
+    rw [show (fun l => rieszSymbol j n * (rieszSymbol l n ^ 2) * rieszSymbol k n)
+          = (fun l => rieszSymbol j n * rieszSymbol k n * (rieszSymbol l n ^ 2)) from by
+        ext l; ring]
+    rw [← Finset.mul_sum, rieszSymbol_sum_sq_complex hn]; ring
+  rw [h1, h2, h3, h4]; ring
+
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
 /-- **Ḣˢ-level Parseval for Fourier multipliers.** If `ĝ(n) = m(n)·f̂(n)`
