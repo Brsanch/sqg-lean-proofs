@@ -1414,6 +1414,107 @@ theorem sqg_vorticity_symbol {n : Fin 2 → ℤ} (hn : n ≠ 0) :
         = -(-(Complex.I * Complex.I * (↑(latticeNorm n) : ℂ))) from by ring]
   rw [neg_neg, Complex.I_mul_I, neg_one_mul]
 
+/-! ### SQG velocity-gradient symbols on `𝕋²` -/
+
+/-- **SQG velocity-gradient symbol.** The Fourier multiplier of
+`∂_i u_j` for the SQG velocity `u = (R̂₁θ, -R̂₀θ)` on `𝕋²`. The
+velocity gradient tensor at frequency `n` is
+
+    `(∂_i u_j)^̂(n) = sqgGradSymbol i j n · θ̂(n)`.
+
+Here `i` is the differentiation direction, `j` selects the velocity
+component (`j = 0` → `R̂₁`, `j = 1` → `−R̂₀`). -/
+noncomputable def sqgGradSymbol (i j : Fin 2) (n : Fin 2 → ℤ) : ℂ :=
+  derivSymbol i n *
+    (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)
+
+/-- **SQG strain symbol.** The Fourier multiplier of the symmetric
+part of the velocity gradient, `S_{ij} = (∂_i u_j + ∂_j u_i)/2`:
+
+    `Ŝ_{ij}(n) = (sqgGradSymbol i j n + sqgGradSymbol j i n) / 2`. -/
+noncomputable def sqgStrainSymbol (i j : Fin 2) (n : Fin 2 → ℤ) : ℂ :=
+  (sqgGradSymbol i j n + sqgGradSymbol j i n) / 2
+
+/-- **SQG strain is trace-free.** The strain rate tensor of the SQG
+velocity field is trace-free (incompressibility): `Ŝ₀₀ + Ŝ₁₁ = 0`
+at every lattice point.
+
+This follows from the divergence-free condition `∂₀u₀ + ∂₁u₁ = 0`
+(see `sqg_velocity_divergence_free_symbol`). -/
+theorem sqg_strain_trace_free (n : Fin 2 → ℤ) :
+    sqgStrainSymbol 0 0 n + sqgStrainSymbol 1 1 n = 0 := by
+  simp only [sqgStrainSymbol, sqgGradSymbol]
+  by_cases hn : n = 0
+  · simp [hn, derivSymbol, rieszSymbol]
+  · simp only [show (0 : Fin 2) = 0 from rfl, show (1 : Fin 2) ≠ 0 from by omega,
+               if_true, if_false]
+    rw [rieszSymbol_of_ne_zero hn 0, rieszSymbol_of_ne_zero hn 1]
+    simp only [derivSymbol]
+    have hL : (↑(latticeNorm n) : ℂ) ≠ 0 := by
+      exact_mod_cast (latticeNorm_pos hn).ne'
+    field_simp
+    push_cast; ring
+
+/-- **D14 Theorem 1 at the Fourier-symbol level (single mode).**
+
+For the SQG velocity `u = (R₁θ, -R₀θ)` on `𝕋²` and a single Fourier
+mode `n ≠ 0`, define:
+
+  * **front normal** `n̂ = n/‖n‖` (the direction of `∇θ`),
+  * **front tangent** `t̂ = (-n₁, n₀)/‖n‖` (perpendicular),
+  * **normal-tangential strain** `S_{nt} = n̂ · Ŝ · t̂`.
+
+Then `S_{nt} = ω̂/(2θ̂)`, i.e. the shear strain equals half the
+vorticity — the **shear–vorticity identity**. This is D14 Theorem 1
+restricted to single Fourier modes; the full physical-space identity
+follows because the relation is linear in the mode amplitude.
+
+Concretely the theorem states (in unnormalized form, multiplied by ‖n‖²):
+
+  `Σ_{i,j} n_i · Ŝ_{ij}(n) · t_j = -‖n‖³/2 = (ω̂/θ̂) · ‖n‖²/2`
+
+where `t = (-n₁, n₀)`. -/
+theorem sqg_shear_vorticity_fourier {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    -- Σ_{i,j} n_i · S_{ij} · t_j  (unnormalized, in ‖n‖ units)
+    let S := sqgStrainSymbol
+    let n₀ : ℂ := ↑(n 0 : ℤ)
+    let n₁ : ℂ := ↑(n 1 : ℤ)
+    n₀ * S 0 0 n * (-n₁) + n₀ * S 0 1 n * n₀
+      + n₁ * S 1 0 n * (-n₁) + n₁ * S 1 1 n * n₀
+    = -(↑(latticeNorm n) : ℂ) ^ 3 / 2 := by
+  -- Expand strain → grad → deriv × riesz
+  simp only [sqgStrainSymbol, sqgGradSymbol,
+             show (1 : Fin 2) ≠ 0 from by omega, if_true, if_false]
+  rw [rieszSymbol_of_ne_zero hn 0, rieszSymbol_of_ne_zero hn 1]
+  simp only [derivSymbol]
+  -- Set up abbreviations
+  set L := (↑(latticeNorm n) : ℂ) with hLdef
+  have hL : L ≠ 0 := by rw [hLdef]; exact_mod_cast (latticeNorm_pos hn).ne'
+  -- Clear all denominators (/L, /2)
+  field_simp
+  -- Everything is now polynomials in I, n 0, n 1, L with double-coercion ↑↑
+  -- Replace I² = -1
+  have hI2 : (Complex.I : ℂ) ^ 2 = -1 := Complex.I_sq
+  -- Replace L² with n₀² + n₁² (real identity lifted to ℂ)
+  have hL2 : L ^ 2 = (((n 0 : ℤ) : ℝ) : ℂ) ^ 2 + (((n 1 : ℤ) : ℝ) : ℂ) ^ 2 := by
+    rw [hLdef]
+    have hreal : (latticeNorm n) ^ 2 = (n 0 : ℝ) ^ 2 + (n 1 : ℝ) ^ 2 := by
+      have := latticeNorm_sq n
+      simp [Fin.sum_univ_two] at this
+      linarith
+    exact_mod_cast congrArg (↑· : ℝ → ℂ) hreal
+  -- L⁴ = L² · L²
+  have hL4 : L ^ 4 = ((((n 0 : ℤ) : ℝ) : ℂ) ^ 2
+                     + (((n 1 : ℤ) : ℝ) : ℂ) ^ 2) ^ 2 := by
+    calc L ^ 4 = (L ^ 2) ^ 2 := by ring
+      _ = _ := by rw [hL2]
+  -- Unify coercions: ↑↑(n j) (ℤ→ℝ→ℂ) = ↑(n j) (ℤ→ℂ)
+  simp only [Complex.ofReal_intCast] at *
+  -- Substitute I² = -1 and L⁴ = (n₀² + n₁²)²
+  rw [hI2, hL4]
+  -- The goal is now a polynomial identity in ↑(n 0), ↑(n 1) : ℂ
+  ring
+
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
 /-- **Ḣˢ-level Parseval for Fourier multipliers.** If `ĝ(n) = m(n)·f̂(n)`
