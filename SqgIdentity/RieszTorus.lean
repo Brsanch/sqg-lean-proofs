@@ -1380,6 +1380,40 @@ theorem leray_idempotent {d : Type*} [Fintype d] [DecidableEq d]
     rw [← Finset.mul_sum, rieszSymbol_sum_sq_complex hn]; ring
   rw [h1, h2, h3, h4]; ring
 
+/-! ### SQG vorticity–potential relation -/
+
+/-- **SQG vorticity symbol.** For the SQG velocity
+`û₀ = R̂₁·θ̂, û₁ = -R̂₀·θ̂` on `𝕋²`, the 2D scalar vorticity
+`ω = ∂₀u₁ − ∂₁u₀` has Fourier symbol
+
+    `ω̂/θ̂ = −‖n‖`
+
+at every `n ≠ 0`. This is the Fourier-level statement of the SQG
+constitutive relation `ω = −(-Δ)^{1/2}θ` (with the sign matching
+the velocity convention `u = (R₁θ, -R₀θ)`).
+
+The proof factors through `riesz_dot_freq`
+(`Σ R̂_k · n_k = -i‖n‖`). -/
+theorem sqg_vorticity_symbol {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    derivSymbol 0 n * (-rieszSymbol 0 n)
+      - derivSymbol 1 n * rieszSymbol 1 n
+    = -(↑(latticeNorm n) : ℂ) := by
+  -- Rewrite: the expression equals -(Σ_j derivSymbol j · rieszSymbol j)
+  have hstep : derivSymbol 0 n * (-rieszSymbol 0 n)
+                 - derivSymbol 1 n * rieszSymbol 1 n
+             = -(∑ j : Fin 2, derivSymbol j n * rieszSymbol j n) := by
+    simp [Fin.sum_univ_two]; ring
+  rw [hstep]
+  -- Each derivSymbol j n = I · (n j : ℂ), so factor out I
+  have hfactor : ∑ j : Fin 2, derivSymbol j n * rieszSymbol j n
+               = Complex.I * ∑ j : Fin 2, rieszSymbol j n * (↑(n j : ℤ) : ℂ) := by
+    simp only [derivSymbol, Fin.sum_univ_two]
+    push_cast; ring
+  rw [hfactor, riesz_dot_freq hn]
+  rw [show -(Complex.I * (-Complex.I * (↑(latticeNorm n) : ℂ)))
+        = -(-(Complex.I * Complex.I * (↑(latticeNorm n) : ℂ))) from by ring]
+  rw [neg_neg, Complex.I_mul_I, neg_one_mul]
+
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
 /-- **Ḣˢ-level Parseval for Fourier multipliers.** If `ĝ(n) = m(n)·f̂(n)`
