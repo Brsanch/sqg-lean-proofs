@@ -35,6 +35,15 @@ regularity proof. Currently covers the shear-vorticity identity
 - Hessian symbol, tangential-Hessian vanishing, third-order symbols
 - Strain-rotation decomposition, vorticity symbol = −|k|
 - SQG strain norm bound, divergence-free, explicit strain formulas
+- **Tight mode-level identities** (no inequality):
+  - `|S₀₀|² + |S₀₁|² = ‖n‖²/4` (strain eigenvalue tight)
+  - `Σ ‖S_ij‖² = ‖n‖²/2` (strain Frobenius tight)
+  - `Σ ‖∂̂_i u_j‖² = ‖n‖²` (gradient Frobenius tight)
+  - `‖ω̂‖ = ‖n‖` (vorticity norm)
+  - `‖∂u‖²_F = ‖S‖²_F + ‖ω‖²/2` (strain-vorticity partition)
+- Mode-level Ḣˢ tight identities for strain, gradient, vorticity
+- Riesz Ḣˢ contractivity, derivative Ḣˢ mode bound
+- Vorticity L² = θ Ḣ¹ (Parseval integrated form)
 
 ## What's not proven (yet)
 
