@@ -2554,4 +2554,131 @@ evolution) is controlled by the Ḣ¹ norm of θ, and that the D14 identity
 eliminates the dangerous term in the curvature budget.
 -/
 
+/-! ## Riesz Ḣˢ isometry and SQG velocity Sobolev bounds -/
+
+/-- **SQG velocity Ḣˢ bound.** For the SQG velocity component
+`u₀ = R₁θ` (or `u₁ = -R₀θ`):
+
+    `‖u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}`
+
+for every Sobolev exponent `s`. The velocity has the same regularity as θ. -/
+theorem sqg_velocity_Hs_le (s : ℝ) (j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) * mFourierCoeff θ n)
+    (hsumm : Summable
+        (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq s θ := by
+  apply Hs_contractive_of_bounded_symbol s θ u _ _ hcoeff hsumm
+  intro n
+  by_cases hj : j = 0
+  · simp [hj]; exact rieszSymbol_norm_le_one 1 n
+  · simp [hj, norm_neg]; exact rieszSymbol_norm_le_one 0 n
+
+/-! ### SQG velocity gradient and strain at Ḣˢ level
+
+The velocity gradient `∂_i u_j` has Fourier multiplier `sqgGradSymbol i j n`
+with `‖sqgGradSymbol i j n‖ ≤ ‖n‖`. This means:
+
+    `‖∂_i u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}`.
+
+At `s = 0` this recovers `‖∂_i u_j‖²_{L²} ≤ ‖θ‖²_{Ḣ¹}`.
+-/
+
+set_option maxHeartbeats 800000 in
+/-- **SQG velocity gradient at Ḣˢ level.** Each velocity gradient
+component satisfies `‖∂_i u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}`. -/
+theorem sqgGrad_Hs_le (s : ℝ) (i j : Fin 2)
+    (θ g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff g n = sqgGradSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable
+        (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s g ≤ hsSeminormSq (s + 1) θ := by
+  apply sqg_selection_rule_Hs s 1 θ g _ hsum
+  intro n
+  by_cases hn : n = 0
+  · subst hn
+    simp only [fracDerivSymbol_zero, zero_mul]
+    rw [hcoeff 0]
+    simp [sqgGradSymbol, derivSymbol, rieszSymbol]
+  · rw [hcoeff n, norm_mul]
+    calc ‖sqgGradSymbol i j n‖ * ‖mFourierCoeff θ n‖
+        ≤ latticeNorm n * ‖mFourierCoeff θ n‖ :=
+          mul_le_mul_of_nonneg_right (sqgGrad_norm_le hn i j) (norm_nonneg _)
+      _ = fracDerivSymbol 1 n * ‖mFourierCoeff θ n‖ := by
+          rw [fracDerivSymbol_one_eq hn]
+
+set_option maxHeartbeats 800000 in
+/-- **SQG strain at Ḣˢ level.** Each strain component satisfies
+`‖S_{ij}‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}`. This is the Sobolev-level
+curvature budget. -/
+theorem sqgStrain_Hs_le (s : ℝ) (i j : Fin 2)
+    (θ g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff g n = sqgStrainSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable
+        (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s g ≤ hsSeminormSq (s + 1) θ := by
+  apply sqg_selection_rule_Hs s 1 θ g _ hsum
+  intro n
+  by_cases hn : n = 0
+  · subst hn
+    simp only [fracDerivSymbol_zero, zero_mul]
+    rw [hcoeff 0]
+    simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol]
+  · rw [hcoeff n, norm_mul]
+    calc ‖sqgStrainSymbol i j n‖ * ‖mFourierCoeff θ n‖
+        ≤ latticeNorm n * ‖mFourierCoeff θ n‖ :=
+          mul_le_mul_of_nonneg_right (sqgStrain_norm_le hn i j) (norm_nonneg _)
+      _ = fracDerivSymbol 1 n * ‖mFourierCoeff θ n‖ := by
+          rw [fracDerivSymbol_one_eq hn]
+
+/-! ### Frequency-localised estimates (Bernstein-type)
+
+For the Sobolev bootstrap, one controls low and high frequencies separately.
+-/
+
+/-- **Low-frequency Bernstein bound.** For modes with `‖n‖ ≤ N`:
+
+    `σ_s(n)² ≤ N^{2(s-t)} · σ_t(n)²` when `t ≤ s`. -/
+theorem fracDerivSymbol_low_freq_bound {d : Type*} [Fintype d]
+    {s t : ℝ} (hst : t ≤ s) (N : ℝ) (_hN : 0 < N)
+    {n : d → ℤ} (hn_low : latticeNorm n ≤ N) :
+    (fracDerivSymbol s n) ^ 2 ≤ N ^ (2 * (s - t)) * (fracDerivSymbol t n) ^ 2 := by
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero]
+  · rw [fracDerivSymbol_of_ne_zero s hn, fracDerivSymbol_of_ne_zero t hn]
+    have hL_pos := latticeNorm_pos hn
+    rw [show (latticeNorm n ^ s) ^ 2 = latticeNorm n ^ (2 * s) from by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul (latticeNorm_nonneg n)]; ring_nf,
+        show (latticeNorm n ^ t) ^ 2 = latticeNorm n ^ (2 * t) from by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul (latticeNorm_nonneg n)]; ring_nf,
+        show N ^ (2 * (s - t)) = N ^ (2 * s - 2 * t) from by ring_nf,
+        show latticeNorm n ^ (2 * s)
+          = latticeNorm n ^ (2 * s - 2 * t) * latticeNorm n ^ (2 * t) from by
+          rw [← Real.rpow_add hL_pos]; ring_nf]
+    exact mul_le_mul_of_nonneg_right
+      (Real.rpow_le_rpow (latticeNorm_nonneg n) hn_low (by linarith))
+      (Real.rpow_nonneg (latticeNorm_nonneg n) _)
+
+/-- **High-frequency Bernstein bound.** For modes with `N ≤ ‖n‖`:
+
+    `σ_s(n)² ≤ N^{2(s-t)} · σ_t(n)²` when `s ≤ t`. -/
+theorem fracDerivSymbol_high_freq_bound {d : Type*} [Fintype d]
+    {s t : ℝ} (hst : s ≤ t) (N : ℝ) (hN : 0 < N)
+    {n : d → ℤ} (hn : n ≠ 0) (hn_high : N ≤ latticeNorm n) :
+    (fracDerivSymbol s n) ^ 2 ≤ N ^ (2 * (s - t)) * (fracDerivSymbol t n) ^ 2 := by
+  rw [fracDerivSymbol_of_ne_zero s hn, fracDerivSymbol_of_ne_zero t hn]
+  have hL_pos := latticeNorm_pos hn
+  rw [show (latticeNorm n ^ s) ^ 2 = latticeNorm n ^ (2 * s) from by
+        rw [← Real.rpow_natCast, ← Real.rpow_mul (latticeNorm_nonneg n)]; ring_nf,
+      show (latticeNorm n ^ t) ^ 2 = latticeNorm n ^ (2 * t) from by
+        rw [← Real.rpow_natCast, ← Real.rpow_mul (latticeNorm_nonneg n)]; ring_nf,
+      show N ^ (2 * (s - t)) = N ^ (2 * s - 2 * t) from by ring_nf,
+      show latticeNorm n ^ (2 * s)
+        = latticeNorm n ^ (2 * s - 2 * t) * latticeNorm n ^ (2 * t) from by
+        rw [← Real.rpow_add hL_pos]; ring_nf]
+  exact mul_le_mul_of_nonneg_right
+    (Real.rpow_le_rpow_of_nonpos hN hn_high (by linarith))
+    (Real.rpow_nonneg (latticeNorm_nonneg n) _)
+
 end SqgIdentity
