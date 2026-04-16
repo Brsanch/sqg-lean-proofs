@@ -3462,6 +3462,209 @@ theorem sqgStrain_01_Hs_le_quarter
         exact sqgStrain_01_tight_Hs_mode_bound hn s (mFourierCoeff θ n)
   · exact hsum.div_const 4
 
+/-! ## Heat semigroup symbol
+
+The heat equation `∂_t u = Δ u` has semigroup `e^{tΔ}` with Fourier
+multiplier `e^{-t·‖n‖²}`. This is always in (0, 1], and represents
+parabolic smoothing.
+
+The fractional heat `e^{-t(-Δ)^α}` (for SQG's diffusion-free setting,
+with α = 0 here) has symbol `e^{-t·‖n‖^{2α}}`.
+-/
+
+/-- **Heat semigroup symbol.** For `t ≥ 0`:
+
+    `ê_tΔ(n) = exp(-t·‖n‖²)`. -/
+noncomputable def heatSymbol {d : Type*} [Fintype d]
+    (t : ℝ) (n : d → ℤ) : ℝ :=
+  Real.exp (-t * (latticeNorm n) ^ 2)
+
+/-- **Heat semigroup symbol at n = 0 is 1.** -/
+@[simp] lemma heatSymbol_zero_mode {d : Type*} [Fintype d] (t : ℝ) :
+    heatSymbol t (0 : d → ℤ) = 1 := by
+  unfold heatSymbol
+  simp [latticeNorm]
+
+/-- **Heat semigroup symbol is positive.** -/
+lemma heatSymbol_pos {d : Type*} [Fintype d] (t : ℝ) (n : d → ℤ) :
+    0 < heatSymbol t n := Real.exp_pos _
+
+/-- **Heat semigroup symbol is nonneg.** -/
+lemma heatSymbol_nonneg {d : Type*} [Fintype d] (t : ℝ) (n : d → ℤ) :
+    0 ≤ heatSymbol t n := le_of_lt (heatSymbol_pos t n)
+
+/-- **Heat semigroup at t=0 is identity.** -/
+@[simp] lemma heatSymbol_zero_time {d : Type*} [Fintype d] (n : d → ℤ) :
+    heatSymbol 0 n = 1 := by
+  unfold heatSymbol
+  simp
+
+/-- **Heat semigroup is bounded by 1 for t ≥ 0.** -/
+lemma heatSymbol_le_one {d : Type*} [Fintype d] {t : ℝ} (ht : 0 ≤ t)
+    (n : d → ℤ) :
+    heatSymbol t n ≤ 1 := by
+  unfold heatSymbol
+  rw [show (1 : ℝ) = Real.exp 0 from Real.exp_zero.symm]
+  apply Real.exp_le_exp.mpr
+  have hL_sq_nn : 0 ≤ (latticeNorm n) ^ 2 := sq_nonneg _
+  nlinarith
+
+/-- **Heat semigroup is strictly below 1 at nonzero modes for t > 0.** -/
+lemma heatSymbol_lt_one {d : Type*} [Fintype d] {t : ℝ} (ht : 0 < t)
+    {n : d → ℤ} (hn : n ≠ 0) :
+    heatSymbol t n < 1 := by
+  unfold heatSymbol
+  rw [show (1 : ℝ) = Real.exp 0 from Real.exp_zero.symm]
+  apply Real.exp_lt_exp.mpr
+  have hL_pos : 0 < latticeNorm n := latticeNorm_pos hn
+  have hL_sq_pos : 0 < (latticeNorm n) ^ 2 := by positivity
+  nlinarith
+
+/-- **Heat semigroup: additive in time (homomorphism).** -/
+lemma heatSymbol_add {d : Type*} [Fintype d] (t₁ t₂ : ℝ) (n : d → ℤ) :
+    heatSymbol (t₁ + t₂) n = heatSymbol t₁ n * heatSymbol t₂ n := by
+  unfold heatSymbol
+  rw [← Real.exp_add]
+  congr 1
+  ring
+
+/-- **Heat semigroup Ḣˢ mode contractivity.** For `t ≥ 0`:
+
+    `σ_s(n)² · ‖(e^{tΔ})̂(n) · c‖² ≤ σ_s(n)² · ‖c‖²`
+
+Parabolic smoothing is a contraction at every Sobolev level. -/
+theorem heatSymbol_Hs_mode_bound {t : ℝ} (ht : 0 ≤ t) (s : ℝ)
+    {n : (Fin 2) → ℤ} (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real, Real.norm_of_nonneg (heatSymbol_nonneg _ _)]
+  have hh_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+  have hh_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
+  have hh_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
+    have h := mul_self_le_one_of_abs_le_one
+      (by rw [abs_of_nonneg hh_nn]; exact hh_le)
+    rwa [sq] at h
+  have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hprod_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+    mul_nonneg hσs_nn hc_nn
+  calc (fracDerivSymbol s n) ^ 2 * ((heatSymbol t n) ^ 2 * ‖c‖ ^ 2)
+      = (heatSymbol t n) ^ 2 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) := by ring
+    _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hh_sq_le hprod_nn
+    _ = (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := one_mul _
+
+/-! ## Parabolic smoothing at the k=1 level
+
+Classical parabolic smoothing: `‖n‖² · exp(-t·‖n‖²) ≤ 1/(et)`.
+This is the gradient-level smoothing provided by the heat semigroup.
+
+The key is the tangent-line inequality: `x · exp(-x) ≤ exp(-1)`
+(classical; max at `x = 1`).
+-/
+
+/-- **Tangent-line inequality at `x = 1`.** `x · exp(-x) ≤ exp(-1)`
+for all real `x`.
+
+At `x = 1` this is equality. Both `x · exp(-x)` and `exp(-1)` tangent
+each other at `x = 1` and the convex-below-concave argument gives
+`≤`. Equivalently: `ex ≤ exp(x)`, which is the tangent line inequality
+for `exp` at `x = 1`. -/
+theorem mul_exp_neg_le_exp_neg_one (x : ℝ) :
+    x * Real.exp (-x) ≤ Real.exp (-1) := by
+  by_cases hx : 0 ≤ x
+  · -- x ≥ 0: use x ≤ exp(x-1) (tangent line at x=1)
+    have h1 : x ≤ Real.exp (x - 1) := by
+      have := Real.add_one_le_exp (x - 1)
+      linarith
+    have hexp_neg_pos : 0 < Real.exp (-x) := Real.exp_pos _
+    calc x * Real.exp (-x)
+        ≤ Real.exp (x - 1) * Real.exp (-x) :=
+          mul_le_mul_of_nonneg_right h1 hexp_neg_pos.le
+      _ = Real.exp ((x - 1) + (-x)) := (Real.exp_add _ _).symm
+      _ = Real.exp (-1) := by
+          congr 1; ring
+  · -- x < 0: x · exp(-x) < 0 ≤ exp(-1)
+    push_neg at hx
+    have hexp_neg_pos : 0 < Real.exp (-x) := Real.exp_pos _
+    have hneg : x * Real.exp (-x) < 0 := mul_neg_of_neg_of_pos hx hexp_neg_pos
+    have hpos : 0 < Real.exp (-1) := Real.exp_pos _
+    linarith
+
+/-- **Parabolic smoothing bound at gradient level.** For `t > 0`:
+
+    `‖n‖² · exp(-t·‖n‖²) ≤ exp(-1) / t`
+
+This is the mode-level statement of the heat-semigroup smoothing estimate
+`‖∇(e^{tΔ}f)‖_L² ≤ C/√t · ‖f‖_L²` at frequency `n`. -/
+theorem latticeNorm_sq_mul_heat_le {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ 2 * heatSymbol t n ≤ Real.exp (-1) / t := by
+  unfold heatSymbol
+  -- Goal: L² · exp(-t·L²) ≤ exp(-1)/t
+  -- Let y = t·L². Then L² = y/t and exp(-t·L²) = exp(-y).
+  -- So LHS = (y/t) · exp(-y) = y·exp(-y) / t ≤ exp(-1)/t.
+  set y : ℝ := t * (latticeNorm n) ^ 2 with hy_def
+  have hy_nn : 0 ≤ y := mul_nonneg ht.le (sq_nonneg _)
+  have hexp_rw : Real.exp (-t * (latticeNorm n) ^ 2) = Real.exp (-y) := by
+    congr 1; rw [hy_def]; ring
+  rw [hexp_rw]
+  -- Now: L² · exp(-y) ≤ exp(-1)/t, with y = t·L²
+  have hL_sq_eq : (latticeNorm n) ^ 2 = y / t := by
+    rw [hy_def]; field_simp
+  rw [hL_sq_eq, div_mul_eq_mul_div]
+  -- Goal: y * exp(-y) / t ≤ exp(-1) / t
+  have h_num : y * Real.exp (-y) ≤ Real.exp (-1) := mul_exp_neg_le_exp_neg_one y
+  gcongr
+
+/-- **Parabolic smoothing: fracDerivSymbol 1 form.** For `t > 0`:
+
+    `σ_1(n)² · heatSymbol(t, n) ≤ exp(-1) / t`. -/
+theorem fracDerivSymbol_1_sq_mul_heat_le {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (fracDerivSymbol 1 n) ^ 2 * heatSymbol t n ≤ Real.exp (-1) / t := by
+  by_cases hn : n = 0
+  · subst hn
+    have : (fracDerivSymbol 1 (0 : Fin 2 → ℤ)) = 0 := fracDerivSymbol_zero 1
+    rw [this]
+    simp [Real.exp_pos, ht.le, Real.exp_nonneg]
+    exact div_nonneg (Real.exp_pos _).le ht.le
+  · rw [fracDerivSymbol_one_eq hn]
+    exact latticeNorm_sq_mul_heat_le ht n
+
+/-- **Parabolic smoothing in `Ḣ¹` form.** For `t > 0`, the heat-smoothed
+function has gradient bounded by `1/(et)` times its L² norm at each mode:
+
+    `σ_1(n)² · ‖(heatSymbol t n) · c‖² ≤ (exp(-1) / t) · ‖c‖²`
+
+This is the mode-level form of the classical `‖∇(e^{tΔ}f)‖_{L²} ≤
+(et)^{-1/2} · ‖f‖_{L²}` estimate (squared). -/
+theorem heatSymbol_grad_smoothing_mode {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    (fracDerivSymbol 1 n) ^ 2 * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (Real.exp (-1) / t) * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+  have hmain := fracDerivSymbol_1_sq_mul_heat_le ht n
+  -- Need: σ_1² · heat² · ‖c‖² ≤ (e^{-1}/t) · ‖c‖²
+  -- Have:  σ_1² · heat   ≤ e^{-1}/t
+  -- So σ_1² · heat² = (σ_1² · heat) · heat ≤ (e^{-1}/t) · heat ≤ (e^{-1}/t) · 1
+  have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+  have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+  have hσ_nn : 0 ≤ (fracDerivSymbol 1 n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ Real.exp (-1) / t :=
+    div_nonneg (Real.exp_pos _).le ht.le
+  calc (fracDerivSymbol 1 n) ^ 2 * ((heatSymbol t n) ^ 2 * ‖c‖ ^ 2)
+      = ((fracDerivSymbol 1 n) ^ 2 * heatSymbol t n)
+        * (heatSymbol t n * ‖c‖ ^ 2) := by ring
+    _ ≤ (Real.exp (-1) / t) * (heatSymbol t n * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hmain (mul_nonneg hheat_nn hc_nn)
+    _ ≤ (Real.exp (-1) / t) * (1 * ‖c‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left _ hfactor_nn
+        exact mul_le_mul_of_nonneg_right hheat_le_one hc_nn
+    _ = (Real.exp (-1) / t) * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
