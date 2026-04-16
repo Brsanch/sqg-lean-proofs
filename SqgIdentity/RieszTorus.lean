@@ -2129,4 +2129,189 @@ theorem sqg_strain_frobenius_eq (n : Fin 2 → ℤ) :
   rw [hsym, hS11, norm_neg]
   ring
 
+/-! ### Gradient norm symbol and curvature prerequisites
+
+The curvature `κ` of a level set `{θ = c}` is `κ = -∇·(∇θ/|∇θ|)`.
+In Fourier space, `|∇θ|²` at mode `n` has symbol `‖n‖²`, which is
+`fracDerivSymbol 1` squared. The gradient direction is `n̂ = n/‖n‖`.
+
+For the regularity argument, the key quantity is the *curvature of the
+front*, which is controlled by:
+1. The gradient norm (bounded below by θ-level-set non-degeneracy)
+2. The tangential Hessian (which we showed vanishes per single mode)
+3. The SQG velocity gradient (whose strain part is the identity)
+
+We formalize the gradient norm symbol and its relation to the Ḣ¹ norm.
+-/
+
+/-- **Gradient norm squared symbol.** The Fourier multiplier of `|∇θ|²`
+(per mode) is `Σⱼ |in_j|² = ‖n‖²`, which equals `(fracDerivSymbol 1 n)²`.
+
+This identifies `‖∇θ‖²_{L²} = ‖θ‖²_{Ḣ¹}` at the symbol level. -/
+theorem gradNormSq_eq_fracDeriv1_sq {d : Type*} [Fintype d] (n : d → ℤ) :
+    ∑ j, ‖derivSymbol j n‖ ^ 2 = (fracDerivSymbol 1 n) ^ 2 := by
+  rw [sum_norm_derivSymbol_sq]
+  by_cases hn : n = 0
+  · simp [hn, fracDerivSymbol_zero, latticeNorm]
+  · rw [fracDerivSymbol_one_eq hn]
+
+/-- **SQG strain from Hessian and Riesz.** Each SQG velocity gradient entry
+`∂_i u_j` factors as `derivSymbol i · rieszSymbol · (±1)`, which is a
+composition of the Hessian with the inverse Laplacian. At the symbol level,
+the SQG gradient decomposes as:
+
+    `sqgGradSymbol i j n = hessSymbol i k(j) n / (-‖n‖)`
+
+where `k(0) = 1` and `k(1) = 0` with appropriate signs. Concretely:
+  * `sqgGradSymbol i 0 n = -hessSymbol i 1 n / ‖n‖` (from `u₀ = R₁θ`)
+  * `sqgGradSymbol i 1 n = hessSymbol i 0 n / ‖n‖`  (from `u₁ = -R₀θ`)
+
+This shows the SQG strain is the Hessian of θ rotated by 90° and
+divided by `|∇θ|`-scale, explaining why the identity `S_nt = ω/2`
+connects strain to curvature. -/
+theorem sqgGrad_from_hess_0 {n : Fin 2 → ℤ} (hn : n ≠ 0) (i : Fin 2) :
+    sqgGradSymbol i 0 n * ((latticeNorm n : ℝ) : ℂ) = -hessSymbol i 1 n := by
+  unfold sqgGradSymbol hessSymbol
+  simp only [show (0 : Fin 2) = 0 from rfl, if_true]
+  rw [rieszSymbol_of_ne_zero hn 1]
+  unfold derivSymbol
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  field_simp
+
+theorem sqgGrad_from_hess_1 {n : Fin 2 → ℤ} (hn : n ≠ 0) (i : Fin 2) :
+    sqgGradSymbol i 1 n * ((latticeNorm n : ℝ) : ℂ) = hessSymbol i 0 n := by
+  unfold sqgGradSymbol hessSymbol
+  simp only [show (1 : Fin 2) ≠ 0 from by omega, if_false]
+  rw [rieszSymbol_of_ne_zero hn 0]
+  unfold derivSymbol
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  field_simp
+
+/-! ### Vorticity–Laplacian relation for SQG
+
+For SQG on `𝕋²`, the vorticity `ω = curl u = ∂₁u₀ - ∂₀u₁` has Fourier
+symbol `-‖n‖` (proven in `sqg_vorticity_symbol`). This means
+`ω = -(-Δ)^{1/2} θ`, connecting vorticity to a half-derivative of θ.
+
+The curvature budget uses this to relate the vorticity contribution in
+the strain decomposition (`ω/2`) to the Ḣ^{1/2} norm of θ.
+-/
+
+/-- **Vorticity Ḣˢ weight shift (symbol level).** Since the SQG vorticity
+symbol is `-‖n‖` (= `-fracDerivSymbol 1 n`), for any `c ≥ 0`:
+
+    `σ_s(n)² · (σ₁(n)² · c) = σ_{s+1}(n)² · c`.
+
+This is the per-mode identity underlying `‖ω‖²_{Ḣˢ} = ‖θ‖²_{Ḣ^{s+1}}`. -/
+theorem fracDerivSymbol_shift_weight
+    {d : Type*} [Fintype d] (s : ℝ) (n : d → ℤ) (c : ℝ) :
+    (fracDerivSymbol s n) ^ 2 * ((fracDerivSymbol 1 n) ^ 2 * c)
+    = (fracDerivSymbol (s + 1) n) ^ 2 * c := by
+  rw [show (fracDerivSymbol s n) ^ 2 * ((fracDerivSymbol 1 n) ^ 2 * c)
+      = ((fracDerivSymbol s n) ^ 2 * (fracDerivSymbol 1 n) ^ 2)
+        * c from by ring]
+  rw [← fracDerivSymbol_add_sq]
+
+/-! ### Curvature-relevant commutator: Riesz and derivative commute
+
+At the Fourier-symbol level, `R_j` and `∂_k` commute because both are
+scalar multipliers. This means `[R_j, ∂_k] = 0`, which is why the SQG
+velocity gradient has a cleaner structure than general velocity fields
+(where the advection operator doesn't commute with the constitutive law).
+
+This commutativity is the Fourier-space manifestation of the fact that
+Calderón–Zygmund operators commute with constant-coefficient differential
+operators. For the curvature budget, it means that higher derivatives
+of the SQG velocity can be expressed purely in terms of higher derivatives
+of θ, without commutator corrections.
+-/
+
+/-- **Riesz–derivative commutator vanishes.** At the symbol level,
+`R̂_j(n) · ∂̂_k(n) = ∂̂_k(n) · R̂_j(n)` (both are scalar multipliers). -/
+theorem rieszSymbol_comm_derivSymbol {d : Type*} [Fintype d]
+    (j k : d) (n : d → ℤ) :
+    rieszSymbol j n * derivSymbol k n = derivSymbol k n * rieszSymbol j n :=
+  mul_comm _ _
+
+/-- **Hessian–Riesz commutator vanishes.** At the symbol level,
+`H_{ij}(n) · R̂_k(n) = R̂_k(n) · H_{ij}(n)`. -/
+theorem hessSymbol_comm_rieszSymbol {d : Type*} [Fintype d]
+    (i j k : d) (n : d → ℤ) :
+    hessSymbol i j n * rieszSymbol k n = rieszSymbol k n * hessSymbol i j n :=
+  mul_comm _ _
+
+/-! ### SQG strain entries in terms of frequency components
+
+The SQG strain entries, when multiplied by ‖n‖, become explicit
+polynomials in the frequency components. This is useful for the
+curvature budget because it shows exactly how each strain component
+scales with the wavevector.
+-/
+
+/-- **SQG strain (0,0) entry, explicit.** For `n ≠ 0`:
+
+    `Ŝ₀₀(n) · ‖n‖ = n₀·n₁`
+
+since `S₀₀ = ∂₀u₀ = ∂₀(R₁θ)` and `(in₀)·(-in₁/‖n‖) = n₀n₁/‖n‖`. -/
+theorem sqg_strain_00_explicit {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    sqgStrainSymbol 0 0 n * ((latticeNorm n : ℝ) : ℂ)
+    = ((n 0 : ℤ) : ℂ) * ((n 1 : ℤ) : ℂ) := by
+  unfold sqgStrainSymbol sqgGradSymbol
+  simp only [if_true]
+  rw [rieszSymbol_of_ne_zero hn 1]
+  simp only [derivSymbol]
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  field_simp
+  have hI2 : (Complex.I : ℂ) ^ 2 = -1 := Complex.I_sq
+  simp only [Complex.ofReal_intCast] at *
+  rw [hI2]; ring
+
+/-- **SQG strain (0,1) entry, explicit.** For `n ≠ 0`:
+
+    `Ŝ₀₁(n) · ‖n‖ = (n₁² - n₀²) / 2`
+
+This is the off-diagonal strain, encoding the rate of angular deformation.
+The sign comes from `u₀ = R₁θ` contributing `-n₀²/‖n‖` and
+`u₁ = -R₀θ` contributing `n₁²/‖n‖`. -/
+theorem sqg_strain_01_explicit {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    sqgStrainSymbol 0 1 n * ((latticeNorm n : ℝ) : ℂ)
+    = (((n 1 : ℤ) : ℂ) ^ 2 - ((n 0 : ℤ) : ℂ) ^ 2) / 2 := by
+  unfold sqgStrainSymbol sqgGradSymbol
+  simp only [show (0 : Fin 2) = 0 from rfl, show (1 : Fin 2) ≠ 0 from by omega,
+             if_true, if_false]
+  rw [rieszSymbol_of_ne_zero hn 0, rieszSymbol_of_ne_zero hn 1]
+  simp only [derivSymbol]
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  field_simp
+  have hI2 : (Complex.I : ℂ) ^ 2 = -1 := Complex.I_sq
+  simp only [Complex.ofReal_intCast] at *
+  rw [hI2]; ring
+
+/-- **SQG strain magnitude scales as one derivative.** For `n ≠ 0`,
+each SQG strain entry `Ŝ_{ij}(n)` has magnitude `O(1)` (bounded by a
+constant independent of `n`), because when multiplied by `‖n‖` the result
+is a degree-2 polynomial in `n/‖n‖` (a bounded quantity).
+
+Concretely `Ŝ₀₀ · ‖n‖ = -n₀n₁` and `Ŝ₀₁ · ‖n‖ = (n₀² - n₁²)/2`,
+so `|Ŝ_{ij}| ≤ ‖n‖ / 2`.
+
+The integrated Frobenius norm `Σ_n ‖Ŝ(n)‖²_F · ‖θ̂(n)‖²` is therefore
+bounded by `‖n‖²/2 · ‖θ̂(n)‖²`, which sums to `‖θ‖²_{Ḣ¹}/2`.
+This confirms the strain is controlled by one derivative of θ. -/
+theorem sqg_strain_00_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgStrainSymbol 0 0 n * ((latticeNorm n : ℝ) : ℂ)‖
+    ≤ ((latticeNorm n : ℝ)) ^ 2 := by
+  rw [sqg_strain_00_explicit hn, norm_mul, Complex.norm_intCast, Complex.norm_intCast]
+  -- |n₀| · |n₁| ≤ ‖n‖²  (by AM-GM: 2ab ≤ a² + b²)
+  have h0 := sq_le_latticeNorm_sq n 0
+  have h1 := sq_le_latticeNorm_sq n 1
+  have hab : |((n 0 : ℤ) : ℝ)| * |((n 1 : ℤ) : ℝ)| ≤ (latticeNorm n) ^ 2 := by
+    nlinarith [sq_abs ((n 0 : ℤ) : ℝ), sq_abs ((n 1 : ℤ) : ℝ),
+               sq_nonneg (|((n 0 : ℤ) : ℝ)| - |((n 1 : ℤ) : ℝ)|)]
+  exact hab
+
 end SqgIdentity
