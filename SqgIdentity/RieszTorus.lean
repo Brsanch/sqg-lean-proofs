@@ -2816,6 +2816,51 @@ theorem sqgHalfVorticitySymbol_norm {n : Fin 2 → ℤ} (hn : n ≠ 0) :
   rw [norm_div, sqgVorticitySymbol_norm hn]
   norm_num
 
+/-! ## Mode-level Riesz Pythagorean identity
+
+The velocity isometry `|R₀(n)|² + |R₁(n)|² = 1` (for n ≠ 0) implies
+that the Ḣˢ-weighted velocity modes sum to the θ mode. This is the
+mode-level version; the integrated form follows by tsum. -/
+
+/-- **Mode-level velocity Pythagorean.** For each mode `n ≠ 0` and
+coefficient `c`:
+
+    `σ_s² · ‖R₁·c‖² + σ_s² · ‖R₀·c‖² = σ_s² · ‖c‖²`
+
+This is the fundamental reason the velocity has the same Sobolev regularity as θ. -/
+theorem riesz_pythagorean_Hs_mode (s : ℝ) {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖rieszSymbol 1 n * c‖ ^ 2
+    + (fracDerivSymbol s n) ^ 2 * ‖rieszSymbol 0 n * c‖ ^ 2
+    = (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := by
+  rw [norm_mul, norm_mul, mul_pow, mul_pow, ← mul_add, ← add_mul]
+  congr 1
+  have hpyth := rieszSymbol_sum_sq hn
+  rw [Fin.sum_univ_two] at hpyth
+  nlinarith [sq_nonneg ‖c‖]
+
+/-! ## Riesz–derivative–fracDeriv factorisation
+
+The Riesz symbol factors as the derivative symbol divided by the
+fractional-derivative scale: `R_j(n) · ‖n‖ = -∂̂_j(n)` (i.e.
+`-i·n_j/‖n‖ · ‖n‖ = -i·n_j`). This is the Fourier-level content
+of `R_j = ∂_j / (-Δ)^{1/2}`.
+-/
+
+/-- **Riesz–derivative factorisation.** For `n ≠ 0`:
+
+    `R̂_j(n) · ‖n‖ = -derivSymbol j n`
+
+This factors the Riesz transform as `R = ∂/(-Δ)^{1/2}`. -/
+theorem riesz_times_norm_eq_neg_deriv {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) (j : d) :
+    rieszSymbol j n * ((latticeNorm n : ℝ) : ℂ) = -(derivSymbol j n) := by
+  rw [rieszSymbol_of_ne_zero hn]
+  unfold derivSymbol
+  have hL := latticeNorm_pos hn
+  have hLc : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hL
+  field_simp
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
