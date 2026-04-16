@@ -433,6 +433,25 @@ theorem laplacian_mul_inv {d : Type*} [Fintype d]
   have hL2 : ((latticeNorm n : ℝ) : ℂ) ^ 2 ≠ 0 := pow_ne_zero 2 hL
   field_simp
 
+/-- **SQG velocity recovers from vorticity and Biot–Savart.** The SQG
+velocity can be obtained by the chain `θ → ψ = (-Δ)^{-1/2}θ → u = ∇⊥ψ`.
+At the symbol level, combining `invLaplacianSymbol`, `fracDerivSymbol 1`,
+and the derivative symbols recovers the Riesz multiplier:
+
+    `derivSymbol j n · Δ̂⁻¹(n) · σ₁(n) = R̂_j(n)`
+
+for `n ≠ 0`. Concretely: `(in_j)·(-1/‖n‖²)·‖n‖ = -in_j/‖n‖`. -/
+theorem biot_savart_riesz_factorisation {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) (j : d) :
+    derivSymbol j n * invLaplacianSymbol n * (↑(fracDerivSymbol 1 n) : ℂ)
+      = rieszSymbol j n := by
+  rw [invLaplacianSymbol, if_neg hn, fracDerivSymbol_one_eq hn,
+      rieszSymbol_of_ne_zero hn j]
+  simp only [derivSymbol]
+  have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  field_simp
+
 /-! ### Measure-theoretic setup for torus L² integrals -/
 
 -- Replicate the file-local instance from `Mathlib.Analysis.Fourier.AddCircleMulti`
