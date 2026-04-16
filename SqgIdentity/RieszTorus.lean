@@ -366,6 +366,42 @@ lemma rieszSymbol_mul_fracDeriv_one_eq_neg_derivSymbol
     unfold derivSymbol
     ring
 
+/-! ### Laplacian symbol -/
+
+/-- The Fourier multiplier symbol of `Δ` (the Laplacian) on `𝕋ᵈ`,
+defined as `−‖n‖²`. Equivalently, `−Σⱼ n_j²`. -/
+noncomputable def laplacianSymbol {d : Type*} [Fintype d]
+    (n : d → ℤ) : ℂ :=
+  -((latticeNorm n : ℝ) : ℂ) ^ 2
+
+/-- **Laplacian symbol at zero.** `Δ̂(0) = 0`. -/
+@[simp] lemma laplacianSymbol_zero {d : Type*} [Fintype d] :
+    laplacianSymbol (0 : d → ℤ) = 0 := by
+  simp [laplacianSymbol, latticeNorm]
+
+/-- **Laplacian symbol from derivatives.** `Δ̂(n) = Σⱼ (derivSymbol j n)²`,
+i.e. the Laplacian is the sum of second derivatives. Note
+`(derivSymbol j n)² = (i·n_j)² = −n_j²`, so the sum equals `−‖n‖²`. -/
+theorem laplacianSymbol_eq_sum_derivSymbol_sq {d : Type*} [Fintype d]
+    (n : d → ℤ) :
+    laplacianSymbol n = ∑ j, (derivSymbol j n) ^ 2 := by
+  simp only [laplacianSymbol, derivSymbol, mul_pow, Complex.I_sq, neg_one_mul]
+  rw [show -(((latticeNorm n : ℝ) : ℂ)) ^ 2
+        = -((∑ j, ((n j : ℝ) : ℂ) ^ 2)) from by
+      rw [show ∑ j, ((n j : ℝ) : ℂ) ^ 2 = ((∑ j, (n j : ℝ) ^ 2 : ℝ) : ℂ) from by
+            push_cast; rfl]
+      rw [← latticeNorm_sq]; push_cast; rfl]
+  rw [Finset.sum_neg_distrib]
+
+/-- **Laplacian from fractional derivative symbol.** `Δ̂(n) = −(σ₁(n))²`,
+connecting the Laplacian to the half-order operator `(-Δ)^{1/2}`. -/
+theorem laplacianSymbol_eq_neg_fracDeriv_one_sq {d : Type*} [Fintype d]
+    (n : d → ℤ) :
+    laplacianSymbol n = -(↑(fracDerivSymbol 1 n) : ℂ) ^ 2 := by
+  by_cases hn : n = 0
+  · simp [hn, laplacianSymbol, fracDerivSymbol_zero, latticeNorm]
+  · simp only [laplacianSymbol, fracDerivSymbol_one_eq hn]
+
 /-! ### Measure-theoretic setup for torus L² integrals -/
 
 -- Replicate the file-local instance from `Mathlib.Analysis.Fourier.AddCircleMulti`
