@@ -1244,6 +1244,74 @@ theorem leray_trace {d : Type*} [Fintype d] [DecidableEq d]
   simp [Finset.card_univ]
   ring
 
+/-- **Riesz–frequency dot product.** For `n ≠ 0`,
+
+    `Σ_k  R̂_k(n) · n_k = −i · ‖n‖`.
+
+This is the Fourier-side expression of `div(R f) = (-Δ)^{1/2} f`.
+Each `R̂_k(n) = -i n_k/‖n‖`, so the sum reduces to
+`(-i/‖n‖) Σ_k n_k² = -i · ‖n‖`. -/
+theorem riesz_dot_freq {d : Type*} [Fintype d]
+    {n : d → ℤ} (hn : n ≠ 0) :
+    ∑ k, rieszSymbol k n * (↑(n k : ℤ) : ℂ)
+      = -Complex.I * (↑(latticeNorm n) : ℂ) := by
+  have hL : (↑(latticeNorm n) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  -- Multiply both sides by ‖n‖ to clear denominators
+  have hmul : (∑ k, rieszSymbol k n * (↑(n k : ℤ) : ℂ)) * (↑(latticeNorm n) : ℂ)
+            = (-Complex.I * (↑(latticeNorm n) : ℂ)) * (↑(latticeNorm n) : ℂ) := by
+    rw [Finset.sum_mul]
+    -- Per-term: R̂_k · n_k · ‖n‖ = -I · n_k²
+    have hterm : ∀ k, rieszSymbol k n * (↑(n k : ℤ) : ℂ) * (↑(latticeNorm n) : ℂ)
+                    = -Complex.I * ((↑(n k : ℤ) : ℂ) ^ 2) := by
+      intro k
+      rw [rieszSymbol_of_ne_zero hn k]
+      field_simp
+      push_cast; ring
+    rw [Finset.sum_congr rfl (fun k _ => hterm k)]
+    -- Σ_k (-I · n_k²) = -I · Σ_k n_k² = -I · ‖n‖²
+    rw [← Finset.mul_sum]
+    have hsum : ∑ k, ((↑(n k : ℤ) : ℂ) ^ 2) = (↑(latticeNorm n) : ℂ) ^ 2 := by
+      have hreal : (∑ k, (n k : ℝ) ^ 2) = latticeNorm n ^ 2 :=
+        (latticeNorm_sq n).symm
+      exact_mod_cast congrArg (↑· : ℝ → ℂ) hreal
+    rw [hsum]; ring
+  exact mul_right_cancel₀ hL hmul
+
+/-- **Leray projector annihilates longitudinal modes.** For `n ≠ 0`,
+
+    `Σ_k  P̂_{jk}(n) · n_k = 0`.
+
+This is the defining property of the Helmholtz/Leray projector: it
+kills the gradient (irrotational) component of any vector field.
+Follows from `riesz_dot_freq` (Σ R̂_k n_k = −i‖n‖) and the Riesz
+symbol normalisation. -/
+theorem leray_kills_longitudinal {d : Type*} [Fintype d] [DecidableEq d]
+    {n : d → ℤ} (hn : n ≠ 0) (j : d) :
+    ∑ k, leraySymbol j k n * (↑(n k : ℤ) : ℂ) = 0 := by
+  -- Rewrite leraySymbol to δ_{jk} + R̂_j R̂_k and distribute.
+  have hexpand : ∀ k, leraySymbol j k n * (↑(n k : ℤ) : ℂ)
+      = (if j = k then (↑(n k : ℤ) : ℂ) else 0)
+        + rieszSymbol j n * (rieszSymbol k n * (↑(n k : ℤ) : ℂ)) := by
+    intro k
+    unfold leraySymbol
+    split_ifs <;> ring
+  rw [Finset.sum_congr rfl (fun k _ => hexpand k)]
+  rw [Finset.sum_add_distrib]
+  -- First sum: Σ_k δ_{jk} · n_k = n_j
+  have hδ : ∑ k, (if j = k then (↑(n k : ℤ) : ℂ) else 0) = (↑(n j : ℤ) : ℂ) := by
+    exact (Finset.sum_ite_eq Finset.univ j _).trans (if_pos (Finset.mem_univ j))
+  rw [hδ]
+  -- Second sum: R̂_j · Σ_k R̂_k · n_k = R̂_j · (-I · ‖n‖)
+  rw [← Finset.mul_sum, riesz_dot_freq hn]
+  -- Now: n_j + R̂_j · (-I · ‖n‖) = 0
+  rw [rieszSymbol_of_ne_zero hn j]
+  have hL : (↑(latticeNorm n) : ℂ) ≠ 0 := by
+    exact_mod_cast (latticeNorm_pos hn).ne'
+  field_simp
+  rw [show (Complex.I : ℂ) ^ 2 = -1 from Complex.I_sq]
+  push_cast; ring
+
 /-! ### Parseval multiplier identity in Ḣˢ form -/
 
 /-- **Ḣˢ-level Parseval for Fourier multipliers.** If `ĝ(n) = m(n)·f̂(n)`
