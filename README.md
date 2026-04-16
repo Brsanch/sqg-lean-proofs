@@ -30,6 +30,11 @@ regularity proof. Currently covers the shear-vorticity identity
 - Fractional-derivative symbol, Ḣˢ seminorm, Laplacian and inverse-Laplacian
   symbols, Biot-Savart factorisation
 - L² contractivity of bounded multipliers, Riesz L² contractivity
+- Ḣˢ-level bounds: strain/velocity-gradient ≤ Ḣˢ⁺¹(θ), velocity ≤ Ḣˢ(θ)
+- Sobolev interpolation (mode-level), Bernstein frequency estimates
+- Hessian symbol, tangential-Hessian vanishing, third-order symbols
+- Strain-rotation decomposition, vorticity symbol = −|k|
+- SQG strain norm bound, divergence-free, explicit strain formulas
 
 ## What's not proven (yet)
 
