@@ -3020,6 +3020,71 @@ theorem sqgStrain_eigenvalue_tight {n : Fin 2 → ℤ} (hn : n ≠ 0) :
   field_simp at key
   linarith [key, pow_nonneg (latticeNorm_nonneg n) 4]
 
+/-- **Strain Frobenius norm tight equality.** For `n ≠ 0`:
+
+    `Σ_{ij} ‖S_{ij}(n)‖² = ‖n‖²/2`
+
+This follows from tracelessness (Σ over {(0,0),(1,1)} gives `2·|S₀₀|²`)
+and symmetry (`S₁₀ = S₀₁`, giving `Σ = 2·(|S₀₀|² + |S₀₁|²) = L²/2`). -/
+theorem sqgStrain_frobenius_tight {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n‖ ^ 2) = (latticeNorm n) ^ 2 / 2 := by
+  rw [sqgStrain_frobenius_explicit n, sqgStrain_eigenvalue_tight hn]
+  ring
+
+/-- **Velocity gradient norm tight equality.** For `n ≠ 0`, the sum
+of all squared velocity gradient components equals `‖n‖²`:
+
+    `Σ_{ij} ‖∂̂_i u_j(n)‖² = ‖n‖²`
+
+Proof: `∂̂_i u_j(n) = (in_i) · R_{swap(j)}(n)` with `|iR_k| = |R_k|`,
+and `Σ_i n_i² · Σ_k ‖R_k‖² = ‖n‖² · 1`. -/
+theorem sqgGrad_frobenius_tight {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgGradSymbol i j n‖ ^ 2) = (latticeNorm n) ^ 2 := by
+  have hR : ‖rieszSymbol (0 : Fin 2) n‖ ^ 2 + ‖rieszSymbol (1 : Fin 2) n‖ ^ 2 = 1 := by
+    have := rieszSymbol_sum_sq hn
+    simp only [Fin.sum_univ_two] at this
+    linarith
+  have hL_sq : (latticeNorm n) ^ 2 = ((n 0 : ℤ) : ℝ) ^ 2 + ((n 1 : ℤ) : ℝ) ^ 2 := by
+    rw [latticeNorm_sq]; simp [Fin.sum_univ_two]
+  -- Helper: ‖sqgGradSymbol i 0 n‖² = |n_i|² · ‖R₁(n)‖²
+  have h0 : ∀ i : Fin 2, ‖sqgGradSymbol i 0 n‖ ^ 2
+      = ((n i : ℤ) : ℝ) ^ 2 * ‖rieszSymbol 1 n‖ ^ 2 := by
+    intro i
+    unfold sqgGradSymbol derivSymbol
+    simp only [show (0 : Fin 2) = 0 from rfl, if_true]
+    rw [norm_mul, mul_pow]
+    rw [show ‖Complex.I * ((((n i : ℤ) : ℝ) : ℂ))‖ = |((n i : ℤ) : ℝ)| from by
+      rw [norm_mul, Complex.norm_I, one_mul, Complex.norm_real, Real.norm_eq_abs]]
+    rw [sq_abs]
+  -- Helper: ‖sqgGradSymbol i 1 n‖² = |n_i|² · ‖R₀(n)‖²
+  have h1 : ∀ i : Fin 2, ‖sqgGradSymbol i 1 n‖ ^ 2
+      = ((n i : ℤ) : ℝ) ^ 2 * ‖rieszSymbol 0 n‖ ^ 2 := by
+    intro i
+    unfold sqgGradSymbol derivSymbol
+    simp only [show (1 : Fin 2) ≠ 0 from by omega, if_false]
+    rw [norm_mul, mul_pow, norm_neg]
+    rw [show ‖Complex.I * ((((n i : ℤ) : ℝ) : ℂ))‖ = |((n i : ℤ) : ℝ)| from by
+      rw [norm_mul, Complex.norm_I, one_mul, Complex.norm_real, Real.norm_eq_abs]]
+    rw [sq_abs]
+  simp only [Fin.sum_univ_two]
+  rw [h0 0, h0 1, h1 0, h1 1, hL_sq]
+  nlinarith [hR, sq_nonneg ((n 0 : ℤ) : ℝ), sq_nonneg ((n 1 : ℤ) : ℝ)]
+
+/-- **Velocity gradient = strain + rotation partition at mode level.**
+For `n ≠ 0`:
+
+    `Σ_{ij} ‖∂̂_i u_j(n)‖² = Σ_{ij} ‖S_{ij}(n)‖² + ‖ω̂(n)‖² / 2`
+
+which at tight values becomes `L² = L²/2 + L²/2`. This is the
+microlocal form of the enstrophy = vorticity² + 2·strain² identity. -/
+theorem sqg_grad_strain_vort_partition {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgGradSymbol i j n‖ ^ 2)
+    = (∑ i : Fin 2, ∑ j : Fin 2, ‖sqgStrainSymbol i j n‖ ^ 2)
+      + ‖sqgVorticitySymbol n‖ ^ 2 / 2 := by
+  rw [sqgGrad_frobenius_tight hn, sqgStrain_frobenius_tight hn,
+      sqgVorticitySymbol_norm hn]
+  ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
