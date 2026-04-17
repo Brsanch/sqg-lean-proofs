@@ -4561,6 +4561,104 @@ theorem fracDerivSymbol_neg_bound_on_lattice {s : ℝ} (hs : 0 ≤ s)
   calc (1 : ℝ) = (1 : ℝ) ^ s := by rw [Real.one_rpow]
     _ ≤ (latticeNorm n) ^ s := Real.rpow_le_rpow (by norm_num) hL hs
 
+/-! ## Poisson semigroup (α=1/2 fractional heat)
+
+The Poisson semigroup `e^{-t·Λ}` (where `Λ = (-Δ)^{1/2}`) has Fourier
+multiplier `exp(-t·‖n‖)`. This corresponds to `α=1/2` in the fractional
+heat family. Useful for critical SQG analysis.
+-/
+
+/-- **Poisson semigroup symbol.** For `t ≥ 0`:
+
+    `P_t(n) = exp(-t·‖n‖)`. -/
+noncomputable def poissonSymbol {d : Type*} [Fintype d]
+    (t : ℝ) (n : d → ℤ) : ℝ :=
+  Real.exp (-t * latticeNorm n)
+
+@[simp] lemma poissonSymbol_zero_mode {d : Type*} [Fintype d] (t : ℝ) :
+    poissonSymbol t (0 : d → ℤ) = 1 := by
+  unfold poissonSymbol
+  simp [latticeNorm]
+
+lemma poissonSymbol_pos {d : Type*} [Fintype d] (t : ℝ) (n : d → ℤ) :
+    0 < poissonSymbol t n := Real.exp_pos _
+
+lemma poissonSymbol_nonneg {d : Type*} [Fintype d] (t : ℝ) (n : d → ℤ) :
+    0 ≤ poissonSymbol t n := (poissonSymbol_pos t n).le
+
+@[simp] lemma poissonSymbol_zero_time {d : Type*} [Fintype d] (n : d → ℤ) :
+    poissonSymbol 0 n = 1 := by
+  unfold poissonSymbol
+  simp
+
+/-- **Poisson ≤ 1 for t ≥ 0.** -/
+lemma poissonSymbol_le_one {d : Type*} [Fintype d] {t : ℝ} (ht : 0 ≤ t)
+    (n : d → ℤ) : poissonSymbol t n ≤ 1 := by
+  unfold poissonSymbol
+  rw [show (1 : ℝ) = Real.exp 0 from Real.exp_zero.symm]
+  apply Real.exp_le_exp.mpr
+  have := latticeNorm_nonneg n
+  nlinarith
+
+/-- **Poisson semigroup: additive in time.** -/
+lemma poissonSymbol_add {d : Type*} [Fintype d] (t₁ t₂ : ℝ) (n : d → ℤ) :
+    poissonSymbol (t₁ + t₂) n = poissonSymbol t₁ n * poissonSymbol t₂ n := by
+  unfold poissonSymbol
+  rw [← Real.exp_add]
+  congr 1; ring
+
+/-- **Poisson smoothing at gradient level.** For `t > 0`:
+
+    `‖n‖ · exp(-t·‖n‖) ≤ exp(-1) / t`
+
+Proof: set `y = t·‖n‖`, use the tangent-line inequality
+`x · exp(-x) ≤ exp(-1)` with `x = y`. -/
+theorem latticeNorm_mul_poisson_le {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n : ℝ) * poissonSymbol t n ≤ Real.exp (-1) / t := by
+  unfold poissonSymbol
+  set y : ℝ := t * latticeNorm n with hy_def
+  have hy_nn : 0 ≤ y := mul_nonneg ht.le (latticeNorm_nonneg n)
+  have hexp_rw : Real.exp (-t * latticeNorm n) = Real.exp (-y) := by
+    congr 1; rw [hy_def]; ring
+  rw [hexp_rw]
+  have hL_eq : (latticeNorm n : ℝ) = y / t := by
+    rw [hy_def]; field_simp
+  rw [hL_eq, div_mul_eq_mul_div]
+  have h_num : y * Real.exp (-y) ≤ Real.exp (-1) := mul_exp_neg_le_exp_neg_one y
+  gcongr
+
+/-- **Poisson smoothing for `σ_1(n) = ‖n‖`.** -/
+theorem fracDerivSymbol_1_mul_poisson_le {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    fracDerivSymbol 1 n * poissonSymbol t n ≤ Real.exp (-1) / t := by
+  by_cases hn : n = 0
+  · subst hn
+    rw [fracDerivSymbol_zero]
+    simp
+    positivity
+  · rw [fracDerivSymbol_one_eq hn]
+    exact latticeNorm_mul_poisson_le ht n
+
+/-- **Poisson L²-contractivity (mode-level).** For `t ≥ 0`:
+
+    `‖P_t(n) · c‖² ≤ ‖c‖²`. -/
+theorem poissonSymbol_L2_mode_contract {t : ℝ} (ht : 0 ≤ t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((poissonSymbol t n : ℝ) : ℂ) * c‖ ^ 2 ≤ ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
+  have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
+  have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht n
+  have hp_sq_le : (poissonSymbol t n) ^ 2 ≤ 1 := by
+    have := mul_self_le_one_of_abs_le_one
+      (by rw [abs_of_nonneg hp_nn]; exact hp_le)
+    rwa [sq] at this
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  calc (poissonSymbol t n) ^ 2 * ‖c‖ ^ 2
+      ≤ 1 * ‖c‖ ^ 2 := mul_le_mul_of_nonneg_right hp_sq_le hc_nn
+    _ = ‖c‖ ^ 2 := one_mul _
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
