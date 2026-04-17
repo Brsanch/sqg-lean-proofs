@@ -5294,6 +5294,61 @@ theorem heat_smoothed_sqgStrain_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
   · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
   · exact hsum
 
+/-- **Heat-smoothed SQG velocity Ḣˢ integrated bound.** For `t ≥ 0`:
+
+    `‖e^{tΔ} u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}`
+
+where velocity `u_j = (R₁θ, -R₀θ)` and heat acts diagonally.
+No gain in Sobolev level — both Riesz and heat are contractive. -/
+theorem heat_smoothed_sqg_velocity_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
+    (j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((heatSymbol t n : ℝ) : ℂ) *
+        (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) *
+        mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq s θ := by
+  unfold hsSeminormSq
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+    -- ‖heat·R·c‖² ≤ ‖c‖²  using heat ≤ 1 and |R| ≤ 1
+    rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+    have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+    have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
+    have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
+      have := mul_self_le_one_of_abs_le_one
+        (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
+      rwa [sq] at this
+    have hR_le : ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2 ≤ 1 := by
+      by_cases hn : n = 0
+      · subst hn
+        by_cases hj : j = 0
+        · simp [hj]
+        · simp [hj]
+      · have hpyth := rieszSymbol_sum_sq hn
+        simp only [Fin.sum_univ_two] at hpyth
+        by_cases hj : j = 0
+        · simp [hj]; nlinarith [sq_nonneg ‖rieszSymbol 0 n‖]
+        · simp [hj, norm_neg]; nlinarith [sq_nonneg ‖rieszSymbol 1 n‖]
+    have hc_nn : 0 ≤ ‖mFourierCoeff θ n‖ ^ 2 := sq_nonneg _
+    calc (heatSymbol t n) ^ 2 *
+          ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2 *
+          ‖mFourierCoeff θ n‖ ^ 2
+        ≤ 1 * 1 * ‖mFourierCoeff θ n‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul hheat_sq_le hR_le (sq_nonneg _) (by linarith)
+      _ = ‖mFourierCoeff θ n‖ ^ 2 := by ring
+  apply Summable.tsum_le_tsum hmode
+  · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
