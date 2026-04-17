@@ -3911,6 +3911,46 @@ theorem fracDerivSymbol_nat_sq_mul_heat_le {k : ℕ} (hk : k ≠ 0) {t : ℝ} (h
     rw [h_σk_sq]
     exact latticeNorm_pow_mul_heat_le hk ht n
 
+/-- **Mode-level Ḣᵏ parabolic smoothing at general k.** For `k ≥ 1`:
+
+    `σ_k(n)² · ‖heat(t,n) · c‖² ≤ (k^k · exp(-k) / t^k) · ‖c‖²`
+
+This is the mode-level form of the classical
+`‖(-Δ)^{k/2} (e^{tΔ}f)‖_{L²} ≤ (k/(et))^{k/2} · ‖f‖_{L²}` estimate. -/
+theorem heatSymbol_Hk_smoothing_mode {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    (fracDerivSymbol (k : ℝ) n) ^ 2 * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+  have hmain := fracDerivSymbol_nat_sq_mul_heat_le hk ht n
+  have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+  have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+  have hσ_nn : 0 ≤ (fracDerivSymbol (k : ℝ) n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ (k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k := by
+    have hk_pos : (0 : ℝ) < (k : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hk
+    have htk_pos : 0 < t ^ k := pow_pos ht k
+    positivity
+  calc (fracDerivSymbol (k : ℝ) n) ^ 2 * ((heatSymbol t n) ^ 2 * ‖c‖ ^ 2)
+      = ((fracDerivSymbol (k : ℝ) n) ^ 2 * heatSymbol t n)
+        * (heatSymbol t n * ‖c‖ ^ 2) := by ring
+    _ ≤ ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) * (heatSymbol t n * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hmain (mul_nonneg hheat_nn hc_nn)
+    _ ≤ ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) * (1 * ‖c‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left _ hfactor_nn
+        exact mul_le_mul_of_nonneg_right hheat_le_one hc_nn
+    _ = ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) * ‖c‖ ^ 2 := by ring
+
+/-- **Heat operator strictly smooths at each natural Sobolev level.**
+For `k ≥ 1`, applying the heat semigroup for time `t > 0` gives a
+bound at `Ḣᵏ` level proportional to `1/t^k`. -/
+theorem heatSymbol_increases_regularity {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (fracDerivSymbol (k : ℝ) n) ^ 2 * heatSymbol t n ≤
+      (k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k :=
+  fracDerivSymbol_nat_sq_mul_heat_le hk ht n
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
