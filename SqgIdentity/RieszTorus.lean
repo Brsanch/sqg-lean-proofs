@@ -6222,6 +6222,172 @@ theorem fracHeat_smoothed_sqg_velocity_Hs_integrated
   · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
   · exact hsum
 
+/-- **α-fracHeat-smoothed SQG vorticity Ḣˢ integrated (contractive).**
+For `α > 0, t ≥ 0`:
+
+    `‖fracHeat(α,·) ω‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}`
+
+Uses fracHeat ≤ 1 and `‖ω̂(n)‖ = ‖n‖ = σ_1(n)` to get level shift by 1. -/
+theorem fracHeat_smoothed_vorticity_Hs_integrated (s : ℝ) {α t : ℝ}
+    (hα : 0 < α) (ht : 0 ≤ t)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) * sqgVorticitySymbol n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq (s + 1) θ := by
+  unfold hsSeminormSq
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hω0 : sqgVorticitySymbol 0 = 0 := by
+        unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hω0, mul_zero, zero_mul, norm_zero]
+      have h0sq : (0 : ℝ) ^ 2 = 0 := by norm_num
+      rw [h0sq, mul_zero]
+      exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+        Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n),
+        sqgVorticitySymbol_norm hn]
+      have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+      have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
+      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
+        have := mul_self_le_one_of_abs_le_one
+          (by rw [abs_of_nonneg hf_nn]; exact hf_le)
+        rwa [sq] at this
+      have hfrac := fracDerivSymbol_add_sq s 1 n
+      have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+        rw [fracDerivSymbol_one_eq hn]
+      calc (fracDerivSymbol s n) ^ 2 *
+            ((fracHeatSymbol α t n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+          = (fracHeatSymbol α t n) ^ 2 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            ring
+        _ ≤ 1 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+            mul_le_mul_of_nonneg_right hf_sq_le (by positivity)
+        _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+            rw [hfrac, hfrac1]; ring
+  apply Summable.tsum_le_tsum hmode
+  · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum
+
+/-- **α-fracHeat-smoothed SQG gradient Ḣˢ integrated (contractive).** -/
+theorem fracHeat_smoothed_sqgGrad_Hs_integrated (s : ℝ) {α t : ℝ}
+    (hα : 0 < α) (ht : 0 ≤ t) (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) * sqgGradSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq (s + 1) θ := by
+  unfold hsSeminormSq
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hg0 : sqgGradSymbol i j 0 = 0 := by
+        unfold sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hg0, mul_zero, zero_mul, norm_zero]
+      have h0sq : (0 : ℝ) ^ 2 = 0 := by norm_num
+      rw [h0sq, mul_zero]
+      exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+        Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+      have hgrad := sqgGrad_norm_le hn i j
+      have hgrad_sq_le : ‖sqgGradSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+        sq_le_sq' (by linarith [norm_nonneg (sqgGradSymbol i j n)]) hgrad
+      have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+      have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
+      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
+        have := mul_self_le_one_of_abs_le_one
+          (by rw [abs_of_nonneg hf_nn]; exact hf_le)
+        rwa [sq] at this
+      have hfrac := fracDerivSymbol_add_sq s 1 n
+      have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+        rw [fracDerivSymbol_one_eq hn]
+      calc (fracDerivSymbol s n) ^ 2 *
+            ((fracHeatSymbol α t n) ^ 2 * ‖sqgGradSymbol i j n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+          ≤ (fracDerivSymbol s n) ^ 2 *
+            ((fracHeatSymbol α t n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+            apply mul_le_mul_of_nonneg_right _ (sq_nonneg _)
+            exact mul_le_mul_of_nonneg_left hgrad_sq_le (sq_nonneg _)
+        _ = (fracHeatSymbol α t n) ^ 2 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            ring
+        _ ≤ 1 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+            mul_le_mul_of_nonneg_right hf_sq_le (by positivity)
+        _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+            rw [hfrac, hfrac1]; ring
+  apply Summable.tsum_le_tsum hmode
+  · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum
+
+/-- **α-fracHeat-smoothed SQG strain Ḣˢ integrated (contractive).** -/
+theorem fracHeat_smoothed_sqgStrain_Hs_integrated (s : ℝ) {α t : ℝ}
+    (hα : 0 < α) (ht : 0 ≤ t) (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) * sqgStrainSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq (s + 1) θ := by
+  unfold hsSeminormSq
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hs0 : sqgStrainSymbol i j 0 = 0 := by
+        unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hs0, mul_zero, zero_mul, norm_zero]
+      have h0sq : (0 : ℝ) ^ 2 = 0 := by norm_num
+      rw [h0sq, mul_zero]
+      exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+        Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+      have hstrain := sqgStrain_norm_le hn i j
+      have hstrain_sq_le : ‖sqgStrainSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+        sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol i j n)]) hstrain
+      have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+      have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
+      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
+        have := mul_self_le_one_of_abs_le_one
+          (by rw [abs_of_nonneg hf_nn]; exact hf_le)
+        rwa [sq] at this
+      have hfrac := fracDerivSymbol_add_sq s 1 n
+      have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+        rw [fracDerivSymbol_one_eq hn]
+      calc (fracDerivSymbol s n) ^ 2 *
+            ((fracHeatSymbol α t n) ^ 2 * ‖sqgStrainSymbol i j n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+          ≤ (fracDerivSymbol s n) ^ 2 *
+            ((fracHeatSymbol α t n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+            apply mul_le_mul_of_nonneg_right _ (sq_nonneg _)
+            exact mul_le_mul_of_nonneg_left hstrain_sq_le (sq_nonneg _)
+        _ = (fracHeatSymbol α t n) ^ 2 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            ring
+        _ ≤ 1 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+            mul_le_mul_of_nonneg_right hf_sq_le (by positivity)
+        _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+            rw [hfrac, hfrac1]; ring
+  apply Summable.tsum_le_tsum hmode
+  · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
