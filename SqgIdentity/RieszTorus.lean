@@ -4907,6 +4907,79 @@ theorem sqgStrain_00_01_L2_tight_eq
     (by simpa using hsum)
   simpa using h
 
+/-! ## Poisson semigroup: integrated contractivity -/
+
+/-- **Poisson L² contractivity (integrated).** For `t ≥ 0`:
+
+    `‖P_t f‖²_{L²} ≤ ‖f‖²_{L²}`
+
+where `P_t f` has Fourier coefficients `poissonSymbol(t,n) · f̂(n)`. -/
+theorem poissonSymbol_L2_contractivity {t : ℝ} (ht : 0 ≤ t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((poissonSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hf_parseval : HasSum (fun n ↦ ‖mFourierCoeff f n‖ ^ 2) (∫ x, ‖f x‖ ^ 2))
+    (hu_parseval : HasSum (fun n ↦ ‖mFourierCoeff u n‖ ^ 2) (∫ x, ‖u x‖ ^ 2))
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    (∫ x, ‖u x‖ ^ 2) ≤ (∫ x, ‖f x‖ ^ 2) := by
+  rw [← hu_parseval.tsum_eq, ← hf_parseval.tsum_eq]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact poissonSymbol_L2_mode_contract ht n (mFourierCoeff f n)
+  · exact hu_parseval.summable
+  · exact hsum
+
+/-- **Poisson Ḣˢ contractivity (integrated).** For `t ≥ 0`, any `s`:
+
+    `‖P_t f‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣˢ}` -/
+theorem poissonSymbol_Hs_contractivity {s : ℝ} {t : ℝ} (ht : 0 ≤ t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((poissonSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  apply Summable.tsum_le_tsum
+    (f := fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n, norm_mul, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
+    have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
+    have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht n
+    have hp_sq_le : (poissonSymbol t n) ^ 2 ≤ 1 := by
+      have := mul_self_le_one_of_abs_le_one
+        (by rw [abs_of_nonneg hp_nn]; exact hp_le)
+      rwa [sq] at this
+    have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+    have hc_nn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
+    calc (fracDerivSymbol s n) ^ 2 *
+          ((poissonSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+        = (poissonSymbol t n) ^ 2 *
+          ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
+      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right hp_sq_le (mul_nonneg hσs_nn hc_nn)
+      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  · apply hsum.of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      rw [hcoeff n, norm_mul, mul_pow, Complex.norm_real,
+        Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
+      have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
+      have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht n
+      have hp_sq_le : (poissonSymbol t n) ^ 2 ≤ 1 := by
+        have := mul_self_le_one_of_abs_le_one
+          (by rw [abs_of_nonneg hp_nn]; exact hp_le)
+        rwa [sq] at this
+      have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+      have hc_nn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
+      calc (fracDerivSymbol s n) ^ 2 *
+            ((poissonSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
+          = (poissonSymbol t n) ^ 2 *
+            ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
+        _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
+            mul_le_mul_of_nonneg_right hp_sq_le (mul_nonneg hσs_nn hc_nn)
+        _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
