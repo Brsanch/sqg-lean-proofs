@@ -5819,13 +5819,9 @@ theorem poissonSymbol_L2_contractivity {t : ℝ} (ht : 0 ≤ t)
     (hu_parseval : HasSum (fun n ↦ ‖mFourierCoeff u n‖ ^ 2) (∫ x, ‖u x‖ ^ 2))
     (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
     (∫ x, ‖u x‖ ^ 2) ≤ (∫ x, ‖f x‖ ^ 2) := by
-  rw [← hu_parseval.tsum_eq, ← hf_parseval.tsum_eq]
-  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
-  · intro n
-    rw [hcoeff n]
-    exact poissonSymbol_L2_mode_contract ht n (mFourierCoeff f n)
-  · exact hu_parseval.summable
-  · exact hsum
+  apply fracHeatSymbol_L2_contractivity (by norm_num : (0:ℝ) < 1/2) ht f u _
+    hf_parseval hu_parseval hsum
+  intro n; rw [hcoeff n, ← fracHeatSymbol_half_eq_poisson]
 
 /-- **Poisson Ḣˢ contractivity (integrated).** For `t ≥ 0`, any `s`:
 
