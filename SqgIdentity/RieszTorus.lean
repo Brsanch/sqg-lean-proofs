@@ -5531,6 +5531,38 @@ theorem poisson_smoothed_vorticity_L2_mode {t : ℝ} (ht : 0 < t)
     _ ≤ Real.exp (-2) / t ^ 2 * ‖c‖ ^ 2 :=
         mul_le_mul_of_nonneg_right hmain' hc_nn
 
+/-- **Poisson-smoothed SQG vorticity L² integrated bound.** For `t > 0`:
+
+    `‖P_t ω‖²_{L²} ≤ exp(-2)/t² · ‖θ‖²_{L²}` -/
+theorem poisson_smoothed_vorticity_L2_integrated {t : ℝ} (ht : 0 < t)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((poissonSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ Real.exp (-2) / t ^ 2 * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show Real.exp (-2) / t ^ 2 *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        Real.exp (-2) / t ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  have hmode : ∀ n : Fin 2 → ℤ,
+      ‖mFourierCoeff (↑↑u) n‖ ^ 2 ≤
+      Real.exp (-2) / t ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hω0 : sqgVorticitySymbol 0 = 0 := by
+        unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hω0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+      exact mul_nonneg (div_nonneg (Real.exp_pos _).le (sq_nonneg _)) (sq_nonneg _)
+    · exact poisson_smoothed_vorticity_L2_mode ht hn (mFourierCoeff θ n)
+  apply Summable.tsum_le_tsum hmode
+  · exact (hsum.mul_left (Real.exp (-2) / t ^ 2)).of_nonneg_of_le
+      (fun n ↦ sq_nonneg _) hmode
+  · exact hsum.mul_left _
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
