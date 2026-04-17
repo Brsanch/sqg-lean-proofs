@@ -5570,32 +5570,11 @@ theorem latticeNorm_rpow_mul_poisson_le {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0
     (n : Fin 2 → ℤ) :
     (latticeNorm n) ^ k * poissonSymbol t n
     ≤ k ^ k * Real.exp (-k) / t ^ k := by
-  have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
-  have ht_k : 0 < t / k := div_pos ht hk
-  have hbase := latticeNorm_mul_poisson_le ht_k n
-  have hbase_nn : 0 ≤ (latticeNorm n : ℝ) * poissonSymbol (t/k) n :=
-    mul_nonneg hL_nn (poissonSymbol_nonneg _ _)
-  -- Raise both sides to the k-th real power
-  have hpow : ((latticeNorm n : ℝ) * poissonSymbol (t/k) n) ^ k
-            ≤ (Real.exp (-1) / (t / k)) ^ k :=
-    Real.rpow_le_rpow hbase_nn hbase hk.le
-  -- Simplify LHS: (L · P(t/k))^k = L^k · P(t)
-  have hLHS_eq : ((latticeNorm n : ℝ) * poissonSymbol (t/k) n) ^ k
-      = (latticeNorm n) ^ k * poissonSymbol t n := by
-    rw [Real.mul_rpow hL_nn (poissonSymbol_nonneg _ _),
-      ← poissonSymbol_rpow_eq n hk]
-  -- Simplify RHS: (exp(-1)/(t/k))^k = k^k · exp(-k) / t^k
-  have hRHS_eq : (Real.exp (-1) / (t / k)) ^ k
-      = k ^ k * Real.exp (-k) / t ^ k := by
-    have ht_ne : t ≠ 0 := ht.ne'
-    have hk_ne : k ≠ 0 := hk.ne'
-    have hrew : Real.exp (-1) / (t / k) = k * Real.exp (-1) / t := by
-      field_simp
-    rw [hrew, Real.div_rpow (by positivity : 0 ≤ k * Real.exp (-1)) ht.le,
-      Real.mul_rpow hk.le (Real.exp_pos _).le, exp_neg_one_rpow]
-  rw [hLHS_eq] at hpow
-  rw [hRHS_eq] at hpow
-  exact hpow
+  have h := latticeNorm_rpow_mul_fracHeat_le_general
+    (by norm_num : (0:ℝ) < 1/2) hk ht n
+  rw [fracHeatSymbol_half_eq_poisson,
+    show (k / (2 * (1/2:ℝ))) = k from by field_simp] at h
+  exact h
 
 /-- **Poisson smoothing at fracDerivSymbol level.** For `k > 0`, `t > 0`:
 
