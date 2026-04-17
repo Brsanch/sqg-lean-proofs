@@ -6,8 +6,16 @@ Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/z
 
 Lean 4 + mathlib formalization of Fourier-space identities for the
 Surface Quasi-Geostrophic (SQG) equation, working towards a machine-checked
-regularity proof. Currently covers the shear-vorticity identity
-(Theorem 1 of paper D14) and supporting Riesz/Sobolev infrastructure.
+regularity proof. Covers the shear-vorticity identity (Theorem 1 of
+paper D14), the selection-rule bound (Theorem 2), supporting
+Riesz/Sobolev infrastructure, and — as of §10 — a **conditional
+Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
+*exactly* which analytic facts the regularity argument borrows from
+outside the algebraic layer.
+
+Current state: **7184 lines, zero errors, zero `sorry`**. Main has
+advanced substantially beyond the last Zenodo release (v0.3.0) — see
+the §10 section list below for what landed post-v0.3.0.
 
 ## What's proven
 

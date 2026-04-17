@@ -1,6 +1,6 @@
 {
-  "title": "Machine-Verified SQG Shear-Vorticity Identity (Lean 4)",
-  "description": "Lean 4 + mathlib formalization of the SQG shear-vorticity identity (D14 Theorem 1): for a Fourier mode with wavevector k = |k|(cos α, sin α) and front normal n̂ = (cos β, sin β), the shear-vorticity combination satisfies Ŝ_nt - ω̂/2 = |k|·sin²(α-β)·θ̂. All three theorems are fully machine-verified with zero sorry: one_sub_cos_two_mul (half-angle identity), half_times_one_sub_cos (rescaled form), and sqg_shear_vorticity_identity (main theorem). Mathematical theorem by Bryan Sanchez (independent researcher); Lean formalization by Bryan Sanchez with AI assistance.",
+  "title": "Machine-Verified SQG Shear-Vorticity Identity + Conditional Theorem 3 Roadmap (Lean 4)",
+  "description": "Lean 4 + mathlib formalization of Fourier-space identities for the Surface Quasi-Geostrophic equation, working towards a machine-checked regularity proof. Covers Theorems 1 and 2 of paper D14 (shear-vorticity identity Ŝ_nt - ω̂/2 = |k|·sin²(α-β)·θ̂ and selection-rule bound) plus supporting Riesz/Sobolev infrastructure on the 2-torus. §10 adds a conditional Theorem 3 (SQG regularity) roadmap with named axiomatic hypotheses — MaterialMaxPrinciple, BKMCriterion, FracSobolevCalculus, SqgWellPosedness — that pin down exactly which analytic facts the regularity argument borrows from outside the algebraic layer. FracSobolevCalculus is discharged unconditionally. BKM's axiomatic scope is reduced to s > 1 only via mode-level Sobolev interpolation (the s ∈ [0, 1] range falls out from MaterialMaxPrinciple alone). §11-equivalent material derivative scaffolding introduces sqgVelocitySymbol, IsSqgVelocityComponent, and SqgEvolutionAxioms with real L²-conservation content. All content machine-verified with zero sorry across 7184 lines. Mathematical theorems by Bryan Sanchez (independent researcher); Lean formalization by Bryan Sanchez with AI assistance.",
   "creators": [
     {
       "name": "Sanchez, Bryan",
@@ -17,7 +17,9 @@
     "Surface Quasi-Geostrophic equation",
     "fluid dynamics",
     "shear-vorticity identity",
-    "interactive theorem proving"
+    "interactive theorem proving",
+    "conditional regularity",
+    "Sobolev interpolation"
   ],
-  "version": "0.1.0"
+  "version": "0.4.0-dev"
 }
