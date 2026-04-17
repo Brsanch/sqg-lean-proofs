@@ -101,6 +101,33 @@ field for the SQG PDE itself. The `smoothInitialData` field uses
 `Summable` on the Ḣˢ-weighted Fourier series — the honest well-posedness
 condition, not a vacuous `≤ M` bound.
 
+**§10.2 Trivial-case discharges:**
+`MaterialMaxPrinciple.of_identically_zero` and
+`BKMCriterion.of_identically_zero` prove both refined hypotheses
+unconditionally for the stationary zero solution `θ ≡ 0`. These are
+supported by a new utility lemma `hsSeminormSq_of_zero` (the Ḣˢ
+seminorm of `0` vanishes). Not mathematically deep, but they
+demonstrate the hypotheses can be discharged to real proofs in at
+least one case, not merely axiomatized.
+
+**§10.3 Well-posedness + smooth-data form:**
+`SqgWellPosedness` (hypothesis structure) asserts existence of a
+matching `SqgSolution` for any smooth initial datum — the standard
+SQG local well-posedness statement in Ḣˢ for `s > 2`. The
+user-facing theorem `sqg_regularity_for_smooth_data` combines
+well-posedness, the three analytic hypotheses (applied uniformly to
+every solution), and smooth initial data `θ₀` to conclude: there
+exists a solution with `θ 0 = θ₀` having uniform Sobolev bounds at
+every order. This is the "input: smooth data → output: smooth
+evolution" form of Theorem 3.
+
+**`FracSobolevCalculus.ofMathlib`:** of the three analytic
+hypotheses, `FracSobolevCalculus` has been refined to real
+mode-level content (`hsMonotone`) and can be discharged
+unconditionally — its proof is a direct re-export of existing
+lemmas in this file. So in practice, only `MaterialMaxPrinciple`
+and `BKMCriterion` need axiomatic treatment.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that
