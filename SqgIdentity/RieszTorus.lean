@@ -3747,6 +3747,78 @@ theorem fracDerivSymbol_2_sq_mul_heat_le {t : ℝ} (ht : 0 < t)
     rw [h_σ2_sq]
     exact latticeNorm_4_mul_heat_le ht n
 
+/-- **Parabolic smoothing in `Ḣ²` form.** For `t > 0`, the heat-smoothed
+function has Hessian bounded by `4·exp(-2)/t²` times its L² norm at each mode:
+
+    `σ_2(n)² · ‖(heatSymbol t n) · c‖² ≤ (4·exp(-2) / t²) · ‖c‖²`
+
+This is the mode-level form of the classical `‖Δ(e^{tΔ}f)‖_{L²} ≤
+(2/(et)) · ‖f‖_{L²}` estimate (squared). -/
+theorem heatSymbol_hess_smoothing_mode {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    (fracDerivSymbol 2 n) ^ 2 * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (4 * Real.exp (-2) / t ^ 2) * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+  have hmain := fracDerivSymbol_2_sq_mul_heat_le ht n
+  have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+  have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+  have hσ_nn : 0 ≤ (fracDerivSymbol 2 n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ 4 * Real.exp (-2) / t ^ 2 := by positivity
+  calc (fracDerivSymbol 2 n) ^ 2 * ((heatSymbol t n) ^ 2 * ‖c‖ ^ 2)
+      = ((fracDerivSymbol 2 n) ^ 2 * heatSymbol t n)
+        * (heatSymbol t n * ‖c‖ ^ 2) := by ring
+    _ ≤ (4 * Real.exp (-2) / t ^ 2) * (heatSymbol t n * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hmain (mul_nonneg hheat_nn hc_nn)
+    _ ≤ (4 * Real.exp (-2) / t ^ 2) * (1 * ‖c‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left _ hfactor_nn
+        exact mul_le_mul_of_nonneg_right hheat_le_one hc_nn
+    _ = (4 * Real.exp (-2) / t ^ 2) * ‖c‖ ^ 2 := by ring
+
+/-! ## Parabolic smoothing: applications to SQG velocity/vorticity
+
+Combining the heat-semigroup smoothing with SQG velocity/vorticity
+structure: the heat-smoothed SQG velocity gradient is controlled in
+terms of `L²(θ)` at a rate `1/(et)`.
+-/
+
+/-- **SQG vorticity parabolic smoothing.** Heat-smoothed SQG vorticity
+satisfies `‖ω̂(n) · heat(t,n) · c‖² ≤ exp(-1)/t · ‖c‖²` for each mode
+`n ≠ 0`.
+
+Proof: `‖ω̂·heat·c‖² = L²·heat²·‖c‖²`. Using `heat ≤ 1` gives
+`heat² ≤ heat`, so `L²·heat²·‖c‖² ≤ L²·heat·‖c‖² ≤ exp(-1)/t·‖c‖²`. -/
+theorem sqgVorticity_heat_smoothing_mode {t : ℝ} (ht : 0 < t)
+    {n : Fin 2 → ℤ} (hn : n ≠ 0) (c : ℂ) :
+    ‖sqgVorticitySymbol n * ((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (Real.exp (-1) / t) * ‖c‖ ^ 2 := by
+  -- ‖ω̂ · heat · c‖² = L² · heat² · ‖c‖²
+  have hnorm : ‖sqgVorticitySymbol n * ((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+      = (latticeNorm n) ^ 2 * (heatSymbol t n) ^ 2 * ‖c‖ ^ 2 := by
+    rw [norm_mul, norm_mul, mul_pow, mul_pow, sqgVorticitySymbol_norm hn,
+      Complex.norm_real, Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+  rw [hnorm]
+  -- Goal: L² · heat² · ‖c‖² ≤ exp(-1)/t · ‖c‖²
+  -- Use heat² ≤ heat · 1 = heat (since heat ≤ 1)
+  have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+  have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+  have hL_sq_nn : 0 ≤ (latticeNorm n) ^ 2 := sq_nonneg _
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hmain : (latticeNorm n) ^ 2 * heatSymbol t n ≤ Real.exp (-1) / t :=
+    latticeNorm_sq_mul_heat_le ht n
+  calc (latticeNorm n) ^ 2 * (heatSymbol t n) ^ 2 * ‖c‖ ^ 2
+      = ((latticeNorm n) ^ 2 * heatSymbol t n) * heatSymbol t n * ‖c‖ ^ 2 := by
+        rw [sq]; ring
+    _ ≤ (Real.exp (-1) / t) * heatSymbol t n * ‖c‖ ^ 2 := by
+        apply mul_le_mul_of_nonneg_right _ hc_nn
+        exact mul_le_mul_of_nonneg_right hmain hheat_nn
+    _ ≤ (Real.exp (-1) / t) * 1 * ‖c‖ ^ 2 := by
+        apply mul_le_mul_of_nonneg_right _ hc_nn
+        apply mul_le_mul_of_nonneg_left hheat_le_one
+        exact div_nonneg (Real.exp_pos _).le ht.le
+    _ = (Real.exp (-1) / t) * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
