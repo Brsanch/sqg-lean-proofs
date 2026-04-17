@@ -5349,6 +5349,68 @@ theorem heat_smoothed_sqg_velocity_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤
   · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
   · exact hsum
 
+/-- **Heat-smoothed S₀₀ Ḣˢ integrated TIGHT bound (4× sharper).**
+
+    `‖e^{tΔ} S₀₀‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}} / 4` -/
+theorem heat_smoothed_sqgStrain_00_Hs_integrated_tight (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 0 n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq (s + 1) θ / 4 := by
+  unfold hsSeminormSq
+  rw [show (∑' (n : Fin 2 → ℤ),
+        fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2) / 4
+      = ∑' (n : Fin 2 → ℤ),
+        fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 from by
+    rw [← tsum_div_const]]
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hs0 : sqgStrainSymbol 0 0 0 = 0 := by
+        unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hs0, mul_zero, zero_mul, norm_zero]
+      have h0sq : (0 : ℝ) ^ 2 = 0 := by norm_num
+      rw [h0sq, mul_zero]
+      positivity
+    · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+        Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+      have hstrain := sqgStrain_00_sq_le_quarter hn
+      have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+      have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
+        have := mul_self_le_one_of_abs_le_one
+          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
+        rwa [sq] at this
+      have hfrac := fracDerivSymbol_add_sq s 1 n
+      have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+        rw [fracDerivSymbol_one_eq hn]
+      calc (fracDerivSymbol s n) ^ 2 *
+            ((heatSymbol t n) ^ 2 * ‖sqgStrainSymbol 0 0 n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+          ≤ (fracDerivSymbol s n) ^ 2 *
+            ((heatSymbol t n) ^ 2 * ((latticeNorm n) ^ 2 / 4) * ‖mFourierCoeff θ n‖ ^ 2) := by
+            apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+            apply mul_le_mul_of_nonneg_right _ (sq_nonneg _)
+            exact mul_le_mul_of_nonneg_left hstrain (sq_nonneg _)
+        _ = (heatSymbol t n) ^ 2 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) / 4 := by
+            ring
+        _ ≤ 1 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) / 4 := by
+            apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+            apply mul_le_mul_of_nonneg_right hheat_sq_le (by positivity)
+        _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 / 4 := by
+            rw [hfrac, hfrac1]; ring
+  apply Summable.tsum_le_tsum hmode
+  · exact (hsum.div_const 4).of_nonneg_of_le
+      (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum.div_const 4
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
