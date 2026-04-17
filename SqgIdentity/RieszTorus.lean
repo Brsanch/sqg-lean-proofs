@@ -5178,6 +5178,64 @@ theorem heat_smoothed_vorticity_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
   · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
   · exact hsum
 
+/-- **Heat-smoothed SQG gradient Ḣˢ integrated bound.** For `t ≥ 0`:
+
+    `‖e^{tΔ} ∂_i u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}` -/
+theorem heat_smoothed_sqgGrad_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
+    (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgGradSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq (s + 1) θ := by
+  unfold hsSeminormSq
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hg0 : sqgGradSymbol i j 0 = 0 := by
+        unfold sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hg0, mul_zero, zero_mul, norm_zero]
+      have h0sq : (0 : ℝ) ^ 2 = 0 := by norm_num
+      rw [h0sq, mul_zero]
+      exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+        Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+      have hgrad := sqgGrad_norm_le hn i j
+      have hgrad_sq_le : ‖sqgGradSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+        sq_le_sq' (by linarith [norm_nonneg (sqgGradSymbol i j n)]) hgrad
+      have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+      have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
+        have := mul_self_le_one_of_abs_le_one
+          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
+        rwa [sq] at this
+      have hfrac := fracDerivSymbol_add_sq s 1 n
+      have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+        rw [fracDerivSymbol_one_eq hn]
+      calc (fracDerivSymbol s n) ^ 2 *
+            ((heatSymbol t n) ^ 2 * ‖sqgGradSymbol i j n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+          ≤ (fracDerivSymbol s n) ^ 2 *
+            ((heatSymbol t n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+            apply mul_le_mul_of_nonneg_right _ (sq_nonneg _)
+            exact mul_le_mul_of_nonneg_left hgrad_sq_le (sq_nonneg _)
+        _ = (heatSymbol t n) ^ 2 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+            ring
+        _ ≤ 1 *
+            ((fracDerivSymbol s n) ^ 2 * (latticeNorm n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+            mul_le_mul_of_nonneg_right hheat_sq_le (by positivity)
+        _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+            rw [hfrac, hfrac1]; ring
+  apply Summable.tsum_le_tsum hmode
+  · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
