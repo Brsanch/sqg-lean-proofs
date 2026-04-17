@@ -3819,6 +3819,98 @@ theorem sqgVorticity_heat_smoothing_mode {t : ℝ} (ht : 0 < t)
         exact div_nonneg (Real.exp_pos _).le ht.le
     _ = (Real.exp (-1) / t) * ‖c‖ ^ 2 := by ring
 
+/-! ## General parabolic smoothing at arbitrary k ∈ ℕ
+
+Bootstrap from `k=1` at time `t/k`, then raise to the k-th power.
+The key identity is `heat(t) = (heat(t/k))^k`, which lets us rewrite:
+
+    L^{2k} · heat(t) = (L² · heat(t/k))^k ≤ (k·exp(-1)/t)^k = k^k·exp(-k)/t^k
+
+giving the general smoothing bound.
+-/
+
+/-- **Heat semigroup and powers of time.** For `k ≥ 1`:
+
+    `heatSymbol t n = (heatSymbol (t/k) n)^k`. -/
+theorem heatSymbol_pow_eq {t : ℝ} (n : Fin 2 → ℤ) {k : ℕ} (hk : k ≠ 0) :
+    heatSymbol t n = (heatSymbol (t / k) n) ^ k := by
+  unfold heatSymbol
+  rw [← Real.exp_nat_mul]
+  congr 1
+  have hk_real : (k : ℝ) ≠ 0 := by exact_mod_cast hk
+  field_simp
+
+/-- **General parabolic smoothing at integer k.** For `k ≥ 1`, `t > 0`:
+
+    `‖n‖^{2k} · exp(-t‖n‖²) ≤ k^k · exp(-k) / t^k`
+
+The max of `y^k · exp(-y)` for `y ≥ 0` is achieved at `y = k`, with
+value `(k/e)^k = k^k · exp(-k)`. -/
+theorem latticeNorm_pow_mul_heat_le {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ (2 * k) * heatSymbol t n
+    ≤ (k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k := by
+  have hk_pos : 0 < (k : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hk
+  have ht_k : 0 < t / k := div_pos ht hk_pos
+  have hbase := latticeNorm_sq_mul_heat_le ht_k n
+  -- hbase: L² · heat(t/k) ≤ exp(-1) / (t/k)
+  have hbase_nn : 0 ≤ (latticeNorm n) ^ 2 * heatSymbol (t/k) n :=
+    mul_nonneg (sq_nonneg _) (heatSymbol_nonneg _ _)
+  have hbound_nn : 0 ≤ Real.exp (-1) / (t / k) :=
+    div_nonneg (Real.exp_pos _).le ht_k.le
+  -- Raise both sides to k-th power
+  have hpow : ((latticeNorm n) ^ 2 * heatSymbol (t/k) n) ^ k
+            ≤ (Real.exp (-1) / (t / k)) ^ k := by
+    gcongr
+  -- Rewrite LHS as L^{2k} · heat(t)
+  have hLHS_eq : ((latticeNorm n) ^ 2 * heatSymbol (t/k) n) ^ k
+      = (latticeNorm n) ^ (2 * k) * heatSymbol t n := by
+    rw [mul_pow, ← pow_mul, ← heatSymbol_pow_eq n hk]
+  -- Rewrite RHS: (exp(-1)/(t/k))^k = (k·exp(-1)/t)^k = k^k · exp(-k) / t^k
+  have hRHS_eq : (Real.exp (-1) / (t / k)) ^ k
+      = (k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k := by
+    have ht_ne : t ≠ 0 := ht.ne'
+    have hk_ne : (k : ℝ) ≠ 0 := hk_pos.ne'
+    have hrew : Real.exp (-1) / (t / k) = (k : ℝ) * Real.exp (-1) / t := by
+      field_simp
+    rw [hrew, div_pow, mul_pow]
+    have hexp : (Real.exp (-1)) ^ k = Real.exp (-(k : ℝ)) := by
+      rw [← Real.exp_nat_mul]
+      congr 1
+      push_cast; ring
+    rw [hexp]
+  rw [hLHS_eq] at hpow
+  rw [hRHS_eq] at hpow
+  exact hpow
+
+/-- **General parabolic smoothing at fracDerivSymbol level.** For `k ≥ 1`:
+
+    `σ_k(n)² · heat(t, n) ≤ k^k · exp(-k) / t^k`
+
+where `σ_k(n)²` denotes the squared `k`-th fractional derivative symbol
+(which equals `‖n‖^{2k}` for `n ≠ 0`). -/
+theorem fracDerivSymbol_nat_sq_mul_heat_le {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (fracDerivSymbol (k : ℝ) n) ^ 2 * heatSymbol t n
+    ≤ (k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k := by
+  by_cases hn : n = 0
+  · subst hn
+    rw [fracDerivSymbol_zero]
+    simp
+    have hk_pos : (0 : ℝ) < (k : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hk
+    positivity
+  · have h_σk_sq : (fracDerivSymbol (k : ℝ) n) ^ 2 = (latticeNorm n) ^ (2 * k) := by
+      rw [fracDerivSymbol_of_ne_zero _ hn]
+      have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+      rw [show ((latticeNorm n) ^ ((k : ℝ))) ^ 2
+          = latticeNorm n ^ ((2 * k : ℕ) : ℝ) from by
+        rw [← Real.rpow_natCast ((latticeNorm n) ^ (k : ℝ)) 2,
+          ← Real.rpow_mul hL_nn]
+        congr 1; push_cast; ring]
+      rw [Real.rpow_natCast]
+    rw [h_σk_sq]
+    exact latticeNorm_pow_mul_heat_le hk ht n
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
