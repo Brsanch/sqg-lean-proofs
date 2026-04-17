@@ -6101,6 +6101,100 @@ theorem fracHeat_smoothed_sqg_velocity_mode
       _ ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
           mul_le_mul_of_nonneg_left hf_contract hσs_nn
 
+/-! ## α-fracHeat-smoothed SQG integrated Lp bounds -/
+
+/-- **α-fracHeat-smoothed SQG vorticity L² integrated.** For `t > 0, α > 0`:
+
+    `‖fracHeat(α,·)·ω‖²_{L²} ≤ (1/α)^{1/α}·exp(-1/α)/t^{1/α} · ‖θ‖²_{L²}` -/
+theorem fracHeat_smoothed_vorticity_L2_integrated
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) * sqgVorticitySymbol n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) *
+      (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α))
+          * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  have hmode : ∀ n : Fin 2 → ℤ,
+      ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α))
+        * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    by_cases hn : n = 0
+    · subst hn
+      have hω0 : sqgVorticitySymbol 0 = 0 := by
+        unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hω0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+      have h1α : 0 < 1 / α := div_pos one_pos hα
+      have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+      have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+      exact mul_nonneg (by positivity) (sq_nonneg _)
+    · exact fracHeat_smoothed_vorticity_L2_mode hα ht hn (mFourierCoeff θ n)
+  apply Summable.tsum_le_tsum hmode
+  · exact (hsum.mul_left _).of_nonneg_of_le (fun n ↦ sq_nonneg _) hmode
+  · exact hsum.mul_left _
+
+/-- **α-fracHeat-smoothed SQG gradient L² integrated.** -/
+theorem fracHeat_smoothed_sqgGrad_L2_integrated
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t) (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) * sqgGradSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) *
+      (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α))
+          * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact fracHeat_smoothed_sqgGrad_L2_mode hα ht n i j (mFourierCoeff θ n)
+  · apply (hsum.mul_left _).of_nonneg_of_le
+    · intro n; exact sq_nonneg _
+    · intro n
+      rw [hcoeff n]
+      exact fracHeat_smoothed_sqgGrad_L2_mode hα ht n i j (mFourierCoeff θ n)
+  · exact hsum.mul_left _
+
+/-- **α-fracHeat-smoothed SQG strain L² integrated.** -/
+theorem fracHeat_smoothed_sqgStrain_L2_integrated
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t) (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) * sqgStrainSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) *
+      (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α))
+          * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact fracHeat_smoothed_sqgStrain_L2_mode hα ht n i j (mFourierCoeff θ n)
+  · apply (hsum.mul_left _).of_nonneg_of_le
+    · intro n; exact sq_nonneg _
+    · intro n
+      rw [hcoeff n]
+      exact fracHeat_smoothed_sqgStrain_L2_mode hα ht n i j (mFourierCoeff θ n)
+  · exact hsum.mul_left _
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
