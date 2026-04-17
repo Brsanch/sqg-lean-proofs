@@ -5588,6 +5588,103 @@ theorem heat_smoothed_sqgStrain_L2_sum_le {t : ℝ} (ht : 0 < t)
     ring
   linarith [h00, h01, h_sum_quarter]
 
+/-! ## α-Fractional heat semigroup
+
+The fractional heat semigroup `e^{-t(-Δ)^α}` for `0 < α` has Fourier
+multiplier `exp(-t·‖n‖^{2α})`. Unifies:
+- Heat (α = 1): `exp(-t·‖n‖²)`  [`heatSymbol`]
+- Poisson (α = 1/2): `exp(-t·‖n‖)`  [`poissonSymbol`]
+
+Relevant for fractional SQG / surface quasi-geostrophic-like equations
+with dissipation `(-Δ)^α` where `0 < α ≤ 1`.
+-/
+
+/-- **α-Fractional heat semigroup symbol.** For `α > 0, t : ℝ`:
+
+    `H_{α,t}(n) = exp(-t · ‖n‖^{2α})`
+
+where `‖n‖^{2α}` uses `Real.rpow`. -/
+noncomputable def fracHeatSymbol (α t : ℝ) (n : Fin 2 → ℤ) : ℝ :=
+  Real.exp (-t * (latticeNorm n) ^ (2 * α))
+
+/-- **α-Fractional heat at zero mode is `exp(0) = 1` if `α > 0`.** -/
+@[simp] lemma fracHeatSymbol_zero_mode {α t : ℝ} (hα : 0 < α) :
+    fracHeatSymbol α t (0 : Fin 2 → ℤ) = 1 := by
+  unfold fracHeatSymbol
+  simp [latticeNorm, Real.zero_rpow (by linarith : (2 * α) ≠ 0)]
+
+/-- **Fractional heat is positive.** -/
+lemma fracHeatSymbol_pos (α t : ℝ) (n : Fin 2 → ℤ) :
+    0 < fracHeatSymbol α t n := Real.exp_pos _
+
+/-- **Fractional heat is nonneg.** -/
+lemma fracHeatSymbol_nonneg (α t : ℝ) (n : Fin 2 → ℤ) :
+    0 ≤ fracHeatSymbol α t n := (fracHeatSymbol_pos α t n).le
+
+/-- **Fractional heat at t=0 is 1.** -/
+@[simp] lemma fracHeatSymbol_zero_time (α : ℝ) (n : Fin 2 → ℤ) :
+    fracHeatSymbol α 0 n = 1 := by
+  unfold fracHeatSymbol
+  simp
+
+/-- **Fractional heat ≤ 1 for t ≥ 0 and α > 0.** -/
+lemma fracHeatSymbol_le_one {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ t) (n : Fin 2 → ℤ) :
+    fracHeatSymbol α t n ≤ 1 := by
+  unfold fracHeatSymbol
+  rw [show (1 : ℝ) = Real.exp 0 from Real.exp_zero.symm]
+  apply Real.exp_le_exp.mpr
+  have hL_pow_nn : 0 ≤ (latticeNorm n : ℝ) ^ (2 * α) :=
+    Real.rpow_nonneg (latticeNorm_nonneg n) (2 * α)
+  nlinarith
+
+/-- **Fractional heat: additive in time (homomorphism).** -/
+lemma fracHeatSymbol_add (α t₁ t₂ : ℝ) (n : Fin 2 → ℤ) :
+    fracHeatSymbol α (t₁ + t₂) n
+    = fracHeatSymbol α t₁ n * fracHeatSymbol α t₂ n := by
+  unfold fracHeatSymbol
+  rw [← Real.exp_add]
+  congr 1; ring
+
+/-- **Heat is α=1 case of fracHeat.** -/
+theorem fracHeatSymbol_one_eq_heat (t : ℝ) (n : Fin 2 → ℤ) :
+    fracHeatSymbol 1 t n = heatSymbol t n := by
+  unfold fracHeatSymbol heatSymbol
+  congr 1
+  have hL_nn : 0 ≤ (latticeNorm n : ℝ) := latticeNorm_nonneg n
+  rw [show ((latticeNorm n : ℝ) : ℝ) ^ (2 * (1 : ℝ)) = (latticeNorm n) ^ 2 from by
+    rw [show (2 * 1 : ℝ) = ((2 : ℕ) : ℝ) from by norm_num, Real.rpow_natCast]]
+
+/-- **Poisson is α=1/2 case of fracHeat.** -/
+theorem fracHeatSymbol_half_eq_poisson (t : ℝ) (n : Fin 2 → ℤ) :
+    fracHeatSymbol (1/2) t n = poissonSymbol t n := by
+  unfold fracHeatSymbol poissonSymbol
+  congr 1
+  have hL_nn : 0 ≤ (latticeNorm n : ℝ) := latticeNorm_nonneg n
+  rw [show ((latticeNorm n : ℝ) : ℝ) ^ (2 * (1/2 : ℝ)) = latticeNorm n from by
+    rw [show (2 * (1/2) : ℝ) = (1 : ℝ) from by norm_num, Real.rpow_one]]
+
+/-- **Fractional heat base smoothing bound.** For `0 < α`, `t > 0`:
+
+    `‖n‖^{2α} · exp(-t·‖n‖^{2α}) ≤ exp(-1)/t`
+
+Obtained by letting `y = t·‖n‖^{2α}` and using `y·exp(-y) ≤ exp(-1)`. -/
+theorem latticeNorm_rpow_mul_fracHeat_le {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ (2 * α) * fracHeatSymbol α t n ≤ Real.exp (-1) / t := by
+  unfold fracHeatSymbol
+  set y : ℝ := t * (latticeNorm n) ^ (2 * α) with hy_def
+  have hL_pow_nn : 0 ≤ (latticeNorm n : ℝ) ^ (2 * α) :=
+    Real.rpow_nonneg (latticeNorm_nonneg n) (2 * α)
+  have hy_nn : 0 ≤ y := mul_nonneg ht.le hL_pow_nn
+  have hexp_rw : Real.exp (-t * (latticeNorm n) ^ (2 * α)) = Real.exp (-y) := by
+    congr 1; rw [hy_def]; ring
+  rw [hexp_rw]
+  have hLeq : ((latticeNorm n : ℝ) ^ (2 * α)) = y / t := by
+    rw [hy_def]; field_simp
+  rw [hLeq, div_mul_eq_mul_div]
+  have h_num : y * Real.exp (-y) ≤ Real.exp (-1) := mul_exp_neg_le_exp_neg_one y
+  gcongr
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
