@@ -2707,7 +2707,7 @@ lemma fracDerivSymbol_sq_interpolate {d : Type*} [Fintype d]
   · simp [hn, fracDerivSymbol_zero]
     rcases eq_or_lt_of_le hα0 with rfl | hα_pos
     · simp
-    · rw [zero_rpow (ne_of_gt hα_pos), mul_zero]
+    · exact Or.inr (Real.zero_rpow hα_pos.ne')
   · rw [fracDerivSymbol_of_ne_zero _ hn,
         fracDerivSymbol_of_ne_zero _ hn,
         fracDerivSymbol_of_ne_zero _ hn]
@@ -3540,10 +3540,7 @@ theorem heatSymbol_Hs_mode_bound {t : ℝ} (ht : 0 ≤ t) (s : ℝ)
   rw [norm_mul, mul_pow, Complex.norm_real, Real.norm_of_nonneg (heatSymbol_nonneg _ _)]
   have hh_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
   have hh_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-  have hh_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-    have h := mul_self_le_one_of_abs_le_one
-      (by rw [abs_of_nonneg hh_nn]; exact hh_le)
-    rwa [sq] at h
+  have hh_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := pow_le_one₀ hh_nn hh_le
   have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
   have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
   have hprod_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
@@ -4198,10 +4195,8 @@ theorem heatSymbol_L2_contractivity {t : ℝ} (ht : 0 ≤ t)
       Real.norm_of_nonneg (heatSymbol_nonneg t n)]
     have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
     have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
-    have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-      have := mul_self_le_one_of_abs_le_one
-        (by rw [abs_of_nonneg hheat_nn]; exact hheat_le_one)
-      rwa [sq] at this
+    have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+      pow_le_one₀ hheat_nn hheat_le_one
     have hc_nn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
     calc (heatSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
         ≤ 1 * ‖mFourierCoeff f n‖ ^ 2 :=
@@ -4445,10 +4440,7 @@ theorem fracHeatSymbol_L2_mode_contract {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ 
     Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
   have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
   have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
-  have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
-    have := mul_self_le_one_of_abs_le_one
-      (by rw [abs_of_nonneg hf_nn]; exact hf_le)
-    rwa [sq] at this
+  have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := pow_le_one₀ hf_nn hf_le
   have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
   calc (fracHeatSymbol α t n) ^ 2 * ‖c‖ ^ 2
       ≤ 1 * ‖c‖ ^ 2 := mul_le_mul_of_nonneg_right hf_sq_le hc_nn
@@ -4889,10 +4881,8 @@ theorem fracHeat_smoothed_vorticity_Hs_integrated (s : ℝ) {α t : ℝ}
         sqgVorticitySymbol_norm hn]
       have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
       have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
-      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hf_nn]; exact hf_le)
-        rwa [sq] at this
+      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hf_nn hf_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -4940,10 +4930,8 @@ theorem fracHeat_smoothed_sqgGrad_Hs_integrated (s : ℝ) {α t : ℝ}
         sq_le_sq' (by linarith [norm_nonneg (sqgGradSymbol i j n)]) hgrad
       have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
       have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
-      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hf_nn]; exact hf_le)
-        rwa [sq] at this
+      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hf_nn hf_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -4996,10 +4984,8 @@ theorem fracHeat_smoothed_sqgStrain_Hs_integrated (s : ℝ) {α t : ℝ}
         sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol i j n)]) hstrain
       have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
       have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
-      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hf_nn]; exact hf_le)
-        rwa [sq] at this
+      have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hf_nn hf_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -5983,10 +5969,8 @@ theorem heat_smoothed_vorticity_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
         sqgVorticitySymbol_norm hn]
       have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
       have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
-        rwa [sq] at this
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hheat_nn hheat_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -6036,10 +6020,8 @@ theorem heat_smoothed_sqgGrad_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
         sq_le_sq' (by linarith [norm_nonneg (sqgGradSymbol i j n)]) hgrad
       have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
       have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
-        rwa [sq] at this
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hheat_nn hheat_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -6094,10 +6076,8 @@ theorem heat_smoothed_sqgStrain_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
         sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol i j n)]) hstrain
       have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
       have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
-        rwa [sq] at this
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hheat_nn hheat_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -6148,10 +6128,8 @@ theorem heat_smoothed_sqg_velocity_Hs_integrated (s : ℝ) {t : ℝ} (ht : 0 ≤
       Real.norm_of_nonneg (heatSymbol_nonneg t n)]
     have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
     have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-    have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-      have := mul_self_le_one_of_abs_le_one
-        (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
-      rwa [sq] at this
+    have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+      pow_le_one₀ hheat_nn hheat_le
     have hR_le : ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2 ≤ 1 := by
       by_cases hn : n = 0
       · subst hn
@@ -6209,10 +6187,8 @@ theorem heat_smoothed_sqgStrain_00_Hs_integrated_tight (s : ℝ) {t : ℝ} (ht :
       have hstrain := sqgStrain_00_sq_le_quarter hn
       have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
       have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
-        rwa [sq] at this
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hheat_nn hheat_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -6271,10 +6247,8 @@ theorem heat_smoothed_sqgStrain_01_Hs_integrated_tight (s : ℝ) {t : ℝ} (ht :
       have hstrain := sqgStrain_01_sq_le_quarter hn
       have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
       have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
-      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hheat_nn]; exact hheat_le)
-        rwa [sq] at this
+      have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 :=
+        pow_le_one₀ hheat_nn hheat_le
       have hfrac := fracDerivSymbol_add_sq s 1 n
       have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
         rw [fracDerivSymbol_one_eq hn]
@@ -6466,5 +6440,127 @@ The library now provides a complete Fourier-space curvature budget:
 - `∂u = S + Ω` decomposition with `Ω = ω/2`
 - Strain-rotation, Hessian-strain, Biot-Savart-like factorisations
 -/
+
+/-! ## §10 Roadmap to conditional Theorem 3 (SQG regularity)
+
+This section states **Theorem 3 conditionally**. The goal is to pin
+down *exactly* which analytic facts are load-bearing for the D14
+regularity argument, by making them explicit hypotheses in the Lean
+statement.
+
+The current repository proves the Fourier-algebraic spine (Theorems 1
+and 2 of D14) unconditionally. It does **not** prove Theorem 3. The
+three analytic hypotheses below are the pieces the paper argument
+borrows from outside the algebraic layer; they are stated here as
+abstract propositions and will be replaced by concrete theorems as
+the infrastructure for them appears (in mathlib or in this repo).
+
+Current status of each hypothesis:
+
+* `MaterialMaxPrinciple` — placeholder. Needs: DiPerna–Lions-level
+  flow theory for a divergence-free velocity with `θ ∈ L²`, plus the
+  "free-derivative" property of the D14 identity at κ-maxima.
+* `BKMCriterion` — placeholder. Needs: the SQG analogue of the
+  Beale–Kato–Majda criterion: `∫₀^T ‖∇θ‖_{L^∞} dt < ∞` ⇒ smooth on
+  `[0, T]`.
+* `FracSobolevCalculus` — placeholder. Needs: fractional powers of
+  `(-Δ)` on `L²(𝕋²)` as self-adjoint operators commuting with the
+  Fourier transform. The torus-mode symbols are already in this file;
+  the operator-level theory is what is missing.
+
+Each hypothesis is currently a `True`-valued `Prop` — a placeholder
+that will be refined as the corresponding infrastructure is formalized.
+The point of the current skeleton is to fix the *shape* of the
+conditional theorem so every future PR aligns against it. No `sorry`
+is used; the placeholders are honest stubs rather than hidden gaps.
+
+When each placeholder is replaced by a concrete proposition and the
+skeleton proof body consumes it, `sqg_regularity_conditional` will
+carry real mathematical content. When each hypothesis is replaced by
+a proved theorem, the result becomes unconditional.
+-/
+
+/-- **Material max-principle hypothesis (placeholder).**
+
+Packages the analytic facts about material derivatives along SQG
+trajectories required by the D14 §9 curvature argument:
+the "free-derivative" property `F_ext = 0` at κ-maxima, the
+incompressibility-driven material-segment expansion, and the far-field
+boundary control.
+
+All three fields are currently `True`; they will be refined into real
+propositions once the material-derivative infrastructure exists. The
+field names track the three parts of the §9 argument. -/
+structure MaterialMaxPrinciple
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- `F_ext = 0` at any curvature maximum of a level set of `θ(·, t)`. -/
+  freeDerivativeAtKappaMax : True
+  /-- Incompressibility expands the material segment bounding the front. -/
+  materialSegmentExpansion : True
+  /-- Far-field bounds on the level-set geometry control the boundary term. -/
+  farFieldBoundary : True
+
+/-- **BKM-type blow-up criterion for SQG (placeholder).**
+
+The SQG analogue of the Beale–Kato–Majda criterion: if the
+space-time integral of `‖∇θ‖_{L^∞}` is finite on `[0, T]`, then `θ`
+extends smoothly past `T`. Equivalently, blow-up at `T` forces this
+integral to diverge.
+
+Currently a `True` placeholder; will be refined to the full statement
+once `L^∞` and the appropriate smoothness class are set up for `θ`. -/
+structure BKMCriterion
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- Finite `L¹_t L∞_x` gradient integral implies smoothness on `[0, T]`. -/
+  boundedGradIntegralImpliesSmooth : True
+
+/-- **Fractional Sobolev operator calculus (placeholder).**
+
+The fractional derivative symbols `fracDerivSymbol s n = ‖n‖^s` exist
+in this file as Fourier multipliers. Upgrading them to self-adjoint
+operators on `L²(𝕋²)` commuting with the Fourier transform — the
+operator calculus needed to run the energy argument — is the missing
+piece. -/
+structure FracSobolevCalculus
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- `(-Δ)^s` is a self-adjoint operator commuting with `𝓕`. -/
+  fracLaplacianIsSelfAdjointFourierMultiplier : True
+
+/-- **Conditional Theorem 3 — SQG global regularity (skeleton).**
+
+Given the three analytic hypotheses below — currently placeholders to
+be refined — the D14 algebraic spine (Theorems 1 and 2 of this repo)
+closes the global regularity argument for SQG.
+
+This statement is deliberately shaped as a three-premise implication so
+that every future PR that formalizes one of the hypotheses upgrades a
+field of the structure from `True` to a real proposition, without
+reshaping the top-level theorem.
+
+The conclusion is currently `True` because the real conclusion —
+`∀ t, θ(t) ∈ C^∞(𝕋²)` or an equivalent Sobolev-scale statement —
+requires a smoothness predicate that will be added alongside the first
+concrete hypothesis refinement.
+
+**Proof sketch (informal, to be formalized):**
+1. `sqg_shear_vorticity_identity` (Basic.lean) gives the mode-level
+   identity `Ŝ_nt − ω̂/2 = |k|·sin²(α−β)·θ̂`.
+2. `MaterialMaxPrinciple.freeDerivativeAtKappaMax` reduces the forcing
+   on `Dκ/Dt` at a curvature max to a second-order term of size
+   `O((κδ)²)`.
+3. `MaterialMaxPrinciple.materialSegmentExpansion` +
+   `farFieldBoundary` propagate this pointwise bound to a global
+   bound on `‖∇θ‖_{L^∞}`.
+4. `BKMCriterion.boundedGradIntegralImpliesSmooth` upgrades the
+   pointwise-in-time bound to global smoothness.
+5. `FracSobolevCalculus` licenses the energy argument used in step 3.
+-/
+theorem sqg_regularity_conditional
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (_hMMP : MaterialMaxPrinciple θ)
+    (_hBKM : BKMCriterion θ)
+    (_hFSC : FracSobolevCalculus θ) :
+    True :=
+  trivial
 
 end SqgIdentity
