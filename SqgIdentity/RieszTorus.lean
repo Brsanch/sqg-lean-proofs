@@ -6055,6 +6055,52 @@ theorem fracHeat_smoothed_sqgStrain_L2_mode
           exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
       _ = ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by ring
 
+/-- **α-fracHeat-smoothed SQG velocity Ḣˢ mode bound.** For `α > 0, t ≥ 0`:
+
+    `σ_s² · ‖fracHeat(α,t,n) · R · c‖² ≤ σ_s² · ‖c‖²`
+
+No Sobolev gain: both Riesz and fracHeat are contractive. -/
+theorem fracHeat_smoothed_sqg_velocity_mode
+    (s : ℝ) {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ t)
+    (n : Fin 2 → ℤ) (j : Fin 2) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 *
+      ‖((fracHeatSymbol α t n : ℝ) : ℂ) *
+       (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) * c‖ ^ 2
+    ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := by
+  rw [show ((fracHeatSymbol α t n : ℝ) : ℂ) *
+      (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) * c
+      = (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) *
+        (((fracHeatSymbol α t n : ℝ) : ℂ) * c) from by ring]
+  by_cases hn : n = 0
+  · subst hn
+    by_cases hj : j = 0
+    · simp [hj, rieszSymbol_zero, fracDerivSymbol_zero]
+    · simp [hj, rieszSymbol_zero, fracDerivSymbol_zero]
+  · have hR_le : ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2 ≤ 1 := by
+      have hpyth := rieszSymbol_sum_sq hn
+      simp only [Fin.sum_univ_two] at hpyth
+      by_cases hj : j = 0
+      · simp [hj]; nlinarith [sq_nonneg ‖rieszSymbol 0 n‖]
+      · simp [hj, norm_neg]; nlinarith [sq_nonneg ‖rieszSymbol 1 n‖]
+    have hf_contract := fracHeatSymbol_L2_mode_contract hα ht n c
+    have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+    have hfc_nn : 0 ≤ ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2 := sq_nonneg _
+    calc (fracDerivSymbol s n) ^ 2 *
+          ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) *
+            (((fracHeatSymbol α t n : ℝ) : ℂ) * c)‖ ^ 2
+        = (fracDerivSymbol s n) ^ 2 *
+          (‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2 *
+           ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2) := by
+          rw [norm_mul, mul_pow]
+      _ ≤ (fracDerivSymbol s n) ^ 2 *
+          (1 * ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2) :=
+          mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_right hR_le hfc_nn) hσs_nn
+      _ = (fracDerivSymbol s n) ^ 2 *
+          ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2 := by ring
+      _ ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+          mul_le_mul_of_nonneg_left hf_contract hσs_nn
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
