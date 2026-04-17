@@ -4725,6 +4725,45 @@ theorem fracDerivSymbol_mul_poisson_le_rpow {k : ℝ} (hk : 0 < k) {t : ℝ} (ht
   · rw [fracDerivSymbol_of_ne_zero k hn]
     exact latticeNorm_rpow_mul_poisson_le hk ht n
 
+/-- **Poisson Ḣᵏ mode bound at real k > 0.** Using `‖n‖^k·poisson(t,n) ≤
+k^k·exp(-k)/t^k` and `poisson ≤ 1`:
+
+    `σ_k(n) · ‖poisson(t,n) · c‖² ≤ (k^k · exp(-k) / t^k)^? · ‖c‖²`
+
+Wait, this bound has a different structure than heat because Poisson
+scales with σ_k (not σ_{2k}). Let me state the correct bound:
+
+    `σ_k(n)² · ‖poisson(t,n) · c‖² ≤ σ_k(n) · (k^k·exp(-k)/t^k) · ‖c‖²`
+
+which uses `σ_k · poisson² ≤ σ_k · poisson ≤ k^k·exp(-k)/t^k`. So:
+
+    `σ_k(n)² · ‖poisson(t,n) · c‖² ≤ σ_k(n) · (k^k·exp(-k)/t^k) · ‖c‖²`
+
+At each individual mode. -/
+theorem poissonSymbol_Hk_mode_bound {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    fracDerivSymbol k n * ‖((poissonSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (k ^ k * Real.exp (-k) / t ^ k) * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
+  have hmain := fracDerivSymbol_mul_poisson_le_rpow hk ht n
+  have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
+  have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht.le n
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ k ^ k * Real.exp (-k) / t ^ k := by
+    have hk_pos : 0 < k ^ k := Real.rpow_pos_of_pos hk k
+    have ht_pos : 0 < t ^ k := Real.rpow_pos_of_pos ht k
+    positivity
+  calc fracDerivSymbol k n * ((poissonSymbol t n) ^ 2 * ‖c‖ ^ 2)
+      = (fracDerivSymbol k n * poissonSymbol t n)
+        * (poissonSymbol t n * ‖c‖ ^ 2) := by rw [sq]; ring
+    _ ≤ (k ^ k * Real.exp (-k) / t ^ k) * (poissonSymbol t n * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hmain (mul_nonneg hp_nn hc_nn)
+    _ ≤ (k ^ k * Real.exp (-k) / t ^ k) * (1 * ‖c‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left _ hfactor_nn
+        exact mul_le_mul_of_nonneg_right hp_le hc_nn
+    _ = (k ^ k * Real.exp (-k) / t ^ k) * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
