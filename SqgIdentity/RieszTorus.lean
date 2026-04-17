@@ -4980,6 +4980,46 @@ theorem poissonSymbol_Hs_contractivity {s : ℝ} {t : ℝ} (ht : 0 ≤ t)
         _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
   · exact hsum
 
+/-- **Heat-smoothed SQG vorticity integrated L² bound.** For `t > 0`:
+
+    `‖e^{tΔ} ω‖²_{L²} ≤ exp(-1)/t · ‖θ‖²_{L²}`
+
+where `ω` is the SQG vorticity (so `ω̂ = sqgVorticitySymbol · θ̂`).
+The heat smoothing at `t > 0` converts the Ḣ¹-level vorticity into an
+L²-level quantity with parabolic decay `exp(-1)/t`. -/
+theorem heat_smoothed_vorticity_L2_integrated {t : ℝ} (ht : 0 < t)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ Real.exp (-1) / t * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show Real.exp (-1) / t *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        Real.exp (-1) / t * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  -- Establish the mode-level bound first
+  have hmode : ∀ n : Fin 2 → ℤ,
+      ‖((heatSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * mFourierCoeff θ n‖ ^ 2
+      ≤ Real.exp (-1) / t * ‖mFourierCoeff θ n‖ ^ 2 := by
+    intro n
+    by_cases hn : n = 0
+    · subst hn
+      have hω0 : sqgVorticitySymbol 0 = 0 := by
+        unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+      rw [hω0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+      exact mul_nonneg (div_nonneg (Real.exp_pos _).le ht.le) (sq_nonneg _)
+    · rw [show ((heatSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * mFourierCoeff θ n
+          = sqgVorticitySymbol n * ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff θ n from by ring]
+      exact sqgVorticity_heat_smoothing_mode ht hn (mFourierCoeff θ n)
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n; rw [hcoeff n]; exact hmode n
+  · apply (hsum.mul_left (Real.exp (-1) / t)).of_nonneg_of_le
+    · intro n; positivity
+    · intro n; rw [hcoeff n]; exact hmode n
+  · exact hsum.mul_left _
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
