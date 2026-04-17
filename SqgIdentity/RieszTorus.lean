@@ -5831,48 +5831,8 @@ theorem poissonSymbol_Hs_contractivity {s : ℝ} {t : ℝ} (ht : 0 ≤ t)
     (hcoeff : ∀ n, mFourierCoeff u n = ((poissonSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
     (hsum : Summable (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
     hsSeminormSq s u ≤ hsSeminormSq s f := by
-  unfold hsSeminormSq
-  apply Summable.tsum_le_tsum
-    (f := fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u n‖ ^ 2)
-  · intro n
-    rw [hcoeff n, norm_mul, mul_pow, Complex.norm_real,
-      Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
-    have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
-    have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht n
-    have hp_sq_le : (poissonSymbol t n) ^ 2 ≤ 1 := by
-      have := mul_self_le_one_of_abs_le_one
-        (by rw [abs_of_nonneg hp_nn]; exact hp_le)
-      rwa [sq] at this
-    have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
-    have hc_nn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
-    calc (fracDerivSymbol s n) ^ 2 *
-          ((poissonSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
-        = (poissonSymbol t n) ^ 2 *
-          ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
-      _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
-          mul_le_mul_of_nonneg_right hp_sq_le (mul_nonneg hσs_nn hc_nn)
-      _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
-  · apply hsum.of_nonneg_of_le
-    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
-    · intro n
-      rw [hcoeff n, norm_mul, mul_pow, Complex.norm_real,
-        Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
-      have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
-      have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht n
-      have hp_sq_le : (poissonSymbol t n) ^ 2 ≤ 1 := by
-        have := mul_self_le_one_of_abs_le_one
-          (by rw [abs_of_nonneg hp_nn]; exact hp_le)
-        rwa [sq] at this
-      have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
-      have hc_nn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
-      calc (fracDerivSymbol s n) ^ 2 *
-            ((poissonSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)
-          = (poissonSymbol t n) ^ 2 *
-            ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) := by ring
-        _ ≤ 1 * ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2) :=
-            mul_le_mul_of_nonneg_right hp_sq_le (mul_nonneg hσs_nn hc_nn)
-        _ = (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := one_mul _
-  · exact hsum
+  apply fracHeatSymbol_Hs_contractivity (by norm_num : (0:ℝ) < 1/2) ht f u _ hsum
+  intro n; rw [hcoeff n, ← fracHeatSymbol_half_eq_poisson]
 
 /-- **Heat-smoothed SQG vorticity integrated L² bound.** For `t > 0`:
 
