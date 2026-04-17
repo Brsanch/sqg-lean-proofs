@@ -4890,6 +4890,23 @@ theorem sqgStrain_00_01_Hs_sum_eq
             ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 from by rw [tsum_div_const]]
   exact tsum_congr hpt
 
+/-- **L² strain tight identity (from Ḣ⁰ specialization).**
+
+    `‖S₀₀‖²_{Ḣ⁰} + ‖S₀₁‖²_{Ḣ⁰} = ‖θ‖²_{Ḣ¹} / 4`
+
+At mean-zero functions, Ḣ⁰ = L² so this is the L²-level strain tight
+identity. -/
+theorem sqgStrain_00_01_L2_tight_eq
+    (θ S00 S01 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff0 : ∀ n, mFourierCoeff S00 n = sqgStrainSymbol 0 0 n * mFourierCoeff θ n)
+    (hcoeff1 : ∀ n, mFourierCoeff S01 n = sqgStrainSymbol 0 1 n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq 0 S00 + hsSeminormSq 0 S01 = hsSeminormSq 1 θ / 4 := by
+  have h := sqgStrain_00_01_Hs_sum_eq 0 θ S00 S01 hcoeff0 hcoeff1
+    (by simpa using hsum)
+  simpa using h
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
