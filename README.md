@@ -51,6 +51,11 @@ regularity proof. Currently covers the shear-vorticity identity
   - General smoothing: `‖n‖^k·fracHeat ≤ (k/(2α))^{k/(2α)}·exp(-k/(2α))/t^{k/(2α)}`
   - Mode + integrated L² and Ḣᵏ bounds
   - Mode + integrated L² / Ḣˢ contractivity
+  - **α-fracHeat-smoothed SQG suite** (mode + integrated):
+    - Vorticity: `‖fracHeat·ω̂·c‖² ≤ (1/α)^{1/α}·exp(-1/α)/t^{1/α}·‖c‖²`
+    - Gradient: same bound per component
+    - Strain: same bound per component
+    - Velocity Ḣˢ: `‖fracHeat·u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}` (no gain)
 - **Heat semigroup & parabolic smoothing**:
   - `heatSymbol`, positivity, boundedness, additivity, Ḣˢ contractivity
   - `x · exp(-x) ≤ exp(-1)` (tangent-line inequality)
