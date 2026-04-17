@@ -5827,6 +5827,75 @@ theorem fracHeatSymbol_Hs_mode_bound {α s t : ℝ} (hα : 0 < α) (ht : 0 ≤ t
     ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
   mul_le_mul_of_nonneg_left (fracHeatSymbol_L2_mode_contract hα ht n c) (sq_nonneg _)
 
+/-- **α-Fractional heat Ḣᵏ integrated smoothing.** For `0 < α, k > 0, t > 0`:
+
+    `‖e^{-t(-Δ)^α} f‖²_{Ḣᵏ} ≤ (k/α)^{k/α}·exp(-k/α)/t^{k/α} · ‖f‖²_{L²}` -/
+theorem fracHeatSymbol_Hk_smoothing_integrated
+    {α k : ℝ} (hα : 0 < α) (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((fracHeatSymbol α t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq k u ≤
+      ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α)) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff f n‖ ^ 2) := by
+  unfold hsSeminormSq
+  rw [show ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α)) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑f) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α))
+          * ‖mFourierCoeff (↑↑f) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦
+    fracDerivSymbol k n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact fracHeatSymbol_Hk_mode_bound hα hk ht n (mFourierCoeff f n)
+  · apply (hsum.mul_left _).of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      rw [hcoeff n]
+      exact fracHeatSymbol_Hk_mode_bound hα hk ht n (mFourierCoeff f n)
+  · exact hsum.mul_left _
+
+/-- **α-Fractional heat L² contractivity (integrated).** For `α > 0, t ≥ 0`:
+
+    `‖e^{-t(-Δ)^α} f‖²_{L²} ≤ ‖f‖²_{L²}` -/
+theorem fracHeatSymbol_L2_contractivity
+    {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((fracHeatSymbol α t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hf_parseval : HasSum (fun n ↦ ‖mFourierCoeff f n‖ ^ 2) (∫ x, ‖f x‖ ^ 2))
+    (hu_parseval : HasSum (fun n ↦ ‖mFourierCoeff u n‖ ^ 2) (∫ x, ‖u x‖ ^ 2))
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    (∫ x, ‖u x‖ ^ 2) ≤ (∫ x, ‖f x‖ ^ 2) := by
+  rw [← hu_parseval.tsum_eq, ← hf_parseval.tsum_eq]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact fracHeatSymbol_L2_mode_contract hα ht n (mFourierCoeff f n)
+  · exact hu_parseval.summable
+  · exact hsum
+
+/-- **α-Fractional heat Ḣˢ contractivity (integrated).** -/
+theorem fracHeatSymbol_Hs_contractivity
+    {α s t : ℝ} (hα : 0 < α) (ht : 0 ≤ t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((fracHeatSymbol α t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  apply Summable.tsum_le_tsum
+    (f := fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact fracHeatSymbol_Hs_mode_bound hα ht n (mFourierCoeff f n)
+  · apply hsum.of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      rw [hcoeff n]
+      exact fracHeatSymbol_Hs_mode_bound hα ht n (mFourierCoeff f n)
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
