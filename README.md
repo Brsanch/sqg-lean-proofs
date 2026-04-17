@@ -13,14 +13,19 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **~7330 lines, zero errors, zero `sorry`**. Main has
+Current state: **~7630 lines, zero errors, zero `sorry`**. Main has
 advanced substantially beyond the last Zenodo release (v0.3.0) — see
-the §10 section list below for what landed post-v0.3.0. §10.8 (most
-recent) replaces the last `True` placeholders in `SqgEvolutionAxioms`
-with real predicates and introduces the **s=2 integer-order BKM
-bootstrap**, which reduces the axiomatic footprint of conditional
-Theorem 3 on `s ∈ [0, 2]` to a single hypothesis that avoids
-fractional calculus entirely.
+the §10 section list below for what landed post-v0.3.0. §10.8
+replaced the last `True` placeholders in `SqgEvolutionAxioms` with
+real predicates and introduced the **s=2 integer-order BKM
+bootstrap** (conditional Theorem 3 on `s ∈ [0, 2]` with no
+fractional-calculus prerequisites). §10.9–§10.10 (most recent) add
+**Fourier convolution scaffolding** (`fourierConvolution`,
+`convolution_bounded_by_product`) and the **mode-Lipschitz keystone
+upgrade** — the differential form of the per-mode Duhamel identity,
+the single analytic fact that both remaining open axioms
+(`MaterialMaxPrinciple.hOnePropagation` and
+`BKMCriterionS2.hsPropagationS2`) route through.
 
 ## What's proven
 
@@ -258,6 +263,58 @@ only **integer-order** Sobolev regularity — no fractional calculus
 prerequisites in mathlib required to discharge. The `s > 2` tail
 remains an explicit open axiom.
 
+**§10.9 Fourier convolution scaffolding:**
+Both remaining open axioms (`MaterialMaxPrinciple.hOnePropagation`
+for the uniform Ḣ¹ bound, `BKMCriterionS2.hsPropagationS2` for the
+integer-order Ḣ² bootstrap) route through one shared analytic fact:
+the per-mode Duhamel identity
+`θ̂(m, t) − θ̂(m, 0) = − ∫₀ᵗ (u·∇θ)̂(m, τ) dτ`, where the nonlinear
+flux is a Fourier-side **convolution** of coefficient sequences. This
+section introduces the machinery:
+
+- `fourierConvolution f g m = ∑ ℓ, f(ℓ) · g(m − ℓ)` on any additive
+  commutative group `ι` with coefficients in `ℂ`.
+- `fourierConvolution_zero_left` / `_zero_right` — discharge helpers.
+- `subLeftEquiv m` — the reindexing involution `ℓ ↦ m − ℓ`.
+- `tsum_sq_norm_shift_left` — shift invariance
+  `∑ ℓ, ‖g(m − ℓ)‖² = ∑ ℓ, ‖g(ℓ)‖²`.
+- `summable_sq_norm_shift_left` — summability companion.
+- **`convolution_bounded_by_product`** — the uniform-in-`m` Young +
+  triangle bound `‖(f * g)(m)‖ ≤ (‖f‖²_ℓ² + ‖g‖²_ℓ²)/2`. This is the
+  single analytic fact the Bochner integrability step of a future
+  Duhamel upgrade consumes.
+- `SqgFourierData.fourierConvolution` — thin bundle wrapper so the
+  operation is available on existing `SqgFourierData` bundles (reuses
+  the §Fourier-mode-packaging machinery).
+- `SqgFourierData.fourierConvolution_bounded_by_product` — bundle
+  form of the Young bound.
+
+**§10.10 Mode-Lipschitz keystone upgrade to `SqgEvolutionAxioms`:**
+The differential form of the per-mode Duhamel identity — every
+Fourier coefficient of `θ(t)` is Lipschitz-in-time with a
+mode-specific constant:
+
+`∀ m, ∃ C ≥ 0, ∀ s ≤ t, ‖θ̂(m, t) − θ̂(m, s)‖ ≤ (t − s) · C`.
+
+Strictly stronger than `meanConservation` (which is the `C = 0` case
+at `m = 0`) and strictly weaker than the full Bochner Duhamel
+identity (which specifies `C` as a convolution flux). Adds:
+
+- `ModeLipschitz θ` — the predicate.
+- `ModeLipschitz.of_identically_zero` — trivial case (take `C = 0`).
+- `SqgEvolutionAxioms_strong` — bundles the original
+  `SqgEvolutionAxioms` with `ModeLipschitz`.
+- `SqgEvolutionAxioms_strong.toWeak` — forgetful projection.
+- `SqgEvolutionAxioms_strong.of_identically_zero` — zero discharge.
+
+**Net effect of §10.9–§10.10:** the keystone analytic fact (bounded
+per-mode flux via convolution) and its differential form (mode
+Lipschitz-in-time) are now present in the development as
+machine-checked scaffolding. A future `SqgEvolutionAxioms_strong`
+discharge from a real solution — once Bochner integration of the
+flux is wired through — would produce Ḣ¹ and Ḣ² bounds directly via
+the existing §10.7 (MMP) and §10.8 (S2) reductions.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that
@@ -266,21 +323,34 @@ doesn't exist in mathlib yet:
 - **Material-derivative transport / maximum principle** — needed to
   prove `MaterialMaxPrinciple.hOnePropagation`. Mathlib has basic flow
   API but no ODE existence-uniqueness or DiPerna–Lions-level theory.
+  §10.10's `ModeLipschitz` is the differential-form keystone this
+  ultimately needs: once supplied from a real solution via Bochner
+  integration of the §10.9 convolution flux, MMP's Ḣ¹ bound should
+  follow from the existing reduction chain.
 - **Integer-order energy estimate at `s = 2`** — needed to discharge
   `BKMCriterionS2.hsPropagationS2`. This is the target of §10.8's
   axiomatic scoping: it uses only classical (differential)
-  commutators, so it is substantially lighter than the fractional
-  bootstrap required for `BKMCriterion.hsPropagation`, but still
-  requires an in-time differentiation-of-Sobolev-norm machinery not
-  present in this development.
+  commutators. With §10.9's `convolution_bounded_by_product` +
+  §10.10's `ModeLipschitz` in place, the remaining step is the
+  integration-in-time that turns the per-mode bounded flux into a
+  uniform Ḣ² bound.
 - **Fractional Sobolev bootstrap for `s > 2`** — the remaining open
   tail of conditional Theorem 3. Requires Kato–Ponce-type estimates
   on `𝕋²` (not in mathlib).
+- **Bochner integration of the per-mode flux** — the connective
+  tissue between §10.9 (pointwise convolution bound) and a real
+  `SqgEvolutionAxioms_strong` discharge. Requires wiring the Young
+  bound into an `∫ τ in Set.Icc 0 t` statement; the mathlib Bochner
+  API is present, the application to time-indexed Fourier
+  coefficients is the piece to write.
 
 This repo is the Fourier-algebraic foundation plus a conditional
-Theorem 3 skeleton. As of §10.8 the conditional conclusion over
+Theorem 3 skeleton with the keystone analytic scaffolding now
+machine-checked. As of §10.10 the conditional conclusion over
 `s ∈ [0, 2]` rests on a single integer-order axiom; the `s > 2`
-fractional tail is the remaining open piece.
+fractional tail is the remaining open piece; and the convolution /
+mode-Lipschitz machinery bridging a real SQG solution to the §10.7
+and §10.8 reductions is in place.
 
 ## The identity
 
