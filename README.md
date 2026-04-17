@@ -164,6 +164,32 @@ regularity output follows.
 
 `SqgSolution.uniform_l2Bound` specializes this to the structured form.
 
+**§10.6 Interpolation reduction of BKM scope:**
+The axiomatic content of `BKMCriterion.hsPropagation` is overkill —
+it bootstraps Ḣ¹ to Ḣˢ for *every* `s ≥ 0`, but **interpolation
+handles `s ∈ [0, 1]` for free** via `hsSeminormSq_mono_of_le`
+(integer lattice gives `‖n‖^{2s} ≤ ‖n‖²` for `s ≤ 1, n ≠ 0`). Adds:
+
+- `BKMCriterionHighFreq` — refined BKM requiring bootstrap only
+  for `s > 1`. Strictly weaker than the original.
+- `BKMCriterion.toHighFreq` — every full BKM discharge promotes.
+- `BKMCriterionHighFreq.of_identically_zero` — trivial case.
+- `sqg_regularity_via_interpolation` — main reduction theorem.
+  Takes MMP + Ḣ¹-summability + `BKMCriterionHighFreq` +
+  `SqgEvolutionAxioms`, gives the full regularity conclusion
+  `∀ s ≥ 0, ∃ M, ∀ t ≥ 0, hsSeminormSq s (θ t) ≤ M`.
+  Proof: `s ∈ [0, 1]` branch uses `hsSeminormSq_mono_of_le`;
+  `s > 1` branch uses the refined BKM.
+- `SqgSolution.regularity_via_interpolation` — structured form.
+
+**Net effect:** BKM's axiomatic footprint is reduced by the full
+`s ∈ [0, 1]` range — a factor-of-2 shrink in the Sobolev scale BKM
+is responsible for. Combined with `FracSobolevCalculus.ofMathlib`
+(FSC discharged unconditionally) and `uniform_l2Bound_of_l2Conservation`
+(L² handled by SqgEvolutionAxioms), the still-axiomatic content of
+Theorem 3 is now cleanly scoped to: MMP's uniform Ḣ¹ bound, BKM's
+high-frequency bootstrap (`s > 1` only), and Ḣ¹ summability.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that

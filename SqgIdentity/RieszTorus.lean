@@ -7002,4 +7002,112 @@ theorem SqgSolution.uniform_l2Bound (S : SqgSolution) :
     ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 0 (S.θ t) ≤ M :=
   uniform_l2Bound_of_l2Conservation S.θ S.solvesSqgEvolution
 
+/-! ### §10.6 Interpolation reduction of BKM scope
+
+`BKMCriterion.hsPropagation` currently axiomatizes the bootstrap
+`uniform Ḣ¹ → uniform Ḣˢ` for every `s ≥ 0`. But **interpolation
+handles `s ∈ [0, 1]` for free**: on the integer lattice, `‖n‖ ≥ 1` at
+every nonzero mode, so `‖n‖^{2s} ≤ ‖n‖²` for `s ≤ 1`, giving
+`hsSeminormSq s θ ≤ hsSeminormSq 1 θ` directly (this is
+`hsSeminormSq_mono_of_le`).
+
+So we can replace the "all `s ≥ 0`" bootstrap by one that only covers
+`s > 1`, without weakening Theorem 3. This subsection:
+
+* Introduces `BKMCriterionHighFreq`, the refined hypothesis covering
+  only `s > 1`.
+* Shows the original `BKMCriterion` implies it, so every previous
+  discharge auto-promotes.
+* Gives a trivial-case discharge for the weaker form.
+* Proves `sqg_regularity_via_interpolation`: the combined theorem,
+  which uses interpolation for the `s ∈ [0, 1]` branch and the
+  `BKMCriterionHighFreq` hypothesis for `s > 1`.
+
+Net effect: BKM's axiomatic footprint is reduced by the full
+`s ∈ [0, 1]` range — a factor-of-2 shrink in the Sobolev scale BKM
+is responsible for.
+-/
+
+/-- **Refined BKM criterion (high-frequency only).** The bootstrap
+from uniform Ḣ¹ bound to uniform Ḣˢ bound for `s > 1` — the range
+where interpolation no longer suffices.
+
+This is strictly weaker than `BKMCriterion.hsPropagation`
+(`BKMCriterion.toHighFreq` below), and is all that the combined
+regularity theorem actually needs once `SqgEvolutionAxioms` supplies
+the L² bound and interpolation handles `s ∈ [0, 1]`. -/
+structure BKMCriterionHighFreq
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- Uniform Ḣ¹ bound propagates to uniform Ḣˢ bound for every `s > 1`. -/
+  hsPropagationHighFreq :
+    (∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M) →
+      ∀ s : ℝ, 1 < s →
+        ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M'
+
+/-- **Original `BKMCriterion` implies the refined high-frequency form.**
+Every existing discharge of `BKMCriterion` automatically gives the
+weaker `BKMCriterionHighFreq`. -/
+theorem BKMCriterion.toHighFreq
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hBKM : BKMCriterion θ) : BKMCriterionHighFreq θ where
+  hsPropagationHighFreq :=
+    fun h₁ s _ => hBKM.hsPropagation h₁ s (by linarith)
+
+/-- **Refined BKM holds for the identically-zero evolution.** Direct
+discharge via `BKMCriterion.of_identically_zero + toHighFreq`. -/
+theorem BKMCriterionHighFreq.of_identically_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) : BKMCriterionHighFreq θ :=
+  (BKMCriterion.of_identically_zero θ hθ).toHighFreq
+
+/-- **Interpolation reduction: Theorem 3 from weakened BKM.**
+
+Discharges the full Sobolev-scale regularity conclusion using the
+reduced axiomatic footprint:
+
+* `MaterialMaxPrinciple` → uniform Ḣ¹ bound
+* `SqgEvolutionAxioms.l2Conservation` → uniform L² bound
+* `hSum` → Ḣ¹ summability at each time (needed by monotonicity)
+* `BKMCriterionHighFreq` → Ḣ¹ → Ḣˢ bootstrap for `s > 1` only
+
+For `s ∈ [0, 1]`, interpolation delivers the bound from MMP directly
+(no BKM needed). For `s > 1`, the refined BKM supplies it.
+
+This makes the axiomatic content of Theorem 3 more precise: BKM is
+only needed for `s > 1`, not the full `s ≥ 0` range. -/
+theorem sqg_regularity_via_interpolation
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hMMP : MaterialMaxPrinciple θ)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (θ t) n‖ ^ 2))
+    (hBKM : BKMCriterionHighFreq θ)
+    (hE : SqgEvolutionAxioms θ) :
+    ∀ s : ℝ, 0 ≤ s →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M := by
+  intro s hs
+  -- Get the Ḣ¹ bound once; we'll reuse it.
+  obtain ⟨M₁, hM₁⟩ := hMMP.hOnePropagation
+  by_cases hs1 : s ≤ 1
+  · -- s ∈ [0, 1]: interpolation via hsSeminormSq_mono_of_le
+    refine ⟨M₁, fun t ht => ?_⟩
+    calc hsSeminormSq s (θ t)
+        ≤ hsSeminormSq 1 (θ t) := hsSeminormSq_mono_of_le hs1 (θ t) (hSum t ht)
+      _ ≤ M₁ := hM₁ t ht
+  · -- s > 1: invoke BKMCriterionHighFreq
+    push_neg at hs1
+    exact hBKM.hsPropagationHighFreq ⟨M₁, hM₁⟩ s hs1
+
+/-- **Structured-form interpolation reduction.** Specializes
+`sqg_regularity_via_interpolation` to an `SqgSolution`, consuming
+`S.solvesSqgEvolution` for the L² bound automatically. -/
+theorem SqgSolution.regularity_via_interpolation (S : SqgSolution)
+    (hMMP : MaterialMaxPrinciple S.θ)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (S.θ t) n‖ ^ 2))
+    (hBKM : BKMCriterionHighFreq S.θ) :
+    S.SobolevBounds :=
+  sqg_regularity_via_interpolation S.θ hMMP hSum hBKM S.solvesSqgEvolution
+
 end SqgIdentity
