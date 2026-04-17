@@ -4297,15 +4297,6 @@ theorem fracHeatSymbol_one_eq_heat (t : ℝ) (n : Fin 2 → ℤ) :
   rw [show ((latticeNorm n : ℝ) : ℝ) ^ (2 * (1 : ℝ)) = (latticeNorm n) ^ 2 from by
     rw [show (2 * 1 : ℝ) = ((2 : ℕ) : ℝ) from by norm_num, Real.rpow_natCast]]
 
-/-- **Poisson is α=1/2 case of fracHeat.** -/
-theorem fracHeatSymbol_half_eq_poisson (t : ℝ) (n : Fin 2 → ℤ) :
-    fracHeatSymbol (1/2) t n = poissonSymbol t n := by
-  unfold fracHeatSymbol poissonSymbol
-  congr 1
-  have hL_nn : 0 ≤ (latticeNorm n : ℝ) := latticeNorm_nonneg n
-  rw [show ((latticeNorm n : ℝ) : ℝ) ^ (2 * (1/2 : ℝ)) = latticeNorm n from by
-    rw [show (2 * (1/2) : ℝ) = (1 : ℝ) from by norm_num, Real.rpow_one]]
-
 /-- **Fractional heat base smoothing bound.** For `0 < α`, `t > 0`:
 
     `‖n‖^{2α} · exp(-t·‖n‖^{2α}) ≤ exp(-1)/t`
@@ -5514,6 +5505,15 @@ lemma poissonSymbol_add {d : Type*} [Fintype d] (t₁ t₂ : ℝ) (n : d → ℤ
   unfold poissonSymbol
   rw [← Real.exp_add]
   congr 1; ring
+
+/-- **Poisson is α=1/2 case of fracHeat.** -/
+theorem fracHeatSymbol_half_eq_poisson (t : ℝ) (n : Fin 2 → ℤ) :
+    fracHeatSymbol (1/2) t n = poissonSymbol t n := by
+  unfold fracHeatSymbol poissonSymbol
+  congr 1
+  have hL_nn : 0 ≤ (latticeNorm n : ℝ) := latticeNorm_nonneg n
+  rw [show ((latticeNorm n : ℝ) : ℝ) ^ (2 * (1/2 : ℝ)) = latticeNorm n from by
+    rw [show (2 * (1/2) : ℝ) = (1 : ℝ) from by norm_num, Real.rpow_one]]
 
 /-- **Poisson smoothing at gradient level.** For `t > 0`:
 
