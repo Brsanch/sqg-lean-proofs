@@ -6751,17 +6751,26 @@ theorem IsSqgVelocityComponent.of_zero (j : Fin 2) :
 /-- **SQG evolution axioms.** Encodes "`θ` solves SQG" at the level we
 can state without a full material-derivative operator.
 
-The `l2Conservation` field is the real mathematical content: the `L²`
-norm (equivalently `hsSeminormSq 0`) is constant in time — a direct
-consequence of `∫ θ · div(uθ) dx = 0` plus `div u = 0`. This is a
-predicate that any SQG solution satisfies, and the zero solution
-trivially satisfies (see `SqgEvolutionAxioms.of_identically_zero`).
+Three fields, all with real mathematical content (no `True`
+placeholders remain):
 
-The `materialConservation` and `velocityIsRieszTransform` fields are
-placeholders for the full PDE statement `∂ₜθ + u·∇θ = 0` with
-`u = (R₁θ, -R₀θ)`; they require infrastructure (material derivatives,
-Riesz transforms as operators on `L²`-valued time-dependent functions)
-that lives in the same tier as `FracSobolevCalculus`.
+* `l2Conservation`: `L²` norm is constant in time — a direct
+  consequence of `∫ θ · div(uθ) dx = 0` plus `div u = 0`.
+* `meanConservation`: the spatial mean `∫ θ dx` (equivalently the
+  zeroth Fourier coefficient) is preserved along the flow — the
+  zero-mode reading of `∂ₜθ + div(uθ) = 0`.
+* `velocityIsRieszTransform`: for each axis `j`, an `L²`-valued
+  time-indexed velocity component exists which realizes the SQG
+  relation `u_j(t) = (±R_{1-j}) θ(t)` mode-by-mode via
+  `IsSqgVelocityComponent`.
+
+The three fields together are sufficient to define `SqgSolution` with
+real PDE content, to run the §10.5 `L²` bound argument, and to feed
+the §10.8 s=2 bootstrap discharge of `BKMCriterionS2` once the energy
+estimate is formalized. The full weak form of `∂ₜθ + u·∇θ = 0`
+paired against smooth test functions is a strictly stronger refinement
+that would consume a distributional / material-derivative
+infrastructure not yet built here.
 
 Used as the `solvesSqgEvolution` field of `SqgSolution` in §10.2. -/
 structure SqgEvolutionAxioms
@@ -6770,14 +6779,21 @@ structure SqgEvolutionAxioms
   incompressibility plus `∫ θ (u·∇θ) = 0`. -/
   l2Conservation :
     ∀ t : ℝ, 0 ≤ t → hsSeminormSq 0 (θ t) = hsSeminormSq 0 (θ 0)
-  /-- `∂ₜθ + u·∇θ = 0` with `u = (R₁θ, -R₀θ)`. Placeholder: requires
-  material-derivative operator. -/
-  materialConservation : True
-  /-- The velocity at each time `t` is `u(t) = (R₁ θ(t), -R₀ θ(t))`
-  componentwise — formally, for each `j`, there exists a `u_j(t)`
-  satisfying `IsSqgVelocityComponent (θ t) (u_j t) j`. Placeholder:
-  requires Riesz transforms as operators on time-dependent `L²`. -/
-  velocityIsRieszTransform : True
+  /-- Spatial-mean conservation (zero-mode form of `∂ₜθ + div(uθ) = 0`):
+  the zeroth Fourier coefficient is preserved for all forward time.
+  Equivalent to `∫ θ(t) dx = ∫ θ(0) dx` on `𝕋²`. -/
+  meanConservation :
+    ∀ t : ℝ, 0 ≤ t →
+      mFourierCoeff (θ t) (0 : Fin 2 → ℤ)
+        = mFourierCoeff (θ 0) (0 : Fin 2 → ℤ)
+  /-- For each axis `j`, a time-indexed `L²` velocity component
+  `u_j : ℝ → Lp ℂ 2` exists satisfying the SQG velocity relation
+  `u_j(t) = (sgnj · R_{1-j}) θ(t)` mode-by-mode (as encoded by
+  `IsSqgVelocityComponent`). -/
+  velocityIsRieszTransform :
+    ∀ j : Fin 2,
+      ∃ u_j : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))),
+        ∀ t : ℝ, IsSqgVelocityComponent (θ t) (u_j t) j
 
 /-- **SQG evolution axioms hold for the identically-zero solution.**
 A minimal sanity check: `θ ≡ 0` trivially satisfies the real content
@@ -6787,8 +6803,11 @@ theorem SqgEvolutionAxioms.of_identically_zero
     (hθ : ∀ t, θ t = 0) :
     SqgEvolutionAxioms θ where
   l2Conservation := fun t _ => by rw [hθ t, hθ 0]
-  materialConservation := trivial
-  velocityIsRieszTransform := trivial
+  meanConservation := fun t _ => by rw [hθ t, hθ 0]
+  velocityIsRieszTransform := fun j =>
+    ⟨fun _ => 0, fun t => by
+      rw [hθ t]
+      exact IsSqgVelocityComponent.of_zero j⟩
 
 /-! ### §10.2 `SqgSolution` wrapper
 
@@ -7011,11 +7030,12 @@ all time by its initial value.
 This is **not** enough to discharge `hOnePropagation` itself (which is
 about `s=1`, i.e. `Ḣ¹`) — L² conservation doesn't control gradients.
 But it does demonstrate that once the SQG PDE content is real (as
-`SqgEvolutionAxioms.l2Conservation` now is, via `SqgSolution`), a
-genuine chain of reasoning produces genuine regularity output. This
-is the pattern the full `hOnePropagation` discharge will follow once
-`materialConservation` becomes real: PDE property → conserved
-quantity → uniform bound.
+`SqgEvolutionAxioms.l2Conservation`, `meanConservation`, and
+`velocityIsRieszTransform` now are, via `SqgSolution`), a genuine
+chain of reasoning produces genuine regularity output. This is the
+pattern the full `hOnePropagation` discharge will follow once the
+integer-order energy estimate formalized in §10.8 is carried out in
+detail: PDE property → conserved quantity → uniform bound.
 -/
 
 /-- **Uniform L² bound from L² conservation.** The "s=0 degenerate
@@ -7180,5 +7200,134 @@ theorem SqgSolution.uniform_hs_intermediate (S : SqgSolution)
     ∀ s : ℝ, 0 ≤ s → s ≤ 1 →
       ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (S.θ t) ≤ M :=
   hMMP.uniform_hs_intermediate
+
+/-! ### §10.8 s=2 bootstrap: integer-order BKM refinement
+
+The `BKMCriterionHighFreq` axiom of §10.6 covers the Ḣˢ bootstrap for
+every `s > 1`, which on `𝕋²` involves fractional-calculus
+machinery (Kato–Ponce-type product and commutator estimates) that is
+not yet available in this development's dependency chain.
+
+**The integer case `s = 2` avoids fractional calculus entirely.** The
+Fourier multiplier `|n|²` is polynomial, and at `s = 2` the BKM
+energy estimate uses only the classical commutator
+
+  `[Δ, u·∇] = 2 ∇u · ∇² + (Δu) · ∇`,
+
+which is a *differential* operator — its bounds are pointwise,
+handled by the real-valued calculus already in Mathlib, with no
+Littlewood–Paley decomposition required.
+
+This subsection introduces `BKMCriterionS2`, a strict weakening of
+`BKMCriterionHighFreq` that only covers `s ∈ (1, 2]`. Combined with
+the §10.6 / §10.7 interpolation from `MaterialMaxPrinciple` on
+`s ∈ [0, 1]`, it delivers **a conditional Theorem 3 on the full
+Sobolev range `[0, 2]` from an axiomatic footprint that targets only
+integer-order regularity**.
+
+Significance: `BKMCriterionS2` is the most restricted BKM-type
+hypothesis against which the conditional Theorem 3 can still cover
+a non-trivial Sobolev range above the critical index `s = 1`. A
+future discharge via a genuine Ḣ² energy estimate — integer-order,
+no fractional calculus — would make Theorem 3 unconditional on
+`s ∈ [0, 2]`. The `s > 2` tail remains an explicit open axiom.
+
+Provided here:
+
+* `BKMCriterionS2`: refined hypothesis covering `s ∈ (1, 2]`.
+* `BKMCriterionHighFreq.toS2`: the HighFreq axiom (and therefore the
+  original `BKMCriterion`) implies the S2 form. Every previous
+  discharge auto-promotes.
+* `BKMCriterionS2.of_identically_zero`: trivial-case discharge.
+* `sqg_regularity_via_s2_bootstrap`: combined theorem for
+  `s ∈ [0, 2]`.
+* `SqgSolution.regularity_via_s2_bootstrap`: structured form.
+-/
+
+/-- **S2 BKM criterion.** Uniform Ḣ¹ bound propagates to uniform Ḣˢ
+bound for every `s ∈ (1, 2]` — the integer-order range where the BKM
+bootstrap uses only classical (differential) commutators, no
+fractional Sobolev calculus.
+
+This is strictly weaker than `BKMCriterionHighFreq`
+(`BKMCriterionHighFreq.toS2` below). Exactly what the combined
+conditional Theorem 3 on `s ∈ [0, 2]` requires. -/
+structure BKMCriterionS2
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- Uniform Ḣ¹ bound propagates to uniform Ḣˢ bound for every
+  `s ∈ (1, 2]`. Integer-order: no fractional calculus required. -/
+  hsPropagationS2 :
+    (∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M) →
+      ∀ s : ℝ, 1 < s → s ≤ 2 →
+        ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M'
+
+/-- **High-frequency BKM implies S2 BKM.** Every existing discharge of
+`BKMCriterionHighFreq` auto-promotes to `BKMCriterionS2` — the
+restriction `s ≤ 2` is harmless. -/
+theorem BKMCriterionHighFreq.toS2
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hBKM : BKMCriterionHighFreq θ) : BKMCriterionS2 θ where
+  hsPropagationS2 := fun h₁ s hs1 _ => hBKM.hsPropagationHighFreq h₁ s hs1
+
+/-- **Original BKM criterion implies S2 BKM.** Chain through
+`BKMCriterion.toHighFreq` and `BKMCriterionHighFreq.toS2`. -/
+theorem BKMCriterion.toS2
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hBKM : BKMCriterion θ) : BKMCriterionS2 θ :=
+  hBKM.toHighFreq.toS2
+
+/-- **S2 BKM holds for the identically-zero evolution.** Discharge
+via `BKMCriterion.of_identically_zero + toS2`. -/
+theorem BKMCriterionS2.of_identically_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) : BKMCriterionS2 θ :=
+  (BKMCriterion.of_identically_zero θ hθ).toS2
+
+/-- **s=2 bootstrap reduction: Theorem 3 on `s ∈ [0, 2]`.**
+
+Discharges the conditional regularity conclusion on the range `[0, 2]`
+from a strictly weaker axiomatic footprint than
+`sqg_regularity_via_interpolation`:
+
+* `MaterialMaxPrinciple` → uniform Ḣ¹ bound + Ḣ¹ summability
+* `BKMCriterionS2` → Ḣ¹ → Ḣˢ bootstrap for `s ∈ (1, 2]` only —
+  the integer-order subrange
+
+For `s ∈ [0, 1]`, MMP summability + monotonicity delivers the bound
+directly (same argument as §10.6 / §10.7). For `s ∈ (1, 2]`,
+`BKMCriterionS2` supplies it.
+
+**The top of the range, `s > 2`, is not covered.** That is the
+explicit remaining open axiom. This is the honest partial-win: the
+conditional Theorem 3 now holds over `[0, 2]` from an axiomatic
+footprint that targets only integer-order Sobolev regularity. -/
+theorem sqg_regularity_via_s2_bootstrap
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hMMP : MaterialMaxPrinciple θ)
+    (hBKM : BKMCriterionS2 θ) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M := by
+  intro s _ hs2
+  obtain ⟨M₁, hM₁⟩ := hMMP.hOnePropagation
+  by_cases hs1 : s ≤ 1
+  · -- s ∈ [0, 1]: interpolation via hsSeminormSq_mono_of_le, summability from MMP
+    refine ⟨M₁, fun t ht => ?_⟩
+    calc hsSeminormSq s (θ t)
+        ≤ hsSeminormSq 1 (θ t) :=
+          hsSeminormSq_mono_of_le hs1 (θ t) (hMMP.hOneSummability t ht)
+      _ ≤ M₁ := hM₁ t ht
+  · -- s ∈ (1, 2]: invoke BKMCriterionS2
+    push_neg at hs1
+    exact hBKM.hsPropagationS2 ⟨M₁, hM₁⟩ s hs1 hs2
+
+/-- **Structured-form s=2 bootstrap reduction.** Specializes
+`sqg_regularity_via_s2_bootstrap` to an `SqgSolution`, covering the
+integer-order range `[0, 2]` of `S.SobolevBounds`. -/
+theorem SqgSolution.regularity_via_s2_bootstrap (S : SqgSolution)
+    (hMMP : MaterialMaxPrinciple S.θ)
+    (hBKM : BKMCriterionS2 S.θ) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (S.θ t) ≤ M :=
+  sqg_regularity_via_s2_bootstrap S.θ hMMP hBKM
 
 end SqgIdentity

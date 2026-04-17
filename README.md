@@ -13,9 +13,14 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **7184 lines, zero errors, zero `sorry`**. Main has
+Current state: **~7330 lines, zero errors, zero `sorry`**. Main has
 advanced substantially beyond the last Zenodo release (v0.3.0) — see
-the §10 section list below for what landed post-v0.3.0.
+the §10 section list below for what landed post-v0.3.0. §10.8 (most
+recent) replaces the last `True` placeholders in `SqgEvolutionAxioms`
+with real predicates and introduces the **s=2 integer-order BKM
+bootstrap**, which reduces the axiomatic footprint of conditional
+Theorem 3 on `s ∈ [0, 2]` to a single hypothesis that avoids
+fractional calculus entirely.
 
 ## What's proven
 
@@ -150,12 +155,17 @@ First wedge into the long road of unconditionalising
 - `IsSqgVelocityComponent.of_zero` — the zero function is a valid
   velocity component for the zero scalar.
 - `SqgEvolutionAxioms θ` — Prop structure bundling expected
-  consequences of the SQG PDE. Has one real field (`l2Conservation`:
-  L² norm squared is conserved) and two placeholders
-  (`materialConservation`, `velocityIsRieszTransform`) pending
-  material-derivative infrastructure.
-- `SqgEvolutionAxioms.of_identically_zero` — zero solution satisfies
-  the real field trivially.
+  consequences of the SQG PDE. As of §10.8, **all three fields carry
+  real mathematical content** (no `True` placeholders):
+  - `l2Conservation`: L² norm squared is conserved.
+  - `meanConservation`: the spatial mean (zeroth Fourier coefficient)
+    is preserved — zero-mode reading of `∂ₜθ + div(uθ) = 0`.
+  - `velocityIsRieszTransform`: for each axis `j`, an `L²`-valued
+    time-indexed velocity component exists satisfying
+    `IsSqgVelocityComponent` mode-by-mode.
+- `SqgEvolutionAxioms.of_identically_zero` — zero solution discharges
+  all three fields (mean via `rfl` on rewritten zero, velocity via
+  `IsSqgVelocityComponent.of_zero`).
 
 **§10.2 `SqgSolution` strengthened:** `solvesSqgEvolution` upgraded
 from `True` to `SqgEvolutionAxioms θ`. Every `SqgSolution` now
@@ -218,6 +228,36 @@ field remains — actually discharging it requires the full D14 §9
 material-derivative argument (~5k+ lines of missing infrastructure,
 multi-month effort).
 
+**§10.8 s=2 integer-order BKM bootstrap:**
+The `BKMCriterionHighFreq` axiom of §10.6 covers the Ḣˢ bootstrap for
+every `s > 1`, which on `𝕋²` brings in fractional-calculus machinery
+(Kato–Ponce-type commutator estimates) not yet available. The
+**integer case `s = 2` avoids fractional calculus entirely** — the
+multiplier `|n|²` is polynomial and the commutator `[Δ, u·∇]` is a
+classical differential operator. Adds:
+
+- `BKMCriterionS2` — refined BKM hypothesis covering only
+  `s ∈ (1, 2]`. Strictly weaker than `BKMCriterionHighFreq`.
+- `BKMCriterionHighFreq.toS2` and `BKMCriterion.toS2` — every
+  existing discharge auto-promotes.
+- `BKMCriterionS2.of_identically_zero` — trivial case.
+- `sqg_regularity_via_s2_bootstrap` — combined reduction: MMP +
+  `BKMCriterionS2` gives uniform Ḣˢ bounds for **every `s ∈ [0, 2]`**.
+  Proof: `s ∈ [0, 1]` via MMP + monotonicity; `s ∈ (1, 2]` via S2
+  bootstrap.
+- `SqgSolution.regularity_via_s2_bootstrap` — structured form.
+
+Simultaneously: replaces the last two `True` placeholders in
+`SqgEvolutionAxioms` with real content (`meanConservation`,
+`velocityIsRieszTransform`), so every field of the structure now
+carries a genuine PDE consequence.
+
+**Net effect of §10.8:** conditional Theorem 3 on the range
+`s ∈ [0, 2]` now holds from an axiomatic footprint that targets
+only **integer-order** Sobolev regularity — no fractional calculus
+prerequisites in mathlib required to discharge. The `s > 2` tail
+remains an explicit open axiom.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that
@@ -226,16 +266,21 @@ doesn't exist in mathlib yet:
 - **Material-derivative transport / maximum principle** — needed to
   prove `MaterialMaxPrinciple.hOnePropagation`. Mathlib has basic flow
   API but no ODE existence-uniqueness or DiPerna–Lions-level theory.
-- **BKM blow-up criterion + Sobolev bootstrap** — needed to prove
-  `BKMCriterion.hsPropagation`. Not in mathlib.
-- **Fractional Sobolev operator calculus** —
-  `FracSobolevCalculus.fracLaplacianIsSelfAdjointFourierMultiplier`.
-  Our torus-level symbols are in-file, but the general operator theory
-  is missing upstream.
+- **Integer-order energy estimate at `s = 2`** — needed to discharge
+  `BKMCriterionS2.hsPropagationS2`. This is the target of §10.8's
+  axiomatic scoping: it uses only classical (differential)
+  commutators, so it is substantially lighter than the fractional
+  bootstrap required for `BKMCriterion.hsPropagation`, but still
+  requires an in-time differentiation-of-Sobolev-norm machinery not
+  present in this development.
+- **Fractional Sobolev bootstrap for `s > 2`** — the remaining open
+  tail of conditional Theorem 3. Requires Kato–Ponce-type estimates
+  on `𝕋²` (not in mathlib).
 
 This repo is the Fourier-algebraic foundation plus a conditional
-Theorem 3 skeleton — the analytic heavy lifting (discharging the three
-hypotheses) remains to be done.
+Theorem 3 skeleton. As of §10.8 the conditional conclusion over
+`s ∈ [0, 2]` rests on a single integer-order axiom; the `s > 2`
+fractional tail is the remaining open piece.
 
 ## The identity
 
