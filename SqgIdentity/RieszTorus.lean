@@ -5953,6 +5953,108 @@ theorem fracHeat_smoothed_vorticity_L2_mode
         exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
     _ = ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by ring
 
+/-- **α-fracHeat-smoothed SQG gradient L² mode bound.** For `t > 0, α > 0`:
+
+    `‖fracHeat(α,t,n) · ∂̂_i u_j(n) · c‖² ≤ (1/α)^{1/α}·exp(-1/α)/t^{1/α} · ‖c‖²` -/
+theorem fracHeat_smoothed_sqgGrad_L2_mode
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t)
+    (n : Fin 2 → ℤ) (i j : Fin 2) (c : ℂ) :
+    ‖((fracHeatSymbol α t n : ℝ) : ℂ) * sqgGradSymbol i j n * c‖ ^ 2
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have hg0 : sqgGradSymbol i j 0 = 0 := by
+      unfold sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [hg0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have h1α : 0 < 1 / α := div_pos one_pos hα
+    have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+    have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+    exact mul_nonneg (by positivity) (sq_nonneg _)
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+    have hgrad := sqgGrad_norm_le hn i j
+    have hgrad_sq_le : ‖sqgGradSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+      sq_le_sq' (by linarith [norm_nonneg (sqgGradSymbol i j n)]) hgrad
+    have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+    have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht.le n
+    have hmain : (fracDerivSymbol 1 n) ^ 2 * fracHeatSymbol α t n
+        ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) :=
+      fracDerivSymbol_sq_mul_fracHeat_le hα one_pos ht n
+    have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+      rw [fracDerivSymbol_one_eq hn]
+    rw [hfrac1] at hmain
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hfactor_nn : 0 ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) := by
+      have h1α : 0 < 1 / α := div_pos one_pos hα
+      have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+      have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+      positivity
+    calc (fracHeatSymbol α t n) ^ 2 * ‖sqgGradSymbol i j n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (fracHeatSymbol α t n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_left hgrad_sq_le (sq_nonneg _)
+      _ = fracHeatSymbol α t n * ((latticeNorm n) ^ 2 * fracHeatSymbol α t n) * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ fracHeatSymbol α t n *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_left hmain hf_nn
+      _ ≤ 1 *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
+      _ = ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by ring
+
+/-- **α-fracHeat-smoothed SQG strain L² mode bound.** Same structure as gradient. -/
+theorem fracHeat_smoothed_sqgStrain_L2_mode
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t)
+    (n : Fin 2 → ℤ) (i j : Fin 2) (c : ℂ) :
+    ‖((fracHeatSymbol α t n : ℝ) : ℂ) * sqgStrainSymbol i j n * c‖ ^ 2
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have hs0 : sqgStrainSymbol i j 0 = 0 := by
+      unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [hs0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have h1α : 0 < 1 / α := div_pos one_pos hα
+    have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+    have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+    exact mul_nonneg (by positivity) (sq_nonneg _)
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+    have hstrain := sqgStrain_norm_le hn i j
+    have hstrain_sq_le : ‖sqgStrainSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+      sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol i j n)]) hstrain
+    have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+    have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht.le n
+    have hmain : (fracDerivSymbol 1 n) ^ 2 * fracHeatSymbol α t n
+        ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) :=
+      fracDerivSymbol_sq_mul_fracHeat_le hα one_pos ht n
+    have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+      rw [fracDerivSymbol_one_eq hn]
+    rw [hfrac1] at hmain
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hfactor_nn : 0 ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) := by
+      have h1α : 0 < 1 / α := div_pos one_pos hα
+      have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+      have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+      positivity
+    calc (fracHeatSymbol α t n) ^ 2 * ‖sqgStrainSymbol i j n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (fracHeatSymbol α t n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_left hstrain_sq_le (sq_nonneg _)
+      _ = fracHeatSymbol α t n * ((latticeNorm n) ^ 2 * fracHeatSymbol α t n) * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ fracHeatSymbol α t n *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_left hmain hf_nn
+      _ ≤ 1 *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
+      _ = ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
