@@ -5554,18 +5554,8 @@ theorem fracDerivSymbol_1_mul_poisson_le {t : ℝ} (ht : 0 < t)
 theorem poissonSymbol_L2_mode_contract {t : ℝ} (ht : 0 ≤ t)
     (n : Fin 2 → ℤ) (c : ℂ) :
     ‖((poissonSymbol t n : ℝ) : ℂ) * c‖ ^ 2 ≤ ‖c‖ ^ 2 := by
-  rw [norm_mul, mul_pow, Complex.norm_real,
-    Real.norm_of_nonneg (poissonSymbol_nonneg t n)]
-  have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
-  have hp_le : poissonSymbol t n ≤ 1 := poissonSymbol_le_one ht n
-  have hp_sq_le : (poissonSymbol t n) ^ 2 ≤ 1 := by
-    have := mul_self_le_one_of_abs_le_one
-      (by rw [abs_of_nonneg hp_nn]; exact hp_le)
-    rwa [sq] at this
-  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
-  calc (poissonSymbol t n) ^ 2 * ‖c‖ ^ 2
-      ≤ 1 * ‖c‖ ^ 2 := mul_le_mul_of_nonneg_right hp_sq_le hc_nn
-    _ = ‖c‖ ^ 2 := one_mul _
+  rw [← fracHeatSymbol_half_eq_poisson]
+  exact fracHeatSymbol_L2_mode_contract (by norm_num : (0:ℝ) < 1/2) ht n c
 
 /-- **Poisson semigroup rpow identity.** For `k > 0`, `t : ℝ`:
 
