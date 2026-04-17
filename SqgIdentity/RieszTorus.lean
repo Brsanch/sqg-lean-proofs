@@ -5493,6 +5493,44 @@ theorem heat_smoothed_sqgStrain_Hs_sum_le (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
   have h01 := heat_smoothed_sqgStrain_01_Hs_integrated_tight s ht θ S01 hcoeff1 hsum
   linarith
 
+/-- **Poisson-smoothed SQG vorticity L² mode bound.** For `n ≠ 0`, `t > 0`:
+
+    `‖P_t·ω̂·c‖² ≤ exp(-2)/t² · ‖c‖²`
+
+The Poisson smoothing is sharper than heat at vorticity level because
+Poisson gains 1 derivative per t (heat gains 2). So `P_t · L ≤ e^{-1}/t`
+squared gives `P_t²·L² ≤ e^{-2}/t²`. -/
+theorem poisson_smoothed_vorticity_L2_mode {t : ℝ} (ht : 0 < t)
+    {n : Fin 2 → ℤ} (hn : n ≠ 0) (c : ℂ) :
+    ‖((poissonSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * c‖ ^ 2
+    ≤ Real.exp (-2) / t ^ 2 * ‖c‖ ^ 2 := by
+  rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (poissonSymbol_nonneg t n),
+    sqgVorticitySymbol_norm hn]
+  -- Goal: p² · L² · ‖c‖² ≤ exp(-2)/t² · ‖c‖²
+  -- Use: (p · L)² ≤ (exp(-1)/t)² = exp(-2)/t²
+  have hmain := latticeNorm_mul_poisson_le ht n
+  -- hmain: L · p ≤ exp(-1)/t
+  have hp_nn : 0 ≤ poissonSymbol t n := poissonSymbol_nonneg t n
+  have hL_nn : 0 ≤ (latticeNorm n : ℝ) := latticeNorm_nonneg n
+  have hLp_nn : 0 ≤ (latticeNorm n : ℝ) * poissonSymbol t n :=
+    mul_nonneg hL_nn hp_nn
+  have hexp_nn : 0 ≤ Real.exp (-1) / t :=
+    div_nonneg (Real.exp_pos _).le ht.le
+  have hmain' : (latticeNorm n * poissonSymbol t n) ^ 2 ≤ (Real.exp (-1) / t) ^ 2 :=
+    sq_le_sq' (by linarith) hmain
+  have hsq_eq : (Real.exp (-1) / t) ^ 2 = Real.exp (-2) / t ^ 2 := by
+    rw [div_pow]
+    congr 1
+    rw [sq, ← Real.exp_add]
+    congr 1; ring
+  rw [hsq_eq] at hmain'
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  calc (poissonSymbol t n) ^ 2 * (latticeNorm n : ℝ) ^ 2 * ‖c‖ ^ 2
+      = (latticeNorm n * poissonSymbol t n) ^ 2 * ‖c‖ ^ 2 := by ring
+    _ ≤ Real.exp (-2) / t ^ 2 * ‖c‖ ^ 2 :=
+        mul_le_mul_of_nonneg_right hmain' hc_nn
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
