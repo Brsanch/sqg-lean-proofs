@@ -6195,6 +6195,33 @@ theorem fracHeat_smoothed_sqgStrain_L2_integrated
       exact fracHeat_smoothed_sqgStrain_L2_mode hα ht n i j (mFourierCoeff θ n)
   · exact hsum.mul_left _
 
+/-- **α-fracHeat-smoothed SQG velocity Ḣˢ integrated.** For `α > 0, t ≥ 0`:
+
+    `‖fracHeat(α,·) u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}`
+
+No gain in Sobolev level since both Riesz and fracHeat contract. -/
+theorem fracHeat_smoothed_sqg_velocity_Hs_integrated
+    (s : ℝ) {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ t)
+    (j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((fracHeatSymbol α t n : ℝ) : ℂ) *
+        (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) *
+        mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq s θ := by
+  unfold hsSeminormSq
+  have hmode : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2
+      ≤ fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 := by
+    intro n
+    rw [hcoeff n]
+    exact fracHeat_smoothed_sqg_velocity_mode s hα ht n j (mFourierCoeff θ n)
+  apply Summable.tsum_le_tsum hmode
+  · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
