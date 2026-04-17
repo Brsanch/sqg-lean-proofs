@@ -6,8 +6,8 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.0-dev
-date-released: "2026-04-15"
+version: 0.4.0
+date-released: "2026-04-17"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
 identifiers:
@@ -34,9 +34,16 @@ abstract: >
   BKMCriterion, FracSobolevCalculus, SqgWellPosedness) and a material
   derivative scaffolding (SqgEvolutionAxioms). Of these hypotheses,
   FracSobolevCalculus is discharged unconditionally, BKM's axiomatic
-  scope is reduced to s > 1 only (via interpolation), and
+  scope is reduced first to s > 1 (via interpolation) and then further
+  to the integer-order range s in (1, 2] only via the v0.4.0 S2
+  bootstrap (BKMCriterionS2) — which avoids fractional calculus
+  entirely by using only classical differential commutators.
   MaterialMaxPrinciple alone is shown sufficient for the intermediate
-  Sobolev range s in [0, 1]. All content machine-verified with zero
+  Sobolev range s in [0, 1]. Combined, the conditional Theorem 3 on
+  s in [0, 2] now rests on integer-order axioms only. The v0.4.0
+  release also eliminates all `True` placeholders from
+  SqgEvolutionAxioms: meanConservation and velocityIsRieszTransform
+  are now real predicates. All content machine-verified with zero
   `sorry`. Mathematical theorems by Bryan Sanchez; Lean formalization
   by Bryan Sanchez with AI assistance.
 keywords:

@@ -1,6 +1,6 @@
 {
   "title": "Machine-Verified SQG Shear-Vorticity Identity + Conditional Theorem 3 Roadmap (Lean 4)",
-  "description": "Lean 4 + mathlib formalization of Fourier-space identities for the Surface Quasi-Geostrophic equation, working towards a machine-checked regularity proof. Covers Theorems 1 and 2 of paper D14 (shear-vorticity identity Ŝ_nt - ω̂/2 = |k|·sin²(α-β)·θ̂ and selection-rule bound) plus supporting Riesz/Sobolev infrastructure on the 2-torus. §10 adds a conditional Theorem 3 (SQG regularity) roadmap with named axiomatic hypotheses — MaterialMaxPrinciple, BKMCriterion, FracSobolevCalculus, SqgWellPosedness — that pin down exactly which analytic facts the regularity argument borrows from outside the algebraic layer. FracSobolevCalculus is discharged unconditionally. BKM's axiomatic scope is reduced to s > 1 only via mode-level Sobolev interpolation (the s ∈ [0, 1] range falls out from MaterialMaxPrinciple alone). §11-equivalent material derivative scaffolding introduces sqgVelocitySymbol, IsSqgVelocityComponent, and SqgEvolutionAxioms with real L²-conservation content. All content machine-verified with zero sorry across 7184 lines. Mathematical theorems by Bryan Sanchez (independent researcher); Lean formalization by Bryan Sanchez with AI assistance.",
+  "description": "Lean 4 + mathlib formalization of Fourier-space identities for the Surface Quasi-Geostrophic equation, working towards a machine-checked regularity proof. Covers Theorems 1 and 2 of paper D14 (shear-vorticity identity Ŝ_nt - ω̂/2 = |k|·sin²(α-β)·θ̂ and selection-rule bound) plus supporting Riesz/Sobolev infrastructure on the 2-torus. §10 adds a conditional Theorem 3 (SQG regularity) roadmap with named axiomatic hypotheses — MaterialMaxPrinciple, BKMCriterion, FracSobolevCalculus, SqgWellPosedness — pinning down exactly which analytic facts the regularity argument borrows from outside the algebraic layer. FracSobolevCalculus is discharged unconditionally. BKM's axiomatic scope is reduced first to s > 1 (§10.6 interpolation) and then further to the integer-order range s ∈ (1, 2] only (v0.4.0 §10.8 S2 bootstrap, BKMCriterionS2) — which avoids fractional calculus entirely by using only classical differential commutators. MaterialMaxPrinciple alone handles s ∈ [0, 1], and the combined conditional Theorem 3 on s ∈ [0, 2] now rests on integer-order axioms only. v0.4.0 also eliminates all `True` placeholders from SqgEvolutionAxioms: meanConservation (zero-mode preservation) and velocityIsRieszTransform (per-axis L² velocity component existence) are now real predicates. All content machine-verified with zero sorry across 7333 lines. Mathematical theorems by Bryan Sanchez (independent researcher); Lean formalization by Bryan Sanchez with AI assistance.",
   "creators": [
     {
       "name": "Sanchez, Bryan",
@@ -21,5 +21,5 @@
     "conditional regularity",
     "Sobolev interpolation"
   ],
-  "version": "0.4.0-dev"
+  "version": "0.4.0"
 }
