@@ -5473,6 +5473,26 @@ theorem heat_smoothed_sqgStrain_01_Hs_integrated_tight (s : ℝ) {t : ℝ} (ht :
       (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
   · exact hsum.div_const 4
 
+/-- **Tight heat-smoothed strain Ḣˢ sum bound.** Summing the two tight
+strain Ḣˢ bounds:
+
+    `‖e^{tΔ}S₀₀‖²_{Ḣˢ} + ‖e^{tΔ}S₀₁‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}} / 2`
+
+The factor 1/2 reflects the strain-Frobenius tight identity
+`Σ‖S_ij‖² = ‖n‖²/2` (and the heat contraction keeps the bound). -/
+theorem heat_smoothed_sqgStrain_Hs_sum_le (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
+    (θ S00 S01 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff0 : ∀ n, mFourierCoeff S00 n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 0 n * mFourierCoeff θ n)
+    (hcoeff1 : ∀ n, mFourierCoeff S01 n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 1 n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s S00 + hsSeminormSq s S01 ≤ hsSeminormSq (s + 1) θ / 2 := by
+  have h00 := heat_smoothed_sqgStrain_00_Hs_integrated_tight s ht θ S00 hcoeff0 hsum
+  have h01 := heat_smoothed_sqgStrain_01_Hs_integrated_tight s ht θ S01 hcoeff1 hsum
+  linarith
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
