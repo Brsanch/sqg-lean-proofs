@@ -4119,6 +4119,62 @@ theorem fracDerivSymbol_sq_mul_heat_le_rpow {k : ℝ} (hk : 0 < k) {t : ℝ} (ht
     rw [h_σk_sq]
     exact latticeNorm_rpow_mul_heat_le hk ht n
 
+/-- **Mode-level Ḣᵏ parabolic smoothing at real k > 0.** For any `k > 0, t > 0`:
+
+    `σ_k(n)² · ‖heat(t,n) · c‖² ≤ (k^k · exp(-k) / t^k) · ‖c‖²` -/
+theorem heatSymbol_Hk_smoothing_mode_rpow {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    (fracDerivSymbol k n) ^ 2 * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (k ^ k * Real.exp (-k) / t ^ k) * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+  have hmain := fracDerivSymbol_sq_mul_heat_le_rpow hk ht n
+  have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+  have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ k ^ k * Real.exp (-k) / t ^ k := by
+    have htk_pos : 0 < t ^ k := Real.rpow_pos_of_pos ht k
+    have hkk_pos : 0 < k ^ k := Real.rpow_pos_of_pos hk k
+    positivity
+  calc (fracDerivSymbol k n) ^ 2 * ((heatSymbol t n) ^ 2 * ‖c‖ ^ 2)
+      = ((fracDerivSymbol k n) ^ 2 * heatSymbol t n)
+        * (heatSymbol t n * ‖c‖ ^ 2) := by ring
+    _ ≤ (k ^ k * Real.exp (-k) / t ^ k) * (heatSymbol t n * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hmain (mul_nonneg hheat_nn hc_nn)
+    _ ≤ (k ^ k * Real.exp (-k) / t ^ k) * (1 * ‖c‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left _ hfactor_nn
+        exact mul_le_mul_of_nonneg_right hheat_le_one hc_nn
+    _ = (k ^ k * Real.exp (-k) / t ^ k) * ‖c‖ ^ 2 := by ring
+
+/-- **Integrated Ḣᵏ parabolic smoothing at real k > 0.** For `k > 0, t > 0`,
+heat-smoothed `u` with `û(n) = heat(t,n) · f̂(n)`:
+
+    `‖u‖²_{Ḣᵏ} ≤ (k^k · exp(-k) / t^k) · ‖f‖²_{L²}` -/
+theorem heatSymbol_Hk_smoothing_integrated_rpow {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq k u ≤
+      (k ^ k * Real.exp (-k) / t ^ k) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff f n‖ ^ 2) := by
+  unfold hsSeminormSq
+  rw [show (k ^ k * Real.exp (-k) / t ^ k) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑f) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        (k ^ k * Real.exp (-k) / t ^ k) * ‖mFourierCoeff (↑↑f) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦
+    fracDerivSymbol k n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact heatSymbol_Hk_smoothing_mode_rpow hk ht n (mFourierCoeff f n)
+  · apply (hsum.mul_left (k ^ k * Real.exp (-k) / t ^ k)).of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      rw [hcoeff n]
+      exact heatSymbol_Hk_smoothing_mode_rpow hk ht n (mFourierCoeff f n)
+  · exact hsum.mul_left _
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
