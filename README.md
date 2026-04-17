@@ -75,19 +75,42 @@ regularity proof. Currently covers the shear-vorticity identity
     - Tight Ḣˢ for S₀₀/S₀₁: `‖e^{tΔ}S_ij‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}/4`
     - Velocity: `‖e^{tΔ}u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}` (both heat and Riesz contract)
 
+## What's proven conditionally (Theorem 3 skeleton, §10)
+
+The regularity result (Theorem 3) is **not unconditionally formalized**,
+but `RieszTorus.lean` §10 now carries a *conditional* Theorem 3:
+a machine-checked derivation that takes three analytic hypotheses
+as input and concludes
+
+    ∀ s ≥ 0, ∃ M, ∀ t ≥ 0, ‖θ(t)‖²_{Ḣˢ} ≤ M
+
+— uniform bounds in every Sobolev space. Two of the three hypotheses
+now carry real mathematical content (uniform Ḣ¹ bound; Ḣ¹→Ḣˢ
+bootstrap); the third remains a structural placeholder.
+
+See `sqg_regularity_conditional` in `RieszTorus.lean`. The hypothesis
+structures (`MaterialMaxPrinciple`, `BKMCriterion`,
+`FracSobolevCalculus`) explicitly pin down *which* analytic facts the
+argument is borrowing from outside the algebraic layer.
+
 ## What's not proven (yet)
 
-The regularity result (Theorem 3) is **not formalized**. Closing it in
-Lean would require infrastructure that doesn't exist in mathlib yet:
+Closing Theorem 3 unconditionally would require infrastructure that
+doesn't exist in mathlib yet:
 
-- Material-derivative transport / maximum principle (mathlib has basic
-  flow API but no ODE existence-uniqueness or DiPerna–Lions)
-- BKM blow-up criterion (not in mathlib)
-- Fractional Sobolev spaces on ℝⁿ as operators (our torus-level symbols
-  are in-file, but the general theory is missing upstream)
+- **Material-derivative transport / maximum principle** — needed to
+  prove `MaterialMaxPrinciple.hOnePropagation`. Mathlib has basic flow
+  API but no ODE existence-uniqueness or DiPerna–Lions-level theory.
+- **BKM blow-up criterion + Sobolev bootstrap** — needed to prove
+  `BKMCriterion.hsPropagation`. Not in mathlib.
+- **Fractional Sobolev operator calculus** —
+  `FracSobolevCalculus.fracLaplacianIsSelfAdjointFourierMultiplier`.
+  Our torus-level symbols are in-file, but the general operator theory
+  is missing upstream.
 
-This repo is the Fourier-algebraic foundation — the analytic heavy
-lifting remains to be done.
+This repo is the Fourier-algebraic foundation plus a conditional
+Theorem 3 skeleton — the analytic heavy lifting (discharging the three
+hypotheses) remains to be done.
 
 ## The identity
 

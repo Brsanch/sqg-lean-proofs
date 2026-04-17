@@ -6480,38 +6480,57 @@ carry real mathematical content. When each hypothesis is replaced by
 a proved theorem, the result becomes unconditional.
 -/
 
-/-- **Material max-principle hypothesis (placeholder).**
+/-- **Material max-principle hypothesis.**
 
-Packages the analytic facts about material derivatives along SQG
-trajectories required by the D14 §9 curvature argument:
-the "free-derivative" property `F_ext = 0` at κ-maxima, the
-incompressibility-driven material-segment expansion, and the far-field
-boundary control.
+Packages the analytic output of the D14 §9 bounded-κ argument:
+if the material max-principle for front curvature holds (the
+"free-derivative" property at κ-maxima, incompressibility-driven
+material-segment expansion, and far-field control combine to bound
+κ globally), then the Ḣ¹ seminorm of `θ(t)` stays bounded for all
+time by the initial data.
 
-All three fields are currently `True`; they will be refined into real
-propositions once the material-derivative infrastructure exists. The
-field names track the three parts of the §9 argument. -/
+The `hOnePropagation` field is the real mathematical content: it
+asserts the existence of a uniform-in-time Ḣ¹ bound. The three
+`True`-valued fields are structural placeholders tracking the three
+steps of the §9 argument, to be refined one at a time as the
+material-derivative infrastructure is formalized. -/
 structure MaterialMaxPrinciple
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
-  /-- `F_ext = 0` at any curvature maximum of a level set of `θ(·, t)`. -/
+  /-- Uniform-in-time Ḣ¹ bound — the consolidated output of the §9
+  argument, consumed by `BKMCriterion.hsPropagation`. -/
+  hOnePropagation :
+    ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M
+  /-- `F_ext = 0` at any curvature maximum of a level set of `θ(·, t)`
+  (placeholder; contributes to the proof of `hOnePropagation`). -/
   freeDerivativeAtKappaMax : True
-  /-- Incompressibility expands the material segment bounding the front. -/
+  /-- Incompressibility expands the material segment bounding the front
+  (placeholder; contributes to the proof of `hOnePropagation`). -/
   materialSegmentExpansion : True
-  /-- Far-field bounds on the level-set geometry control the boundary term. -/
+  /-- Far-field bounds on the level-set geometry control the boundary
+  term (placeholder; contributes to the proof of `hOnePropagation`). -/
   farFieldBoundary : True
 
-/-- **BKM-type blow-up criterion for SQG (placeholder).**
+/-- **BKM-type blow-up criterion (Sobolev-scale form).**
 
-The SQG analogue of the Beale–Kato–Majda criterion: if the
-space-time integral of `‖∇θ‖_{L^∞}` is finite on `[0, T]`, then `θ`
-extends smoothly past `T`. Equivalently, blow-up at `T` forces this
-integral to diverge.
+A Fourier/Sobolev form of the SQG analogue of the Beale–Kato–Majda
+criterion: a uniform-in-time Ḣ¹ bound propagates to a uniform-in-time
+Ḣˢ bound for every `s ≥ 0`. This is the composite statement that
+classical SQG BKM + fractional Sobolev bootstrap gives.
 
-Currently a `True` placeholder; will be refined to the full statement
-once `L^∞` and the appropriate smoothness class are set up for `θ`. -/
+The `hsPropagation` field is the real mathematical content. The
+placeholder field tracks the original time-integrated ∇θ form that
+the sharper literature criterion uses. -/
 structure BKMCriterion
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
-  /-- Finite `L¹_t L∞_x` gradient integral implies smoothness on `[0, T]`. -/
+  /-- Uniform Ḣ¹ bound propagates to uniform Ḣˢ bound for every
+  `s ≥ 0`. This is the BKM + bootstrap package consumed by
+  `sqg_regularity_conditional`. -/
+  hsPropagation :
+    (∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M) →
+      ∀ s : ℝ, 0 ≤ s →
+        ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M'
+  /-- Finite `L¹_t L∞_x` gradient integral implies smoothness on
+  `[0, T]` (placeholder; the sharper form literature uses). -/
   boundedGradIntegralImpliesSmooth : True
 
 /-- **Fractional Sobolev operator calculus (placeholder).**
@@ -6519,48 +6538,47 @@ structure BKMCriterion
 The fractional derivative symbols `fracDerivSymbol s n = ‖n‖^s` exist
 in this file as Fourier multipliers. Upgrading them to self-adjoint
 operators on `L²(𝕋²)` commuting with the Fourier transform — the
-operator calculus needed to run the energy argument — is the missing
-piece. -/
+operator calculus needed to run the energy argument that proves
+`MaterialMaxPrinciple.hOnePropagation` and feeds
+`BKMCriterion.hsPropagation` — is the missing piece. -/
 structure FracSobolevCalculus
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
   /-- `(-Δ)^s` is a self-adjoint operator commuting with `𝓕`. -/
   fracLaplacianIsSelfAdjointFourierMultiplier : True
 
-/-- **Conditional Theorem 3 — SQG global regularity (skeleton).**
+/-- **Conditional Theorem 3 — SQG global regularity (Sobolev form).**
 
-Given the three analytic hypotheses below — currently placeholders to
-be refined — the D14 algebraic spine (Theorems 1 and 2 of this repo)
-closes the global regularity argument for SQG.
+Given the three analytic hypotheses below — `MaterialMaxPrinciple`
+and `BKMCriterion` now carry real mathematical content;
+`FracSobolevCalculus` remains a structural placeholder that both
+refined hypotheses depend on internally — the solution `θ` to SQG
+stays bounded in every Sobolev space `Ḣˢ` uniformly in time.
 
-This statement is deliberately shaped as a three-premise implication so
-that every future PR that formalizes one of the hypotheses upgrades a
-field of the structure from `True` to a real proposition, without
-reshaping the top-level theorem.
-
-The conclusion is currently `True` because the real conclusion —
-`∀ t, θ(t) ∈ C^∞(𝕋²)` or an equivalent Sobolev-scale statement —
-requires a smoothness predicate that will be added alongside the first
-concrete hypothesis refinement.
+The conclusion `∀ s ≥ 0, ∃ M, ∀ t ≥ 0, hsSeminormSq s (θ t) ≤ M` is
+the Sobolev-scale form of global regularity: all fractional derivatives
+of `θ` remain in `L²` for all time, with a uniform bound.
 
 **Proof sketch (informal, to be formalized):**
 1. `sqg_shear_vorticity_identity` (Basic.lean) gives the mode-level
    identity `Ŝ_nt − ω̂/2 = |k|·sin²(α−β)·θ̂`.
-2. `MaterialMaxPrinciple.freeDerivativeAtKappaMax` reduces the forcing
-   on `Dκ/Dt` at a curvature max to a second-order term of size
-   `O((κδ)²)`.
-3. `MaterialMaxPrinciple.materialSegmentExpansion` +
-   `farFieldBoundary` propagate this pointwise bound to a global
-   bound on `‖∇θ‖_{L^∞}`.
-4. `BKMCriterion.boundedGradIntegralImpliesSmooth` upgrades the
-   pointwise-in-time bound to global smoothness.
-5. `FracSobolevCalculus` licenses the energy argument used in step 3.
--/
+2. `MaterialMaxPrinciple.{freeDerivativeAtKappaMax,
+   materialSegmentExpansion, farFieldBoundary}` combine to prove
+   `hOnePropagation` (uniform Ḣ¹ bound).
+3. `BKMCriterion.hsPropagation` bootstraps the Ḣ¹ bound to every Ḣˢ.
+4. `FracSobolevCalculus` licenses the operator calculus used at
+   both (2) and (3).
+
+The current proof body consumes `hOnePropagation` and `hsPropagation`
+directly. The two remaining placeholders (`freeDerivativeAtKappaMax`
+et al., `fracLaplacianIsSelfAdjointFourierMultiplier`) stay as
+structural markers of the unproved internal content. -/
 theorem sqg_regularity_conditional
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (_hMMP : MaterialMaxPrinciple θ)
-    (_hBKM : BKMCriterion θ)
+    (hMMP : MaterialMaxPrinciple θ)
+    (hBKM : BKMCriterion θ)
     (_hFSC : FracSobolevCalculus θ) :
-    True :=
-  trivial
+    ∀ s : ℝ, 0 ≤ s →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M :=
+  hBKM.hsPropagation hMMP.hOnePropagation
 
 end SqgIdentity
