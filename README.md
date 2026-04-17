@@ -54,12 +54,14 @@ regularity proof. Currently covers the shear-vorticity identity
   - General real `k > 0`: same bound using `Real.rpow`
   - Mode-level and integrated Ḣᵏ parabolic smoothing for all real k > 0
   - L² and Ḣˢ contractivity of heat (integrated form)
-  - Heat-smoothed SQG quantities:
-    - Vorticity: `‖heat·ω̂·c‖² ≤ exp(-1)/t · ‖c‖²`
-    - Gradient: `‖heat·∂̂u·c‖² ≤ exp(-1)/t · ‖c‖²`
-    - Strain (generic): `‖heat·Ŝ·c‖² ≤ exp(-1)/t · ‖c‖²`
-    - Strain (tight, using `|S_ij|² ≤ L²/4`):
-      `‖heat·Ŝ_ij·c‖² ≤ exp(-1)/(4t) · ‖c‖²` (4× sharper)
+  - Heat-smoothed SQG quantities (mode-level and integrated):
+    - Vorticity: `‖heat·ω̂·c‖² ≤ exp(-1)/t · ‖c‖²` (L²)
+    - Gradient: `‖heat·∂̂u·c‖² ≤ exp(-1)/t · ‖c‖²` (L²)
+    - Strain (generic): `‖heat·Ŝ·c‖² ≤ exp(-1)/t · ‖c‖²` (L²)
+    - Strain (tight): `‖heat·Ŝ_ij·c‖² ≤ exp(-1)/(4t) · ‖c‖²` (4× sharper)
+    - Ḣˢ-level bounds for all: vorticity/gradient/strain Ḣˢ ≤ θ Ḣˢ⁺¹
+    - Tight Ḣˢ for S₀₀/S₀₁: `‖e^{tΔ}S_ij‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣ^{s+1}}/4`
+    - Velocity: `‖e^{tΔ}u_j‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}` (both heat and Riesz contract)
 
 ## What's not proven (yet)
 
