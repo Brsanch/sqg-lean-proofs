@@ -49,7 +49,9 @@ regularity proof. Currently covers the shear-vorticity identity
   - `x · exp(-x) ≤ exp(-1)` (tangent-line inequality)
   - `‖n‖² · exp(-t‖n‖²) ≤ exp(-1)/t` (k=1 gradient smoothing)
   - `‖n‖⁴ · exp(-t‖n‖²) ≤ 4·exp(-2)/t²` (k=2 Hessian smoothing)
-  - Mode-level Ḣ¹/Ḣ² parabolic smoothing for heat operator
+  - General `k : ℕ`: `‖n‖^{2k} · exp(-t‖n‖²) ≤ k^k·exp(-k)/t^k`
+    (max of `y^k·exp(-y)` at `y = k`)
+  - Mode-level Ḣᵏ parabolic smoothing for arbitrary natural k
   - SQG vorticity heat-smoothing bound
 
 ## What's not proven (yet)
