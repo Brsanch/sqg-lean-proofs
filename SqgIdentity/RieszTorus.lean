@@ -5020,6 +5020,60 @@ theorem heat_smoothed_vorticity_L2_integrated {t : ℝ} (ht : 0 < t)
     · intro n; rw [hcoeff n]; exact hmode n
   · exact hsum.mul_left _
 
+/-- **Heat-smoothed SQG gradient integrated L² bound.** For `t > 0`:
+
+    `‖e^{tΔ} ∂_i u_j‖²_{L²} ≤ exp(-1)/t · ‖θ‖²_{L²}` -/
+theorem heat_smoothed_sqgGrad_L2_integrated {t : ℝ} (ht : 0 < t)
+    (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgGradSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ Real.exp (-1) / t * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show Real.exp (-1) / t *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        Real.exp (-1) / t * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact heat_smoothed_sqgGrad_L2_mode ht n i j (mFourierCoeff θ n)
+  · apply (hsum.mul_left (Real.exp (-1) / t)).of_nonneg_of_le
+    · intro n; exact sq_nonneg _
+    · intro n
+      rw [hcoeff n]
+      exact heat_smoothed_sqgGrad_L2_mode ht n i j (mFourierCoeff θ n)
+  · exact hsum.mul_left _
+
+/-- **Heat-smoothed SQG strain integrated L² bound.** For `t > 0`:
+
+    `‖e^{tΔ} S_{ij}‖²_{L²} ≤ exp(-1)/t · ‖θ‖²_{L²}` -/
+theorem heat_smoothed_sqgStrain_L2_integrated {t : ℝ} (ht : 0 < t)
+    (i j : Fin 2)
+    (θ u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol i j n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff u n‖ ^ 2)
+    ≤ Real.exp (-1) / t * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  rw [show Real.exp (-1) / t *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        Real.exp (-1) / t * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact heat_smoothed_sqgStrain_L2_mode ht n i j (mFourierCoeff θ n)
+  · apply (hsum.mul_left (Real.exp (-1) / t)).of_nonneg_of_le
+    · intro n; exact sq_nonneg _
+    · intro n
+      rw [hcoeff n]
+      exact heat_smoothed_sqgStrain_L2_mode ht n i j (mFourierCoeff θ n)
+  · exact hsum.mul_left _
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
