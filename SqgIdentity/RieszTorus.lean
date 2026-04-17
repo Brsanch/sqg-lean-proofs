@@ -7330,4 +7330,299 @@ theorem SqgSolution.regularity_via_s2_bootstrap (S : SqgSolution)
       ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (S.θ t) ≤ M :=
   sqg_regularity_via_s2_bootstrap S.θ hMMP hBKM
 
+/-! ### §10.9 Fourier convolution scaffolding
+
+Statement of the SQG evolution at full per-mode Fourier resolution —
+i.e., the Duhamel identity
+
+  `θ̂(m, t) − θ̂(m, 0) = − ∫₀ᵗ (u·∇θ)̂(m, τ) dτ`
+
+— expresses the nonlinear flux `(u·∇θ)̂(m)` as a **convolution of
+Fourier coefficient sequences**:
+
+  `(u_j ∂_j θ)̂(m) = ∑ ℓ, û_j(m − ℓ) · (i·ℓ_j) · θ̂(ℓ)`.
+
+This section introduces `fourierConvolution` as an abstract operator
+on coefficient sequences `ι → ℂ` over any additive commutative group
+`ι`, together with the **pointwise convolution bound**
+`convolution_bounded_by_product` — the single analytic lemma that
+powers the Bochner integrability step when the per-mode flux is later
+integrated in time to state the Duhamel identity.
+
+Lemmas provided:
+
+* `fourierConvolution` — the raw bilinear convolution on `ι → ℂ`.
+* `fourierConvolution_zero_left` / `_zero_right` — convolution with
+  zero is zero (used by the zero-solution discharges).
+* `tsum_sq_norm_shift_left` — shift invariance of the ℓ² norm:
+  `∑ ℓ, ‖g(m − ℓ)‖² = ∑ ℓ, ‖g(ℓ)‖²`.
+* `summable_sq_norm_shift_left` — its summability companion.
+* `convolution_bounded_by_product` — the Young + triangle uniform
+  bound `‖(f * g)(m)‖ ≤ (‖f‖²_ℓ² + ‖g‖²_ℓ²)/2`.
+* `SqgFourierData.fourierConvolution` — thin bundle-level wrapper
+  that exposes the operation on two `SqgFourierData` bundles.
+
+The Young-form bound is weaker than full Cauchy–Schwarz
+(`√(‖f‖²)·√(‖g‖²)`) but equivalent up to a constant, and sufficient
+for the uniform-in-time boundedness that Bochner integrability of the
+per-mode flux requires. -/
+
+/-- **Fourier convolution of two coefficient sequences on an additive
+commutative group.** Defined by
+
+  `(f * g)(m) := ∑' ℓ, f(ℓ) · g(m − ℓ)`
+
+(with the usual `tsum` convention: returns `0` if the sum diverges).
+
+On the integer lattice `Fin d → ℤ`, this is the Fourier-side of
+pointwise multiplication: if `f = f̂ᵤ` and `g = ĝᵥ` are Fourier
+coefficient sequences of `L²(𝕋^d)` functions `u`, `v`, then
+`fourierConvolution f g` equals the Fourier coefficient sequence of
+the pointwise product `u · v` (modulo the usual `2π` normalization
+factor absorbed into `mFourierCoeff`). -/
+noncomputable def fourierConvolution {ι : Type*} [AddCommGroup ι]
+    (f g : ι → ℂ) (m : ι) : ℂ :=
+  ∑' ℓ : ι, f ℓ * g (m - ℓ)
+
+/-- **Convolution with the zero sequence on the left is zero.** -/
+theorem fourierConvolution_zero_left {ι : Type*} [AddCommGroup ι]
+    (g : ι → ℂ) (m : ι) :
+    fourierConvolution (fun _ => (0 : ℂ)) g m = 0 := by
+  unfold fourierConvolution
+  simp
+
+/-- **Convolution with the zero sequence on the right is zero.** -/
+theorem fourierConvolution_zero_right {ι : Type*} [AddCommGroup ι]
+    (f : ι → ℂ) (m : ι) :
+    fourierConvolution f (fun _ => (0 : ℂ)) m = 0 := by
+  unfold fourierConvolution
+  simp
+
+/-- **Reindexing involution `ℓ ↦ m − ℓ`.** An `Equiv ι ι` whose
+inverse is itself; used to transfer summability and `tsum` identities
+across the shift. -/
+noncomputable def subLeftEquiv {ι : Type*} [AddCommGroup ι]
+    (m : ι) : ι ≃ ι where
+  toFun ℓ := m - ℓ
+  invFun ℓ := m - ℓ
+  left_inv ℓ := sub_sub_self m ℓ
+  right_inv ℓ := sub_sub_self m ℓ
+
+/-- **Shift invariance of the ℓ² norm (tsum form).**
+`∑' ℓ, ‖g(m − ℓ)‖² = ∑' ℓ, ‖g(ℓ)‖²`. -/
+theorem tsum_sq_norm_shift_left {ι : Type*} [AddCommGroup ι]
+    (g : ι → ℂ) (m : ι) :
+    (∑' ℓ : ι, ‖g (m - ℓ)‖ ^ 2) = ∑' ℓ : ι, ‖g ℓ‖ ^ 2 :=
+  (subLeftEquiv m).tsum_eq (fun ℓ => ‖g ℓ‖ ^ 2)
+
+/-- **Shift invariance of ℓ² summability.** If `∑' ℓ, ‖g(ℓ)‖²` is
+summable, so is `∑' ℓ, ‖g(m − ℓ)‖²`. -/
+theorem summable_sq_norm_shift_left {ι : Type*} [AddCommGroup ι]
+    (g : ι → ℂ) (m : ι)
+    (hg : Summable (fun ℓ => ‖g ℓ‖ ^ 2)) :
+    Summable (fun ℓ => ‖g (m - ℓ)‖ ^ 2) :=
+  (subLeftEquiv m).summable_iff.mpr hg
+
+/-- **Pointwise convolution bound (Young + triangle form).**
+
+For ℓ²-summable `f`, `g : ι → ℂ`, the convolution at every mode `m`
+satisfies the **uniform-in-`m`** bound
+
+  `‖(f * g)(m)‖ ≤ (‖f‖²_ℓ² + ‖g‖²_ℓ²) / 2`.
+
+Proof: Young's inequality `2ab ≤ a² + b²` at every `ℓ` gives
+termwise `‖f(ℓ)‖·‖g(m − ℓ)‖ ≤ (‖f(ℓ)‖² + ‖g(m − ℓ)‖²)/2`. Summing,
+combined with shift invariance `∑ ℓ, ‖g(m − ℓ)‖² = ∑ ℓ, ‖g(ℓ)‖²` and
+the triangle inequality for `tsum`, yields the stated bound.
+
+Weaker than the Cauchy–Schwarz form `√(‖f‖²) · √(‖g‖²)` but
+equivalent up to a constant factor. It is the form the §11 Bochner
+step will consume: once the ℓ² norms of the per-mode sequences are
+uniformly bounded in time, the per-mode flux is uniformly bounded,
+hence Bochner-integrable on any finite time interval. -/
+theorem convolution_bounded_by_product
+    {ι : Type*} [AddCommGroup ι]
+    (f g : ι → ℂ)
+    (hf : Summable (fun ℓ => ‖f ℓ‖ ^ 2))
+    (hg : Summable (fun ℓ => ‖g ℓ‖ ^ 2))
+    (m : ι) :
+    ‖fourierConvolution f g m‖
+      ≤ ((∑' ℓ, ‖f ℓ‖ ^ 2) + (∑' ℓ, ‖g ℓ‖ ^ 2)) / 2 := by
+  -- Shift invariance of the ℓ² norm of `g`.
+  have hg_shift_sum : Summable (fun ℓ => ‖g (m - ℓ)‖ ^ 2) :=
+    summable_sq_norm_shift_left g m hg
+  have hg_shift_eq : (∑' ℓ, ‖g (m - ℓ)‖ ^ 2) = ∑' ℓ, ‖g ℓ‖ ^ 2 :=
+    tsum_sq_norm_shift_left g m
+  -- Young termwise: `‖f(ℓ)‖·‖g(m − ℓ)‖ ≤ (‖f(ℓ)‖² + ‖g(m − ℓ)‖²)/2`.
+  have hyoung : ∀ ℓ, ‖f ℓ‖ * ‖g (m - ℓ)‖
+      ≤ (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2) / 2 := by
+    intro ℓ
+    have h := two_mul_le_add_sq ‖f ℓ‖ ‖g (m - ℓ)‖
+    linarith
+  -- Summability of the upper-bound sequence.
+  have hbound_sum : Summable (fun ℓ => (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2) / 2) := by
+    have hadd : Summable (fun ℓ => ‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2) :=
+      hf.add hg_shift_sum
+    simpa [div_eq_mul_inv] using hadd.mul_right ((1 : ℝ) / 2)
+  -- Summability of the product sequence via domination by the Young bound.
+  have hprod_nn : ∀ ℓ, 0 ≤ ‖f ℓ‖ * ‖g (m - ℓ)‖ := fun _ =>
+    mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  have hprod_sum : Summable (fun ℓ => ‖f ℓ‖ * ‖g (m - ℓ)‖) :=
+    Summable.of_nonneg_of_le hprod_nn hyoung hbound_sum
+  -- Triangle inequality for `tsum` (via `norm_mul` on each term).
+  have hnorm_eq : (fun ℓ => ‖f ℓ * g (m - ℓ)‖)
+      = (fun ℓ => ‖f ℓ‖ * ‖g (m - ℓ)‖) := by
+    funext ℓ; exact norm_mul _ _
+  have htri_sum : Summable (fun ℓ => ‖f ℓ * g (m - ℓ)‖) := by
+    rw [hnorm_eq]; exact hprod_sum
+  have htriangle : ‖fourierConvolution f g m‖
+      ≤ ∑' ℓ, ‖f ℓ * g (m - ℓ)‖ := by
+    unfold fourierConvolution
+    exact norm_tsum_le_tsum_norm htri_sum
+  -- tsum comparison (HasSum-form, avoids depending on `tsum_le_tsum`'s exact name)
+  have hprod_le_bound :
+      (∑' ℓ, ‖f ℓ‖ * ‖g (m - ℓ)‖) ≤ ∑' ℓ, (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2) / 2 :=
+    hasSum_le hyoung hprod_sum.hasSum hbound_sum.hasSum
+  -- `∑' (a + b) = ∑' a + ∑' b` via `HasSum.add`.
+  have hadd_eq :
+      (∑' ℓ, (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2))
+        = (∑' ℓ, ‖f ℓ‖ ^ 2) + (∑' ℓ, ‖g (m - ℓ)‖ ^ 2) :=
+    (hf.hasSum.add hg_shift_sum.hasSum).tsum_eq
+  -- Pull out the `/2` factor via `tsum_mul_right` on `* (1/2)`.
+  have hdiv_eq :
+      (∑' ℓ, (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2) / 2)
+        = (∑' ℓ, (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2)) / 2 := by
+    simp [div_eq_mul_inv, tsum_mul_right]
+  -- Assemble the final chain.
+  calc ‖fourierConvolution f g m‖
+      ≤ ∑' ℓ, ‖f ℓ * g (m - ℓ)‖ := htriangle
+    _ = ∑' ℓ, ‖f ℓ‖ * ‖g (m - ℓ)‖ := by rw [hnorm_eq]
+    _ ≤ ∑' ℓ, (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2) / 2 := hprod_le_bound
+    _ = (∑' ℓ, (‖f ℓ‖ ^ 2 + ‖g (m - ℓ)‖ ^ 2)) / 2 := hdiv_eq
+    _ = ((∑' ℓ, ‖f ℓ‖ ^ 2) + (∑' ℓ, ‖g (m - ℓ)‖ ^ 2)) / 2 := by rw [hadd_eq]
+    _ = ((∑' ℓ, ‖f ℓ‖ ^ 2) + (∑' ℓ, ‖g ℓ‖ ^ 2)) / 2 := by rw [hg_shift_eq]
+
+namespace SqgFourierData
+
+/-- **Bundle-level convolution wrapper.** Forwards the raw
+`fourierConvolution` on the `θ` fields of two `SqgFourierData`
+bundles. Convenience for statements that already carry a
+`SqgFourierData` structure — reuses all of the `w`, `w_norm_le`,
+`ell2_bound` machinery from the Fourier-mode packaging section. -/
+noncomputable def fourierConvolution {ι : Type*} [AddCommGroup ι]
+    (D₁ D₂ : SqgFourierData ι) : ι → ℂ :=
+  _root_.SqgIdentity.fourierConvolution D₁.θ D₂.θ
+
+/-- **Bundle-level convolution bound.** Immediate consequence of
+`convolution_bounded_by_product`: if both bundles' `θ`-sequences are
+ℓ²-summable, the bundle convolution is pointwise bounded by
+`(‖D₁.θ‖²_ℓ² + ‖D₂.θ‖²_ℓ²)/2`. -/
+theorem fourierConvolution_bounded_by_product
+    {ι : Type*} [AddCommGroup ι]
+    (D₁ D₂ : SqgFourierData ι)
+    (h₁ : Summable (fun ℓ => ‖D₁.θ ℓ‖ ^ 2))
+    (h₂ : Summable (fun ℓ => ‖D₂.θ ℓ‖ ^ 2))
+    (m : ι) :
+    ‖D₁.fourierConvolution D₂ m‖
+      ≤ ((∑' ℓ, ‖D₁.θ ℓ‖ ^ 2) + (∑' ℓ, ‖D₂.θ ℓ‖ ^ 2)) / 2 :=
+  convolution_bounded_by_product D₁.θ D₂.θ h₁ h₂ m
+
+end SqgFourierData
+
+/-! ### §10.10 Mode-Lipschitz upgrade to `SqgEvolutionAxioms`
+
+The `meanConservation` field introduced in §10.8 is the `m = 0`
+consequence of the SQG evolution: the spatial mean is exactly
+preserved. At `m ≠ 0` the Fourier coefficient is *not* conserved —
+it evolves via the per-mode flux `(u·∇θ)̂(m, τ)`, which by
+`convolution_bounded_by_product` is uniformly bounded in `τ`
+(provided `u` and `θ` are ℓ²-summable uniformly in time). The
+consequence is a **mode-level Lipschitz-in-time bound**:
+
+  `‖θ̂(m, t₂) − θ̂(m, t₁)‖ ≤ (t₂ − t₁) · C_m`
+
+for some `C_m ≥ 0` that depends on the mode.
+
+This is the differential form of the Duhamel identity — strictly
+stronger than `meanConservation` (which is the `C_0 = 0` case at
+mode 0) and strictly weaker than the full integral Duhamel (which
+would also specify `C_m` as an explicit convolution quantity and
+state the identity as an equality with a Bochner integral).
+
+At this level the structure carries enough content to feed the §10.8
+s=2 bootstrap once the Bochner integration infrastructure is in
+place: the Lipschitz constants `C_m` are exactly the `‖·‖∞` bounds
+on the time-integrand of the per-mode Duhamel identity.
+
+This subsection:
+
+* Introduces `ModeLipschitz θ` — a Prop predicate capturing the
+  mode-by-mode Lipschitz-in-time bound.
+* Shows `ModeLipschitz.of_identically_zero`: the zero solution
+  satisfies it trivially with `C_m = 0`.
+* States `SqgEvolutionAxioms_strong` — a strengthened version of
+  `SqgEvolutionAxioms` that additionally requires `ModeLipschitz`.
+  The original `SqgEvolutionAxioms` is kept for backward
+  compatibility; `SqgEvolutionAxioms_strong.toWeak` forgets the
+  extra content.
+* Provides the zero-solution discharge
+  `SqgEvolutionAxioms_strong.of_identically_zero`.
+-/
+
+/-- **Mode-Lipschitz-in-time property.** Every Fourier coefficient
+of `θ(t)` is Lipschitz-in-time, with a mode-specific constant.
+
+This is the differential form of the per-mode Duhamel identity:
+the full identity says `θ̂(m, t) − θ̂(m, s) = −∫ₛᵗ F(m, τ) dτ` where
+`F` is the convolution flux; bounding `F` uniformly in `τ` (by
+`convolution_bounded_by_product`) yields the stated Lipschitz
+bound with `C m = sup_τ ‖F(m, τ)‖`. -/
+def ModeLipschitz
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  ∀ m : Fin 2 → ℤ,
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ s t : ℝ, 0 ≤ s → s ≤ t →
+        ‖mFourierCoeff (θ t) m - mFourierCoeff (θ s) m‖
+          ≤ (t - s) * C
+
+/-- **Mode-Lipschitz holds trivially for the identically-zero
+evolution.** Every Fourier coefficient difference is zero, and any
+non-negative constant (take `C = 0`) satisfies the bound. -/
+theorem ModeLipschitz.of_identically_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    ModeLipschitz θ := by
+  intro m
+  refine ⟨0, le_refl 0, fun s t _ _ => ?_⟩
+  rw [hθ t, hθ s, sub_self]
+  simp
+
+/-- **Strengthened `SqgEvolutionAxioms`.** Bundles the original axioms
+with the mode-Lipschitz predicate — the §10.10 keystone content
+established in this section. -/
+structure SqgEvolutionAxioms_strong
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- All of the original `SqgEvolutionAxioms` content. -/
+  weak : SqgEvolutionAxioms θ
+  /-- Per-mode Lipschitz-in-time bound — the §10.10 upgrade. -/
+  modeLipschitz : ModeLipschitz θ
+
+namespace SqgEvolutionAxioms_strong
+
+/-- **Forgetful projection.** A strong evolution axiom-set implies
+the original one. -/
+theorem toWeak {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (h : SqgEvolutionAxioms_strong θ) : SqgEvolutionAxioms θ :=
+  h.weak
+
+/-- **Zero-solution discharge for the strengthened structure.** -/
+theorem of_identically_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    SqgEvolutionAxioms_strong θ where
+  weak := SqgEvolutionAxioms.of_identically_zero θ hθ
+  modeLipschitz := ModeLipschitz.of_identically_zero θ hθ
+
+end SqgEvolutionAxioms_strong
+
 end SqgIdentity
