@@ -128,6 +128,28 @@ unconditionally — its proof is a direct re-export of existing
 lemmas in this file. So in practice, only `MaterialMaxPrinciple`
 and `BKMCriterion` need axiomatic treatment.
 
+**§11 Material derivative scaffolding:**
+First wedge into the long road of unconditionalising `MaterialMaxPrinciple`
+and `BKMCriterion`. Adds:
+
+- `sqgVelocitySymbol j n` — Fourier multiplier for the SQG velocity
+  `u = (R₁θ, -R₀θ)` at mode `n`, component `j`.
+- `sqgVelocitySymbol_norm_le_one`, `sqgVelocitySymbol_sum_sq`,
+  `sqgVelocitySymbol_zero`, `sqgVelocitySymbol_divergence_free` —
+  mode-level velocity identities (all proved).
+- `SqgEvolutionAxioms θ` — Prop structure bundling expected
+  consequences of the SQG PDE. Has one real field (`l2Conservation`:
+  L² norm squared is conserved) and two placeholders
+  (`materialConservation`, `velocityIsRieszTransform`) pending
+  material-derivative infrastructure.
+- `SqgEvolutionAxioms.of_identically_zero` — the zero solution
+  satisfies the real field trivially.
+
+This is the first structural commitment to the SQG PDE itself (as
+opposed to the algebraic shear-vorticity identity). A future PR will
+upgrade `SqgSolution.solvesSqgEvolution` from `True` to
+`SqgEvolutionAxioms θ`, strengthening the solution record.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that

@@ -6799,4 +6799,133 @@ theorem sqg_regularity_for_smooth_data
   obtain ⟨S, hS0⟩ := hWP.existsSolution θ₀ hsmooth
   exact ⟨S, hS0, S.regularity_conditional (hMMPAll S) (hBKMAll S) (hFSCAll S)⟩
 
+/-! ## §11 Material derivative scaffolding (towards unconditional Theorem 3)
+
+This section lays the foundation for eventually replacing the
+`solvesSqgEvolution : True` placeholder on `SqgSolution` (and the
+`materialConservation` axiomatic field below) with a concrete
+statement of the SQG PDE `∂ₜθ + u·∇θ = 0`.
+
+The central challenge: the material derivative `D/Dt = ∂ₜ + u·∇`
+requires a definition of time-derivative on `L²`-valued curves and
+an advection operator, neither of which is currently in mathlib at
+the level needed for SQG (DiPerna–Lions / Ambrosio theory).
+
+We proceed in two tiers:
+
+1. **Fourier-level velocity multiplier** (`sqgVelocitySymbol`) — pure
+   algebraic content, fully proved.
+2. **`SqgEvolutionAxioms` structure** — bundles expected consequences
+   of the PDE as predicates on `θ`. The `l2Conservation` field is a
+   real statement any SQG solution satisfies; the other two fields are
+   placeholders pending material-derivative infrastructure.
+
+Future PR plan: replace `SqgSolution.solvesSqgEvolution : True` with
+`solvesSqgEvolution : SqgEvolutionAxioms θ`. This is a strengthening
+of `SqgSolution`, which downstream hypotheses like `SqgWellPosedness`
+will need to match. The lightweight present commit adds the target
+structure without yet threading it.
+-/
+
+/-- **SQG velocity Fourier multiplier.** For `θ` with Fourier
+coefficients `θ̂`, the SQG velocity `u = (R₁θ, -R₀θ)` has components
+with Fourier multipliers:
+
+  * `sqgVelocitySymbol 0 n = rieszSymbol 1 n` (i.e. `m₁(n)` — the
+    `R₁` multiplier, recovering `u₀ = R₁θ`),
+  * `sqgVelocitySymbol 1 n = -rieszSymbol 0 n` (i.e. `-m₀(n)` —
+    recovering `u₁ = -R₀θ`).
+
+This is the mode-level analogue of the velocity operator; defining the
+actual velocity field `u : ℝ → Lp ℂ 2 (...)` as a composite of
+time-dependent Riesz transforms requires `FracSobolevCalculus` at
+operator level. -/
+noncomputable def sqgVelocitySymbol (j : Fin 2) (n : Fin 2 → ℤ) : ℂ :=
+  if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n
+
+/-- **SQG velocity multiplier is bounded by 1 pointwise.** Riesz
+contractivity per-mode per-component. -/
+theorem sqgVelocitySymbol_norm_le_one (j : Fin 2) (n : Fin 2 → ℤ) :
+    ‖sqgVelocitySymbol j n‖ ≤ 1 := by
+  unfold sqgVelocitySymbol
+  split_ifs
+  · exact rieszSymbol_norm_le_one 1 n
+  · rw [norm_neg]; exact rieszSymbol_norm_le_one 0 n
+
+/-- **SQG velocity multiplier has unit squared-sum at nonzero modes.**
+`‖u₀(n)‖² + ‖u₁(n)‖² = 1` for `n ≠ 0` — the per-mode kinetic-energy
+identity that sources the global L²-isometry `‖u‖² = ‖θ‖²`. -/
+theorem sqgVelocitySymbol_sum_sq {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    ‖sqgVelocitySymbol 0 n‖ ^ 2 + ‖sqgVelocitySymbol 1 n‖ ^ 2 = 1 := by
+  unfold sqgVelocitySymbol
+  simp only [Fin.isValue, if_true, if_false, norm_neg]
+  have h := rieszSymbol_sum_sq (n := n) hn
+  simpa [Fin.sum_univ_two, add_comm] using h
+
+/-- **SQG velocity multiplier vanishes at the zero mode.** The constant
+component of the velocity is zero (u has zero mean, inherited from θ's
+zero-mean assumption in Riesz transforms). -/
+theorem sqgVelocitySymbol_zero (j : Fin 2) :
+    sqgVelocitySymbol j (0 : Fin 2 → ℤ) = 0 := by
+  unfold sqgVelocitySymbol
+  split_ifs
+  · exact rieszSymbol_zero 1
+  · rw [rieszSymbol_zero 0, neg_zero]
+
+/-- **SQG velocity multiplier is divergence-free.** Per-mode statement:
+`n · u(n) = 0` for any `n ∈ ℤ²`. This is the symbol-level form of
+`div u = 0`. Restates `sqg_velocity_divergence_free_symbol` using the
+bundled `sqgVelocitySymbol`. -/
+theorem sqgVelocitySymbol_divergence_free (n : Fin 2 → ℤ) (z : ℂ) :
+    ((n 0 : ℝ) : ℂ) * (sqgVelocitySymbol 0 n * z)
+      + ((n 1 : ℝ) : ℂ) * (sqgVelocitySymbol 1 n * z) = 0 := by
+  unfold sqgVelocitySymbol
+  simp only [Fin.isValue, if_true, if_false]
+  exact sqg_velocity_divergence_free_symbol n z
+
+/-- **SQG evolution axioms.** Encodes "`θ` solves SQG" at the level we
+can state without a full material-derivative operator.
+
+The `l2Conservation` field is the real mathematical content: the `L²`
+norm (equivalently `hsSeminormSq 0`) is constant in time — a direct
+consequence of `∫ θ · div(uθ) dx = 0` plus `div u = 0`. This is a
+predicate that any SQG solution satisfies, and the zero solution
+trivially satisfies (see `SqgEvolutionAxioms.of_identically_zero`).
+
+The `materialConservation` and `velocityIsRieszTransform` fields are
+placeholders for the full PDE statement `∂ₜθ + u·∇θ = 0` with
+`u = (R₁θ, -R₀θ)`; they require infrastructure (material derivatives,
+Riesz transforms as operators on `L²`-valued time-dependent functions)
+that lives in the same tier as `FracSobolevCalculus`.
+
+This structure is not yet threaded through `SqgSolution`; the future
+upgrade replaces `solvesSqgEvolution : True` with
+`solvesSqgEvolution : SqgEvolutionAxioms θ`, strengthening the
+solution record to carry conservation-law content. -/
+structure SqgEvolutionAxioms
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- `L²` norm squared is conserved along the flow: consequence of
+  incompressibility plus `∫ θ (u·∇θ) = 0`. -/
+  l2Conservation :
+    ∀ t : ℝ, 0 ≤ t → hsSeminormSq 0 (θ t) = hsSeminormSq 0 (θ 0)
+  /-- `∂ₜθ + u·∇θ = 0` with `u = (R₁θ, -R₀θ)`. Placeholder: requires
+  material-derivative operator. -/
+  materialConservation : True
+  /-- The velocity at each time `t` is `u(t) = (R₁ θ(t), -R₀ θ(t))`
+  componentwise — the Fourier coefficients of the velocity are
+  `sqgVelocitySymbol j n · mFourierCoeff (θ t) n`. Placeholder:
+  requires Riesz transforms as operators on time-dependent `L²`. -/
+  velocityIsRieszTransform : True
+
+/-- **SQG evolution axioms hold for the identically-zero solution.**
+A minimal sanity check: `θ ≡ 0` trivially satisfies the real content
+(`l2Conservation`) since both sides of the equation are `0`. -/
+theorem SqgEvolutionAxioms.of_identically_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    SqgEvolutionAxioms θ where
+  l2Conservation := fun t _ => by rw [hθ t, hθ 0]
+  materialConservation := trivial
+  velocityIsRieszTransform := trivial
+
 end SqgIdentity
