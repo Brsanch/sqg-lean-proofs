@@ -4020,6 +4020,105 @@ theorem heatSymbol_hess_smoothing_integrated {t : ℝ} (ht : 0 < t)
   convert h using 2
   norm_num
 
+/-! ## Parabolic smoothing at real exponent k > 0
+
+Extends natural-number parabolic smoothing to arbitrary real k > 0
+using `Real.rpow`. The bootstrap is identical: apply k=1 at `t/k`,
+then raise both sides to the real k-th power via `Real.rpow_le_rpow`.
+-/
+
+/-- **Heat semigroup rpow identity.** For `k > 0`, `t : ℝ`:
+
+    `heatSymbol t n = (heatSymbol (t/k) n) ^ k`
+
+where `^` is `Real.rpow`. -/
+theorem heatSymbol_rpow_eq {t : ℝ} (n : Fin 2 → ℤ) {k : ℝ} (hk : 0 < k) :
+    heatSymbol t n = (heatSymbol (t / k) n) ^ k := by
+  unfold heatSymbol
+  -- Goal: exp(-t·L²) = (exp(-(t/k)·L²))^k
+  rw [Real.rpow_def_of_pos (Real.exp_pos _), Real.log_exp]
+  -- Now: exp(-t·L²) = exp(k · (-(t/k)·L²))
+  congr 1
+  have hk_ne : k ≠ 0 := hk.ne'
+  field_simp
+
+/-- **Exponential rpow identity.** `exp(-1)^k = exp(-k)`. -/
+lemma exp_neg_one_rpow (k : ℝ) : (Real.exp (-1)) ^ k = Real.exp (-k) := by
+  rw [Real.rpow_def_of_pos (Real.exp_pos _), Real.log_exp]
+  congr 1; ring
+
+/-- **`latticeNorm` squared as rpow.** For `n : Fin 2 → ℤ`:
+
+    `(latticeNorm n)^2 = (latticeNorm n)^(2 : ℝ)` (rpow form). -/
+lemma latticeNorm_sq_eq_rpow (n : Fin 2 → ℤ) :
+    ((latticeNorm n) ^ 2 : ℝ) = (latticeNorm n) ^ (2 : ℝ) := by
+  rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) from by norm_num, Real.rpow_natCast]
+
+/-- **General real-k parabolic smoothing.** For `k > 0`, `t > 0`:
+
+    `‖n‖^{2k} · exp(-t·‖n‖²) ≤ k^k · exp(-k) / t^k`
+
+where all exponents are `Real.rpow`. -/
+theorem latticeNorm_rpow_mul_heat_le {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ (2 * k) * heatSymbol t n
+    ≤ k ^ k * Real.exp (-k) / t ^ k := by
+  have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+  have ht_k : 0 < t / k := div_pos ht hk
+  have hbase := latticeNorm_sq_mul_heat_le ht_k n
+  have hbase_nn : 0 ≤ (latticeNorm n) ^ 2 * heatSymbol (t/k) n :=
+    mul_nonneg (sq_nonneg _) (heatSymbol_nonneg _ _)
+  -- Raise both sides to the k-th real power
+  have hpow : ((latticeNorm n) ^ 2 * heatSymbol (t/k) n) ^ k
+            ≤ (Real.exp (-1) / (t / k)) ^ k :=
+    Real.rpow_le_rpow hbase_nn hbase hk.le
+  -- Simplify LHS: (L² · heat(t/k))^k = L^{2k} · heat(t)
+  have hLHS_eq : ((latticeNorm n) ^ 2 * heatSymbol (t/k) n) ^ k
+      = (latticeNorm n) ^ (2 * k) * heatSymbol t n := by
+    rw [Real.mul_rpow (sq_nonneg _) (heatSymbol_nonneg _ _)]
+    congr 1
+    · -- (L²)^k = L^{2k}
+      rw [latticeNorm_sq_eq_rpow, ← Real.rpow_mul hL_nn]
+    · -- heat(t/k)^k = heat(t)
+      rw [← heatSymbol_rpow_eq n hk]
+  -- Simplify RHS: (exp(-1)/(t/k))^k = k·exp(-1)/t)^k = k^k · exp(-k) / t^k
+  have hRHS_eq : (Real.exp (-1) / (t / k)) ^ k
+      = k ^ k * Real.exp (-k) / t ^ k := by
+    have ht_ne : t ≠ 0 := ht.ne'
+    have hk_ne : k ≠ 0 := hk.ne'
+    have hrew : Real.exp (-1) / (t / k) = k * Real.exp (-1) / t := by
+      field_simp
+    rw [hrew]
+    rw [Real.div_rpow (by positivity : 0 ≤ k * Real.exp (-1)) ht.le]
+    rw [Real.mul_rpow hk.le (Real.exp_pos _).le]
+    rw [exp_neg_one_rpow]
+  rw [hLHS_eq] at hpow
+  rw [hRHS_eq] at hpow
+  exact hpow
+
+/-- **Real-k parabolic smoothing at fracDerivSymbol level.** For `k > 0`, `t > 0`:
+
+    `σ_k(n)² · heat(t, n) ≤ k^k · exp(-k) / t^k`
+
+using `rpow` for `σ_k` and the power `t^k`. -/
+theorem fracDerivSymbol_sq_mul_heat_le_rpow {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (fracDerivSymbol k n) ^ 2 * heatSymbol t n
+    ≤ k ^ k * Real.exp (-k) / t ^ k := by
+  by_cases hn : n = 0
+  · subst hn
+    rw [fracDerivSymbol_zero]
+    simp
+    positivity
+  · -- σ_k(n)² = L^{2k}: use (L^k)^2 = L^k · L^k = L^(k+k) = L^(2k)
+    have hL_pos : 0 < latticeNorm n := latticeNorm_pos hn
+    have h_σk_sq : (fracDerivSymbol k n) ^ 2 = (latticeNorm n) ^ (2 * k) := by
+      rw [fracDerivSymbol_of_ne_zero k hn, sq,
+        ← Real.rpow_add hL_pos]
+      congr 1; ring
+    rw [h_σk_sq]
+    exact latticeNorm_rpow_mul_heat_le hk ht n
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
