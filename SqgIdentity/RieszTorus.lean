@@ -4404,6 +4404,91 @@ theorem heat_smoothed_sqgStrain_L2_mode {t : ℝ} (ht : 0 < t)
           exact div_nonneg (Real.exp_pos _).le ht.le
       _ = Real.exp (-1) / t * ‖c‖ ^ 2 := by ring
 
+/-- **Heat-smoothed strain (0,0) — tight bound.** Using tight
+`|S₀₀(n)|² ≤ ‖n‖²/4`:
+
+    `‖heat(t,n)·S₀₀(n)·c‖² ≤ exp(-1)/(4t) · ‖c‖²`
+
+This is 4× sharper than `heat_smoothed_sqgStrain_L2_mode`. -/
+theorem heat_smoothed_sqgStrain_00_L2_mode_tight {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 0 n * c‖ ^ 2
+    ≤ Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have : sqgStrainSymbol 0 0 0 = 0 := by
+      unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [this, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have : 0 ≤ Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
+      apply mul_nonneg
+      · apply div_nonneg (Real.exp_pos _).le; linarith
+      · exact sq_nonneg _
+    linarith
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+    have hstrain_tight := sqgStrain_00_sq_le_quarter hn
+    have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+    have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hL_sq_heat := latticeNorm_sq_mul_heat_le ht n
+    calc (heatSymbol t n) ^ 2 * ‖sqgStrainSymbol 0 0 n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (heatSymbol t n) ^ 2 * ((latticeNorm n) ^ 2 / 4) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_left hstrain_tight (sq_nonneg _)
+      _ = heatSymbol t n * ((latticeNorm n) ^ 2 * heatSymbol t n) / 4 * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ heatSymbol t n * (Real.exp (-1) / t) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          exact mul_le_mul_of_nonneg_left hL_sq_heat hheat_nn
+      _ ≤ 1 * (Real.exp (-1) / t) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          apply mul_le_mul_of_nonneg_right hheat_le
+          exact div_nonneg (Real.exp_pos _).le ht.le
+      _ = Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
+          rw [one_mul]; field_simp
+
+/-- **Heat-smoothed strain (0,1) — tight bound.** -/
+theorem heat_smoothed_sqgStrain_01_L2_mode_tight {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 1 n * c‖ ^ 2
+    ≤ Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have : sqgStrainSymbol 0 1 0 = 0 := by
+      unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [this, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have : 0 ≤ Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
+      apply mul_nonneg
+      · apply div_nonneg (Real.exp_pos _).le; linarith
+      · exact sq_nonneg _
+    linarith
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+    have hstrain_tight := sqgStrain_01_sq_le_quarter hn
+    have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+    have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hL_sq_heat := latticeNorm_sq_mul_heat_le ht n
+    calc (heatSymbol t n) ^ 2 * ‖sqgStrainSymbol 0 1 n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (heatSymbol t n) ^ 2 * ((latticeNorm n) ^ 2 / 4) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_left hstrain_tight (sq_nonneg _)
+      _ = heatSymbol t n * ((latticeNorm n) ^ 2 * heatSymbol t n) / 4 * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ heatSymbol t n * (Real.exp (-1) / t) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          exact mul_le_mul_of_nonneg_left hL_sq_heat hheat_nn
+      _ ≤ 1 * (Real.exp (-1) / t) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          apply mul_le_mul_of_nonneg_right hheat_le
+          exact div_nonneg (Real.exp_pos _).le ht.le
+      _ = Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
+          rw [one_mul]; field_simp
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
