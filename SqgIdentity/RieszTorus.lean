@@ -4764,6 +4764,132 @@ theorem poissonSymbol_Hk_mode_bound {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t
         exact mul_le_mul_of_nonneg_right hp_le hc_nn
     _ = (k ^ k * Real.exp (-k) / t ^ k) * ‖c‖ ^ 2 := by ring
 
+/-! ## Integrated tight Ḣˢ strain identity
+
+Lifts the mode-level tight bound `|S₀₀(n)|² + |S₀₁(n)|² = ‖n‖²/4`
+to integrated Ḣˢ seminorms.
+-/
+
+/-- **Tight Ḣˢ strain identity (integrated sum of S₀₀ + S₀₁).**
+For SQG with strain components `S₀₀, S₀₁` related to `θ` by Fourier
+multipliers `sqgStrainSymbol 0 0, sqgStrainSymbol 0 1`:
+
+    `‖S₀₀‖²_{Ḣˢ} + ‖S₀₁‖²_{Ḣˢ} = ‖θ‖²_{Ḣ^{s+1}} / 4`
+
+This is an exact equality at every Sobolev level `s`. Uses the mode-level
+tight identity `|S₀₀(n)|² + |S₀₁(n)|² = ‖n‖²/4`. -/
+theorem sqgStrain_00_01_Hs_sum_eq
+    (s : ℝ)
+    (θ S00 S01 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff0 : ∀ n, mFourierCoeff S00 n = sqgStrainSymbol 0 0 n * mFourierCoeff θ n)
+    (hcoeff1 : ∀ n, mFourierCoeff S01 n = sqgStrainSymbol 0 1 n * mFourierCoeff θ n)
+    (hsum : Summable
+      (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    hsSeminormSq s S00 + hsSeminormSq s S01 = hsSeminormSq (s + 1) θ / 4 := by
+  unfold hsSeminormSq
+  -- Establish summabilities first
+  have hsum0 : Summable (fun n ↦ fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S00) n‖ ^ 2) := by
+    apply hsum.of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      by_cases hn : n = 0
+      · subst hn
+        rw [hcoeff0 0]
+        simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+          fracDerivSymbol_zero]
+      · rw [hcoeff0 n, norm_mul, mul_pow]
+        have h00 := sqgStrain_00_sq_le_quarter hn
+        have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+        have hc_nn : 0 ≤ ‖mFourierCoeff θ n‖ ^ 2 := sq_nonneg _
+        have hfrac := fracDerivSymbol_add_sq s 1 n
+        have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+          rw [fracDerivSymbol_one_eq hn]
+        calc (fracDerivSymbol s n) ^ 2 *
+              (‖sqgStrainSymbol 0 0 n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+            = ‖sqgStrainSymbol 0 0 n‖ ^ 2 *
+              ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by ring
+          _ ≤ ((latticeNorm n) ^ 2 / 4) *
+              ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+              mul_le_mul_of_nonneg_right h00 (mul_nonneg hσs_nn hc_nn)
+          _ ≤ (latticeNorm n) ^ 2 *
+              ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+              apply mul_le_mul_of_nonneg_right _ (mul_nonneg hσs_nn hc_nn)
+              have : 0 ≤ (latticeNorm n) ^ 2 := sq_nonneg _; linarith
+          _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+              rw [hfrac, hfrac1]; ring
+  have hsum1 : Summable (fun n ↦ fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S01) n‖ ^ 2) := by
+    apply hsum.of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      by_cases hn : n = 0
+      · subst hn
+        rw [hcoeff1 0]
+        simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+          fracDerivSymbol_zero]
+      · rw [hcoeff1 n, norm_mul, mul_pow]
+        have h01 := sqgStrain_01_sq_le_quarter hn
+        have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+        have hc_nn : 0 ≤ ‖mFourierCoeff θ n‖ ^ 2 := sq_nonneg _
+        have hfrac := fracDerivSymbol_add_sq s 1 n
+        have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+          rw [fracDerivSymbol_one_eq hn]
+        calc (fracDerivSymbol s n) ^ 2 *
+              (‖sqgStrainSymbol 0 1 n‖ ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)
+            = ‖sqgStrainSymbol 0 1 n‖ ^ 2 *
+              ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by ring
+          _ ≤ ((latticeNorm n) ^ 2 / 4) *
+              ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) :=
+              mul_le_mul_of_nonneg_right h01 (mul_nonneg hσs_nn hc_nn)
+          _ ≤ (latticeNorm n) ^ 2 *
+              ((fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2) := by
+              apply mul_le_mul_of_nonneg_right _ (mul_nonneg hσs_nn hc_nn)
+              have : 0 ≤ (latticeNorm n) ^ 2 := sq_nonneg _; linarith
+          _ = (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2 := by
+              rw [hfrac, hfrac1]; ring
+  -- Establish the pointwise identity
+  have hpt : ∀ n : Fin 2 → ℤ,
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S00) n‖ ^ 2
+        + fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S01) n‖ ^ 2
+      = fracDerivSymbol (s + 1) n ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 := by
+    intro n
+    rw [hcoeff0 n, hcoeff1 n]
+    by_cases hn : n = 0
+    · subst hn
+      simp [sqgStrainSymbol, sqgGradSymbol, derivSymbol, rieszSymbol,
+        fracDerivSymbol_zero]
+    · rw [norm_mul, norm_mul, mul_pow, mul_pow]
+      have htight := sqgStrain_eigenvalue_tight hn
+      have hfrac := fracDerivSymbol_add_sq s 1 n
+      have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+        rw [fracDerivSymbol_one_eq hn]
+      rw [show fracDerivSymbol s n ^ 2 *
+          (‖sqgStrainSymbol 0 0 n‖ ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+          + fracDerivSymbol s n ^ 2 *
+          (‖sqgStrainSymbol 0 1 n‖ ^ 2 * ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+          = fracDerivSymbol s n ^ 2 *
+            ((‖sqgStrainSymbol 0 0 n‖ ^ 2 + ‖sqgStrainSymbol 0 1 n‖ ^ 2) *
+             ‖mFourierCoeff (↑↑θ) n‖ ^ 2) from by ring]
+      rw [htight, hfrac, hfrac1]; ring
+  -- Now the sum identity follows by tsum_add and tsum_div_const
+  have hsum_add : Summable (fun n ↦
+      fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S00) n‖ ^ 2
+      + fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S01) n‖ ^ 2) :=
+    hsum0.add hsum1
+  have step1 : (∑' (n : Fin 2 → ℤ), fracDerivSymbol s n ^ 2 *
+      ‖mFourierCoeff (↑↑S00) n‖ ^ 2) +
+      (∑' (n : Fin 2 → ℤ), fracDerivSymbol s n ^ 2 *
+        ‖mFourierCoeff (↑↑S01) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+          (fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S00) n‖ ^ 2
+            + fracDerivSymbol s n ^ 2 * ‖mFourierCoeff (↑↑S01) n‖ ^ 2) :=
+    (hsum0.tsum_add hsum1).symm
+  rw [step1]
+  rw [show (∑' (n : Fin 2 → ℤ), fracDerivSymbol (s + 1) n ^ 2 *
+            ‖mFourierCoeff (↑↑θ) n‖ ^ 2) / 4
+      = ∑' (n : Fin 2 → ℤ), fracDerivSymbol (s + 1) n ^ 2 *
+            ‖mFourierCoeff (↑↑θ) n‖ ^ 2 / 4 from by rw [tsum_div_const]]
+  exact tsum_congr hpt
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
