@@ -4489,6 +4489,78 @@ theorem heat_smoothed_sqgStrain_01_L2_mode_tight {t : ℝ} (ht : 0 < t)
       _ = Real.exp (-1) / (4 * t) * ‖c‖ ^ 2 := by
           rw [one_mul]; field_simp
 
+/-! ## Negative-order fractional derivative (Λ^{-s})
+
+The multiplier `Λ^{-s}(n) = ‖n‖^{-s}` for `n ≠ 0`, zero at `n = 0`.
+This is the inverse of `Λ^s = (-Δ)^{s/2}` on mean-zero functions.
+Useful for Biot-Savart-like integrations and Sobolev embeddings.
+
+We already have `fracDerivSymbol` which is `‖n‖^s` for any real `s`.
+For `s > 0` this is the positive-order; for `s < 0` it's the negative-order.
+-/
+
+/-- **Fractional Laplacian inverse symbol.** For `n ≠ 0`:
+
+    `Λ^{-s}(n) = ‖n‖^{-s} = 1/σ_s(n)`
+
+and `0` at `n = 0`. This is `fracDerivSymbol (-s) n`. -/
+lemma fracDerivSymbol_neg_inv {s : ℝ} {n : Fin 2 → ℤ} (hn : n ≠ 0) (hs : 0 < s) :
+    fracDerivSymbol (-s) n * fracDerivSymbol s n = 1 := by
+  rw [fracDerivSymbol_of_ne_zero _ hn, fracDerivSymbol_of_ne_zero _ hn]
+  have hL_pos := latticeNorm_pos hn
+  rw [← Real.rpow_add hL_pos]
+  simp [Real.rpow_zero]
+
+/-- **Λ^{-s} · Λ^s = 1 at each nonzero mode (squared form).** -/
+lemma fracDerivSymbol_sq_neg_inv {s : ℝ} {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    (fracDerivSymbol (-s) n) ^ 2 * (fracDerivSymbol s n) ^ 2 = 1 := by
+  rw [fracDerivSymbol_of_ne_zero _ hn, fracDerivSymbol_of_ne_zero _ hn]
+  have hL_pos := latticeNorm_pos hn
+  have hL_nn := latticeNorm_nonneg n
+  rw [show ((latticeNorm n) ^ (-s)) ^ 2 * ((latticeNorm n) ^ s) ^ 2
+      = ((latticeNorm n) ^ (-s) * (latticeNorm n) ^ s) ^ 2 from by ring]
+  rw [← Real.rpow_add hL_pos, show (-s + s : ℝ) = 0 from by ring, Real.rpow_zero]
+  ring
+
+/-- **Negative-order gain.** Applying `Λ^{-s}` to `c` gives a Ḣˢ bound
+by the `L²` norm of `c` at each mode `n ≠ 0`:
+
+    `σ_s(n)² · ‖Λ^{-s}(n) · c‖² = ‖c‖²`
+
+i.e., the composition `Λ^s ∘ Λ^{-s}` is the identity. -/
+theorem fracDerivSymbol_neg_Hs_equals_L2 {s : ℝ} {n : Fin 2 → ℤ} (hn : n ≠ 0)
+    (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 *
+      ‖((fracDerivSymbol (-s) n : ℝ) : ℂ) * c‖ ^ 2
+    = ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (fracDerivSymbol_nonneg _ _)]
+  rw [show (fracDerivSymbol s n) ^ 2 *
+      ((fracDerivSymbol (-s) n) ^ 2 * ‖c‖ ^ 2)
+      = ((fracDerivSymbol s n) ^ 2 * (fracDerivSymbol (-s) n) ^ 2) * ‖c‖ ^ 2 from by ring]
+  rw [show (fracDerivSymbol s n) ^ 2 * (fracDerivSymbol (-s) n) ^ 2
+      = (fracDerivSymbol (-s) n) ^ 2 * (fracDerivSymbol s n) ^ 2 from by ring]
+  rw [fracDerivSymbol_sq_neg_inv hn, one_mul]
+
+/-- **Ḣˢ-to-L² mapping via Λ^{-s}.** For `s > 0`, the operator
+`Λ^{-s}` maps `L²` functions into `Ḣˢ` (and vice versa). Mode-level
+bound that the multiplier `Λ^{-s}` satisfies:
+
+    `‖Λ^{-s}(n)‖ ≤ 1`  for all `n ≠ 0`.
+
+(i.e., `Λ^{-s}` is `L²`-contractive on integer lattice with `s ≥ 0`.) -/
+theorem fracDerivSymbol_neg_bound_on_lattice {s : ℝ} (hs : 0 ≤ s)
+    {n : Fin 2 → ℤ} (hn : n ≠ 0) :
+    fracDerivSymbol (-s) n ≤ 1 := by
+  rw [fracDerivSymbol_of_ne_zero _ hn]
+  have hL : 1 ≤ latticeNorm n := latticeNorm_ge_one_of_ne_zero hn
+  have hL_pos : 0 < latticeNorm n := latticeNorm_pos hn
+  rw [show (latticeNorm n) ^ (-s) = 1 / (latticeNorm n) ^ s from by
+    rw [Real.rpow_neg (le_of_lt hL_pos)]; field_simp]
+  rw [div_le_one (Real.rpow_pos_of_pos hL_pos s)]
+  calc (1 : ℝ) = (1 : ℝ) ^ s := by rw [Real.one_rpow]
+    _ ≤ (latticeNorm n) ^ s := Real.rpow_le_rpow (by norm_num) hL hs
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
