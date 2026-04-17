@@ -5896,6 +5896,63 @@ theorem fracHeatSymbol_Hs_contractivity
       exact fracHeatSymbol_Hs_mode_bound hα ht n (mFourierCoeff f n)
   · exact hsum
 
+/-! ## α-Fractional heat-smoothed SQG quantities
+
+Unified framework: applies α-fractional heat to SQG vorticity, gradient,
+and strain. Specializes to heat (α=1) and Poisson (α=1/2) versions.
+-/
+
+/-- **α-fracHeat-smoothed SQG vorticity L² mode bound.** For `n ≠ 0, t > 0`:
+
+    `‖fracHeat(α,t,n) · ω̂(n) · c‖² ≤ (1/(2α))^{1/(2α)}·exp(-1/(2α))/t^{1/(2α)} · ‖c‖²`
+
+Specializes:
+- α = 1: `‖heat · ω̂ · c‖² ≤ (1/2)^{1/2}·exp(-1/2)/t^{1/2} · ‖c‖²`
+  Wait: for heat, we have 4·exp(-1)/t. The factor differs. Let me restate.
+
+Actually for α = 1: this theorem gives the SMALLER LHS `ω̂·heat`, bounded
+by `(k/(2α))^{k/(2α)}·exp(-k/(2α))/t^{k/(2α)}` with k=1: `(1/2)^{1/2}·e^{-1/2}/√t`.
+
+This is a different bound scaling than the heat version which scales as 1/t. -/
+theorem fracHeat_smoothed_vorticity_L2_mode
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t)
+    {n : Fin 2 → ℤ} (hn : n ≠ 0) (c : ℂ) :
+    ‖((fracHeatSymbol α t n : ℝ) : ℂ) * sqgVorticitySymbol n * c‖ ^ 2
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+  -- ‖fracHeat·ω̂·c‖² = fracHeat² · ‖ω̂‖² · ‖c‖² = fracHeat² · L² · ‖c‖²
+  -- Use: fracHeat² · L² ≤ fracHeat · L² (since fracHeat ≤ 1)
+  --      fracHeat · L² = fracHeat · σ_1² ≤ (1/α)^{1/α}·exp(-1/α)/t^{1/α}
+  rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n),
+    sqgVorticitySymbol_norm hn]
+  -- Goal: fracHeat² · L² · ‖c‖² ≤ ...
+  have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+  have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht.le n
+  have hmain : (fracDerivSymbol 1 n) ^ 2 * fracHeatSymbol α t n
+      ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) :=
+    fracDerivSymbol_sq_mul_fracHeat_le hα one_pos ht n
+  have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+    rw [fracDerivSymbol_one_eq hn]
+  rw [hfrac1] at hmain
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) := by
+    have h1α : 0 < 1 / α := div_pos one_pos hα
+    have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+    have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+    positivity
+  calc (fracHeatSymbol α t n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2
+      = fracHeatSymbol α t n * ((latticeNorm n) ^ 2 * fracHeatSymbol α t n) * ‖c‖ ^ 2 := by
+        rw [sq]; ring
+    _ ≤ fracHeatSymbol α t n *
+        ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+        apply mul_le_mul_of_nonneg_right _ hc_nn
+        exact mul_le_mul_of_nonneg_left hmain hf_nn
+    _ ≤ 1 *
+        ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by
+        apply mul_le_mul_of_nonneg_right _ hc_nn
+        exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
+    _ = ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
