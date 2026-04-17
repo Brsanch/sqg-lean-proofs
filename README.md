@@ -93,6 +93,14 @@ structures (`MaterialMaxPrinciple`, `BKMCriterion`,
 `FracSobolevCalculus`) explicitly pin down *which* analytic facts the
 argument is borrowing from outside the algebraic layer.
 
+A structured form `SqgSolution.regularity_conditional` (§10.1) wraps
+the theorem around an `SqgSolution` record, which bundles the
+time-evolution `θ`, a smooth-initial-data predicate (`θ 0` has finite
+Ḣˢ seminorm for some `s > 2`), and a placeholder `solvesSqgEvolution`
+field for the SQG PDE itself. The `smoothInitialData` field uses
+`Summable` on the Ḣˢ-weighted Fourier series — the honest well-posedness
+condition, not a vacuous `≤ M` bound.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that

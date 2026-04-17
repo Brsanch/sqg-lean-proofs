@@ -6581,4 +6581,77 @@ theorem sqg_regularity_conditional
       ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M :=
   hBKM.hsPropagation hMMP.hOnePropagation
 
+/-! ### §10.1 `SqgSolution` wrapper
+
+The Sobolev-bound conclusion of `sqg_regularity_conditional` is stated
+about a bare time-indexed family `θ : ℝ → L²(𝕋²)`. For compositional
+proofs it is cleaner to package a solution with its defining data.
+
+`SqgSolution` bundles three things:
+
+1. The time-evolution family `θ`.
+2. The `smoothInitialData` predicate: `θ 0` has finite Ḣˢ seminorm for
+   some `s > 2` (the standard well-posedness regularity class for
+   SQG — one order above the scaling-critical level `s = 1`).
+3. The `solvesSqgEvolution` predicate: `θ` satisfies the SQG evolution
+   `∂ₜθ + u·∇θ = 0` with `u = (R₁θ, -R₀θ)`. Placeholder: stating this
+   precisely requires a material-derivative predicate that lives in
+   the same layer as `FracSobolevCalculus`.
+
+`SqgSolution.regularity_conditional` then restates
+`sqg_regularity_conditional` in the structured form. The proof body
+is direct delegation — the `smoothInitialData` and
+`solvesSqgEvolution` fields are *not* consumed by the proof today
+because the three analytic hypotheses still supply the content they
+will eventually derive.  Once any of those hypotheses is discharged
+from `SqgSolution` data, the proof body will be upgraded in place.
+-/
+
+/-- **SQG solution.** Bundles a time-evolution `θ`, a smooth-initial-data
+predicate, and a placeholder `solvesSqgEvolution` predicate. -/
+structure SqgSolution where
+  /-- The time-evolution of the active scalar on `𝕋²`. -/
+  θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))
+  /-- Initial data has finite Ḣˢ seminorm at some subcritical
+  regularity `s > 2` — the standard SQG well-posedness class. -/
+  smoothInitialData :
+    ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (θ 0) n‖ ^ 2)
+  /-- `θ` satisfies the SQG evolution `∂ₜθ + u·∇θ = 0` with
+  `u = (R₁θ, -R₀θ)`. Placeholder: stating this precisely requires a
+  material-derivative predicate. -/
+  solvesSqgEvolution : True
+
+namespace SqgSolution
+
+variable (S : SqgSolution)
+
+/-- **Sobolev bounds conclusion.** Uniform Ḣˢ bounds at every order,
+for all forward time — the conclusion of conditional Theorem 3 stated
+on an `SqgSolution`. -/
+def SobolevBounds : Prop :=
+  ∀ s : ℝ, 0 ≤ s →
+    ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (S.θ t) ≤ M
+
+/-- **Conditional Theorem 3 (structured form).**
+
+Any `SqgSolution` satisfying the three analytic hypotheses
+— `MaterialMaxPrinciple`, `BKMCriterion`, `FracSobolevCalculus` — has
+uniform Sobolev bounds at every order.
+
+Proof is direct delegation to `sqg_regularity_conditional`. The
+`smoothInitialData` and `solvesSqgEvolution` fields of `S` are not
+yet consumed by the proof, because the three analytic hypotheses
+currently supply (via `hOnePropagation` and `hsPropagation`) the
+content those fields will eventually establish from first principles. -/
+theorem regularity_conditional
+    (hMMP : MaterialMaxPrinciple S.θ)
+    (hBKM : BKMCriterion S.θ)
+    (hFSC : FracSobolevCalculus S.θ) :
+    S.SobolevBounds :=
+  sqg_regularity_conditional S.θ hMMP hBKM hFSC
+
+end SqgSolution
+
 end SqgIdentity
