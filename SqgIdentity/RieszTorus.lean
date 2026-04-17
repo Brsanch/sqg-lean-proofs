@@ -5685,6 +5685,94 @@ theorem latticeNorm_rpow_mul_fracHeat_le {α : ℝ} (hα : 0 < α) {t : ℝ} (ht
   have h_num : y * Real.exp (-y) ≤ Real.exp (-1) := mul_exp_neg_le_exp_neg_one y
   gcongr
 
+/-- **Fractional heat rpow identity.** For `k > 0`:
+
+    `fracHeatSymbol α t n = (fracHeatSymbol α (t/k) n)^k`. -/
+theorem fracHeatSymbol_rpow_eq {α : ℝ} {t : ℝ} (n : Fin 2 → ℤ) {k : ℝ} (hk : 0 < k) :
+    fracHeatSymbol α t n = (fracHeatSymbol α (t / k) n) ^ k := by
+  unfold fracHeatSymbol
+  rw [Real.rpow_def_of_pos (Real.exp_pos _), Real.log_exp]
+  congr 1
+  have hk_ne : k ≠ 0 := hk.ne'
+  field_simp
+
+/-- **General α-fractional heat smoothing.** For `0 < α`, `t > 0`, `k > 0`:
+
+    `‖n‖^k · exp(-t·‖n‖^{2α}) ≤ (k/(2α))^{k/(2α)} · exp(-k/(2α)) / t^{k/(2α)}`
+
+Unifies:
+- Heat (α = 1): `‖n‖^k·exp(-t‖n‖²) ≤ (k/2)^{k/2} · exp(-k/2) / t^{k/2}`
+- Poisson (α = 1/2): `‖n‖^k·exp(-t‖n‖) ≤ k^k · exp(-k) / t^k` -/
+theorem latticeNorm_rpow_mul_fracHeat_le_general
+    {α k : ℝ} (hα : 0 < α) (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ k * fracHeatSymbol α t n
+    ≤ (k / (2 * α)) ^ (k / (2 * α)) * Real.exp (-(k / (2 * α))) / t ^ (k / (2 * α)) := by
+  have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+  set m : ℝ := k / (2 * α) with hm_def
+  have hm_pos : 0 < m := by rw [hm_def]; positivity
+  have ht_m : 0 < t / m := div_pos ht hm_pos
+  -- Base: L^{2α} · fracHeat α (t/m) n ≤ exp(-1) / (t/m)
+  have hbase := latticeNorm_rpow_mul_fracHeat_le hα ht_m n
+  have hbase_nn : 0 ≤ (latticeNorm n) ^ (2 * α) * fracHeatSymbol α (t/m) n :=
+    mul_nonneg (Real.rpow_nonneg hL_nn _) (fracHeatSymbol_nonneg _ _ _)
+  -- Raise to m-th real power
+  have hpow : ((latticeNorm n) ^ (2 * α) * fracHeatSymbol α (t/m) n) ^ m
+            ≤ (Real.exp (-1) / (t / m)) ^ m :=
+    Real.rpow_le_rpow hbase_nn hbase hm_pos.le
+  -- LHS: (L^{2α} · frac(t/m))^m = L^{2αm} · frac(t)
+  have hLHS_eq : ((latticeNorm n) ^ (2 * α) * fracHeatSymbol α (t/m) n) ^ m
+      = (latticeNorm n) ^ k * fracHeatSymbol α t n := by
+    rw [Real.mul_rpow (Real.rpow_nonneg hL_nn _) (fracHeatSymbol_nonneg _ _ _)]
+    congr 1
+    · -- (L^{2α})^m = L^{2αm} = L^k
+      rw [← Real.rpow_mul hL_nn]
+      congr 1
+      rw [hm_def]; field_simp
+    · -- frac(t/m)^m = frac(t)
+      rw [← fracHeatSymbol_rpow_eq n hm_pos]
+  -- RHS: (exp(-1)/(t/m))^m = m^m · exp(-m) / t^m
+  have hRHS_eq : (Real.exp (-1) / (t / m)) ^ m = m ^ m * Real.exp (-m) / t ^ m := by
+    have ht_ne : t ≠ 0 := ht.ne'
+    have hm_ne : m ≠ 0 := hm_pos.ne'
+    have hrew : Real.exp (-1) / (t / m) = m * Real.exp (-1) / t := by
+      field_simp
+    rw [hrew, Real.div_rpow (by positivity : 0 ≤ m * Real.exp (-1)) ht.le,
+      Real.mul_rpow hm_pos.le (Real.exp_pos _).le, exp_neg_one_rpow]
+  rw [hLHS_eq] at hpow
+  rw [hRHS_eq] at hpow
+  convert hpow using 1
+
+/-- **General α-fractional heat bound via fracDerivSymbol.** For `k > 0`:
+
+    `σ_k(n)² · fracHeat(α, t, n) ≤ (k/α)^{k/α} · exp(-k/α) / t^{k/α}`
+
+Using `σ_k² = ‖n‖^{2k}` and the general bound with parameter `2k`. -/
+theorem fracDerivSymbol_sq_mul_fracHeat_le
+    {α k : ℝ} (hα : 0 < α) (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (fracDerivSymbol k n) ^ 2 * fracHeatSymbol α t n
+    ≤ (k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α) := by
+  by_cases hn : n = 0
+  · subst hn
+    rw [fracDerivSymbol_zero]
+    simp
+    have : 0 < k / α := div_pos hk hα
+    positivity
+  · have hL_pos : 0 < latticeNorm n := latticeNorm_pos hn
+    have h_σk_sq : (fracDerivSymbol k n) ^ 2 = (latticeNorm n) ^ (2 * k) := by
+      rw [fracDerivSymbol_of_ne_zero k hn, sq, ← Real.rpow_add hL_pos]
+      congr 1; ring
+    rw [h_σk_sq]
+    -- Apply general bound with k' = 2k, so k'/(2α) = k/α
+    have h2k_pos : 0 < 2 * k := by linarith
+    have := latticeNorm_rpow_mul_fracHeat_le_general hα h2k_pos ht n
+    -- This gives: L^{2k} · frac ≤ (2k/(2α))^{2k/(2α)} · exp(-2k/(2α)) / t^{2k/(2α)}
+    -- = (k/α)^{k/α} · exp(-k/α) / t^{k/α}
+    have hsimp : 2 * k / (2 * α) = k / α := by field_simp
+    rw [hsimp] at this
+    exact this
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
