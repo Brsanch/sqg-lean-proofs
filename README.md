@@ -44,6 +44,13 @@ regularity proof. Currently covers the shear-vorticity identity
 - Mode-level Ḣˢ tight identities for strain, gradient, vorticity
 - Riesz Ḣˢ contractivity, derivative Ḣˢ mode bound
 - Vorticity L² = θ Ḣ¹ (Parseval integrated form)
+- **Heat semigroup & parabolic smoothing**:
+  - `heatSymbol`, positivity, boundedness, additivity, Ḣˢ contractivity
+  - `x · exp(-x) ≤ exp(-1)` (tangent-line inequality)
+  - `‖n‖² · exp(-t‖n‖²) ≤ exp(-1)/t` (k=1 gradient smoothing)
+  - `‖n‖⁴ · exp(-t‖n‖²) ≤ 4·exp(-2)/t²` (k=2 Hessian smoothing)
+  - Mode-level Ḣ¹/Ḣ² parabolic smoothing for heat operator
+  - SQG vorticity heat-smoothing bound
 
 ## What's not proven (yet)
 
