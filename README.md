@@ -44,6 +44,13 @@ regularity proof. Currently covers the shear-vorticity identity
 - Mode-level Ḣˢ tight identities for strain, gradient, vorticity
 - Riesz Ḣˢ contractivity, derivative Ḣˢ mode bound
 - Vorticity L² = θ Ḣ¹ (Parseval integrated form)
+- **α-Fractional heat semigroup** (unifies heat + Poisson + fractional SQG):
+  - `fracHeatSymbol α t n = exp(-t·‖n‖^{2α})` for `0 < α`
+  - Specializations: α=1 → heat, α=1/2 → Poisson
+  - `fracHeatSymbol_rpow_eq`: time-rescaling identity
+  - General smoothing: `‖n‖^k·fracHeat ≤ (k/(2α))^{k/(2α)}·exp(-k/(2α))/t^{k/(2α)}`
+  - Mode + integrated L² and Ḣᵏ bounds
+  - Mode + integrated L² / Ḣˢ contractivity
 - **Heat semigroup & parabolic smoothing**:
   - `heatSymbol`, positivity, boundedness, additivity, Ḣˢ contractivity
   - `x · exp(-x) ≤ exp(-1)` (tangent-line inequality)
