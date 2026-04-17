@@ -4659,6 +4659,72 @@ theorem poissonSymbol_L2_mode_contract {t : ℝ} (ht : 0 ≤ t)
       ≤ 1 * ‖c‖ ^ 2 := mul_le_mul_of_nonneg_right hp_sq_le hc_nn
     _ = ‖c‖ ^ 2 := one_mul _
 
+/-- **Poisson semigroup rpow identity.** For `k > 0`, `t : ℝ`:
+
+    `poissonSymbol t n = (poissonSymbol (t/k) n)^k`. -/
+theorem poissonSymbol_rpow_eq {t : ℝ} (n : Fin 2 → ℤ) {k : ℝ} (hk : 0 < k) :
+    poissonSymbol t n = (poissonSymbol (t / k) n) ^ k := by
+  unfold poissonSymbol
+  rw [Real.rpow_def_of_pos (Real.exp_pos _), Real.log_exp]
+  congr 1
+  have hk_ne : k ≠ 0 := hk.ne'
+  field_simp
+
+/-- **General Poisson smoothing at real k > 0.** For `k > 0`, `t > 0`:
+
+    `‖n‖^k · exp(-t·‖n‖) ≤ k^k · exp(-k) / t^k`
+
+using `rpow`. -/
+theorem latticeNorm_rpow_mul_poisson_le {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    (latticeNorm n) ^ k * poissonSymbol t n
+    ≤ k ^ k * Real.exp (-k) / t ^ k := by
+  have hL_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+  have ht_k : 0 < t / k := div_pos ht hk
+  have hbase := latticeNorm_mul_poisson_le ht_k n
+  have hbase_nn : 0 ≤ (latticeNorm n : ℝ) * poissonSymbol (t/k) n :=
+    mul_nonneg hL_nn (poissonSymbol_nonneg _ _)
+  -- Raise both sides to the k-th real power
+  have hpow : ((latticeNorm n : ℝ) * poissonSymbol (t/k) n) ^ k
+            ≤ (Real.exp (-1) / (t / k)) ^ k :=
+    Real.rpow_le_rpow hbase_nn hbase hk.le
+  -- Simplify LHS: (L · P(t/k))^k = L^k · P(t)
+  have hLHS_eq : ((latticeNorm n : ℝ) * poissonSymbol (t/k) n) ^ k
+      = (latticeNorm n) ^ k * poissonSymbol t n := by
+    rw [Real.mul_rpow hL_nn (poissonSymbol_nonneg _ _),
+      ← poissonSymbol_rpow_eq n hk]
+  -- Simplify RHS: (exp(-1)/(t/k))^k = k^k · exp(-k) / t^k
+  have hRHS_eq : (Real.exp (-1) / (t / k)) ^ k
+      = k ^ k * Real.exp (-k) / t ^ k := by
+    have ht_ne : t ≠ 0 := ht.ne'
+    have hk_ne : k ≠ 0 := hk.ne'
+    have hrew : Real.exp (-1) / (t / k) = k * Real.exp (-1) / t := by
+      field_simp
+    rw [hrew, Real.div_rpow (by positivity : 0 ≤ k * Real.exp (-1)) ht.le,
+      Real.mul_rpow hk.le (Real.exp_pos _).le, exp_neg_one_rpow]
+  rw [hLHS_eq] at hpow
+  rw [hRHS_eq] at hpow
+  exact hpow
+
+/-- **Poisson smoothing at fracDerivSymbol level.** For `k > 0`, `t > 0`:
+
+    `σ_k(n) · poisson(t, n) ≤ k^k · exp(-k) / t^k` -/
+theorem fracDerivSymbol_mul_poisson_le_rpow {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) :
+    fracDerivSymbol k n * poissonSymbol t n
+    ≤ k ^ k * Real.exp (-k) / t ^ k := by
+  by_cases hn : n = 0
+  · subst hn
+    rw [fracDerivSymbol_zero]
+    simp
+    have : 0 < k ^ k * Real.exp (-k) / t ^ k := by
+      have hk_pos : 0 < k ^ k := Real.rpow_pos_of_pos hk k
+      have ht_pos : 0 < t ^ k := Real.rpow_pos_of_pos ht k
+      positivity
+    linarith
+  · rw [fracDerivSymbol_of_ne_zero k hn]
+    exact latticeNorm_rpow_mul_poisson_le hk ht n
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
