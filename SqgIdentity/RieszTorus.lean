@@ -4768,27 +4768,53 @@ theorem poissonSymbol_Hk_mode_bound {k : ℝ} (hk : 0 < k) {t : ℝ} (ht : 0 < t
 
 The library now provides a complete Fourier-space curvature budget:
 
-1. **Symbols**: `hessSymbol`, `sqgGradSymbol`, `sqgStrainSymbol`,
-   `sqgVorticitySymbol`, `fracDerivSymbol`, `thirdDerivSymbol`
+**Symbol infrastructure**
+- `hessSymbol`, `sqgGradSymbol`, `sqgStrainSymbol`, `sqgVorticitySymbol`
+- `fracDerivSymbol` (positive and negative order via `rpow`)
+- `thirdDerivSymbol`, `laplacianSymbol`, `invLaplacianSymbol`
+- `heatSymbol`, `poissonSymbol`
 
-2. **Pointwise bounds**: every symbol is controlled by powers of `‖n‖`,
-   giving Sobolev embeddings via `sqg_selection_rule_Hs`
+**D14 identity and residual**
+- `sqg_shear_vorticity_fourier`: `⟨n, S·n⟩ = -L³/2 · θ̂`
+- `sqgResidualSymbol_eq_zero`: residual `S_nt - ω/2` is zero
+- `residual_Hs_budget`: gSQG residual control at Ḣˢ level
 
-3. **L² bounds**: strain and velocity gradient are in `Ḣ¹(θ)`
+**Tight identities (equalities, not bounds)**
+- `|S₀₀|² + |S₀₁|² = ‖n‖²/4` (strain eigenvalue)
+- `Σ ‖S_ij‖² = ‖n‖²/2` (strain Frobenius)
+- `Σ ‖∂̂_i u_j‖² = ‖n‖²` (gradient Frobenius)
+- `‖ω̂‖ = ‖n‖` (vorticity norm)
+- `Σ ‖∂u‖² = Σ ‖S‖² + ‖ω‖²/2` (strain-vorticity partition)
 
-4. **Ḣˢ bounds**: strain `Ḣˢ ≤ θ Ḣˢ⁺¹`, velocity `Ḣˢ ≤ θ Ḣˢ`
+**Ḣˢ-level bounds (integrated and mode-level)**
+- Velocity: `‖u‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}` (Riesz isometry)
+- Strain/gradient: `‖S_ij‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ⁺¹}` (generic) or `/4` (tight)
+- Vorticity: `‖ω‖²_{Ḣˢ} = ‖θ‖²_{Ḣˢ⁺¹}` (tight equality)
+- Interpolation: mode-level geometric mean bound
+- Bernstein-type low/high frequency bounds
 
-5. **Bernstein estimates**: frequency-localised control of Sobolev
-   weights via `fracDerivSymbol_low/high_freq_bound`
+**Heat semigroup (all integer and real k > 0)**
+- `heatSymbol t n = exp(-t·‖n‖²)`, positivity, boundedness, additivity
+- Tangent-line: `x·exp(-x) ≤ exp(-1)`
+- k-th parabolic smoothing (ℕ and ℝ): `‖n‖^{2k}·heat(t,n) ≤ k^k·exp(-k)/t^k`
+- Ḣᵏ mode and integrated forms for k ≥ 0
+- L² and Ḣˢ contractivity (integrated)
+- Heat-smoothed SQG: vorticity, velocity, gradient, strain L² bounds
+- Tight strain heat-smoothed: 4× sharper via `|S_ij|² ≤ ‖n‖²/4`
 
-6. **Interpolation**: mode-level geometric mean bound
-   `fracDerivSymbol_sq_interpolate`
+**Poisson semigroup (α=1/2 fractional heat)**
+- `poissonSymbol t n = exp(-t·‖n‖)`, positivity, boundedness, additivity
+- k-th Poisson smoothing (ℕ and ℝ): `‖n‖^k·poisson ≤ k^k·exp(-k)/t^k`
+- Mode-level Ḣᵏ Poisson smoothing
 
-7. **Gradient decomposition**: `∂u = S + Ω` with `Ω = ω/2` and
-   the D14 identity killing the `S_{nt}` residual
+**Λ^{-s} (negative-order fractional derivative)**
+- `fracDerivSymbol (-s)` is inverse of `fracDerivSymbol s` on each nonzero mode
+- Bounded by 1 on integer lattice for `s ≥ 0`
 
-8. **Incompressibility**: `div u = 0` ensures material transport
-   preserves the Jacobian
+**Structural**
+- Incompressibility: `div u = 0`
+- `∂u = S + Ω` decomposition with `Ω = ω/2`
+- Strain-rotation, Hessian-strain, Biot-Savart-like factorisations
 -/
 
 end SqgIdentity
