@@ -5773,6 +5773,60 @@ theorem fracDerivSymbol_sq_mul_fracHeat_le
     rw [hsimp] at this
     exact this
 
+/-- **α-Fractional heat Ḣᵏ mode smoothing.** For `α > 0, k > 0, t > 0`:
+
+    `σ_k(n)² · ‖fracHeat(α,t,n) · c‖² ≤ ((k/α)^{k/α} · exp(-k/α) / t^{k/α}) · ‖c‖²` -/
+theorem fracHeatSymbol_Hk_mode_bound
+    {α k : ℝ} (hα : 0 < α) (hk : 0 < k) {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    (fracDerivSymbol k n) ^ 2 * ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α)) * ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+  have hmain := fracDerivSymbol_sq_mul_fracHeat_le hα hk ht n
+  have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+  have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht.le n
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  have hfactor_nn : 0 ≤ (k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α) := by
+    have hkα : 0 < k / α := div_pos hk hα
+    have htk : 0 < t ^ (k / α) := Real.rpow_pos_of_pos ht _
+    have hkk : 0 < (k / α) ^ (k / α) := Real.rpow_pos_of_pos hkα _
+    positivity
+  calc (fracDerivSymbol k n) ^ 2 * ((fracHeatSymbol α t n) ^ 2 * ‖c‖ ^ 2)
+      = ((fracDerivSymbol k n) ^ 2 * fracHeatSymbol α t n)
+        * (fracHeatSymbol α t n * ‖c‖ ^ 2) := by ring
+    _ ≤ ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α))
+        * (fracHeatSymbol α t n * ‖c‖ ^ 2) :=
+        mul_le_mul_of_nonneg_right hmain (mul_nonneg hf_nn hc_nn)
+    _ ≤ ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α)) * (1 * ‖c‖ ^ 2) := by
+        apply mul_le_mul_of_nonneg_left _ hfactor_nn
+        exact mul_le_mul_of_nonneg_right hf_le hc_nn
+    _ = ((k / α) ^ (k / α) * Real.exp (-(k / α)) / t ^ (k / α)) * ‖c‖ ^ 2 := by ring
+
+/-- **α-Fractional heat L² contractivity (mode-level).** -/
+theorem fracHeatSymbol_L2_mode_contract {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2 ≤ ‖c‖ ^ 2 := by
+  rw [norm_mul, mul_pow, Complex.norm_real,
+    Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+  have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+  have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht n
+  have hf_sq_le : (fracHeatSymbol α t n) ^ 2 ≤ 1 := by
+    have := mul_self_le_one_of_abs_le_one
+      (by rw [abs_of_nonneg hf_nn]; exact hf_le)
+    rwa [sq] at this
+  have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+  calc (fracHeatSymbol α t n) ^ 2 * ‖c‖ ^ 2
+      ≤ 1 * ‖c‖ ^ 2 := mul_le_mul_of_nonneg_right hf_sq_le hc_nn
+    _ = ‖c‖ ^ 2 := one_mul _
+
+/-- **α-Fractional heat Ḣˢ mode contractivity.** -/
+theorem fracHeatSymbol_Hs_mode_bound {α s t : ℝ} (hα : 0 < α) (ht : 0 ≤ t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 * ‖((fracHeatSymbol α t n : ℝ) : ℂ) * c‖ ^ 2
+    ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 :=
+  mul_le_mul_of_nonneg_left (fracHeatSymbol_L2_mode_contract hα ht n c) (sq_nonneg _)
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
