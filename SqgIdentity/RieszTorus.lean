@@ -5563,6 +5563,31 @@ theorem poisson_smoothed_vorticity_L2_integrated {t : ℝ} (ht : 0 < t)
       (fun n ↦ sq_nonneg _) hmode
   · exact hsum.mul_left _
 
+/-- **Tight heat-smoothed strain L² sum bound.**
+
+    `‖e^{tΔ}S₀₀‖²_{L²} + ‖e^{tΔ}S₀₁‖²_{L²} ≤ exp(-1)/(2t) · ‖θ‖²_{L²}` -/
+theorem heat_smoothed_sqgStrain_L2_sum_le {t : ℝ} (ht : 0 < t)
+    (θ S00 S01 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff0 : ∀ n, mFourierCoeff S00 n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 0 n * mFourierCoeff θ n)
+    (hcoeff1 : ∀ n, mFourierCoeff S01 n =
+      ((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol 0 1 n * mFourierCoeff θ n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff θ n‖ ^ 2)) :
+    (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff S00 n‖ ^ 2)
+    + (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff S01 n‖ ^ 2)
+    ≤ Real.exp (-1) / (2 * t) *
+      (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff θ n‖ ^ 2) := by
+  have h00 := heat_smoothed_sqgStrain_00_L2_integrated_tight ht θ S00 hcoeff0 hsum
+  have h01 := heat_smoothed_sqgStrain_01_L2_integrated_tight ht θ S01 hcoeff1 hsum
+  have ht' : (0 : ℝ) < 4 * t := by linarith
+  have h_sum_quarter :
+      Real.exp (-1) / (4 * t) * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      + Real.exp (-1) / (4 * t) * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2)
+      = Real.exp (-1) / (2 * t) * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑θ) n‖ ^ 2) := by
+    field_simp
+    ring
+  linarith [h00, h01, h_sum_quarter]
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
