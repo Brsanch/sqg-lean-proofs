@@ -3951,6 +3951,75 @@ theorem heatSymbol_increases_regularity {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht :
       (k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k :=
   fracDerivSymbol_nat_sq_mul_heat_le hk ht n
 
+/-! ## Integrated parabolic smoothing (Lp form)
+
+Lifting the mode-level parabolic smoothing bounds to integrated
+Ḣᵏ seminorms via Parseval.
+-/
+
+/-- **Integrated parabolic smoothing at Ḣᵏ level.** For `k ≥ 1`, `t > 0`,
+and heat-smoothed function `u` with Fourier coefficients
+`û(n) = heatSymbol(t, n) · f̂(n)`:
+
+    `‖u‖²_{Ḣᵏ} ≤ (k^k · exp(-k) / t^k) · ‖f‖²_{L²}`
+
+This is the classical `‖(-Δ)^{k/2}(e^{tΔ}f)‖²_{L²} ≤ (k/(et))^k · ‖f‖²_{L²}`
+parabolic smoothing estimate. -/
+theorem heatSymbol_Hk_smoothing_integrated {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht : 0 < t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq (k : ℝ) u ≤
+      ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff f n‖ ^ 2) := by
+  unfold hsSeminormSq
+  rw [show ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) *
+        (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff (↑↑f) n‖ ^ 2)
+      = ∑' (n : Fin 2 → ℤ),
+        ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k) * ‖mFourierCoeff (↑↑f) n‖ ^ 2 from
+    (tsum_mul_left).symm]
+  apply Summable.tsum_le_tsum (f := fun n ↦
+    fracDerivSymbol (k : ℝ) n ^ 2 * ‖mFourierCoeff (↑↑u) n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact heatSymbol_Hk_smoothing_mode hk ht n (mFourierCoeff f n)
+  · apply (hsum.mul_left ((k : ℝ) ^ k * Real.exp (-(k : ℝ)) / t ^ k)).of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      rw [hcoeff n]
+      exact heatSymbol_Hk_smoothing_mode hk ht n (mFourierCoeff f n)
+  · exact hsum.mul_left _
+
+/-- **Integrated parabolic smoothing at gradient level.** Specialization
+of `heatSymbol_Hk_smoothing_integrated` at `k = 1`:
+
+    `‖u‖²_{Ḣ¹} ≤ (exp(-1) / t) · ‖f‖²_{L²}` -/
+theorem heatSymbol_grad_smoothing_integrated {t : ℝ} (ht : 0 < t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq 1 u ≤
+      (Real.exp (-1) / t) * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff f n‖ ^ 2) := by
+  have h := heatSymbol_Hk_smoothing_integrated (k := 1) (by omega) ht f u hcoeff hsum
+  simp only [Nat.cast_one, pow_one] at h
+  convert h using 1
+  ring
+
+/-- **Integrated parabolic smoothing at Hessian level.** Specialization
+at `k = 2`:
+
+    `‖u‖²_{Ḣ²} ≤ (4·exp(-2) / t²) · ‖f‖²_{L²}` -/
+theorem heatSymbol_hess_smoothing_integrated {t : ℝ} (ht : 0 < t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq 2 u ≤
+      (4 * Real.exp (-2) / t ^ 2) * (∑' (n : Fin 2 → ℤ), ‖mFourierCoeff f n‖ ^ 2) := by
+  have h := heatSymbol_Hk_smoothing_integrated (k := 2) (by omega) ht f u hcoeff hsum
+  simp only [Nat.cast_ofNat] at h
+  convert h using 2
+  norm_num
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
