@@ -51,8 +51,15 @@ regularity proof. Currently covers the shear-vorticity identity
   - `‖n‖⁴ · exp(-t‖n‖²) ≤ 4·exp(-2)/t²` (k=2 Hessian smoothing)
   - General `k : ℕ`: `‖n‖^{2k} · exp(-t‖n‖²) ≤ k^k·exp(-k)/t^k`
     (max of `y^k·exp(-y)` at `y = k`)
-  - Mode-level Ḣᵏ parabolic smoothing for arbitrary natural k
-  - SQG vorticity heat-smoothing bound
+  - General real `k > 0`: same bound using `Real.rpow`
+  - Mode-level and integrated Ḣᵏ parabolic smoothing for all real k > 0
+  - L² and Ḣˢ contractivity of heat (integrated form)
+  - Heat-smoothed SQG quantities:
+    - Vorticity: `‖heat·ω̂·c‖² ≤ exp(-1)/t · ‖c‖²`
+    - Gradient: `‖heat·∂̂u·c‖² ≤ exp(-1)/t · ‖c‖²`
+    - Strain (generic): `‖heat·Ŝ·c‖² ≤ exp(-1)/t · ‖c‖²`
+    - Strain (tight, using `|S_ij|² ≤ L²/4`):
+      `‖heat·Ŝ_ij·c‖² ≤ exp(-1)/(4t) · ‖c‖²` (4× sharper)
 
 ## What's not proven (yet)
 
