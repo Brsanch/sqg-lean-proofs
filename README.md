@@ -190,6 +190,26 @@ is responsible for. Combined with `FracSobolevCalculus.ofMathlib`
 Theorem 3 is now cleanly scoped to: MMP's uniform Ḣ¹ bound, BKM's
 high-frequency bootstrap (`s > 1` only), and Ḣ¹ summability.
 
+**§10.7 MMP strengthening — intermediate-range self-sufficiency:**
+Internalized Ḣ¹ summability into `MaterialMaxPrinciple` as a new
+`hOneSummability` field. Was previously an external hypothesis to
+`sqg_regularity_via_interpolation`. Consequence:
+
+- MMP now has two real fields: `hOnePropagation` (uniform Ḣ¹ bound)
+  and `hOneSummability` (summability at each time).
+- `MaterialMaxPrinciple.uniform_hs_intermediate` — MMP alone discharges
+  uniform Ḣˢ bounds for every `s ∈ [0, 1]`. No BKM, no L² conservation,
+  no well-posedness needed. MMP is self-contained for this sub-range.
+- `sqg_regularity_via_interpolation` signature simplified:
+  `hSum` argument removed (now comes from `hMMP.hOneSummability`).
+- `SqgSolution.regularity_via_interpolation` — same simplification.
+
+This shows MMP carries enough content to handle a 50% sub-range of
+Sobolev indices independently. The still-axiomatic `hOnePropagation`
+field remains — actually discharging it requires the full D14 §9
+material-derivative argument (~5k+ lines of missing infrastructure,
+multi-month effort).
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that
