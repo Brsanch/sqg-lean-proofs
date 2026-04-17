@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 message: "If you use this formalization, please cite it as below."
 type: software
-title: "Machine-Verified SQG Shear-Vorticity Identity (Lean 4)"
+title: "Machine-Verified SQG Shear-Vorticity Identity + Conditional Theorem 3 Roadmap (Lean 4)"
 authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.3.0
+version: 0.4.0-dev
 date-released: "2026-04-15"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -25,12 +25,20 @@ identifiers:
     description: Zenodo archive of v0.1.0
 license: MIT
 abstract: >
-  Lean 4 + mathlib formalization of the SQG shear-vorticity identity
-  (Theorem 1 from D14): an algebraic identity in Fourier space for the
-  Surface Quasi-Geostrophic equation. Fully machine-verified with zero
-  `sorry`, including the half-angle identity, its rescaled form, and
-  the main theorem. Mathematical theorem by Bryan Sanchez; Lean
-  formalization by Bryan Sanchez with AI assistance.
+  Lean 4 + mathlib formalization of Fourier-space identities for the
+  Surface Quasi-Geostrophic equation, working towards a machine-checked
+  regularity proof. Covers Theorems 1 and 2 of paper D14 (shear-vorticity
+  identity and selection-rule bound) and supporting Riesz/Sobolev
+  infrastructure on the 2-torus. §10 adds a conditional Theorem 3
+  roadmap with named axiomatic hypotheses (MaterialMaxPrinciple,
+  BKMCriterion, FracSobolevCalculus, SqgWellPosedness) and a material
+  derivative scaffolding (SqgEvolutionAxioms). Of these hypotheses,
+  FracSobolevCalculus is discharged unconditionally, BKM's axiomatic
+  scope is reduced to s > 1 only (via interpolation), and
+  MaterialMaxPrinciple alone is shown sufficient for the intermediate
+  Sobolev range s in [0, 1]. All content machine-verified with zero
+  `sorry`. Mathematical theorems by Bryan Sanchez; Lean formalization
+  by Bryan Sanchez with AI assistance.
 keywords:
   - Lean 4
   - mathlib
