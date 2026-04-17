@@ -128,27 +128,41 @@ unconditionally — its proof is a direct re-export of existing
 lemmas in this file. So in practice, only `MaterialMaxPrinciple`
 and `BKMCriterion` need axiomatic treatment.
 
-**§11 Material derivative scaffolding:**
-First wedge into the long road of unconditionalising `MaterialMaxPrinciple`
-and `BKMCriterion`. Adds:
+**§10.1 Material derivative scaffolding:**
+First wedge into the long road of unconditionalising
+`MaterialMaxPrinciple` and `BKMCriterion`. Adds:
 
 - `sqgVelocitySymbol j n` — Fourier multiplier for the SQG velocity
-  `u = (R₁θ, -R₀θ)` at mode `n`, component `j`.
-- `sqgVelocitySymbol_norm_le_one`, `sqgVelocitySymbol_sum_sq`,
-  `sqgVelocitySymbol_zero`, `sqgVelocitySymbol_divergence_free` —
-  mode-level velocity identities (all proved).
+  `u = (R₁θ, -R₀θ)`, component `j`.
+- `sqgVelocitySymbol_norm_le_one`, `_sum_sq`, `_zero`,
+  `_divergence_free` — mode-level velocity identities (all proved).
+- `IsSqgVelocityComponent θ u_j j` — specificational predicate
+  asserting that `u_j` is the `j`-th SQG velocity component of `θ`
+  (mode-by-mode match via `sqgVelocitySymbol`).
+- `IsSqgVelocityComponent.of_zero` — the zero function is a valid
+  velocity component for the zero scalar.
 - `SqgEvolutionAxioms θ` — Prop structure bundling expected
   consequences of the SQG PDE. Has one real field (`l2Conservation`:
   L² norm squared is conserved) and two placeholders
   (`materialConservation`, `velocityIsRieszTransform`) pending
   material-derivative infrastructure.
-- `SqgEvolutionAxioms.of_identically_zero` — the zero solution
-  satisfies the real field trivially.
+- `SqgEvolutionAxioms.of_identically_zero` — zero solution satisfies
+  the real field trivially.
 
-This is the first structural commitment to the SQG PDE itself (as
-opposed to the algebraic shear-vorticity identity). A future PR will
-upgrade `SqgSolution.solvesSqgEvolution` from `True` to
-`SqgEvolutionAxioms θ`, strengthening the solution record.
+**§10.2 `SqgSolution` strengthened:** `solvesSqgEvolution` upgraded
+from `True` to `SqgEvolutionAxioms θ`. Every `SqgSolution` now
+carries L² conservation as real content.
+
+**§10.5 L² bound from conservation:**
+`uniform_l2Bound_of_l2Conservation`: given `SqgEvolutionAxioms`,
+produces a uniform-in-time `hsSeminormSq 0` bound with
+`M = hsSeminormSq 0 (θ 0)`. This is the "s=0 degenerate subcase" of
+`MaterialMaxPrinciple.hOnePropagation` — not enough to discharge
+`hOnePropagation` itself (which is about Ḣ¹, not Ḣ⁰), but it
+demonstrates the pattern: once PDE content is real, genuine
+regularity output follows.
+
+`SqgSolution.uniform_l2Bound` specializes this to the structured form.
 
 ## What's not proven (yet)
 
