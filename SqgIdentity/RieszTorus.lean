@@ -4175,6 +4175,62 @@ theorem heatSymbol_Hk_smoothing_integrated_rpow {k : ℝ} (hk : 0 < k) {t : ℝ}
       exact heatSymbol_Hk_smoothing_mode_rpow hk ht n (mFourierCoeff f n)
   · exact hsum.mul_left _
 
+/-! ## Heat semigroup contractivity at every Sobolev level
+
+The heat semigroup is a contraction on `L²`, `Ḣˢ`, and more generally
+at every Sobolev level. These are proven by lifting the mode-level
+`heatSymbol_Hs_mode_bound` via Parseval/tsum.
+-/
+
+/-- **Heat L² contractivity (integrated).** For `t ≥ 0`, heat-smoothed
+function satisfies `‖e^{tΔ}f‖²_{L²} ≤ ‖f‖²_{L²}`. -/
+theorem heatSymbol_L2_contractivity {t : ℝ} (ht : 0 ≤ t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hf_parseval : HasSum (fun n ↦ ‖mFourierCoeff f n‖ ^ 2) (∫ x, ‖f x‖ ^ 2))
+    (hu_parseval : HasSum (fun n ↦ ‖mFourierCoeff u n‖ ^ 2) (∫ x, ‖u x‖ ^ 2))
+    (hsum : Summable (fun n ↦ ‖mFourierCoeff f n‖ ^ 2)) :
+    (∫ x, ‖u x‖ ^ 2) ≤ (∫ x, ‖f x‖ ^ 2) := by
+  rw [← hu_parseval.tsum_eq, ← hf_parseval.tsum_eq]
+  apply Summable.tsum_le_tsum (f := fun n ↦ ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n, norm_mul, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+    have hheat_le_one : heatSymbol t n ≤ 1 := heatSymbol_le_one ht n
+    have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+    have hheat_sq_le : (heatSymbol t n) ^ 2 ≤ 1 := by
+      have := mul_self_le_one_of_abs_le_one
+        (by rw [abs_of_nonneg hheat_nn]; exact hheat_le_one)
+      rwa [sq] at this
+    have hc_nn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
+    calc (heatSymbol t n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
+        ≤ 1 * ‖mFourierCoeff f n‖ ^ 2 :=
+          mul_le_mul_of_nonneg_right hheat_sq_le hc_nn
+      _ = ‖mFourierCoeff f n‖ ^ 2 := one_mul _
+  · exact hu_parseval.summable
+  · exact hsum
+
+/-- **Heat Ḣˢ contractivity (integrated).** For `t ≥ 0`:
+
+    `‖e^{tΔ}f‖²_{Ḣˢ} ≤ ‖f‖²_{Ḣˢ}` -/
+theorem heatSymbol_Hs_contractivity {s : ℝ} {t : ℝ} (ht : 0 ≤ t)
+    (f u : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hcoeff : ∀ n, mFourierCoeff u n = ((heatSymbol t n : ℝ) : ℂ) * mFourierCoeff f n)
+    (hsum : Summable (fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2)) :
+    hsSeminormSq s u ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  apply Summable.tsum_le_tsum
+    (f := fun n ↦ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff u n‖ ^ 2)
+  · intro n
+    rw [hcoeff n]
+    exact heatSymbol_Hs_mode_bound ht s (mFourierCoeff f n)
+  · apply hsum.of_nonneg_of_le
+    · intro n; exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    · intro n
+      rw [hcoeff n]
+      exact heatSymbol_Hs_mode_bound ht s (mFourierCoeff f n)
+  · exact hsum
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
