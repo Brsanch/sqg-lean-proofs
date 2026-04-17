@@ -6388,6 +6388,114 @@ theorem fracHeat_smoothed_sqgStrain_Hs_integrated (s : ℝ) {α t : ℝ}
   · exact hsum.of_nonneg_of_le (fun n ↦ mul_nonneg (sq_nonneg _) (sq_nonneg _)) hmode
   · exact hsum
 
+/-- **α-fracHeat-smoothed S₀₀ L² mode tight bound.** For `α > 0, t > 0, n ≠ 0`:
+
+    `‖fracHeat(α,t,n) · S₀₀(n) · c‖² ≤ (1/α)^{1/α}·exp(-1/α)/(4·t^{1/α}) · ‖c‖²`
+
+4× sharper than the generic strain bound via tight `|S₀₀(n)|² ≤ ‖n‖²/4`. -/
+theorem fracHeat_smoothed_sqgStrain_00_L2_mode_tight
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((fracHeatSymbol α t n : ℝ) : ℂ) * sqgStrainSymbol 0 0 n * c‖ ^ 2
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / (4 * t ^ (1 / α))) * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have hs0 : sqgStrainSymbol 0 0 0 = 0 := by
+      unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [hs0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have h1α : 0 < 1 / α := div_pos one_pos hα
+    have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+    have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+    exact mul_nonneg (by positivity) (sq_nonneg _)
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+    have hstrain := sqgStrain_00_sq_le_quarter hn
+    have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+    have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht.le n
+    have hmain : (fracDerivSymbol 1 n) ^ 2 * fracHeatSymbol α t n
+        ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) :=
+      fracDerivSymbol_sq_mul_fracHeat_le hα one_pos ht n
+    have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+      rw [fracDerivSymbol_one_eq hn]
+    rw [hfrac1] at hmain
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hfactor_nn : 0 ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) := by
+      have h1α : 0 < 1 / α := div_pos one_pos hα
+      have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+      have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+      positivity
+    calc (fracHeatSymbol α t n) ^ 2 * ‖sqgStrainSymbol 0 0 n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (fracHeatSymbol α t n) ^ 2 * ((latticeNorm n) ^ 2 / 4) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_left hstrain (sq_nonneg _)
+      _ = fracHeatSymbol α t n *
+          ((latticeNorm n) ^ 2 * fracHeatSymbol α t n) / 4 * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ fracHeatSymbol α t n *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          exact mul_le_mul_of_nonneg_left hmain hf_nn
+      _ ≤ 1 *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
+      _ = (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / (4 * t ^ (1 / α)) * ‖c‖ ^ 2 := by
+          rw [one_mul]; field_simp
+
+/-- **α-fracHeat-smoothed S₀₁ L² mode tight bound.** Same structure. -/
+theorem fracHeat_smoothed_sqgStrain_01_L2_mode_tight
+    {α t : ℝ} (hα : 0 < α) (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((fracHeatSymbol α t n : ℝ) : ℂ) * sqgStrainSymbol 0 1 n * c‖ ^ 2
+    ≤ ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / (4 * t ^ (1 / α))) * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have hs0 : sqgStrainSymbol 0 1 0 = 0 := by
+      unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [hs0, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have h1α : 0 < 1 / α := div_pos one_pos hα
+    have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+    have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+    exact mul_nonneg (by positivity) (sq_nonneg _)
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (fracHeatSymbol_nonneg α t n)]
+    have hstrain := sqgStrain_01_sq_le_quarter hn
+    have hf_nn : 0 ≤ fracHeatSymbol α t n := fracHeatSymbol_nonneg α t n
+    have hf_le : fracHeatSymbol α t n ≤ 1 := fracHeatSymbol_le_one hα ht.le n
+    have hmain : (fracDerivSymbol 1 n) ^ 2 * fracHeatSymbol α t n
+        ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) :=
+      fracDerivSymbol_sq_mul_fracHeat_le hα one_pos ht n
+    have hfrac1 : (fracDerivSymbol 1 n) ^ 2 = (latticeNorm n) ^ 2 := by
+      rw [fracDerivSymbol_one_eq hn]
+    rw [hfrac1] at hmain
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hfactor_nn : 0 ≤ (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α) := by
+      have h1α : 0 < 1 / α := div_pos one_pos hα
+      have htα : 0 < t ^ (1 / α) := Real.rpow_pos_of_pos ht _
+      have h1kk : 0 < (1 / α) ^ (1 / α) := Real.rpow_pos_of_pos h1α _
+      positivity
+    calc (fracHeatSymbol α t n) ^ 2 * ‖sqgStrainSymbol 0 1 n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (fracHeatSymbol α t n) ^ 2 * ((latticeNorm n) ^ 2 / 4) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          exact mul_le_mul_of_nonneg_left hstrain (sq_nonneg _)
+      _ = fracHeatSymbol α t n *
+          ((latticeNorm n) ^ 2 * fracHeatSymbol α t n) / 4 * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ fracHeatSymbol α t n *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          exact mul_le_mul_of_nonneg_left hmain hf_nn
+      _ ≤ 1 *
+          ((1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / t ^ (1 / α)) / 4 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply div_le_div_of_nonneg_right _ (by linarith : (0 : ℝ) ≤ 4)
+          exact mul_le_mul_of_nonneg_right hf_le hfactor_nn
+      _ = (1 / α) ^ (1 / α) * Real.exp (-(1 / α)) / (4 * t ^ (1 / α)) * ‖c‖ ^ 2 := by
+          rw [one_mul]; field_simp
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
