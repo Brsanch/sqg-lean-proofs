@@ -5524,17 +5524,10 @@ Proof: set `y = t·‖n‖`, use the tangent-line inequality
 theorem latticeNorm_mul_poisson_le {t : ℝ} (ht : 0 < t)
     (n : Fin 2 → ℤ) :
     (latticeNorm n : ℝ) * poissonSymbol t n ≤ Real.exp (-1) / t := by
-  unfold poissonSymbol
-  set y : ℝ := t * latticeNorm n with hy_def
-  have hy_nn : 0 ≤ y := mul_nonneg ht.le (latticeNorm_nonneg n)
-  have hexp_rw : Real.exp (-t * latticeNorm n) = Real.exp (-y) := by
-    congr 1; rw [hy_def]; ring
-  rw [hexp_rw]
-  have hL_eq : (latticeNorm n : ℝ) = y / t := by
-    rw [hy_def]; field_simp
-  rw [hL_eq, div_mul_eq_mul_div]
-  have h_num : y * Real.exp (-y) ≤ Real.exp (-1) := mul_exp_neg_le_exp_neg_one y
-  gcongr
+  have h := latticeNorm_rpow_mul_fracHeat_le (α := 1/2) (by norm_num : (0:ℝ) < 1/2) ht n
+  rw [fracHeatSymbol_half_eq_poisson,
+    show (2 * (1/2:ℝ)) = 1 from by norm_num, Real.rpow_one] at h
+  exact h
 
 /-- **Poisson smoothing for `σ_1(n) = ‖n‖`.** -/
 theorem fracDerivSymbol_1_mul_poisson_le {t : ℝ} (ht : 0 < t)
