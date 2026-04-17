@@ -4231,6 +4231,96 @@ theorem heatSymbol_Hs_contractivity {s : ℝ} {t : ℝ} (ht : 0 ≤ t)
       exact heatSymbol_Hs_mode_bound ht s (mFourierCoeff f n)
   · exact hsum
 
+/-! ## Applications: heat-smoothed SQG quantities
+
+Combining the heat smoothing bounds with SQG vorticity/strain structure.
+-/
+
+/-- **Heat-smoothed SQG vorticity Ḣˢ bound.** The SQG vorticity after
+heat smoothing, evaluated at `n ≠ 0`, satisfies
+
+    `‖heat(t,n) · ω̂(n) · c‖² ≤ exp(-1)/t · ‖c‖²`
+
+using vorticity identity `‖ω̂(n)‖ = ‖n‖` and the k=1 parabolic smoothing.
+This gives an L² bound on heat-smoothed vorticity independent of n's
+frequency. -/
+theorem heat_smoothed_vorticity_L2_mode {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (c : ℂ) :
+    ‖((heatSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * c‖ ^ 2
+    ≤ Real.exp (-1) / t * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have : sqgVorticitySymbol 0 = 0 := by
+      unfold sqgVorticitySymbol sqgGradSymbol derivSymbol rieszSymbol
+      simp
+    rw [this, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have : 0 ≤ Real.exp (-1) / t * ‖c‖ ^ 2 := by
+      apply mul_nonneg
+      · exact div_nonneg (Real.exp_pos _).le ht.le
+      · exact sq_nonneg _
+    linarith
+  · -- Use the sqgVorticity_heat_smoothing_mode we already have
+    rw [show ((heatSymbol t n : ℝ) : ℂ) * sqgVorticitySymbol n * c
+        = sqgVorticitySymbol n * ((heatSymbol t n : ℝ) : ℂ) * c from by ring]
+    exact sqgVorticity_heat_smoothing_mode ht hn c
+
+/-- **Heat-smoothed SQG velocity Ḣˢ ≤ θ Ḣˢ.** For the SQG velocity
+`u = R_⊥ θ` and its heat-smoothed version `e^{tΔ} u`, combining Riesz
+Ḣˢ contractivity with heat Ḣˢ contractivity gives:
+
+    `‖e^{tΔ} u‖²_{Ḣˢ} ≤ ‖θ‖²_{Ḣˢ}`
+
+at every Sobolev level. Mode-level statement. -/
+theorem heat_smoothed_sqg_velocity_mode (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
+    (n : Fin 2 → ℤ) (j : Fin 2) (c : ℂ) :
+    (fracDerivSymbol s n) ^ 2 *
+      ‖((heatSymbol t n : ℝ) : ℂ) *
+       (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) * c‖ ^ 2
+    ≤ (fracDerivSymbol s n) ^ 2 * ‖c‖ ^ 2 := by
+  -- Combine Riesz contractivity with heat contractivity at mode level
+  have hheat := heatSymbol_Hs_mode_bound ht s (c := c)
+    (n := n)
+  -- Step 1: ‖heat · riesz · c‖² ≤ ‖riesz · c‖² (heat contraction)
+  -- Step 2: σ_s² · ‖riesz · c‖² ≤ σ_s² · ‖c‖² (Riesz Ḣˢ)
+  have hcomb_expr : ((heatSymbol t n : ℝ) : ℂ) *
+      (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) * c
+      = (if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) *
+        (((heatSymbol t n : ℝ) : ℂ) * c) := by ring
+  rw [hcomb_expr]
+  -- Now: σ_s² · ‖R · (heat · c)‖² ≤ σ_s² · ‖c‖²
+  -- Use: σ_s² · ‖R · (heat · c)‖² ≤ σ_s² · ‖heat · c‖² (Riesz contractive)
+  --      σ_s² · ‖heat · c‖² ≤ σ_s² · ‖c‖² (heat contractive)
+  by_cases hn : n = 0
+  · subst hn
+    by_cases hj : j = 0
+    · simp [hj, rieszSymbol_zero, fracDerivSymbol_zero]
+    · simp [hj, rieszSymbol_zero, fracDerivSymbol_zero]
+  · have hR_le : ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2 ≤ 1 := by
+      have hpyth := rieszSymbol_sum_sq hn
+      simp only [Fin.sum_univ_two] at hpyth
+      by_cases hj : j = 0
+      · simp [hj]; nlinarith [sq_nonneg ‖rieszSymbol 0 n‖]
+      · simp [hj, norm_neg]; nlinarith [sq_nonneg ‖rieszSymbol 1 n‖]
+    have hR_Hs_bound : (fracDerivSymbol s n) ^ 2 *
+        ‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n) *
+          (((heatSymbol t n : ℝ) : ℂ) * c)‖ ^ 2
+        ≤ (fracDerivSymbol s n) ^ 2 *
+          ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2 := by
+      rw [norm_mul, mul_pow]
+      have hσs_nn : 0 ≤ (fracDerivSymbol s n) ^ 2 := sq_nonneg _
+      have hhc_nn : 0 ≤ ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2 := sq_nonneg _
+      calc (fracDerivSymbol s n) ^ 2 *
+            (‖(if j = 0 then rieszSymbol 1 n else -rieszSymbol 0 n)‖ ^ 2
+              * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2)
+          ≤ (fracDerivSymbol s n) ^ 2 *
+            (1 * ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2) :=
+            mul_le_mul_of_nonneg_left
+              (mul_le_mul_of_nonneg_right hR_le hhc_nn)
+              hσs_nn
+        _ = (fracDerivSymbol s n) ^ 2 *
+            ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2 := by ring
+    exact le_trans hR_Hs_bound hheat
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
