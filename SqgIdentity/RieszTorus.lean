@@ -4321,6 +4321,89 @@ theorem heat_smoothed_sqg_velocity_mode (s : ℝ) {t : ℝ} (ht : 0 ≤ t)
             ‖((heatSymbol t n : ℝ) : ℂ) * c‖ ^ 2 := by ring
     exact le_trans hR_Hs_bound hheat
 
+/-- **Heat-smoothed SQG velocity gradient L² bound.** Each gradient
+component after heat smoothing:
+
+    `‖heat(t,n) · ∂̂_i u_j(n) · c‖² ≤ exp(-1)/t · ‖c‖²`
+
+Proof: `‖∂̂_i u_j(n)‖ ≤ ‖n‖`, so `‖heat·∂u·c‖² = heat²·‖∂u‖²·‖c‖² ≤
+heat·(L²·heat)·‖c‖² ≤ heat·exp(-1)/t·‖c‖² ≤ exp(-1)/t·‖c‖²`. -/
+theorem heat_smoothed_sqgGrad_L2_mode {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (i j : Fin 2) (c : ℂ) :
+    ‖((heatSymbol t n : ℝ) : ℂ) * sqgGradSymbol i j n * c‖ ^ 2
+    ≤ Real.exp (-1) / t * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have : sqgGradSymbol i j 0 = 0 := by
+      unfold sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [this, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have : 0 ≤ Real.exp (-1) / t * ‖c‖ ^ 2 :=
+      mul_nonneg (div_nonneg (Real.exp_pos _).le ht.le) (sq_nonneg _)
+    linarith
+  · -- ‖heat·∂u·c‖² = heat²·‖∂u‖²·‖c‖²
+    rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+    have hgrad := sqgGrad_norm_le hn i j
+    have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+    have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hgrad_sq_le : ‖sqgGradSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+      sq_le_sq' (by linarith [norm_nonneg (sqgGradSymbol i j n)]) hgrad
+    have hL_sq_heat := latticeNorm_sq_mul_heat_le ht n
+    -- Goal: heat² · ‖∂u‖² · ‖c‖² ≤ exp(-1)/t · ‖c‖²
+    calc (heatSymbol t n) ^ 2 * ‖sqgGradSymbol i j n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (heatSymbol t n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_left hgrad_sq_le (sq_nonneg _)
+      _ = heatSymbol t n * ((latticeNorm n) ^ 2 * heatSymbol t n) * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ heatSymbol t n * (Real.exp (-1) / t) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_left hL_sq_heat hheat_nn
+      _ ≤ 1 * (Real.exp (-1) / t) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_right hheat_le
+          exact div_nonneg (Real.exp_pos _).le ht.le
+      _ = Real.exp (-1) / t * ‖c‖ ^ 2 := by ring
+
+/-- **Heat-smoothed SQG strain L² bound.** Analogous to the velocity
+gradient bound. -/
+theorem heat_smoothed_sqgStrain_L2_mode {t : ℝ} (ht : 0 < t)
+    (n : Fin 2 → ℤ) (i j : Fin 2) (c : ℂ) :
+    ‖((heatSymbol t n : ℝ) : ℂ) * sqgStrainSymbol i j n * c‖ ^ 2
+    ≤ Real.exp (-1) / t * ‖c‖ ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    have : sqgStrainSymbol i j 0 = 0 := by
+      unfold sqgStrainSymbol sqgGradSymbol derivSymbol rieszSymbol; simp
+    rw [this, mul_zero, zero_mul, norm_zero, sq, mul_zero]
+    have : 0 ≤ Real.exp (-1) / t * ‖c‖ ^ 2 :=
+      mul_nonneg (div_nonneg (Real.exp_pos _).le ht.le) (sq_nonneg _)
+    linarith
+  · rw [norm_mul, norm_mul, mul_pow, mul_pow, Complex.norm_real,
+      Real.norm_of_nonneg (heatSymbol_nonneg t n)]
+    have hstrain := sqgStrain_norm_le hn i j
+    have hheat_nn : 0 ≤ heatSymbol t n := heatSymbol_nonneg t n
+    have hheat_le : heatSymbol t n ≤ 1 := heatSymbol_le_one ht.le n
+    have hc_nn : 0 ≤ ‖c‖ ^ 2 := sq_nonneg _
+    have hstrain_sq_le : ‖sqgStrainSymbol i j n‖ ^ 2 ≤ (latticeNorm n) ^ 2 :=
+      sq_le_sq' (by linarith [norm_nonneg (sqgStrainSymbol i j n)]) hstrain
+    have hL_sq_heat := latticeNorm_sq_mul_heat_le ht n
+    calc (heatSymbol t n) ^ 2 * ‖sqgStrainSymbol i j n‖ ^ 2 * ‖c‖ ^ 2
+        ≤ (heatSymbol t n) ^ 2 * (latticeNorm n) ^ 2 * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_left hstrain_sq_le (sq_nonneg _)
+      _ = heatSymbol t n * ((latticeNorm n) ^ 2 * heatSymbol t n) * ‖c‖ ^ 2 := by
+          rw [sq]; ring
+      _ ≤ heatSymbol t n * (Real.exp (-1) / t) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_left hL_sq_heat hheat_nn
+      _ ≤ 1 * (Real.exp (-1) / t) * ‖c‖ ^ 2 := by
+          apply mul_le_mul_of_nonneg_right _ hc_nn
+          apply mul_le_mul_of_nonneg_right hheat_le
+          exact div_nonneg (Real.exp_pos _).le ht.le
+      _ = Real.exp (-1) / t * ‖c‖ ^ 2 := by ring
+
 /-! ## Summary: Full curvature budget at all Sobolev levels
 
 The library now provides a complete Fourier-space curvature budget:
