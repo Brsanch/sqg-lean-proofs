@@ -9990,4 +9990,145 @@ theorem sqg_regularity_scaled_finiteSupport
   sqg_regularity_scaled θ₀ c hc
     (hsSeminormSq_summable_of_finite_support 1 θ₀ S hS)
 
+/-! ### §10.26 Concrete trigonometric polynomial witness class
+
+§10.25 left the user to verify `mFourierCoeff θ₀ n = 0` for `n ∉ S`
+themselves. This section produces a concrete constructor `trigPoly`
+that automatically satisfies the vanishing hypothesis.
+
+Building blocks:
+- `mFourierCoeff_add` — additivity through the `mFourierBasis.repr`
+  linear isometry.
+- `mFourierCoeff_zero_lp` — generalization of `mFourierCoeff_zero` via
+  `map_zero` on the basis representation.
+- `mFourierCoeff_finset_sum` — finite-sum extension by induction.
+- `mFourierCoeff_mFourierLp` — single basis element gives a Kronecker
+  delta via `HilbertBasis.repr_self` + `lp.single_apply` + `Pi.single`.
+- `trigPoly S a := ∑ n ∈ S, a n • mFourierLp 2 n` — concrete trig poly
+  on `𝕋²`.
+- `mFourierCoeff_trigPoly` — closed-form `if m ∈ S then a m else 0`.
+
+The capstone `sqg_regularity_trigPoly` produces uniform Ḣˢ bounds on
+`[0, 2]` for `θ(τ) = c(τ) • trigPoly S a` with no user-side
+verification of Fourier support — only `S`, `a`, and `‖c τ‖ ≤ 1`. -/
+
+theorem mFourierCoeff_zero_lp
+    {d : Type*} [Fintype d]
+    (n : d → ℤ) :
+    mFourierCoeff
+        (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus d))) n = 0 := by
+  rw [← mFourierBasis_repr, map_zero]
+  rfl
+
+theorem mFourierCoeff_add
+    {d : Type*} [Fintype d]
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : d → ℤ) :
+    mFourierCoeff (f + g : Lp ℂ 2 _) m
+      = mFourierCoeff f m + mFourierCoeff g m := by
+  rw [← mFourierBasis_repr (f + g) m,
+      ← mFourierBasis_repr f m,
+      ← mFourierBasis_repr g m, map_add]
+  rfl
+
+theorem mFourierCoeff_finset_sum
+    {d : Type*} [Fintype d]
+    {ι : Type*}
+    (S : Finset ι)
+    (f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : d → ℤ) :
+    mFourierCoeff (∑ n ∈ S, f n) m = ∑ n ∈ S, mFourierCoeff (f n) m := by
+  classical
+  induction S using Finset.induction with
+  | empty =>
+    rw [Finset.sum_empty, Finset.sum_empty]
+    exact mFourierCoeff_zero_lp m
+  | @insert n₀ T hn₀ ih =>
+    rw [Finset.sum_insert hn₀, mFourierCoeff_add, ih, Finset.sum_insert hn₀]
+
+/-- **Single basis element gives a Kronecker delta.** For the
+`n`-th element of the orthonormal Fourier basis,
+`mFourierCoeff (mFourierLp 2 n) m = if m = n then 1 else 0`.
+
+Proof: `mFourierBasis.repr (mFourierBasis n) = lp.single 2 n 1` by
+`HilbertBasis.repr_self`, and `coe_mFourierBasis` identifies
+`mFourierBasis n = mFourierLp 2 n`. Evaluating the `lp.single` at `m`
+gives the Pi.single Kronecker delta. -/
+theorem mFourierCoeff_mFourierLp
+    {d : Type*} [Fintype d] [DecidableEq (d → ℤ)]
+    (n m : d → ℤ) :
+    mFourierCoeff (mFourierLp 2 n :
+        Lp ℂ 2 (volume : Measure (UnitAddTorus d))) m
+      = if m = n then 1 else 0 := by
+  have h_basis : (mFourierLp 2 n :
+      Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+      = mFourierBasis (d := d) n := by
+    rw [coe_mFourierBasis]
+  rw [h_basis, ← mFourierBasis_repr,
+      HilbertBasis.repr_self, lp.single_apply, Pi.single_apply]
+
+/-- **Trigonometric polynomial on `𝕋²` from finite Fourier data.**
+`trigPoly S a := ∑ n ∈ S, a n • mFourierLp 2 n`. Concrete `Lp ℂ 2`
+element with prescribed Fourier coefficients on `S` and zero elsewhere. -/
+noncomputable def trigPoly
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  ∑ n ∈ S, a n • (mFourierLp 2 n : Lp ℂ 2 _)
+
+/-- **Closed-form Fourier coefficients of a trigonometric polynomial.**
+`mFourierCoeff (trigPoly S a) m = if m ∈ S then a m else 0`. -/
+theorem mFourierCoeff_trigPoly
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    mFourierCoeff (trigPoly S a) m = if m ∈ S then a m else 0 := by
+  unfold trigPoly
+  rw [mFourierCoeff_finset_sum]
+  have h_terms : ∀ n ∈ S,
+      mFourierCoeff (a n • (mFourierLp 2 n :
+          Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) m
+        = if m = n then a n else 0 := by
+    intro n _
+    rw [mFourierCoeff_const_smul, mFourierCoeff_mFourierLp]
+    split_ifs with h
+    · rw [mul_one]
+    · rw [mul_zero]
+  rw [Finset.sum_congr rfl h_terms]
+  exact Finset.sum_ite_eq S m a
+
+/-- **Trigonometric polynomial vanishes outside its support set.** -/
+theorem mFourierCoeff_trigPoly_eq_zero_of_not_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ)
+    {m : Fin 2 → ℤ} (hm : m ∉ S) :
+    mFourierCoeff (trigPoly S a) m = 0 := by
+  rw [mFourierCoeff_trigPoly, if_neg hm]
+
+/-- **Capstone — scaled trig-polynomial class is regular on `[0, 2]`,
+no user verification needed.**
+
+For any finite Fourier support `S ⊆ ℤ²`, any complex coefficients
+`a : (Fin 2 → ℤ) → ℂ`, and any `c : ℝ → ℂ` with `‖c(τ)‖ ≤ 1` for
+`τ ≥ 0`, the family
+
+  `θ(τ) = c(τ) • trigPoly S a`
+
+enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]`. The Fourier-support
+hypothesis of `sqg_regularity_scaled_finiteSupport` is discharged by
+`mFourierCoeff_trigPoly_eq_zero_of_not_mem`.
+
+This is the **plug-and-play** form: users supply only `S`, `a`, `c`,
+and `hc`. No summability, no Fourier-vanishing verification. -/
+theorem sqg_regularity_trigPoly
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ)
+    (c : ℝ → ℂ)
+    (hc : ∀ τ : ℝ, 0 ≤ τ → ‖c τ‖ ≤ 1) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((fun τ : ℝ =>
+          (c τ • trigPoly S a : Lp ℂ 2 _)) t) ≤ M :=
+  sqg_regularity_scaled_finiteSupport (trigPoly S a) S
+    (fun n hn => mFourierCoeff_trigPoly_eq_zero_of_not_mem S a hn)
+    c hc
+
 end SqgIdentity
