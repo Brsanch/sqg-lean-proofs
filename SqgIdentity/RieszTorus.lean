@@ -9114,9 +9114,10 @@ theorem sqgConcreteMollifier_deriv_nonpos_of_mem_right_collar
 `intervalIntegral.integral_eq_sub_of_hasDerivAt` on every collar. -/
 theorem sqgConcreteMollifier_hasDerivAt (ε s t x : ℝ) :
     HasDerivAt (sqgConcreteMollifier ε s t)
-      (deriv (sqgConcreteMollifier ε s t) x) x :=
-  ((sqgConcreteMollifier_contDiff ε s t).differentiable one_ne_zero)
-    .differentiableAt.hasDerivAt
+      (deriv (sqgConcreteMollifier ε s t) x) x := by
+  have hd : Differentiable ℝ (sqgConcreteMollifier ε s t) :=
+    (sqgConcreteMollifier_contDiff ε s t).differentiable one_ne_zero
+  exact (hd x).hasDerivAt
 
 /-- **Plumbing — derivative is globally interval-integrable.** `sqgConcreteMollifier`
 is `C¹`, so `deriv` is continuous and hence interval-integrable on any `[a, b]`. -/
