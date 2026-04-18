@@ -9990,15 +9990,72 @@ theorem sqg_regularity_scaled_finiteSupport
   sqg_regularity_scaled θ₀ c hc
     (hsSeminormSq_summable_of_finite_support 1 θ₀ S hS)
 
-/-! ### §10.26 Single Fourier mode constructor
+/-! ### §10.26 Concrete trigonometric polynomial witness class
 
-A specialization to `S = {m₀}` of the trig-polynomial class. We avoid
-the general Finset-sum machinery here (which trips Lean's coercion
-elaboration on `↑↑(∑ ...)` vs `∑ ↑↑(...)`) and ship the single-mode
-case, which suffices for the §10.27 single-mode SQG witness.
+The earlier attempt at a general Finset-sum trigPoly result hit Lean's
+auto-coercion elaborator: `Lp.coeFn_add` is only `=ᵐ[μ]`, not `rfl`,
+so `↑↑(f + g)` and `↑↑f + ↑↑g` are propositionally distinct as
+functions even though `mFourierCoeff` reads them identically (via
+`integral_congr_ae`). Pattern-rewriting `mFourierCoeff_add` on the
+post-`Finset.sum_insert` goal failed because Lean had distributed the
+coercion inward.
 
-A concrete `singleMode m₀ a : Lp ℂ 2 (𝕋²)` is the Lp element with
-Fourier coefficient `a` at mode `m₀` and zero elsewhere. -/
+The clean fix: promote `mFourierCoeff` (at a fixed mode `m`) to a
+`LinearMap : Lp ℂ 2 _ →ₗ[ℂ] ℂ`. Once we have this, `_root_.map_sum`,
+`_root_.map_add`, and `_root_.map_zero` apply automatically without any
+coercion friction. Building blocks:
+
+- `mFourierCoeffLM m` — the `LinearMap` form. Linearity proved through
+  `mFourierBasis.repr` (additive) and `mFourierCoeff_const_smul`.
+- `mFourierCoeff_finset_sum` — corollary of `_root_.map_sum`.
+- `mFourierCoeff_mFourierLp` — single basis element gives a Kronecker
+  delta via `HilbertBasis.repr_self`.
+- `singleMode m₀ a := a • mFourierLp 2 m₀` — single Fourier mode.
+- `trigPoly S a := ∑ n ∈ S, a n • mFourierLp 2 n` — concrete trig
+  polynomial on `𝕋²`.
+- Closed-form Fourier coefficient identities for both, derived without
+  relying on `Lp` coercion gymnastics. -/
+
+/-- **Fourier coefficient at fixed mode is linear in the function.**
+Linear-map form of `mFourierCoeff`, eligible for `_root_.map_sum`,
+`_root_.map_add`, and `_root_.map_zero` automatically. -/
+noncomputable def mFourierCoeffLM
+    {d : Type*} [Fintype d] (m : d → ℤ) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus d)) →ₗ[ℂ] ℂ where
+  toFun f := mFourierCoeff f m
+  map_add' f g := by
+    have h_fg : mFourierCoeff (f + g) m = mFourierBasis.repr (f + g) m :=
+      (mFourierBasis_repr _ _).symm
+    have h_f : mFourierCoeff f m = mFourierBasis.repr f m :=
+      (mFourierBasis_repr _ _).symm
+    have h_g : mFourierCoeff g m = mFourierBasis.repr g m :=
+      (mFourierBasis_repr _ _).symm
+    show mFourierCoeff (f + g) m = mFourierCoeff f m + mFourierCoeff g m
+    rw [h_fg, h_f, h_g, map_add]
+    rfl
+  map_smul' c f := by
+    show mFourierCoeff (c • f) m = c • mFourierCoeff f m
+    rw [mFourierCoeff_const_smul, smul_eq_mul]
+
+@[simp]
+theorem mFourierCoeffLM_apply
+    {d : Type*} [Fintype d] (m : d → ℤ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d))) :
+    mFourierCoeffLM m f = mFourierCoeff f m := rfl
+
+/-- **Fourier coefficient of a finite sum is the finite sum of Fourier
+coefficients.** Direct corollary of `_root_.map_sum` on
+`mFourierCoeffLM`. -/
+theorem mFourierCoeff_finset_sum
+    {d : Type*} [Fintype d]
+    {ι : Type*}
+    (S : Finset ι)
+    (f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : d → ℤ) :
+    mFourierCoeff (∑ n ∈ S, f n) m = ∑ n ∈ S, mFourierCoeff (f n) m := by
+  have h := _root_.map_sum (mFourierCoeffLM (d := d) m) f S
+  simp only [mFourierCoeffLM_apply] at h
+  exact h
 
 /-- **Single basis element gives a Kronecker delta.**
 `mFourierCoeff (mFourierLp 2 n) m = if m = n then 1 else 0`.
@@ -10066,6 +10123,68 @@ theorem sqg_regularity_singleMode
     (fun n hn => by
       rw [Finset.notMem_singleton] at hn
       exact mFourierCoeff_singleMode_eq_zero_of_ne m₀ a hn)
+    c hc
+
+/-- **Trigonometric polynomial on `𝕋²` from finite Fourier data.**
+`trigPoly S a := ∑ n ∈ S, a n • mFourierLp 2 n`. Concrete `Lp ℂ 2`
+element with prescribed Fourier coefficients on `S` and zero elsewhere. -/
+noncomputable def trigPoly
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  ∑ n ∈ S, a n • (mFourierLp 2 n : Lp ℂ 2 _)
+
+/-- **Closed-form Fourier coefficients of a trigonometric polynomial.**
+`mFourierCoeff (trigPoly S a) m = if m ∈ S then a m else 0`.
+
+Proof: `mFourierCoeff_finset_sum` (via `_root_.map_sum` on the linear
+form `mFourierCoeffLM`) reduces the LHS to a finite sum of scaled
+Kronecker deltas, then `Finset.sum_ite_eq` collapses to the closed
+form. -/
+theorem mFourierCoeff_trigPoly
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    mFourierCoeff (trigPoly S a) m = if m ∈ S then a m else 0 := by
+  unfold trigPoly
+  rw [mFourierCoeff_finset_sum]
+  have h_terms : ∀ n ∈ S,
+      mFourierCoeff (a n • (mFourierLp 2 n :
+          Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) m
+        = if m = n then a n else 0 := by
+    intro n _
+    rw [mFourierCoeff_const_smul, mFourierCoeff_mFourierLp]
+    split_ifs with h
+    · rw [mul_one]
+    · rw [mul_zero]
+  rw [Finset.sum_congr rfl h_terms]
+  exact Finset.sum_ite_eq S m a
+
+/-- **Trigonometric polynomial vanishes outside its support set.** -/
+theorem mFourierCoeff_trigPoly_eq_zero_of_not_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ)
+    {m : Fin 2 → ℤ} (hm : m ∉ S) :
+    mFourierCoeff (trigPoly S a) m = 0 := by
+  rw [mFourierCoeff_trigPoly, if_neg hm]
+
+/-- **Capstone — scaled trig-polynomial class is regular on `[0, 2]`,
+plug-and-play form.**
+
+For any finite Fourier support `S ⊆ ℤ²`, any complex coefficients
+`a : (Fin 2 → ℤ) → ℂ`, and any `c : ℝ → ℂ` with `‖c(τ)‖ ≤ 1` for
+`τ ≥ 0`, the family `θ(τ) = c(τ) • trigPoly S a` enjoys uniform Ḣˢ
+bounds for every `s ∈ [0, 2]`. The Fourier-support hypothesis is
+automatic via `mFourierCoeff_trigPoly_eq_zero_of_not_mem`. -/
+theorem sqg_regularity_trigPoly
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ)
+    (c : ℝ → ℂ)
+    (hc : ∀ τ : ℝ, 0 ≤ τ → ‖c τ‖ ≤ 1) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((fun τ : ℝ =>
+          (c τ • trigPoly S a : Lp ℂ 2 _)) t) ≤ M :=
+  sqg_regularity_scaled_finiteSupport (trigPoly S a) S
+    (fun n hn => mFourierCoeff_trigPoly_eq_zero_of_not_mem S a hn)
     c hc
 
 end SqgIdentity
