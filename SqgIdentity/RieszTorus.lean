@@ -9369,4 +9369,246 @@ theorem sqgConcreteMollifier_integral_collar_split
     ring
   rw [h_outer_left, h_outer_right, h_mid, zero_add, add_zero]
 
+/-! #### Tier 5 — collar squeeze: each collar integral tends to the endpoint value -/
+
+/-- **Tier 5 — Left-collar squeeze.** As `ε → 0⁺`, the left-collar integral
+of `deriv ψ_ε · F` tends to `F(s)`, when `F` is continuous.
+
+Proof sketch: `∫ (s-ε)..s, deriv ψ_ε · F − F(s) = ∫ (s-ε)..s, deriv ψ_ε · (F − F(s))`
+using the Tier 3 mass identity `∫ deriv ψ_ε = 1`. The remainder is bounded by
+`sup_{τ ∈ [s−ε, s]} ‖F(τ) − F(s)‖ · 1`, which tends to 0 by continuity of F. -/
+theorem sqgConcreteMollifier_left_collar_tendsto
+    {s t : ℝ} (hst : s ≤ t) {F : ℝ → ℂ} (hF : Continuous F) :
+    Filter.Tendsto
+      (fun ε => ∫ τ in (s - ε)..s,
+          deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (F s)) := by
+  rw [Metric.tendsto_nhdsWithin_nhds]
+  intro δ hδ
+  have hFc : ContinuousAt F s := hF.continuousAt
+  rcases Metric.continuousAt_iff.mp hFc (δ / 2) (by linarith) with ⟨η, hη_pos, hη⟩
+  refine ⟨η, hη_pos, ?_⟩
+  intro ε hε hε_dist
+  have hε_pos : (0 : ℝ) < ε := hε
+  have hε_lt_η : ε < η := by
+    rw [Real.dist_eq, sub_zero, abs_of_pos hε_pos] at hε_dist
+    exact hε_dist
+  have hab : s - ε ≤ s := by linarith
+  -- Pointwise continuity bound on [s - ε, s]
+  have hF_bound : ∀ τ ∈ Set.Icc (s - ε) s, ‖F τ - F s‖ ≤ δ / 2 := by
+    intro τ hτ
+    have hdτ : dist τ s < η := by
+      rw [Real.dist_eq]
+      have h1 : τ - s ≤ 0 := by linarith [hτ.2]
+      have h2 : s - τ ≤ ε := by linarith [hτ.1]
+      rw [abs_of_nonpos h1]; linarith
+    have := hη hdτ
+    rw [dist_eq_norm] at this
+    exact this.le
+  -- Abbreviations
+  set ψC : ℝ → ℂ := fun x => (sqgConcreteMollifier ε s t x : ℂ) with hψC
+  have hderivC : ∀ x, deriv ψC x = ((deriv (sqgConcreteMollifier ε s t) x : ℝ) : ℂ) :=
+    sqgConcreteMollifier_deriv_complex ε s t
+  have hderivC_fun : deriv ψC = fun x => ((deriv (sqgConcreteMollifier ε s t) x : ℝ) : ℂ) :=
+    funext hderivC
+  -- Tier 3 mass identities, lifted to ℂ
+  have hmass_R : ∫ τ in (s - ε)..s, deriv (sqgConcreteMollifier ε s t) τ = 1 :=
+    sqgConcreteMollifier_integral_deriv_left_collar hε_pos hst
+  have hmass_C : ∫ τ in (s - ε)..s, deriv ψC τ = (1 : ℂ) := by
+    rw [hderivC_fun, intervalIntegral.integral_ofReal, hmass_R, Complex.ofReal_one]
+  -- Integrability of key integrands
+  have hII_deriv : IntervalIntegrable (deriv ψC) volume (s - ε) s := by
+    rw [hderivC_fun]
+    exact (Complex.continuous_ofReal.comp
+      ((sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one)).intervalIntegrable _ _
+  have hII_prod : IntervalIntegrable (fun τ => deriv ψC τ * F τ) volume (s - ε) s :=
+    sqgConcreteMollifier_product_intervalIntegrable ε s t hF _ _
+  have hII_prodFs : IntervalIntegrable (fun τ => deriv ψC τ * F s) volume (s - ε) s :=
+    hII_deriv.mul_const _
+  -- Rewrite the difference
+  have hΔ : (∫ τ in (s - ε)..s, deriv ψC τ * F τ) - F s
+      = ∫ τ in (s - ε)..s, deriv ψC τ * (F τ - F s) := by
+    have h1 : (∫ τ in (s - ε)..s, deriv ψC τ * F τ)
+              - (∫ τ in (s - ε)..s, deriv ψC τ * F s)
+              = ∫ τ in (s - ε)..s, deriv ψC τ * (F τ - F s) := by
+      rw [← intervalIntegral.integral_sub hII_prod hII_prodFs]
+      congr 1; funext τ; ring
+    have h2 : (∫ τ in (s - ε)..s, deriv ψC τ * F s) = F s := by
+      rw [intervalIntegral.integral_mul_const, hmass_C, one_mul]
+    rw [← h2]; exact h1
+  -- Dominating function g τ = deriv ψ_R τ * (δ/2)
+  set g : ℝ → ℝ := fun τ => deriv (sqgConcreteMollifier ε s t) τ * (δ / 2) with hg
+  have hII_g : IntervalIntegrable g volume (s - ε) s := by
+    have := (sqgConcreteMollifier_deriv_intervalIntegrable ε s t (s - ε) s)
+    exact this.mul_const _
+  have h_norm_bound : ∀ᵐ τ ∂volume, τ ∈ Set.Ioc (s - ε) s →
+      ‖deriv ψC τ * (F τ - F s)‖ ≤ g τ := by
+    refine Filter.Eventually.of_forall (fun τ hτ => ?_)
+    have hτ_Icc : τ ∈ Set.Icc (s - ε) s := ⟨hτ.1.le, hτ.2⟩
+    rw [norm_mul, hderivC τ, Complex.norm_real, Real.norm_eq_abs]
+    have h_nonneg : 0 ≤ deriv (sqgConcreteMollifier ε s t) τ := by
+      rcases eq_or_lt_of_le hτ.2 with heq | hlt
+      · rw [heq]
+        exact le_of_eq (sqgConcreteMollifier_deriv_zero_on_mid_Icc
+                         hε_pos hst ⟨le_refl _, hst⟩).symm
+      · exact sqgConcreteMollifier_deriv_nonneg_of_mem_left_collar
+                ⟨hτ.1, hlt⟩ hε_pos hst
+    rw [abs_of_nonneg h_nonneg]
+    show deriv (sqgConcreteMollifier ε s t) τ * ‖F τ - F s‖
+        ≤ deriv (sqgConcreteMollifier ε s t) τ * (δ / 2)
+    exact mul_le_mul_of_nonneg_left (hF_bound τ hτ_Icc) h_nonneg
+  have h_int_bound :
+      ‖∫ τ in (s - ε)..s, deriv ψC τ * (F τ - F s)‖
+        ≤ ∫ τ in (s - ε)..s, g τ :=
+    intervalIntegral.norm_integral_le_of_norm_le hab h_norm_bound hII_g
+  have h_g_int : (∫ τ in (s - ε)..s, g τ) = δ / 2 := by
+    show (∫ τ in (s - ε)..s,
+            deriv (sqgConcreteMollifier ε s t) τ * (δ / 2)) = δ / 2
+    rw [intervalIntegral.integral_mul_const, hmass_R, one_mul]
+  -- Finish
+  rw [dist_eq_norm, hΔ]
+  calc ‖∫ τ in (s - ε)..s, deriv ψC τ * (F τ - F s)‖
+      ≤ ∫ τ in (s - ε)..s, g τ := h_int_bound
+    _ = δ / 2 := h_g_int
+    _ < δ := by linarith
+
+/-- **Tier 5 — Right-collar squeeze.** As `ε → 0⁺`, the right-collar integral
+of `deriv ψ_ε · F` tends to `−F(t)`. Symmetric to the left collar; derivative
+is non-positive and mass identity is `−1` instead of `1`. -/
+theorem sqgConcreteMollifier_right_collar_tendsto
+    {s t : ℝ} (hst : s ≤ t) {F : ℝ → ℂ} (hF : Continuous F) :
+    Filter.Tendsto
+      (fun ε => ∫ τ in t..(t + ε),
+          deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (- F t)) := by
+  rw [Metric.tendsto_nhdsWithin_nhds]
+  intro δ hδ
+  have hFc : ContinuousAt F t := hF.continuousAt
+  rcases Metric.continuousAt_iff.mp hFc (δ / 2) (by linarith) with ⟨η, hη_pos, hη⟩
+  refine ⟨η, hη_pos, ?_⟩
+  intro ε hε hε_dist
+  have hε_pos : (0 : ℝ) < ε := hε
+  have hε_lt_η : ε < η := by
+    rw [Real.dist_eq, sub_zero, abs_of_pos hε_pos] at hε_dist
+    exact hε_dist
+  have hab : t ≤ t + ε := by linarith
+  have hF_bound : ∀ τ ∈ Set.Icc t (t + ε), ‖F τ - F t‖ ≤ δ / 2 := by
+    intro τ hτ
+    have hdτ : dist τ t < η := by
+      rw [Real.dist_eq]
+      have h1 : 0 ≤ τ - t := by linarith [hτ.1]
+      have h2 : τ - t ≤ ε := by linarith [hτ.2]
+      rw [abs_of_nonneg h1]; linarith
+    have := hη hdτ
+    rw [dist_eq_norm] at this
+    exact this.le
+  set ψC : ℝ → ℂ := fun x => (sqgConcreteMollifier ε s t x : ℂ) with hψC
+  have hderivC : ∀ x, deriv ψC x = ((deriv (sqgConcreteMollifier ε s t) x : ℝ) : ℂ) :=
+    sqgConcreteMollifier_deriv_complex ε s t
+  have hderivC_fun : deriv ψC = fun x => ((deriv (sqgConcreteMollifier ε s t) x : ℝ) : ℂ) :=
+    funext hderivC
+  have hmass_R : ∫ τ in t..(t + ε), deriv (sqgConcreteMollifier ε s t) τ = -1 :=
+    sqgConcreteMollifier_integral_deriv_right_collar hε_pos hst
+  have hmass_C : ∫ τ in t..(t + ε), deriv ψC τ = (-1 : ℂ) := by
+    rw [hderivC_fun, intervalIntegral.integral_ofReal, hmass_R]
+    push_cast; ring
+  have hII_deriv : IntervalIntegrable (deriv ψC) volume t (t + ε) := by
+    rw [hderivC_fun]
+    exact (Complex.continuous_ofReal.comp
+      ((sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one)).intervalIntegrable _ _
+  have hII_prod : IntervalIntegrable (fun τ => deriv ψC τ * F τ) volume t (t + ε) :=
+    sqgConcreteMollifier_product_intervalIntegrable ε s t hF _ _
+  have hII_prodFt : IntervalIntegrable (fun τ => deriv ψC τ * F t) volume t (t + ε) :=
+    hII_deriv.mul_const _
+  -- Difference: ∫ deriv ψ · F - (-F t) = ∫ deriv ψ · F + F t
+  --           = ∫ deriv ψ · F - F t · ∫ deriv ψ       [using ∫ deriv ψ = -1]
+  --           = ∫ deriv ψ · (F - F t)
+  have hΔ : (∫ τ in t..(t + ε), deriv ψC τ * F τ) - (- F t)
+      = ∫ τ in t..(t + ε), deriv ψC τ * (F τ - F t) := by
+    have h1 : (∫ τ in t..(t + ε), deriv ψC τ * F τ)
+              - (∫ τ in t..(t + ε), deriv ψC τ * F t)
+              = ∫ τ in t..(t + ε), deriv ψC τ * (F τ - F t) := by
+      rw [← intervalIntegral.integral_sub hII_prod hII_prodFt]
+      congr 1; funext τ; ring
+    have h2 : (∫ τ in t..(t + ε), deriv ψC τ * F t) = - F t := by
+      rw [intervalIntegral.integral_mul_const, hmass_C]
+      ring
+    rw [show (- F t) = (∫ τ in t..(t + ε), deriv ψC τ * F t) from h2.symm]
+    exact h1
+  set g : ℝ → ℝ := fun τ => - deriv (sqgConcreteMollifier ε s t) τ * (δ / 2) with hg
+  have hII_g : IntervalIntegrable g volume t (t + ε) := by
+    have := (sqgConcreteMollifier_deriv_intervalIntegrable ε s t t (t + ε))
+    exact this.neg.mul_const _
+  have h_norm_bound : ∀ᵐ τ ∂volume, τ ∈ Set.Ioc t (t + ε) →
+      ‖deriv ψC τ * (F τ - F t)‖ ≤ g τ := by
+    refine Filter.Eventually.of_forall (fun τ hτ => ?_)
+    have hτ_Icc : τ ∈ Set.Icc t (t + ε) := ⟨hτ.1.le, hτ.2⟩
+    rw [norm_mul, hderivC τ, Complex.norm_real, Real.norm_eq_abs]
+    have h_nonpos : deriv (sqgConcreteMollifier ε s t) τ ≤ 0 := by
+      rcases eq_or_lt_of_le hτ.2 with heq | hlt
+      · rw [heq]
+        exact le_of_eq (sqgConcreteMollifier_deriv_zero_at_t_plus_ε hε_pos)
+      · exact sqgConcreteMollifier_deriv_nonpos_of_mem_right_collar
+                ⟨hτ.1, hlt⟩ hε_pos hst
+    rw [abs_of_nonpos h_nonpos]
+    have hneg_nonneg : 0 ≤ - deriv (sqgConcreteMollifier ε s t) τ := by linarith
+    show - deriv (sqgConcreteMollifier ε s t) τ * ‖F τ - F t‖
+        ≤ - deriv (sqgConcreteMollifier ε s t) τ * (δ / 2)
+    exact mul_le_mul_of_nonneg_left (hF_bound τ hτ_Icc) hneg_nonneg
+  have h_int_bound :
+      ‖∫ τ in t..(t + ε), deriv ψC τ * (F τ - F t)‖
+        ≤ ∫ τ in t..(t + ε), g τ :=
+    intervalIntegral.norm_integral_le_of_norm_le hab h_norm_bound hII_g
+  have h_g_int : (∫ τ in t..(t + ε), g τ) = δ / 2 := by
+    show (∫ τ in t..(t + ε),
+            - deriv (sqgConcreteMollifier ε s t) τ * (δ / 2)) = δ / 2
+    rw [intervalIntegral.integral_mul_const,
+        show (fun τ => - deriv (sqgConcreteMollifier ε s t) τ) =
+             fun τ => (-1 : ℝ) * deriv (sqgConcreteMollifier ε s t) τ from by funext; ring,
+        intervalIntegral.integral_const_mul, hmass_R]
+    ring
+  rw [dist_eq_norm, hΔ]
+  calc ‖∫ τ in t..(t + ε), deriv ψC τ * (F τ - F t)‖
+      ≤ ∫ τ in t..(t + ε), g τ := h_int_bound
+    _ = δ / 2 := h_g_int
+    _ < δ := by linarith
+
+/-! #### Tier 6 — final assembly: `SqgFourierContinuous → IsSqgCollarLhsCondition` -/
+
+/-- **Tier 6 (main theorem of §10.22) — `SqgFourierContinuous` implies
+`IsSqgCollarLhsCondition`.** Combines Tier 4's integral-split with Tier 5's
+two collar-squeeze results to deliver the Phase 2.3.b bridge needed by
+`IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest`. -/
+theorem SqgFourierContinuous.toCollarLhsCondition
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hθ : SqgFourierContinuous θ) :
+    IsSqgCollarLhsCondition θ := by
+  intro m s t _hs hst
+  have hF : Continuous (fun τ => mFourierCoeff (θ τ) m) := hθ m
+  have h_split : ∀ ε > 0,
+      (∫ τ, deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ
+              * mFourierCoeff (θ τ) m)
+        = (∫ τ in (s - ε)..s,
+            deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ
+              * mFourierCoeff (θ τ) m)
+        + (∫ τ in t..(t + ε),
+            deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ
+              * mFourierCoeff (θ τ) m) :=
+    fun ε hε => sqgConcreteMollifier_integral_collar_split hε hst hF
+  have h_eq : (fun ε => ∫ τ,
+      deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * mFourierCoeff (θ τ) m)
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε => (∫ τ in (s - ε)..s,
+          deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * mFourierCoeff (θ τ) m)
+        + (∫ τ in t..(t + ε),
+            deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ
+              * mFourierCoeff (θ τ) m)) := by
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    exact h_split ε (Set.mem_Ioi.mp hε)
+  rw [show mFourierCoeff (θ s) m - mFourierCoeff (θ t) m
+        = mFourierCoeff (θ s) m + (- mFourierCoeff (θ t) m) from by ring]
+  exact (Filter.Tendsto.congr' h_eq.symm
+          ((sqgConcreteMollifier_left_collar_tendsto hst hF).add
+            (sqgConcreteMollifier_right_collar_tendsto hst hF)))
+
 end SqgIdentity
