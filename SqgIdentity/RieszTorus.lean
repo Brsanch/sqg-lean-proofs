@@ -8325,12 +8325,13 @@ def IsSqgTimeTestFunction (ψ : ℝ → ℂ) : Prop :=
 For every time test function `ψ` and every Fourier mode `m`,
 
   `∫ τ, (deriv ψ τ) · θ̂(m, τ) dτ`
-  `  + ∫ τ, ψ τ · sqgNonlinearFlux(θ τ)(u τ)(m) dτ = 0`.
+  `  = ∫ τ, ψ τ · sqgNonlinearFlux(θ τ)(u τ)(m) dτ`.
 
-Integrating by parts in time (formally — because `ψ` is compactly
-supported the boundary terms vanish) this is the Fourier projection of
+The SQG Fourier-mode ODE is `∂_τ θ̂(m, τ) = −sqgNonlinearFlux(θ τ)(u τ)(m)`.
+Pairing both sides with `ψ` and integrating by parts in time (boundary
+terms vanish since `ψ` is compactly supported) gives
 
-  `∫ τ, ψ(τ) · ((∂_τ θ̂)(m, τ) + (u · ∇θ)̂(m, τ)) dτ = 0`
+  `∫ τ, (∂_τ ψ)(τ) · θ̂(m, τ) dτ = ∫ τ, ψ(τ) · (u · ∇θ)̂(m, τ) dτ`
 
 with `(u · ∇θ)̂(m, τ)` identified with
 `sqgNonlinearFlux(θ τ)(u τ)(m)` by the convolution structure of
@@ -8350,7 +8351,7 @@ def IsSqgWeakSolutionTimeTest
   ∀ (ψ : ℝ → ℂ), IsSqgTimeTestFunction ψ →
   ∀ (m : Fin 2 → ℤ),
     (∫ τ, (deriv ψ τ) * mFourierCoeff (θ τ) m)
-      + (∫ τ, ψ τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m) = 0
+      = ∫ τ, ψ τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m
 
 /-- **Nonlinear flux of the zero scalar field vanishes.**
 
@@ -8385,7 +8386,7 @@ Both integrands vanish pointwise:
 * `sqgNonlinearFlux (fun _ => 0) τ u m = sqgNonlinearFlux 0 (u τ) m = 0`
   by `sqgNonlinearFlux_zero_theta`.
 
-So each integral is zero and the weak-form identity reads `0 + 0 = 0`.
+So each integral is zero and the weak-form identity reads `0 = 0`.
 This is the §10.16 counterpart of `IsSqgVelocityComponent.of_zero`. -/
 theorem IsSqgWeakSolutionTimeTest.zero
     (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
@@ -8590,21 +8591,20 @@ For every `s < t`, `ε > 0`, and mode `m`, if `θ` weakly solves SQG
 at the mode level (`IsSqgWeakSolutionTimeTest θ u`) then
 
   `∫ τ, (deriv (sqgMollifier ε s t hst hε) τ) · mFourierCoeff (θ τ) m`
-  `  = −∫ τ, (sqgMollifier ε s t hst hε τ) · sqgNonlinearFlux (θ τ) (u τ) m`.
+  `  = ∫ τ, (sqgMollifier ε s t hst hε τ) · sqgNonlinearFlux (θ τ) (u τ) m`.
 
 Proof: apply the predicate to the mollifier (a valid time test
-function by `sqgMollifier_isSqgTimeTestFunction`) and rearrange. -/
+function by `sqgMollifier_isSqgTimeTestFunction`). -/
 theorem IsSqgWeakSolutionTimeTest.mollifier_identity
     {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     (hweak : IsSqgWeakSolutionTimeTest θ u)
     (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) (m : Fin 2 → ℤ) :
     (∫ τ, (deriv (sqgMollifier ε s t hst hε) τ) * mFourierCoeff (θ τ) m)
-      = -∫ τ, (sqgMollifier ε s t hst hε τ)
-          * sqgNonlinearFlux (θ τ) (fun j => u j τ) m := by
-  have h := hweak (sqgMollifier ε s t hst hε)
+      = ∫ τ, (sqgMollifier ε s t hst hε τ)
+          * sqgNonlinearFlux (θ τ) (fun j => u j τ) m :=
+  hweak (sqgMollifier ε s t hst hε)
     (sqgMollifier_isSqgTimeTestFunction ε s t hst hε) m
-  linear_combination h
 
 /-! ### Not yet provided in §10.16–§10.19
 
