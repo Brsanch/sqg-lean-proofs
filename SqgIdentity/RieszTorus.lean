@@ -10384,4 +10384,174 @@ theorem SqgEvolutionAxioms_strong.singleMode_const
     (fun j _ => isSqgVelocityComponent_singleMode m₀ a j)
     (isSqgWeakSolution_singleMode_const m₀ a)
 
+/-! ### §10.29 Odd-symmetry helpers for antipodal constructions
+
+Helper lemmas used by the antipodal-pair stationary SQG witness (§10.30):
+the basic symbols are **odd** in their lattice argument. These are
+immediate consequences of the defining formulas but are worth carving
+out as named identities for use in algebraic rewrites inside the
+nonlinear-flux computation. -/
+
+/-- **Lattice norm is even.** `latticeNorm (-n) = latticeNorm n` via
+`(-n j)² = (n j)²`. -/
+lemma latticeNorm_neg {d : Type*} [Fintype d] (n : d → ℤ) :
+    latticeNorm (-n) = latticeNorm n := by
+  unfold latticeNorm
+  congr 1
+  refine Finset.sum_congr rfl (fun j _ => ?_)
+  have : ((-n) j : ℝ) = -((n j : ℝ)) := by push_cast [Pi.neg_apply]; ring
+  rw [this, neg_pow, show ((-1 : ℝ)^2) = 1 from by norm_num, one_mul]
+
+/-- **Riesz symbol is odd.** `rieszSymbol j (-n) = -rieszSymbol j n`. -/
+lemma rieszSymbol_neg {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
+    rieszSymbol j (-n) = -rieszSymbol j n := by
+  by_cases hn : n = 0
+  · simp [rieszSymbol, hn]
+  · have hne : (-n) ≠ 0 := fun h => hn (neg_eq_zero.mp h)
+    unfold rieszSymbol
+    rw [if_neg hn, if_neg hne, latticeNorm_neg]
+    have h1 : ((-n) j : ℝ) = -((n j : ℝ)) := by push_cast [Pi.neg_apply]; ring
+    rw [h1]
+    push_cast
+    ring
+
+/-- **SQG velocity symbol is odd.** -/
+lemma sqgVelocitySymbol_neg (j : Fin 2) (n : Fin 2 → ℤ) :
+    sqgVelocitySymbol j (-n) = -sqgVelocitySymbol j n := by
+  unfold sqgVelocitySymbol
+  split_ifs
+  · exact rieszSymbol_neg 1 n
+  · rw [rieszSymbol_neg 0 n, neg_neg]
+
+/-- **Derivative symbol is odd.** -/
+lemma derivSymbol_neg {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
+    derivSymbol j (-n) = -derivSymbol j n := by
+  unfold derivSymbol
+  rw [Pi.neg_apply]
+  push_cast
+  ring
+
+/-! ### §10.30 Antipodal-pair stationary SQG witness
+
+First **multi-mode** stationary SQG solution. Takes a pair of antipodal
+modes `{m₀, -m₀}` (requiring `m₀ ≠ 0` to be genuinely two-mode) and
+arbitrary complex amplitudes `a₁, a₂ : ℂ`:
+
+- `θ = antipodalMode m₀ a₁ a₂ := singleMode m₀ a₁ + singleMode (-m₀) a₂`
+- `u_j = antipodalVelocity m₀ a₁ a₂ j :=
+    singleModeVelocity m₀ a₁ j + singleModeVelocity (-m₀) a₂ j`
+
+**Why stationary.** The nonlinear flux `∑_j (û_j ★ (∂_j θ̂))(m)`
+concentrates only at `m ∈ {2m₀, 0, -2m₀}`. At each, the sum over j
+vanishes by the divergence-free identity `∑_j sqgVelocitySymbol j m₀ ·
+derivSymbol j m₀ = 0`, using odd-symmetry of `derivSymbol` and
+`sqgVelocitySymbol` to reduce every algebraic case to that one sum.
+Elsewhere, both `û_j` and `θ̂(m − ℓ)` lack joint support, so every term
+vanishes.
+
+**Scope.** This is the first non-trivial Lean formalization of a
+genuine multi-mode stationary SQG solution. It admits e.g. the
+real-valued cosine mode (`a₂ = conj a₁`) and sine mode (`a₂ =
+−conj a₁`) as special cases, plus any complex superposition. -/
+
+/-- **Antipodal Fourier pair** `a₁ • e_{m₀} + a₂ • e_{−m₀}`. -/
+noncomputable def antipodalMode (m₀ : Fin 2 → ℤ) (a₁ a₂ : ℂ) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  singleMode m₀ a₁ + singleMode (-m₀) a₂
+
+/-- From `m₀ ≠ 0`, the antipodes differ: `m₀ ≠ -m₀`. -/
+lemma neg_ne_self_of_ne_zero {d : Type*} [Fintype d]
+    {m₀ : d → ℤ} (hm₀ : m₀ ≠ 0) : m₀ ≠ -m₀ := by
+  intro h
+  apply hm₀
+  funext i
+  have hi : m₀ i = -m₀ i := congrFun h i
+  have : 2 * m₀ i = 0 := by linarith
+  have : m₀ i = 0 := by linarith
+  simpa using this
+
+/-- **Closed-form Fourier coefficients of the antipodal pair** (requires
+`m₀ ≠ 0` so that `m₀ ≠ -m₀`). -/
+theorem mFourierCoeff_antipodalMode
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) (m : Fin 2 → ℤ) :
+    mFourierCoeff (antipodalMode m₀ a₁ a₂) m
+      = if m = m₀ then a₁ else if m = -m₀ then a₂ else 0 := by
+  have h_ne : m₀ ≠ -m₀ := neg_ne_self_of_ne_zero hm₀
+  have h_add : mFourierCoeff (antipodalMode m₀ a₁ a₂) m
+      = mFourierCoeff (singleMode m₀ a₁) m + mFourierCoeff (singleMode (-m₀) a₂) m := by
+    unfold antipodalMode
+    exact (mFourierCoeffLM m).map_add (singleMode m₀ a₁) (singleMode (-m₀) a₂)
+  rw [h_add, mFourierCoeff_singleMode, mFourierCoeff_singleMode]
+  have h_ne' : (-m₀) ≠ m₀ := fun h => h_ne h.symm
+  by_cases h1 : m = m₀
+  · have h2 : m ≠ -m₀ := fun hc => h_ne (h1.symm.trans hc)
+    simp [h1, h2, h_ne]
+  · by_cases h2 : m = -m₀
+    · simp [h1, h2, h_ne']
+    · simp [h1, h2]
+
+/-- **Antipodal pair vanishes outside `{m₀, -m₀}`.** -/
+theorem mFourierCoeff_antipodalMode_eq_zero_of_not_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ)
+    {m : Fin 2 → ℤ} (h1 : m ≠ m₀) (h2 : m ≠ -m₀) :
+    mFourierCoeff (antipodalMode m₀ a₁ a₂) m = 0 := by
+  rw [mFourierCoeff_antipodalMode hm₀, if_neg h1, if_neg h2]
+
+/-- **Riesz-transform velocity for the antipodal pair.** -/
+noncomputable def antipodalVelocity
+    (m₀ : Fin 2 → ℤ) (a₁ a₂ : ℂ) (j : Fin 2) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  singleModeVelocity m₀ a₁ j + singleModeVelocity (-m₀) a₂ j
+
+/-- **Closed-form Fourier coefficients of the antipodal velocity.** -/
+theorem mFourierCoeff_antipodalVelocity
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) (j : Fin 2) (m : Fin 2 → ℤ) :
+    mFourierCoeff (antipodalVelocity m₀ a₁ a₂ j) m
+      = if m = m₀ then sqgVelocitySymbol j m₀ * a₁
+        else if m = -m₀ then sqgVelocitySymbol j (-m₀) * a₂ else 0 := by
+  have h_ne : m₀ ≠ -m₀ := neg_ne_self_of_ne_zero hm₀
+  have h_add : mFourierCoeff (antipodalVelocity m₀ a₁ a₂ j) m
+      = mFourierCoeff (singleModeVelocity m₀ a₁ j) m
+        + mFourierCoeff (singleModeVelocity (-m₀) a₂ j) m := by
+    unfold antipodalVelocity
+    exact (mFourierCoeffLM m).map_add
+      (singleModeVelocity m₀ a₁ j) (singleModeVelocity (-m₀) a₂ j)
+  rw [h_add, mFourierCoeff_singleModeVelocity, mFourierCoeff_singleModeVelocity]
+  have h_ne' : (-m₀) ≠ m₀ := fun h => h_ne h.symm
+  by_cases h1 : m = m₀
+  · have h2 : m ≠ -m₀ := fun hc => h_ne (h1.symm.trans hc)
+    simp [h1, h2, h_ne]
+  · by_cases h2 : m = -m₀
+    · simp [h1, h2, h_ne']
+    · simp [h1, h2]
+
+/-- **Antipodal velocity satisfies `IsSqgVelocityComponent`.** -/
+theorem isSqgVelocityComponent_antipodalMode
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) (j : Fin 2) :
+    IsSqgVelocityComponent
+      (antipodalMode m₀ a₁ a₂) (antipodalVelocity m₀ a₁ a₂ j) j := by
+  intro n
+  have h_ne' : (-m₀) ≠ m₀ := fun h => neg_ne_self_of_ne_zero hm₀ h.symm
+  rw [mFourierCoeff_antipodalVelocity hm₀, mFourierCoeff_antipodalMode hm₀]
+  by_cases h1 : n = m₀
+  · simp [h1]
+  · by_cases h2 : n = -m₀
+    · simp [h2, h_ne']
+    · simp [h1, h2]
+
+/-- **Divergence-free at the antipodal mode.** A corollary of
+`sqgVelocitySymbol_mul_derivSymbol_sum_zero` applied at `-m₀`, useful
+for the `m = -2m₀` algebraic case. -/
+lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_neg (m₀ : Fin 2 → ℤ) :
+    ∑ j : Fin 2, sqgVelocitySymbol j (-m₀) * derivSymbol j (-m₀) = 0 := by
+  simp_rw [sqgVelocitySymbol_neg, derivSymbol_neg]
+  have := sqgVelocitySymbol_mul_derivSymbol_sum_zero m₀
+  calc ∑ j : Fin 2, -sqgVelocitySymbol j m₀ * -derivSymbol j m₀
+      = ∑ j : Fin 2, sqgVelocitySymbol j m₀ * derivSymbol j m₀ := by
+        refine Finset.sum_congr rfl ?_; intro j _; ring
+    _ = 0 := this
 end SqgIdentity
