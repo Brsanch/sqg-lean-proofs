@@ -10194,4 +10194,152 @@ theorem sqg_regularity_trigPoly
     (fun n hn => mFourierCoeff_trigPoly_eq_zero_of_not_mem S a hn)
     c hc
 
+/-! ### §10.27 Single-mode stationary SQG witness
+
+First **non-trivial discharge** of `IsSqgWeakSolution` AND
+`IsSqgVelocityComponent` simultaneously. Activates the Duhamel route
+`SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP` for the first
+time as a real instance, not just a theorem with no users.
+
+**Construction.** For any nonzero mode `m₀ : Fin 2 → ℤ` and amplitude
+`a : ℂ`:
+- `θ(τ) = singleMode m₀ a` (constant in time).
+- `u_j(τ) = singleModeVelocity m₀ a j := (sqgVelocitySymbol j m₀ * a) •
+  mFourierLp 2 m₀` — the j-th component of the Riesz-transform velocity
+  at this mode.
+
+**Why it is a stationary SQG solution.** Both θ and u_j are supported
+at the single Fourier mode `m₀`. The convolution structure of
+`sqgNonlinearFlux` then concentrates at mode `2m₀`, where the inner sum
+`∑ⱼ sqgVelocitySymbol j m₀ · derivSymbol j m₀` vanishes by the
+divergence-free identity `n · u(n) = 0`. So the nonlinear flux is zero
+**at every mode** — both the trivial-support modes and the
+algebraic-cancellation mode.
+
+**Discharges.** Constant-in-time SQG with the Riesz velocity at a
+single Fourier mode satisfies:
+- `IsSqgVelocityComponent` (Fourier-side definition matches by
+  construction).
+- `IsSqgWeakSolution` (Duhamel = ∫ 0 = 0 since flux ≡ 0).
+- `MaterialMaxPrinciple` and `BKMCriterionS2` (constant in time +
+  finite Fourier support, via §10.25).
+
+The full chain via `sqg_regularity_via_s2_bootstrap` then concludes
+uniform Ḣˢ bounds on `[0, 2]`. -/
+
+/-- **Riesz-transform velocity component for a single Fourier mode.**
+The j-th component of the SQG velocity associated with
+`singleMode m₀ a`. Sits at the same Fourier mode `m₀` with amplitude
+scaled by the velocity-symbol multiplier `sqgVelocitySymbol j m₀`. -/
+noncomputable def singleModeVelocity (m₀ : Fin 2 → ℤ) (a : ℂ) (j : Fin 2) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  (sqgVelocitySymbol j m₀ * a) • (mFourierLp 2 m₀ : Lp ℂ 2 _)
+
+/-- **Closed-form Fourier coefficients of the single-mode velocity.** -/
+theorem mFourierCoeff_singleModeVelocity
+    [DecidableEq (Fin 2 → ℤ)]
+    (m₀ : Fin 2 → ℤ) (a : ℂ) (j : Fin 2) (m : Fin 2 → ℤ) :
+    mFourierCoeff (singleModeVelocity m₀ a j) m
+      = if m = m₀ then sqgVelocitySymbol j m₀ * a else 0 := by
+  unfold singleModeVelocity
+  rw [mFourierCoeff_const_smul, mFourierCoeff_mFourierLp]
+  split_ifs with h
+  · rw [mul_one]
+  · rw [mul_zero]
+
+/-- **Single-mode velocity satisfies `IsSqgVelocityComponent`.** -/
+theorem isSqgVelocityComponent_singleMode
+    [DecidableEq (Fin 2 → ℤ)]
+    (m₀ : Fin 2 → ℤ) (a : ℂ) (j : Fin 2) :
+    IsSqgVelocityComponent (singleMode m₀ a) (singleModeVelocity m₀ a j) j := by
+  intro n
+  rw [mFourierCoeff_singleModeVelocity, mFourierCoeff_singleMode]
+  by_cases h : n = m₀
+  · rw [h, if_pos rfl, if_pos rfl]
+  · rw [if_neg h, if_neg h, mul_zero]
+
+/-- **Divergence-free identity at a single mode.** Sum over coordinate
+directions of `sqgVelocitySymbol j m₀ · derivSymbol j m₀` vanishes,
+recovered from `sqgVelocitySymbol_divergence_free` with `z = 1`. -/
+theorem sqgVelocitySymbol_mul_derivSymbol_sum_zero (m₀ : Fin 2 → ℤ) :
+    ∑ j : Fin 2, sqgVelocitySymbol j m₀ * derivSymbol j m₀ = 0 := by
+  unfold derivSymbol
+  rw [Fin.sum_univ_two]
+  have h := sqgVelocitySymbol_divergence_free m₀ 1
+  simp only [mul_one] at h
+  linear_combination Complex.I * h
+
+/-- **Nonlinear flux of single-mode SQG vanishes everywhere.**
+
+For `m ≠ 2 • m₀`: the convolution support requires `ℓ = m₀` (from `û_j`)
+and `m - ℓ = m₀` (from `θ̂`), forcing `m = 2 • m₀`; otherwise the term
+is zero. For `m = 2 • m₀`: the inner sum over `j` reduces to
+`a² · ∑ⱼ sqgVelocitySymbol j m₀ · derivSymbol j m₀ = 0` by the
+divergence-free identity. -/
+theorem sqgNonlinearFlux_singleMode_eq_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    (m₀ : Fin 2 → ℤ) (a : ℂ) (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux (singleMode m₀ a) (singleModeVelocity m₀ a) m = 0 := by
+  unfold sqgNonlinearFlux
+  have h_conv : ∀ j : Fin 2,
+      fourierConvolution
+          (fun ℓ => mFourierCoeff (singleModeVelocity m₀ a j) ℓ)
+          (fun ℓ => derivSymbol j ℓ * mFourierCoeff (singleMode m₀ a) ℓ) m
+        = (sqgVelocitySymbol j m₀ * a)
+            * (derivSymbol j (m - m₀)
+              * (if m - m₀ = m₀ then a else 0)) := by
+    intro j
+    unfold fourierConvolution
+    rw [tsum_eq_single m₀ (fun ℓ hℓ => ?_)]
+    · rw [mFourierCoeff_singleModeVelocity, if_pos rfl,
+          mFourierCoeff_singleMode]
+    · rw [mFourierCoeff_singleModeVelocity, if_neg hℓ, zero_mul]
+  simp_rw [h_conv]
+  by_cases hm : m - m₀ = m₀
+  · rw [hm]
+    simp_rw [if_pos rfl]
+    have h_factor : ∀ j : Fin 2,
+        (sqgVelocitySymbol j m₀ * a) * (derivSymbol j m₀ * a)
+          = a * a * (sqgVelocitySymbol j m₀ * derivSymbol j m₀) := by
+      intro j; ring
+    rw [Finset.sum_congr rfl (fun j _ => h_factor j),
+        ← Finset.mul_sum, sqgVelocitySymbol_mul_derivSymbol_sum_zero,
+        mul_zero]
+  · simp_rw [if_neg hm, mul_zero, mul_zero]
+    exact Finset.sum_const_zero
+
+/-- **`IsSqgWeakSolution` for the constant-in-time single-mode SQG.**
+Duhamel reduces to `0 = ∫ 0 = 0`: LHS by `sub_self` (θ constant), RHS
+by `sqgNonlinearFlux_singleMode_eq_zero`. -/
+theorem isSqgWeakSolution_singleMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    (m₀ : Fin 2 → ℤ) (a : ℂ) :
+    IsSqgWeakSolution
+        (fun _ : ℝ => singleMode m₀ a)
+        (fun j _ : ℝ => singleModeVelocity m₀ a j) where
+  duhamel := fun m s t _ _ => by
+    have h_integrand :
+        (fun τ : ℝ => sqgNonlinearFlux ((fun _ : ℝ => singleMode m₀ a) τ)
+            (fun j => (fun j _ : ℝ => singleModeVelocity m₀ a j) j τ) m)
+        = fun _ => (0 : ℂ) := by
+      funext τ
+      exact sqgNonlinearFlux_singleMode_eq_zero m₀ a m
+    rw [h_integrand]
+    simp
+
+/-- **`SqgEvolutionAxioms` for constant-in-time single-mode SQG.**
+- `l2Conservation`: trivial since θ is time-constant.
+- `meanConservation`: trivial since θ is time-constant.
+- `velocityIsRieszTransform`: discharged by `singleModeVelocity` and
+  `isSqgVelocityComponent_singleMode`. -/
+theorem sqgEvolutionAxioms_singleMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    (m₀ : Fin 2 → ℤ) (a : ℂ) :
+    SqgEvolutionAxioms (fun _ : ℝ => singleMode m₀ a) where
+  l2Conservation := fun _ _ => rfl
+  meanConservation := fun _ _ => rfl
+  velocityIsRieszTransform := fun j =>
+    ⟨fun _ : ℝ => singleModeVelocity m₀ a j,
+     fun _ : ℝ => isSqgVelocityComponent_singleMode m₀ a j⟩
+
 end SqgIdentity
