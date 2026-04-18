@@ -10661,7 +10661,7 @@ theorem sqgNonlinearFlux_antipodalMode_eq_zero
     intro ℓ hℓ
     have h1 : ℓ ≠ m₀ := fun h => hℓ (by simp [h])
     have h2 : ℓ ≠ -m₀ := fun h => hℓ (by simp [h])
-    rw [mFourierCoeff_antipodalVelocity hm₀, if_neg h1, if_neg h2, zero_mul]
+    simp only [mFourierCoeff_antipodalVelocity hm₀, if_neg h1, if_neg h2, zero_mul]
   rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq_sum j)]
   -- Step 2: swap ∑_j and ∑_ℓ.
   rw [Finset.sum_comm]
