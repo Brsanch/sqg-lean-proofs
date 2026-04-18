@@ -9699,13 +9699,16 @@ theorem IsSqgWeakSolution.const_zero_u
         (fun _ : Fin 2 => fun _ : ℝ =>
           (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) where
   duhamel := fun m s t _ _ => by
-    have h_flux : ∀ τ : ℝ,
-        sqgNonlinearFlux ((fun _ : ℝ => θ₀) τ)
+    -- Rewrite the integrand pointwise to 0 via `sqgNonlinearFlux_zero_u`.
+    have h_integrand :
+        (fun τ : ℝ => sqgNonlinearFlux ((fun _ : ℝ => θ₀) τ)
           (fun j => (fun _ : Fin 2 => fun _ : ℝ =>
-            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) j τ) m = 0 := by
-      intro τ
+            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) j τ) m)
+        = fun _ => (0 : ℂ) := by
+      funext τ
       exact sqgNonlinearFlux_zero_u θ₀ m
-    simp [h_flux]
+    rw [h_integrand]
+    simp
 
 /-- **MaterialMaxPrinciple for a constant-in-time scalar field.**
 `θ(τ) = θ₀` with Ḣ¹-summable `θ₀` satisfies the Ḣ¹-propagation principle
