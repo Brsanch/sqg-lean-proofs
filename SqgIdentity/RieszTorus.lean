@@ -8815,14 +8815,13 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       calc ‖(sqgConcreteMollifier ε s t τ : ℂ) * G τ‖
           = ‖(sqgConcreteMollifier ε s t τ : ℂ)‖ * ‖G τ‖ := norm_mul _ _
         _ ≤ 1 * K := by
-            apply mul_le_mul _ (hG_bound τ) (norm_nonneg _) one_nonneg
+            apply mul_le_mul _ (hG_bound τ) (norm_nonneg _) zero_le_one
             rw [Complex.norm_real, Real.norm_eq_abs,
                 abs_of_nonneg (sqgConcreteMollifier_nonneg ε s t τ)]
             exact sqgConcreteMollifier_le_one ε s t τ
         _ = K := one_mul K
     · -- τ ∉ [s-1, t+1], so mollifier = 0 (support ⊆ [s-ε, t+ε] ⊆ [s-1, t+1] for ε ≤ 1)
       rw [mul_zero]
-      simp only [norm_zero, norm_nonneg]
       -- mollifier is 0 outside [s-1, t+1] when ε ≤ 1
       have hmoll : sqgConcreteMollifier ε s t τ = 0 := by
         simp only [not_and_or, not_le] at hmem
@@ -8832,10 +8831,10 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       simp [hmoll]
   · -- Integrability of the dominating function K · 𝟙_{[s-1, t+1]}
     apply Integrable.const_mul _ K
-    exact (integrableOn_const
+    apply IntegrableOn.integrable_indicator _ measurableSet_Icc
+    exact integrableOn_const
         (hs := by rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top)
-        (hC := enorm_ne_top))
-      .integrable_indicator measurableSet_Icc
+        (hC := enorm_ne_top)
   · -- Pointwise a.e. convergence
     apply Filter.Eventually.of_forall
     intro τ
@@ -8845,6 +8844,7 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       apply Filter.Tendsto.congr' _ tendsto_const_nhds
       apply Filter.eventually_of_mem self_mem_nhdsWithin
       intro ε hε
+      show G τ = (sqgConcreteMollifier ε s t τ : ℂ) * G τ
       rw [sqgConcreteMollifier_eq_one_of_mem_Icc hτ (Set.mem_Ioi.mp hε)]
       push_cast; ring
     · -- τ ∉ [s, t]: indicator = 0; mollifier eventually zero near 0⁺
@@ -8856,11 +8856,13 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       · -- τ < s: mollifier = 0 for all ε ∈ (0, s − τ)
         apply Filter.eventually_of_mem (Ioc_mem_nhdsGT (by linarith : (0 : ℝ) < s - τ))
         intro ε ⟨hε_pos, hε_le⟩
+        show (0 : ℂ) = (sqgConcreteMollifier ε s t τ : ℂ) * G τ
         rw [sqgConcreteMollifier_zero_of_le_left hε_pos (by linarith)]
         push_cast; ring
       · -- τ > t: mollifier = 0 for all ε ∈ (0, τ − t)
         apply Filter.eventually_of_mem (Ioc_mem_nhdsGT (by linarith : (0 : ℝ) < τ - t))
         intro ε ⟨hε_pos, hε_le⟩
+        show (0 : ℂ) = (sqgConcreteMollifier ε s t τ : ℂ) * G τ
         rw [sqgConcreteMollifier_zero_of_ge_right hε_pos (by linarith)]
         push_cast; ring
 
