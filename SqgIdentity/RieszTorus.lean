@@ -10045,14 +10045,21 @@ theorem mFourierCoeffLM_apply
 
 /-- **Fourier coefficient of a finite sum is the finite sum of Fourier
 coefficients.** Direct corollary of `_root_.map_sum` on
-`mFourierCoeffLM`. -/
+`mFourierCoeffLM`. The explicit `Lp` type annotation on the sum is
+load-bearing: it forces Lean to elaborate the sum at `Lp` level (so
+the coercion appears outside the sum, matching what
+`mFourierCoeffLM`'s map_sum produces). Without it, Lean defaults to
+distributing the coercion inside, and the patterns mismatch. -/
 theorem mFourierCoeff_finset_sum
     {d : Type*} [Fintype d]
     {ι : Type*}
     (S : Finset ι)
     (f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
     (m : d → ℤ) :
-    mFourierCoeff (∑ n ∈ S, f n) m = ∑ n ∈ S, mFourierCoeff (f n) m := by
+    mFourierCoeff
+        ((∑ n ∈ S, f n :
+          Lp ℂ 2 (volume : Measure (UnitAddTorus d)))) m
+      = ∑ n ∈ S, mFourierCoeff (f n) m := by
   have h := _root_.map_sum (mFourierCoeffLM (d := d) m) f S
   simp only [mFourierCoeffLM_apply] at h
   exact h
