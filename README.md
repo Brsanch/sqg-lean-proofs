@@ -13,19 +13,21 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **~7630 lines, zero errors, zero `sorry`**. Main has
+Current state: **~7750 lines, zero errors, zero `sorry`**. Main has
 advanced substantially beyond the last Zenodo release (v0.3.0) — see
 the §10 section list below for what landed post-v0.3.0. §10.8
 replaced the last `True` placeholders in `SqgEvolutionAxioms` with
 real predicates and introduced the **s=2 integer-order BKM
 bootstrap** (conditional Theorem 3 on `s ∈ [0, 2]` with no
-fractional-calculus prerequisites). §10.9–§10.10 (most recent) add
-**Fourier convolution scaffolding** (`fourierConvolution`,
-`convolution_bounded_by_product`) and the **mode-Lipschitz keystone
-upgrade** — the differential form of the per-mode Duhamel identity,
-the single analytic fact that both remaining open axioms
-(`MaterialMaxPrinciple.hOnePropagation` and
-`BKMCriterionS2.hsPropagationS2`) route through.
+fractional-calculus prerequisites). §10.9–§10.10 added the Fourier
+convolution scaffolding and mode-Lipschitz keystone upgrade.
+**§10.11 (most recent)** completes the SQG-specific **Bochner
+wiring**: `DuhamelFlux ⇒ ModeLipschitz` machine-checked via
+`MeasureTheory.norm_setIntegral_le_of_norm_le_const` + `Real.volume_Icc`.
+A future real-solution discharge of `DuhamelFlux` — with the flux
+witnessed by `fourierConvolution` and the bound by
+`convolution_bounded_by_product` — promotes `SqgEvolutionAxioms` to
+`SqgEvolutionAxioms_strong` with one line.
 
 ## What's proven
 
@@ -315,6 +317,44 @@ discharge from a real solution — once Bochner integration of the
 flux is wired through — would produce Ḣ¹ and Ḣ² bounds directly via
 the existing §10.7 (MMP) and §10.8 (S2) reductions.
 
+**§10.11 SQG-specific Bochner wiring (the connective tissue):**
+`DuhamelFlux` and `DuhamelFlux.modeLipschitz` close the gap between
+the §10.9 pointwise convolution bound and the §10.10 Lipschitz-in-time
+target. Adds:
+
+- `DuhamelFlux θ` — the predicate asserting `θ` has a per-mode
+  Fourier-side Duhamel representation: there exists
+  `F : (Fin 2 → ℤ) → ℝ → ℂ` with a uniform-in-`τ` bound `‖F(m, τ)‖
+  ≤ K_m` and the integral identity
+  `θ̂(m, t) − θ̂(m, s) = −∫_s^t F(m, τ) dτ` for every `0 ≤ s ≤ t`.
+  This is exactly the shape a real SQG solution supplies, with `F`
+  witnessed by `fourierConvolution`s of velocity/gradient sequences
+  and `K_m` witnessed by `convolution_bounded_by_product`.
+- `DuhamelFlux.of_identically_zero` — trivial case (zero flux).
+- **`DuhamelFlux.modeLipschitz` — the Bochner wiring itself.**
+  Proves `DuhamelFlux θ → ModeLipschitz θ` via
+  `MeasureTheory.norm_setIntegral_le_of_norm_le_const` on `Set.Icc s t`
+  under the `volume` measure, combined with `Real.volume_Icc` for
+  the interval-length identity `volume.real (Icc s t) = t − s`.
+  No intermediate integrability argument is needed — the mathlib
+  lemma packages it.
+- `SqgEvolutionAxioms.strengthen_of_duhamel` — one-liner
+  `SqgEvolutionAxioms θ + DuhamelFlux θ → SqgEvolutionAxioms_strong θ`.
+  The "promotion" theorem that turns a real-solution witness of
+  Duhamel into the §10.10 keystone structure.
+
+**Net effect of §10.11:** the SQG-specific connective tissue between
+"pointwise convolution bound" and "Lipschitz-in-time" is now
+machine-checked. The entire path
+`convolution_bounded_by_product` → `DuhamelFlux` →
+`ModeLipschitz` → `SqgEvolutionAxioms_strong` → (§10.7 / §10.8
+reductions) → conditional Theorem 3 on `s ∈ [0, 2]` is formalized.
+What remains is the **one remaining analytic task**: writing a real-
+SQG-solution `DuhamelFlux` witness (using `fourierConvolution` for
+`F` and `convolution_bounded_by_product` for the bound). That piece
+is about defining the nonlinear flux from real velocity data, not
+about integration theory.
+
 ## What's not proven (yet)
 
 Closing Theorem 3 unconditionally would require infrastructure that
@@ -337,20 +377,25 @@ doesn't exist in mathlib yet:
 - **Fractional Sobolev bootstrap for `s > 2`** — the remaining open
   tail of conditional Theorem 3. Requires Kato–Ponce-type estimates
   on `𝕋²` (not in mathlib).
-- **Bochner integration of the per-mode flux** — the connective
-  tissue between §10.9 (pointwise convolution bound) and a real
-  `SqgEvolutionAxioms_strong` discharge. Requires wiring the Young
-  bound into an `∫ τ in Set.Icc 0 t` statement; the mathlib Bochner
-  API is present, the application to time-indexed Fourier
-  coefficients is the piece to write.
+- **Real-solution witness of `DuhamelFlux`** — the concrete
+  construction of the per-mode flux `F(m, τ)` as a sum of
+  `fourierConvolution`s over velocity / gradient Fourier
+  coefficients of a real SQG solution. §10.11 supplies the generic
+  `DuhamelFlux → ModeLipschitz` theorem; what's left is the SQG-
+  specific definition of `F` from velocity data + the
+  `convolution_bounded_by_product` bound on it. About defining the
+  nonlinear flux from real velocity data — not about integration
+  theory (that's done).
 
 This repo is the Fourier-algebraic foundation plus a conditional
 Theorem 3 skeleton with the keystone analytic scaffolding now
-machine-checked. As of §10.10 the conditional conclusion over
-`s ∈ [0, 2]` rests on a single integer-order axiom; the `s > 2`
-fractional tail is the remaining open piece; and the convolution /
-mode-Lipschitz machinery bridging a real SQG solution to the §10.7
-and §10.8 reductions is in place.
+machine-checked. As of §10.11 the entire path from the uniform
+convolution bound to `SqgEvolutionAxioms_strong` is formalized; the
+conditional conclusion over `s ∈ [0, 2]` rests on a single integer-
+order axiom; the `s > 2` fractional tail is the remaining open
+piece; and the bridge from a real SQG solution (with a `DuhamelFlux`
+witness) into the §10.7 / §10.8 reductions is in place with a
+one-line promotion theorem (`SqgEvolutionAxioms.strengthen_of_duhamel`).
 
 ## The identity
 
