@@ -2795,7 +2795,7 @@ theorem sqgGrad_10_decomposition (n : Fin 2 → ℤ) :
 
 /-- **Off-diagonal gradient decomposition.** For `(i,j) = (0,1)`:
 
-    `sqgGradSymbol 0 1 n = sqgStrainSymbol 0 1 n + sqgVorticitySymbol n / 2`  -/
+    `sqgGradSymbol 0 1 n = sqgStrainSymbol 0 1 n + sqgVorticitySymbol n / 2` -/
 theorem sqgGrad_01_decomposition (n : Fin 2 → ℤ) :
     sqgGradSymbol 0 1 n =
       sqgStrainSymbol 0 1 n + sqgVorticitySymbol n / 2 := by
@@ -8151,5 +8151,99 @@ theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP
   exact SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity
     hE u hu_velocity Mu hMu_nn hu_sum hu_bdd Mg hMg_nn
     hgrad_sum hgrad_bdd hDuhamel
+
+/-! ### §10.15 Weak-solution predicate `IsSqgWeakSolution`
+
+§10.14's `of_sqgDuhamelIdentity_via_MMP` takes `hDuhamel`, the mode-wise
+integral identity, as a raw ∀-proposition. This section wraps that
+hypothesis in a named predicate `IsSqgWeakSolution θ u` so that callers
+can pass "θ is a weak SQG solution driven by velocity `u`" as a single
+structural witness.
+
+**Connection to the classical test-function weak form.** The standard
+distributional weak form of `∂_t θ + u · ∇θ = 0` on `𝕋² × [0, T]` reads:
+for every smooth test function `φ : 𝕋² × ℝ → ℝ` with compact time
+support in `(0, T)`,
+
+  `∫₀^T ⟨θ(τ), ∂_τ φ(·, τ)⟩_{L²(𝕋²)} dτ`
+  `  + ∫₀^T ⟨θ(τ) · u(τ), ∇_x φ(·, τ)⟩_{L²(𝕋²)} dτ = 0`.
+
+Specialising to separated test functions `φ(x, τ) = ψ(τ) · e_m(x)`
+where `e_m` is the Fourier character of mode `m` and `ψ` is a smooth
+bump on `[s, t]`, Parseval gives
+
+  `∫₀^T ψ'(τ) · θ̂(m, τ) dτ`
+  `  + ∫₀^T ψ(τ) · ((u · ∇θ)̂(m, τ)) dτ = 0`.
+
+Taking `ψ → 𝟙_{[s, t]}` (bump-to-indicator limit) and recognising
+`(u · ∇θ)̂(m, τ) = sqgNonlinearFlux (θ τ) (u τ) m` produces the
+mode-wise Duhamel identity carried below. The forward direction
+"distributional weak form → mode-wise identity" therefore hinges on:
+
+* density of separated Fourier characters in the test-function space
+  on `𝕋² × [0, T]`,
+* the bump-to-indicator limit for `ψ`, valid because
+  `sqgNonlinearFlux (θ τ) (u τ) m` is uniformly bounded in `τ` by
+  `sqgNonlinearFlux_bounded` (§10.12) and so the integrand on
+  `[s, t]` is Bochner-integrable,
+* identification `(u · ∇θ)̂(m) = ∑ⱼ (û_j ⋆ (i·ℓ_j · θ̂))(m)`, which
+  is the very definition of `sqgNonlinearFlux`.
+
+None of those three steps needs the DNS solution's regularity beyond
+what `SqgEvolutionAxioms + MaterialMaxPrinciple` already give; they
+are genuine Fourier-analysis facts on `𝕋²`. Formalising them in
+mathlib is the multi-step tactical goal whose first layer this
+section names.
+
+**Why wrap at all.** The predicate's sole field is the Duhamel
+identity itself, so `.duhamel` is a trivial projection. But:
+
+1. Downstream consumers (`of_IsSqgWeakSolution_via_MMP`) take one
+   structural witness instead of a five-argument ∀-proposition.
+2. When the test-function weak form is later formalised, this is
+   exactly the predicate that will receive a second constructor
+   `IsSqgWeakSolution.of_testFormWeakSolution`.
+3. Documentation of the intended semantics (the docstring above)
+   attaches to the named predicate rather than to a raw hypothesis
+   repeated verbatim at every call site. -/
+
+/-- **SQG weak-solution predicate (Fourier-mode form).**
+
+`IsSqgWeakSolution θ u` says that `θ` is a weak solution of the SQG
+equation `∂_t θ + u · ∇θ = 0` driven by velocity field `u`, expressed
+at the Fourier-mode level: for every mode `m` and every forward time
+interval `[s, t]`,
+
+  `θ̂(m, t) − θ̂(m, s) = − ∫_s^t sqgNonlinearFlux(θ τ)(u τ)(m) dτ`.
+
+This is the direct consumer of `of_sqgDuhamelIdentity_via_MMP`. See
+the section-level comment above for the classical distributional
+weak form it specialises and the Fourier-analysis steps that would
+link them. -/
+structure IsSqgWeakSolution
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    : Prop where
+  /-- Mode-wise Duhamel identity for the SQG PDE. -/
+  duhamel : ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+    mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
+      = -∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m
+
+/-- **MMP-keyed promotion from `IsSqgWeakSolution`.** The one-line
+wrapper over `of_sqgDuhamelIdentity_via_MMP` that consumes the
+structural weak-solution witness. This is the entry point the repo's
+final conditional Theorem 3 layer is meant to sit on: any analytic
+construction that delivers `IsSqgWeakSolution` plus `MMP` plus the
+velocity-component witness closes the full `[0, 2]` bootstrap. -/
+theorem SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    (hMMP : MaterialMaxPrinciple θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hu_velocity : ∀ (j : Fin 2) (τ : ℝ), IsSqgVelocityComponent (θ τ) (u j τ) j)
+    (hweak : IsSqgWeakSolution θ u) :
+    SqgEvolutionAxioms_strong θ :=
+  SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP
+    hE hMMP u hu_velocity hweak.duhamel
 
 end SqgIdentity
