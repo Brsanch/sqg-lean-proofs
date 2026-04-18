@@ -10741,4 +10741,90 @@ theorem SqgEvolutionAxioms_strong.antipodalMode_const
     (fun j _ => isSqgVelocityComponent_antipodalMode hm₀ a₁ a₂ j)
     (isSqgWeakSolution_antipodalMode_const hm₀ a₁ a₂)
 
+/-! ### §10.32 Radial-shell pair-sum cross div-free identity
+
+Generalises the four div-free identities used in §10.30 (`{m₀, ±m₀}`
+×  `{m₀, ±m₀}`) to any pair `(ℓ, k)` on a common radial shell
+`latticeNorm ℓ = latticeNorm k`. The per-pair identity
+`C(ℓ, k) + C(k, ℓ) = 0` (where `C(p, q) := ∑_j sqgVelocitySymbol j p *
+derivSymbol j q`) is the core algebraic fact behind the radial-shell
+stationary SQG witness built in §10.33–§10.34.
+
+**Mechanism.** For `ℓ, k ≠ 0` in `ℤ²`:
+`C(ℓ, k) = (ℓ₁k₀ − ℓ₀k₁) / |ℓ|` (2D cross product, after `-I·I = 1`).
+Symmetrically `C(k, ℓ) = (k₁ℓ₀ − k₀ℓ₁) / |k| = −(ℓ₁k₀ − ℓ₀k₁) / |k|`.
+Sum: `(ℓ₁k₀ − ℓ₀k₁) · (1/|ℓ| − 1/|k|) = 0` when `|ℓ| = |k|`. The `ℓ = 0`
+or `k = 0` case is trivial because either `sqgVelocitySymbol` or
+`derivSymbol` vanishes at `0`. -/
+
+/-- **Per-ℓ closed form of the inner j-sum** (ℓ ≠ 0). For any `k`, the
+sum `∑_j sqgVelocitySymbol j ℓ · derivSymbol j k` equals
+`((ℓ₁k₀ − ℓ₀k₁ : ℝ) : ℂ) / ((latticeNorm ℓ : ℝ) : ℂ)`.
+
+Immediate computation: unfold the two symbols via
+`rieszSymbol_of_ne_zero`, use `-I·I = 1` and `I·I = -1` for the two
+j-values, factor out `1/|ℓ|`. -/
+lemma sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero
+    (ℓ k : Fin 2 → ℤ) (hℓ : ℓ ≠ 0) :
+    (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
+      = (((ℓ 1 : ℝ) * (k 0 : ℝ) - (ℓ 0 : ℝ) * (k 1 : ℝ) : ℝ) : ℂ)
+        / ((latticeNorm ℓ : ℝ) : ℂ) := by
+  have hLne : ((latticeNorm ℓ : ℝ) : ℂ) ≠ 0 := by
+    have := latticeNorm_pos hℓ
+    exact_mod_cast ne_of_gt this
+  have hI : Complex.I * Complex.I = -1 := by
+    rw [← sq]; exact Complex.I_sq
+  rw [Fin.sum_univ_two]
+  -- Unfold sqgVelocitySymbol at 0 and 1.
+  have hsv0 : sqgVelocitySymbol 0 ℓ = rieszSymbol 1 ℓ := by
+    unfold sqgVelocitySymbol; simp
+  have h10 : (1 : Fin 2) ≠ 0 := by decide
+  have hsv1 : sqgVelocitySymbol 1 ℓ = -rieszSymbol 0 ℓ := by
+    unfold sqgVelocitySymbol; rw [if_neg h10]
+  rw [hsv0, hsv1]
+  rw [rieszSymbol_of_ne_zero hℓ (j := 1),
+      rieszSymbol_of_ne_zero hℓ (j := 0)]
+  unfold derivSymbol
+  field_simp
+  push_cast
+  linear_combination
+    ((ℓ 0 : ℂ) * (k 1 : ℂ) - (ℓ 1 : ℂ) * (k 0 : ℂ)) * hI
+
+/-- **Pair-sum cross div-free identity on a common radial shell.**
+For any ℓ, k ∈ ℤ² with `latticeNorm ℓ = latticeNorm k`:
+`(∑_j sqgVel j ℓ · ∂_j k) + (∑_j sqgVel j k · ∂_j ℓ) = 0`.
+
+Base case `ℓ = k` gives `2 · sqgVelocitySymbol_mul_derivSymbol_sum_zero`,
+but the same algebraic identity holds for *any* pair on the shell.
+Proof: reduce each sum to the closed form via
+`sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero`, match denominators
+using `|ℓ| = |k|`, then observe the numerators are anti-symmetric:
+`(ℓ₁k₀ − ℓ₀k₁) + (k₁ℓ₀ − k₀ℓ₁) = 0`. -/
+lemma sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq
+    (ℓ k : Fin 2 → ℤ) (hnorm : latticeNorm ℓ = latticeNorm k) :
+    (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
+      + (∑ j : Fin 2, sqgVelocitySymbol j k * derivSymbol j ℓ) = 0 := by
+  by_cases hℓ : ℓ = 0
+  · subst hℓ
+    have hk : k = 0 := by
+      have h0 : latticeNorm (0 : Fin 2 → ℤ) = 0 := by
+        rw [(latticeNorm_eq_zero_iff _).mpr rfl]
+      rw [h0] at hnorm
+      exact (latticeNorm_eq_zero_iff k).mp hnorm.symm
+    subst hk
+    simp [sqgVelocitySymbol_zero, derivSymbol_zero]
+  by_cases hk : k = 0
+  · subst hk
+    simp [sqgVelocitySymbol_zero, derivSymbol_zero]
+  -- Both ℓ, k ≠ 0, and |ℓ| = |k|.
+  rw [sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero _ _ hℓ,
+      sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero _ _ hk]
+  have hnormC : ((latticeNorm ℓ : ℝ) : ℂ) = ((latticeNorm k : ℝ) : ℂ) := by
+    exact_mod_cast hnorm
+  rw [hnormC, div_add_div_same]
+  have : (((ℓ 1 : ℝ) * (k 0 : ℝ) - (ℓ 0 : ℝ) * (k 1 : ℝ) : ℝ) : ℂ)
+          + (((k 1 : ℝ) * (ℓ 0 : ℝ) - (k 0 : ℝ) * (ℓ 1 : ℝ) : ℝ) : ℂ) = 0 := by
+    push_cast; ring
+  rw [this, zero_div]
+
 end SqgIdentity

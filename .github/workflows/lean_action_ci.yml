@@ -18,7 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
+      # docgen is known to hang on this repo; give it a short timeout and
+      # mark it non-blocking so the job finishes and dedupe-caches runs.
       - uses: leanprover-community/docgen-action@v1
+        continue-on-error: true
+        timeout-minutes: 10
 
   # Dedupe caches after the build finishes. `leanprover/lean-action@v1`
   # saves a new cache entry on every run even when an identical-key
