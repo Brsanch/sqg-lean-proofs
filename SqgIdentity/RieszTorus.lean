@@ -8540,25 +8540,61 @@ theorem sqgMollifier_eq_one_of_mem_Icc
   rw [hbump]
   norm_cast
 
-/-! ### Not yet provided in §10.16 / §10.17 / §10.18
+/-! ### §10.19 Mollifier-specialized weak-form identity (Phase 2.3.a)
 
-* `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` — the bump-to-
-  indicator bridge (Phase 2.3). Input bundle:
-  `IsSqgWeakSolutionTimeTest θ u + SqgFourierContinuous θ`. Uses
-  `sqgMollifier ε s t _ _` at `ε = 1/(n+1)` and takes `n → ∞`.
-  Tactical outline:
-  - Feed each `ψ_ε := sqgMollifier ε s t hst hε` into
-    `IsSqgWeakSolutionTimeTest` at mode `m`:
-    `∫ (deriv ψ_ε)·θ̂(m) + ∫ ψ_ε·F(m) = 0` where
-    `F(m) τ := sqgNonlinearFlux (θ τ) (u τ) m`.
-  - Left integral: `SqgFourierContinuous` → `θ̂(m, ·)` continuous
-    at `s` and `t` → `∫ (deriv ψ_ε)·θ̂(m) → θ̂(m, s) − θ̂(m, t)`
-    as `ε → 0⁺`.
-  - Right integral: `sqgNonlinearFlux_bounded` + dominated
-    convergence → `∫ ψ_ε·F(m) → ∫_s^t F(m)`.
-  - Combine: `θ̂(m, t) − θ̂(m, s) = −∫_s^t F(m)` = the
-    `IsSqgWeakSolution.duhamel` field.
+Instantiating `IsSqgWeakSolutionTimeTest` at the mollifier gives an
+algebraic starting point for the bump-to-indicator limit: the full
+weak-form identity `∫(deriv ψ_ε)·θ̂ + ∫ψ_ε·F = 0` is the sum of two
+integrals; rearranged it says
 
-  Boundary case `s = t`: handle separately; both sides are `0`. -/
+  `∫(deriv ψ_ε)·θ̂(m) = −∫ψ_ε·F(m)`.
+
+That rearrangement is what the final limit argument will take in
+both directions — the LHS tends to `θ̂(m, s) − θ̂(m, t)` (by
+`SqgFourierContinuous θ`), the RHS tends to `−∫_s^t F(m)` (by
+dominated convergence against `sqgNonlinearFlux_bounded`).
+
+This section delivers only the rearrangement. The two limits are
+Phase 2.3.b and 2.3.c. -/
+
+/-- **Weak-form identity specialised at the mollifier.**
+
+For every `s < t`, `ε > 0`, and mode `m`, if `θ` weakly solves SQG
+at the mode level (`IsSqgWeakSolutionTimeTest θ u`) then
+
+  `∫ τ, (deriv (sqgMollifier ε s t hst hε) τ) · mFourierCoeff (θ τ) m`
+  `  = −∫ τ, (sqgMollifier ε s t hst hε τ) · sqgNonlinearFlux (θ τ) (u τ) m`.
+
+Proof: apply the predicate to the mollifier (a valid time test
+function by `sqgMollifier_isSqgTimeTestFunction`) and rearrange. -/
+theorem IsSqgWeakSolutionTimeTest.mollifier_identity
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hweak : IsSqgWeakSolutionTimeTest θ u)
+    (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) (m : Fin 2 → ℤ) :
+    (∫ τ, (deriv (sqgMollifier ε s t hst hε) τ) * mFourierCoeff (θ τ) m)
+      = -∫ τ, (sqgMollifier ε s t hst hε τ)
+          * sqgNonlinearFlux (θ τ) (fun j => u j τ) m := by
+  have h := hweak (sqgMollifier ε s t hst hε)
+    (sqgMollifier_isSqgTimeTestFunction ε s t hst hε) m
+  linear_combination h
+
+/-! ### Not yet provided in §10.16–§10.19
+
+* **Phase 2.3.b — LHS limit.** Given `SqgFourierContinuous θ`,
+  prove `∫ (deriv (sqgMollifier ε s t hst hε))·θ̂(m) → θ̂(m, s) − θ̂(m, t)`
+  as `ε → 0⁺`. Uses: `deriv sqgMollifier ε s t` is supported in the
+  two collars `[s − ε, s] ∪ [t, t + ε]`, integrates to ±1 on each
+  collar (since the bump rises from 0 to 1 then falls from 1 to 0);
+  continuity of `τ ↦ mFourierCoeff (θ τ) m` lets the collar integrals
+  converge to pointwise values at `s` and `t`.
+* **Phase 2.3.c — RHS limit.** Given a uniform bound on
+  `‖sqgNonlinearFlux (θ τ) (u τ) m‖` in `τ` (plausibly from
+  `sqgNonlinearFlux_bounded` applied with mode-m-independent hypotheses),
+  prove `∫ (sqgMollifier ε s t)·F(m) → ∫_{[s, t]} F(m)` by dominated
+  convergence (`sqgMollifier → 𝟙_{[s, t]}` pointwise a.e.).
+* **Phase 2.3.d — Assembly.** Combine 2.3.a, 2.3.b, 2.3.c and the
+  `s = t` trivial case to produce
+  `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest`. -/
 
 end SqgIdentity
