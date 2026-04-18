@@ -8903,4 +8903,113 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
         exact (h0.ofReal.mul tendsto_const_nhds).congr (by simp) (by simp)
       exact this
 
+/-! ### §10.21 Phase 2.3.d — Bridge from time-test weak form to Duhamel
+
+Combines Phase 2.3.a (`IsSqgWeakSolutionTimeTest.mollifier_identity`,
+§10.19) with Phase 2.3.c (`sqgConcreteMollifier_rhs_tendsto`, §10.20)
+and an abstract Phase 2.3.b predicate to prove the bridge theorem
+`IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest`.
+
+**Phase 2.3.b — open item.** `IsSqgCollarLhsCondition θ` asserts that
+for each mode `m` and interval `[s, t]` with `0 ≤ s ≤ t`, the LHS
+mollifier integral
+`∫ τ, deriv(ψ_ε τ) · θ̂(m, τ) dτ` → `θ̂(m, s) − θ̂(m, t)` as `ε → 0⁺`,
+where `ψ_ε τ = sqgConcreteMollifier ε s t τ` coerced to `ℂ`.
+
+The proof of `IsSqgCollarLhsCondition θ` from `SqgFourierContinuous θ`
+proceeds by FTC on each collar:
+
+* **Left collar** `[s − ε, s]`: `∫_{s−ε}^s deriv(ψ_ε) = ψ_ε(s) − ψ_ε(s − ε) = 1`
+  by `intervalIntegral.integral_eq_sub_of_hasDerivAt` applied to the
+  C¹ function `sqgConcreteMollifier`; non-negativity of the derivative
+  on this collar (`Monotone.deriv_nonneg`, since the left factor is
+  monotone rising) then gives `‖collar integral − θ̂(s)‖ ≤ osc_{[s−ε,s]}(θ̂) → 0`.
+* **Right collar** symmetric.
+
+This FTC + continuity argument will be fully formalised in §10.22 once
+`HasDerivAt` boilerplate for `sqgConcreteMollifier` is in place. -/
+
+/-- **Phase 2.3.b predicate**: for every mode `m` and interval `[s, t]`
+(with `0 ≤ s ≤ t`), the LHS mollifier integral
+`∫ τ, deriv(ψ_ε τ) · θ̂(m, τ) dτ` tends to `θ̂(m, s) − θ̂(m, t)` as
+`ε → 0⁺`, where `ψ_ε` is `sqgConcreteMollifier ε s t` coerced to `ℂ`.
+
+This is the Phase 2.3.b component of the bump-to-indicator bridge.
+Once proved from `SqgFourierContinuous θ` (§10.22), it can be dropped
+as a hypothesis of `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest`. -/
+def IsSqgCollarLhsCondition
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+    Filter.Tendsto
+      (fun ε => ∫ τ,
+        deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) τ
+          * mFourierCoeff (θ τ) m)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (mFourierCoeff (θ s) m - mFourierCoeff (θ t) m))
+
+/-- **Phase 2.3.d — Bridge theorem**: `IsSqgWeakSolutionTimeTest θ u`
+together with the collar-limit condition `IsSqgCollarLhsCondition θ`
+and uniform flux bounds implies `IsSqgWeakSolution θ u`.
+
+**Proof sketch.**
+1. For every `ε > 0`, Phase 2.3.a gives
+   `∫ deriv(ψ_ε)·θ̂(m) = ∫ ψ_ε·G(m)`.
+2. Phase 2.3.b (`h_collar`): the LHS → `θ̂(m, s) − θ̂(m, t)`.
+3. Phase 2.3.c (`sqgConcreteMollifier_rhs_tendsto`): the RHS →
+   `∫_{[s,t]} G(m)`.
+4. Uniqueness of limits (`tendsto_nhds_unique`): `θ̂(m, s) − θ̂(m, t) =
+   ∫_{[s,t]} G(m)`, hence `θ̂(m, t) − θ̂(m, s) = −∫_{[s,t]} G(m)`. -/
+theorem IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hweak : IsSqgWeakSolutionTimeTest θ u)
+    (h_collar : IsSqgCollarLhsCondition θ)
+    {K : ℝ} (hK_nn : 0 ≤ K)
+    (hG_bound : ∀ (m : Fin 2 → ℤ) (τ : ℝ),
+        ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ K)
+    (hG_meas : ∀ (m : Fin 2 → ℤ),
+        MeasureTheory.AEStronglyMeasurable
+          (fun τ => sqgNonlinearFlux (θ τ) (fun j => u j τ) m)
+          MeasureTheory.Measure.volume) :
+    IsSqgWeakSolution θ u := by
+  constructor
+  intro m s t hs hst
+  -- s = t: both sides vanish
+  rcases eq_or_lt_of_le hst with rfl | hst_lt
+  · have h2 : ∫ τ in Set.Icc t t,
+        sqgNonlinearFlux (θ τ) (fun j => u j τ) m = 0 :=
+      MeasureTheory.setIntegral_measure_zero
+        (by rw [Real.volume_Icc, sub_self, ENNReal.ofReal_zero])
+    simp [sub_self, h2]
+  -- Main case: s < t
+  -- Phase 2.3.a: weak-form identity at the concrete mollifier for every ε > 0
+  have eq_eps : ∀ ε > 0,
+      ∫ τ, deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) τ
+               * mFourierCoeff (θ τ) m =
+      ∫ τ, (sqgConcreteMollifier ε s t τ : ℂ)
+               * sqgNonlinearFlux (θ τ) (fun j => u j τ) m :=
+    fun ε hε => hweak (fun τ => (sqgConcreteMollifier ε s t τ : ℂ))
+                      (sqgConcreteMollifier_isSqgTimeTestFunction hε) m
+  -- Phase 2.3.b: LHS → θ̂(s) − θ̂(t)
+  have lhs_lim := h_collar m s t hs hst.le
+  -- Phase 2.3.c: RHS → ∫_{[s,t]} G
+  have rhs_lim := sqgConcreteMollifier_rhs_tendsto hst_lt hK_nn
+      (hG_bound m) (hG_meas m)
+  -- Rewrite rhs_lim using eq_eps: the LHS also tends to ∫_{[s,t]} G
+  have lhs_lim' : Filter.Tendsto
+      (fun ε => ∫ τ, deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) τ
+                       * mFourierCoeff (θ τ) m)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (∫ τ in Set.Icc s t,
+               sqgNonlinearFlux (θ τ) (fun j => u j τ) m)) :=
+    rhs_lim.congr' (Filter.eventually_nhdsWithin_of_forall
+                     (fun ε hε => (eq_eps ε hε).symm))
+  -- Uniqueness of limits (nhdsWithin 0 (Ioi 0) is NeBot on ℝ)
+  haveI : Filter.NeBot (nhdsWithin (0 : ℝ) (Set.Ioi 0)) := inferInstance
+  have heq : mFourierCoeff (θ s) m - mFourierCoeff (θ t) m =
+      ∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m :=
+    tendsto_nhds_unique lhs_lim lhs_lim'
+  -- θ̂(t) − θ̂(s) = −∫_{[s,t]} G
+  linear_combination -heq
+
 end SqgIdentity
