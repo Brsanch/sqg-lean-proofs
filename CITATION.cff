@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.3
+version: 0.4.4
 date-released: "2026-04-18"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -70,9 +70,24 @@ abstract: >
   MaterialMaxPrinciple.of_const, BKMCriterionS2.of_const, and the
   capstone sqg_regularity_const — certifying uniform Ḣˢ bounds on
   [0, 2] for any Ḣ¹-summable constant-in-time scalar field,
-  unconditionally. All content machine-verified with zero `sorry`
-  across 9751 lines. Mathematical theorems by Bryan Sanchez; Lean
-  formalization by Bryan Sanchez with AI assistance.
+  unconditionally. v0.4.4 adds the first **multi-mode** stationary SQG
+  witness: §10.29 odd-symmetry helpers (latticeNorm_neg, rieszSymbol_neg,
+  sqgVelocitySymbol_neg, derivSymbol_neg); §10.30 antipodal-pair
+  construction antipodalMode m₀ a₁ a₂ = singleMode m₀ a₁ + singleMode
+  (-m₀) a₂ with its Riesz-transform velocity; four divergence-free
+  identities combining to a unified 2×2 helper
+  sqgVelocitySymbol_mul_derivSymbol_sum_zero_antipodal_pair;
+  antipodal_inner_sum_zero per-ℓ cancellation via factoring through
+  IsSqgVelocityComponent; and the main theorem
+  sqgNonlinearFlux_antipodalMode_eq_zero establishing the flux
+  vanishes at every target mode. §10.31 bundles this into
+  isSqgWeakSolution_antipodalMode_const,
+  sqgEvolutionAxioms_antipodalMode_const, and the multi-mode discharge
+  SqgEvolutionAxioms_strong.antipodalMode_const — routing the
+  two-mode witness through of_IsSqgWeakSolution_via_MMP. All content
+  machine-verified with zero `sorry` across 11452 lines. Mathematical
+  theorems by Bryan Sanchez; Lean formalization by Bryan Sanchez with
+  AI assistance.
 keywords:
   - Lean 4
   - mathlib
