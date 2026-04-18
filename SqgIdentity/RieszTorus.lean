@@ -10281,32 +10281,34 @@ theorem sqgNonlinearFlux_singleMode_eq_zero
     (m₀ : Fin 2 → ℤ) (a : ℂ) (m : Fin 2 → ℤ) :
     sqgNonlinearFlux (singleMode m₀ a) (singleModeVelocity m₀ a) m = 0 := by
   unfold sqgNonlinearFlux
-  -- Per-direction convolution simplification (β-reduction via simp only).
-  have h_conv : ∀ j : Fin 2,
-      fourierConvolution
-          (fun ℓ => mFourierCoeff (singleModeVelocity m₀ a j) ℓ)
-          (fun ℓ => derivSymbol j ℓ * mFourierCoeff (singleMode m₀ a) ℓ) m
-        = (sqgVelocitySymbol j m₀ * a)
-            * (derivSymbol j (m - m₀)
-              * (if m - m₀ = m₀ then a else 0)) := by
-    intro j
-    unfold fourierConvolution
-    rw [tsum_eq_single m₀ (fun ℓ hℓ => by
-      simp only [mFourierCoeff_singleModeVelocity, if_neg hℓ, zero_mul])]
-    simp only [mFourierCoeff_singleModeVelocity, mFourierCoeff_singleMode,
-               if_pos rfl]
-  simp only [h_conv]
   by_cases hm : m - m₀ = m₀
-  · -- m - m₀ = m₀ branch: factor out a² and apply divergence-free identity.
-    simp only [if_pos hm, hm]
+  · -- m - m₀ = m₀: each convolution simplifies; sum over j vanishes by div-free.
+    have h_inner : ∀ j : Fin 2,
+        fourierConvolution
+            (fun ℓ => mFourierCoeff (singleModeVelocity m₀ a j) ℓ)
+            (fun ℓ => derivSymbol j ℓ * mFourierCoeff (singleMode m₀ a) ℓ) m
+          = (sqgVelocitySymbol j m₀ * a) * (derivSymbol j m₀ * a) := by
+      intro j
+      unfold fourierConvolution
+      rw [tsum_eq_single m₀]
+      · simp [mFourierCoeff_singleModeVelocity, mFourierCoeff_singleMode, hm]
+      · intro ℓ hℓ
+        simp [mFourierCoeff_singleModeVelocity, hℓ]
+    rw [Finset.sum_congr rfl (fun j _ => h_inner j)]
     have h_factor : ∀ j : Fin 2,
         (sqgVelocitySymbol j m₀ * a) * (derivSymbol j m₀ * a)
           = a * a * (sqgVelocitySymbol j m₀ * derivSymbol j m₀) :=
       fun j => by ring
-    simp only [h_factor, ← Finset.mul_sum,
-               sqgVelocitySymbol_mul_derivSymbol_sum_zero, mul_zero]
-  · -- m - m₀ ≠ m₀ branch: every term has a multiplied 0.
-    simp [if_neg hm]
+    rw [Finset.sum_congr rfl (fun j _ => h_factor j),
+        ← Finset.mul_sum, sqgVelocitySymbol_mul_derivSymbol_sum_zero, mul_zero]
+  · -- m - m₀ ≠ m₀: each convolution is zero (θ̂(m - m₀) = 0).
+    apply Finset.sum_eq_zero
+    intro j _
+    unfold fourierConvolution
+    rw [tsum_eq_single m₀]
+    · simp [mFourierCoeff_singleModeVelocity, mFourierCoeff_singleMode, hm]
+    · intro ℓ hℓ
+      simp [mFourierCoeff_singleModeVelocity, hℓ]
 
 /-- **`IsSqgWeakSolution` for the constant-in-time single-mode SQG.**
 Duhamel reduces to `0 = ∫ 0 = 0`: LHS by `sub_self` (θ constant), RHS
