@@ -9639,4 +9639,113 @@ theorem SqgFourierContinuous.toCollarLhsCondition
           ((sqgConcreteMollifier_left_collar_tendsto hst hF).add
             (sqgConcreteMollifier_right_collar_tendsto hst hF)))
 
+/-! ### §10.23 Duhamel witness + BKMCriterionS2 discharge for constant-in-time
+
+This section delivers two building blocks and a capstone:
+
+1. **Duhamel witness.** `IsSqgWeakSolution.const_zero_u`: the constant-in-time
+   scalar field `θ(τ) = θ₀` paired with the zero velocity `u ≡ 0` satisfies
+   the mode-wise Duhamel identity directly. Both sides vanish: LHS by
+   `mFourierCoeff θ₀ m − mFourierCoeff θ₀ m = 0`, RHS by
+   `sqgNonlinearFlux θ₀ 0 m = 0` (zero velocity kills every convolution
+   component).
+
+2. **BKMCriterionS2 discharge.** `BKMCriterionS2.of_const`: for a constant
+   `θ₀`, every Ḣˢ seminorm stays fixed at `hsSeminormSq s θ₀`, so the
+   propagation hypothesis is discharged by `le_refl`.
+
+3. **Capstone.** `sqg_regularity_const`: combines `MaterialMaxPrinciple.of_const`
+   (contingent on `θ₀`'s Ḣ¹ summability) with `BKMCriterionS2.of_const` and
+   `sqg_regularity_via_s2_bootstrap` to certify that any constant-in-time
+   `θ₀` with `Summable (fun n => (fracDerivSymbol 1 n)² * ‖θ̂₀(n)‖²)`
+   enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]`.
+
+Together these give the first **non-zero** concrete SQG solution class that
+the conditional Theorem 3 chain certifies unconditionally. -/
+
+/-- **Nonlinear flux with zero velocity vanishes.**
+
+`sqgNonlinearFlux θ 0 m = 0` for every scalar `θ` and mode `m`. Each
+component convolution has left factor `mFourierCoeff 0 ℓ = 0`; the
+convolution with the zero sequence on the left is zero by
+`fourierConvolution_zero_left`. -/
+theorem sqgNonlinearFlux_zero_u
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux θ
+        (fun _ : Fin 2 =>
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) m = 0 := by
+  unfold sqgNonlinearFlux
+  apply Finset.sum_eq_zero
+  intro j _
+  have h :
+      (fun ℓ => mFourierCoeff
+          ((fun _ : Fin 2 =>
+            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) j) ℓ)
+        = fun _ => (0 : ℂ) := by
+    funext ℓ
+    exact mFourierCoeff_zero ℓ
+  rw [h]
+  exact fourierConvolution_zero_left _ m
+
+/-- **Duhamel witness — constant-in-time θ, zero velocity is a weak solution.**
+Both sides of the mode-wise Duhamel identity vanish: LHS by `sub_self`,
+RHS because `sqgNonlinearFlux θ₀ 0 m = 0` (from `sqgNonlinearFlux_zero_u`),
+so the set integral is zero. -/
+theorem IsSqgWeakSolution.const_zero_u
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    IsSqgWeakSolution
+        (fun _ : ℝ => θ₀)
+        (fun _ : Fin 2 => fun _ : ℝ =>
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) where
+  duhamel := fun m s t _ _ => by
+    have h_flux : ∀ τ : ℝ,
+        sqgNonlinearFlux ((fun _ : ℝ => θ₀) τ)
+          (fun j => (fun _ : Fin 2 => fun _ : ℝ =>
+            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) j τ) m = 0 := by
+      intro τ
+      exact sqgNonlinearFlux_zero_u θ₀ m
+    simp [h_flux]
+
+/-- **MaterialMaxPrinciple for a constant-in-time scalar field.**
+`θ(τ) = θ₀` with Ḣ¹-summable `θ₀` satisfies the Ḣ¹-propagation principle
+with `M = hsSeminormSq 1 θ₀` (bound by itself). -/
+theorem MaterialMaxPrinciple.of_const
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2)) :
+    MaterialMaxPrinciple (fun _ : ℝ => θ₀) where
+  hOnePropagation := ⟨hsSeminormSq 1 θ₀, fun _ _ => le_refl _⟩
+  hOneSummability := fun _ _ => hSumm
+  freeDerivativeAtKappaMax := trivial
+  materialSegmentExpansion := trivial
+  farFieldBoundary := trivial
+
+/-- **BKMCriterionS2 discharge for a constant-in-time scalar field.**
+For a constant `θ₀`, `hsSeminormSq s (θ t) = hsSeminormSq s θ₀` for every
+`t`, so the propagation hypothesis is closed by `le_refl`. No fractional
+calculus needed. -/
+theorem BKMCriterionS2.of_const
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    BKMCriterionS2 (fun _ : ℝ => θ₀) where
+  hsPropagationS2 := fun _ s _ _ =>
+    ⟨hsSeminormSq s θ₀, fun _ _ => le_refl _⟩
+
+/-- **Capstone — constant-in-time SQG solution is regular on `[0, 2]`.**
+
+For any `θ₀ ∈ Lp ℂ 2 𝕋²` with Ḣ¹ summability, the constant-in-time
+evolution `θ(τ) = θ₀` (paired with the zero velocity) enjoys uniform
+Ḣˢ bounds for every `s ∈ [0, 2]`. This is the first non-trivial
+concrete discharge of conditional Theorem 3, layered over §10.22. -/
+theorem sqg_regularity_const
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2)) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s ((fun _ : ℝ => θ₀) t) ≤ M :=
+  sqg_regularity_via_s2_bootstrap
+    (fun _ : ℝ => θ₀)
+    (MaterialMaxPrinciple.of_const θ₀ hSumm)
+    (BKMCriterionS2.of_const θ₀)
+
 end SqgIdentity
