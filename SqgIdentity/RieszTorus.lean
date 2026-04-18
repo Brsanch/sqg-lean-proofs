@@ -10591,4 +10591,154 @@ lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_antipodal_pair
     · rw [h1, h2]; exact sqgVelocitySymbol_mul_derivSymbol_sum_zero_cross₂ m₀
     · rw [h1, h2]; exact sqgVelocitySymbol_mul_derivSymbol_sum_zero_neg m₀
 
+/-- **Per-ℓ cancellation for the antipodal flux.** For each
+ℓ ∈ {m₀, -m₀} and any target `m`, the sum over `j` of
+`û_j(ℓ) · derivSymbol j (m-ℓ) · θ̂(m-ℓ)` vanishes.
+
+Mechanism: by `isSqgVelocityComponent_antipodalMode`, `û_j(ℓ) =
+sqgVelocitySymbol j ℓ · θ̂(ℓ)`. Each summand factors as `θ̂(ℓ) · θ̂(m-ℓ)
+· (sqgVelocitySymbol j ℓ · derivSymbol j (m-ℓ))`. Pull the `j`-
+independent factor `θ̂(ℓ) · θ̂(m-ℓ)` out of the sum. Then either
+`m-ℓ ∈ {m₀, -m₀}` (kill via the unified antipodal div-free helper) or
+`m-ℓ ∉ {m₀, -m₀}` (kill via `θ̂(m-ℓ) = 0`). -/
+lemma antipodal_inner_sum_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) (m : Fin 2 → ℤ)
+    {ℓ : Fin 2 → ℤ} (hℓ : ℓ = m₀ ∨ ℓ = -m₀) :
+    (∑ j : Fin 2,
+        mFourierCoeff (antipodalVelocity m₀ a₁ a₂ j) ℓ
+        * (derivSymbol j (m - ℓ)
+            * mFourierCoeff (antipodalMode m₀ a₁ a₂) (m - ℓ))) = 0 := by
+  -- Step 1: rewrite û_j(ℓ) = sqgVelocitySymbol j ℓ · θ̂(ℓ) per j, then
+  -- factor out the θ̂ scalars from the j-sum.
+  have h_rewrite : ∀ j : Fin 2,
+      mFourierCoeff (antipodalVelocity m₀ a₁ a₂ j) ℓ
+        * (derivSymbol j (m - ℓ)
+            * mFourierCoeff (antipodalMode m₀ a₁ a₂) (m - ℓ))
+      = mFourierCoeff (antipodalMode m₀ a₁ a₂) ℓ
+        * mFourierCoeff (antipodalMode m₀ a₁ a₂) (m - ℓ)
+        * (sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+    intro j
+    rw [isSqgVelocityComponent_antipodalMode hm₀ a₁ a₂ j ℓ]
+    ring
+  rw [Finset.sum_congr rfl (fun j _ => h_rewrite j), ← Finset.mul_sum]
+  -- Step 2: case on whether m - ℓ ∈ {m₀, -m₀}.
+  by_cases hmℓ : m - ℓ = m₀ ∨ m - ℓ = -m₀
+  · -- Inner j-sum vanishes by the unified div-free helper.
+    rw [sqgVelocitySymbol_mul_derivSymbol_sum_zero_antipodal_pair m₀ ℓ (m - ℓ) hℓ hmℓ]
+    ring
+  · -- θ̂(m - ℓ) = 0.
+    push_neg at hmℓ
+    rw [mFourierCoeff_antipodalMode_eq_zero_of_not_mem hm₀ a₁ a₂ hmℓ.1 hmℓ.2]
+    ring
+
+/-- **Nonlinear flux of the antipodal-pair SQG vanishes everywhere.**
+
+Reduce `∑_j (û_j ★ (∂_j θ̂))(m)` to a double sum: per `j`, the tsum
+over ℓ collapses to a finset sum on `{m₀, -m₀}` (support of `û_j`);
+swap via `Finset.sum_comm`; each ℓ-slice is zero by
+`antipodal_inner_sum_zero`. -/
+theorem sqgNonlinearFlux_antipodalMode_eq_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux (antipodalMode m₀ a₁ a₂)
+      (antipodalVelocity m₀ a₁ a₂ ·) m = 0 := by
+  unfold sqgNonlinearFlux
+  have h_ne : m₀ ≠ -m₀ := neg_ne_self_of_ne_zero hm₀
+  -- Step 1: reduce each inner tsum to a Finset.sum on {m₀, -m₀}.
+  have h_tsum_eq_sum : ∀ j : Fin 2,
+      fourierConvolution
+          (fun ℓ => mFourierCoeff (antipodalVelocity m₀ a₁ a₂ j) ℓ)
+          (fun ℓ => derivSymbol j ℓ *
+            mFourierCoeff (antipodalMode m₀ a₁ a₂) ℓ) m
+        = ∑ ℓ ∈ ({m₀, -m₀} : Finset (Fin 2 → ℤ)),
+            mFourierCoeff (antipodalVelocity m₀ a₁ a₂ j) ℓ
+            * (derivSymbol j (m - ℓ) *
+               mFourierCoeff (antipodalMode m₀ a₁ a₂) (m - ℓ)) := by
+    intro j
+    unfold fourierConvolution
+    apply tsum_eq_sum
+    intro ℓ hℓ
+    have h1 : ℓ ≠ m₀ := fun h => hℓ (by simp [h])
+    have h2 : ℓ ≠ -m₀ := fun h => hℓ (by simp [h])
+    rw [mFourierCoeff_antipodalVelocity hm₀, if_neg h1, if_neg h2, zero_mul]
+  rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq_sum j)]
+  -- Step 2: swap ∑_j and ∑_ℓ.
+  rw [Finset.sum_comm]
+  -- Step 3: each ℓ-slice is zero.
+  apply Finset.sum_eq_zero
+  intro ℓ hℓ_mem
+  have hℓ : ℓ = m₀ ∨ ℓ = -m₀ := by
+    rcases Finset.mem_insert.mp hℓ_mem with h | h
+    · exact Or.inl h
+    · rw [Finset.mem_singleton] at h; exact Or.inr h
+  exact antipodal_inner_sum_zero hm₀ a₁ a₂ m hℓ
+
+/-! ### §10.31 Antipodal-pair stationary SQG weak-solution witness
+
+With the flux theorem in hand, bundle the antipodal pair into:
+- `IsSqgWeakSolution`: Duhamel = ∫ 0 = 0 (flux ≡ 0).
+- `SqgEvolutionAxioms`: constant-in-time, Riesz velocity.
+- `SqgEvolutionAxioms_strong.antipodalMode_const`: route through
+  `of_IsSqgWeakSolution_via_MMP` — first **multi-mode** named
+  discharge of the strong axioms. -/
+
+/-- **IsSqgWeakSolution for the antipodal-pair stationary SQG.** -/
+theorem isSqgWeakSolution_antipodalMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) :
+    IsSqgWeakSolution
+        (fun _ : ℝ => antipodalMode m₀ a₁ a₂)
+        (fun (j : Fin 2) (_ : ℝ) => antipodalVelocity m₀ a₁ a₂ j) where
+  duhamel := fun m s t _ _ => by
+    have h_integrand :
+        (fun τ : ℝ => sqgNonlinearFlux
+            ((fun _ : ℝ => antipodalMode m₀ a₁ a₂) τ)
+            (fun j : Fin 2 =>
+              (fun (j : Fin 2) (_ : ℝ) =>
+                antipodalVelocity m₀ a₁ a₂ j) j τ) m)
+        = fun _ => (0 : ℂ) := by
+      funext τ
+      exact sqgNonlinearFlux_antipodalMode_eq_zero hm₀ a₁ a₂ m
+    rw [h_integrand]
+    simp
+
+/-- **SqgEvolutionAxioms for the antipodal-pair stationary SQG.**
+Constant-in-time trivialises l²/mean conservation; velocity witness
+via `isSqgVelocityComponent_antipodalMode`. -/
+theorem sqgEvolutionAxioms_antipodalMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) :
+    SqgEvolutionAxioms (fun _ : ℝ => antipodalMode m₀ a₁ a₂) where
+  l2Conservation := fun _ _ => rfl
+  meanConservation := fun _ _ => rfl
+  velocityIsRieszTransform := fun j =>
+    ⟨fun _ : ℝ => antipodalVelocity m₀ a₁ a₂ j,
+     fun _ : ℝ => isSqgVelocityComponent_antipodalMode hm₀ a₁ a₂ j⟩
+
+/-- **`SqgEvolutionAxioms_strong` for the antipodal pair.** First
+**multi-mode** named discharge of the strong axioms. Routes the
+antipodal-pair witness through `of_IsSqgWeakSolution_via_MMP`, with
+MMP discharged by `MaterialMaxPrinciple.of_const` keyed on finite
+Fourier support `{m₀, -m₀}`. -/
+theorem SqgEvolutionAxioms_strong.antipodalMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    {m₀ : Fin 2 → ℤ} (hm₀ : m₀ ≠ 0) (a₁ a₂ : ℂ) :
+    SqgEvolutionAxioms_strong (fun _ : ℝ => antipodalMode m₀ a₁ a₂) := by
+  have hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 *
+        ‖mFourierCoeff (antipodalMode m₀ a₁ a₂) n‖ ^ 2) :=
+    hsSeminormSq_summable_of_finite_support 1 (antipodalMode m₀ a₁ a₂)
+      {m₀, -m₀}
+      (fun n hn => by
+        have h1 : n ≠ m₀ := fun h => hn (by simp [h])
+        have h2 : n ≠ -m₀ := fun h => hn (by simp [h])
+        exact mFourierCoeff_antipodalMode_eq_zero_of_not_mem hm₀ a₁ a₂ h1 h2)
+  exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    (sqgEvolutionAxioms_antipodalMode_const hm₀ a₁ a₂)
+    (MaterialMaxPrinciple.of_const (antipodalMode m₀ a₁ a₂) hSumm)
+    (fun j _ => antipodalVelocity m₀ a₁ a₂ j)
+    (fun j _ => isSqgVelocityComponent_antipodalMode hm₀ a₁ a₂ j)
+    (isSqgWeakSolution_antipodalMode_const hm₀ a₁ a₂)
+
 end SqgIdentity
