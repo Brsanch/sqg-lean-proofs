@@ -11081,4 +11081,28 @@ theorem SqgEvolutionAxioms_strong.shellMode_const
     (fun j _ => isSqgVelocityComponent_shellMode S a j)
     (isSqgWeakSolution_shellMode_const hS a)
 
+/-! ### §10.35 Radial-shell regularity capstone
+
+Plug-and-play form: any finite radial shell `S` and any amplitude
+function `a : (Fin 2 → ℤ) → ℂ` give a constant-in-time shellMode that
+enjoys uniform Ḣˢ bounds on `[0, 2]`. The summability hypothesis from
+`sqg_regularity_const` is discharged by the shell's finite Fourier
+support. The bound follows **unconditionally** — no MMP or BKM axiom
+appears in the final statement because both are discharged by
+constant-in-time specialisations.
+
+This completes the radial-shell milestone: the witness satisfies both
+`SqgEvolutionAxioms_strong` (§10.34) and the integer-order regularity
+inequality (here). Strictly generalises the scaled single-mode
+capstone `sqg_regularity_singleMode` (§10.26). -/
+theorem sqg_regularity_shellMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((fun _ : ℝ => shellMode S a) t) ≤ M :=
+  sqg_regularity_const (shellMode S a)
+    (hsSeminormSq_summable_of_finite_support 1 (shellMode S a) S
+      (fun n hn => mFourierCoeff_shellMode_eq_zero_of_not_mem S a hn))
+
 end SqgIdentity
