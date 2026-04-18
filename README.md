@@ -13,21 +13,20 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **~7750 lines, zero errors, zero `sorry`**. Main has
-advanced substantially beyond the last Zenodo release (v0.3.0) — see
-the §10 section list below for what landed post-v0.3.0. §10.8
+Current state: **~7900 lines, zero errors, zero `sorry`**. §10.8
 replaced the last `True` placeholders in `SqgEvolutionAxioms` with
 real predicates and introduced the **s=2 integer-order BKM
-bootstrap** (conditional Theorem 3 on `s ∈ [0, 2]` with no
-fractional-calculus prerequisites). §10.9–§10.10 added the Fourier
-convolution scaffolding and mode-Lipschitz keystone upgrade.
-**§10.11 (most recent)** completes the SQG-specific **Bochner
-wiring**: `DuhamelFlux ⇒ ModeLipschitz` machine-checked via
-`MeasureTheory.norm_setIntegral_le_of_norm_le_const` + `Real.volume_Icc`.
-A future real-solution discharge of `DuhamelFlux` — with the flux
-witnessed by `fourierConvolution` and the bound by
-`convolution_bounded_by_product` — promotes `SqgEvolutionAxioms` to
-`SqgEvolutionAxioms_strong` with one line.
+bootstrap**. §10.9–§10.10 added the Fourier convolution scaffolding
+and mode-Lipschitz keystone upgrade. §10.11 completed the SQG-
+specific **Bochner wiring** `DuhamelFlux ⇒ ModeLipschitz`.
+**§10.12 (most recent)** completes the Duhamel keystone:
+`sqgNonlinearFlux` realizes `(u·∇θ)̂(m)` as a concrete sum of
+`fourierConvolution`s; `sqgNonlinearFlux_bounded` derives its bound
+from `convolution_bounded_by_product` on each component; and
+`SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity` promotes
+`SqgEvolutionAxioms → SqgEvolutionAxioms_strong` from a **PDE-level
+integral identity against this concrete flux**. The flux and its
+bound are no longer in the open axiomatic footprint.
 
 ## What's proven
 
@@ -349,11 +348,30 @@ machine-checked. The entire path
 `convolution_bounded_by_product` → `DuhamelFlux` →
 `ModeLipschitz` → `SqgEvolutionAxioms_strong` → (§10.7 / §10.8
 reductions) → conditional Theorem 3 on `s ∈ [0, 2]` is formalized.
-What remains is the **one remaining analytic task**: writing a real-
-SQG-solution `DuhamelFlux` witness (using `fourierConvolution` for
-`F` and `convolution_bounded_by_product` for the bound). That piece
-is about defining the nonlinear flux from real velocity data, not
-about integration theory.
+
+**§10.12 Concrete nonlinear-flux construction:** `sqgNonlinearFlux`
+realizes `(u·∇θ)̂(m)` as a concrete Lean expression — a sum of
+`fourierConvolution`s between velocity Fourier coefficients and
+gradient Fourier coefficients `derivSymbol j · θ̂`. Adds:
+
+- `sqgNonlinearFlux θ u m` — the concrete flux at a fixed mode.
+- `sqgNonlinearFlux_bounded` — per-mode bound derived via
+  `norm_sum_le` over `Fin 2` + `convolution_bounded_by_product` on
+  each component.
+- `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity` — the PDE-to-
+  `SqgEvolutionAxioms_strong` promotion theorem: given
+  `SqgEvolutionAxioms θ`, a velocity witness satisfying
+  `IsSqgVelocityComponent`, uniform ℓ² bounds `Mu`/`Mg` on velocity
+  and gradient Fourier coefficients, and **the integral identity**
+  `θ̂(m, t) − θ̂(m, s) = − ∫_s^t sqgNonlinearFlux(θ τ)(u · τ)(m) dτ`,
+  concludes `SqgEvolutionAxioms_strong θ` — the §10.10 keystone.
+
+**Net effect of §10.12:** the flux and its bound are no longer part
+of the open axiomatic footprint. The remaining SQG-specific input is
+**a single PDE integral identity** — the mode-wise weak form of
+`∂_t θ + u·∇θ = 0`. Combined with `MaterialMaxPrinciple.hOnePropagation`
+and `BKMCriterionS2.hsPropagationS2`, these are the three remaining
+open pieces for conditional Theorem 3 on `s ∈ [0, 2]`.
 
 ## What's not proven (yet)
 
@@ -377,25 +395,30 @@ doesn't exist in mathlib yet:
 - **Fractional Sobolev bootstrap for `s > 2`** — the remaining open
   tail of conditional Theorem 3. Requires Kato–Ponce-type estimates
   on `𝕋²` (not in mathlib).
-- **Real-solution witness of `DuhamelFlux`** — the concrete
-  construction of the per-mode flux `F(m, τ)` as a sum of
-  `fourierConvolution`s over velocity / gradient Fourier
-  coefficients of a real SQG solution. §10.11 supplies the generic
-  `DuhamelFlux → ModeLipschitz` theorem; what's left is the SQG-
-  specific definition of `F` from velocity data + the
-  `convolution_bounded_by_product` bound on it. About defining the
-  nonlinear flux from real velocity data — not about integration
-  theory (that's done).
+- **Mode-wise weak-form PDE identity** — the single remaining SQG-
+  specific input. `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity`
+  consumes `θ̂(m, t) − θ̂(m, s) = − ∫_s^t sqgNonlinearFlux(θ τ)(u · τ)(m) dτ`
+  directly; providing this hypothesis for a real SQG solution
+  discharges the keystone. The flux is now a concrete Lean
+  expression, the bound is derived — only the PDE identity is
+  axiomatic.
+- **Uniform ℓ² bounds on velocity / gradient coefficients** — one-
+  line consequences of Parseval + Riesz L²-isometry + MMP's Ḣ¹
+  summability (already in the repo), but passed as hypotheses to
+  `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity`. Deriving them
+  inside the theorem is a future cleanup commit.
 
 This repo is the Fourier-algebraic foundation plus a conditional
-Theorem 3 skeleton with the keystone analytic scaffolding now
-machine-checked. As of §10.11 the entire path from the uniform
-convolution bound to `SqgEvolutionAxioms_strong` is formalized; the
-conditional conclusion over `s ∈ [0, 2]` rests on a single integer-
-order axiom; the `s > 2` fractional tail is the remaining open
-piece; and the bridge from a real SQG solution (with a `DuhamelFlux`
-witness) into the §10.7 / §10.8 reductions is in place with a
-one-line promotion theorem (`SqgEvolutionAxioms.strengthen_of_duhamel`).
+Theorem 3 skeleton with the keystone analytic scaffolding fully
+machine-checked. As of §10.12 the path
+`convolution_bounded_by_product` → `sqgNonlinearFlux` →
+`DuhamelFlux` → `ModeLipschitz` → `SqgEvolutionAxioms_strong`
+→ §10.7 / §10.8 reductions → conditional Theorem 3 on `s ∈ [0, 2]`
+is formalized end-to-end. The remaining open content of the
+conditional conclusion collapses to: (i) a single PDE integral
+identity at the Fourier level, (ii) `MaterialMaxPrinciple.hOnePropagation`,
+and (iii) `BKMCriterionS2.hsPropagationS2`. The `s > 2` fractional
+tail remains open separately.
 
 ## The identity
 
