@@ -9108,4 +9108,44 @@ theorem sqgConcreteMollifier_deriv_nonpos_of_mem_right_collar
     exact (div_le_div_iff_of_pos_right hε).mpr (by linarith)
   exact hf_anti.deriv_nonpos
 
+/-! #### Tier 3 — FTC mass identities on each collar -/
+
+/-- **Plumbing — pointwise `HasDerivAt` from `ContDiff 1`.** Needed to feed
+`intervalIntegral.integral_eq_sub_of_hasDerivAt` on every collar. -/
+theorem sqgConcreteMollifier_hasDerivAt (ε s t x : ℝ) :
+    HasDerivAt (sqgConcreteMollifier ε s t)
+      (deriv (sqgConcreteMollifier ε s t) x) x :=
+  ((sqgConcreteMollifier_contDiff ε s t).differentiable one_ne_zero)
+    .differentiableAt.hasDerivAt
+
+/-- **Plumbing — derivative is globally interval-integrable.** `sqgConcreteMollifier`
+is `C¹`, so `deriv` is continuous and hence interval-integrable on any `[a, b]`. -/
+theorem sqgConcreteMollifier_deriv_intervalIntegrable (ε s t a b : ℝ) :
+    IntervalIntegrable (deriv (sqgConcreteMollifier ε s t)) volume a b :=
+  ((sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one).intervalIntegrable a b
+
+/-- **Tier 3a — Left-collar FTC mass identity.**
+`∫_{s−ε}^{s} deriv ψ_ε = ψ_ε(s) − ψ_ε(s − ε) = 1 − 0 = 1`. -/
+theorem sqgConcreteMollifier_integral_deriv_left_collar {ε s t : ℝ}
+    (hε : 0 < ε) (hst : s ≤ t) :
+    ∫ τ in (s - ε)..s, deriv (sqgConcreteMollifier ε s t) τ = 1 := by
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt
+        (fun x _ => sqgConcreteMollifier_hasDerivAt ε s t x)
+        (sqgConcreteMollifier_deriv_intervalIntegrable ε s t _ _),
+      sqgConcreteMollifier_eq_one_of_mem_Icc ⟨le_refl s, hst⟩ hε,
+      sqgConcreteMollifier_zero_of_le_left hε (le_refl _)]
+  ring
+
+/-- **Tier 3b — Right-collar FTC mass identity.**
+`∫_{t}^{t+ε} deriv ψ_ε = ψ_ε(t + ε) − ψ_ε(t) = 0 − 1 = −1`. -/
+theorem sqgConcreteMollifier_integral_deriv_right_collar {ε s t : ℝ}
+    (hε : 0 < ε) (hst : s ≤ t) :
+    ∫ τ in t..(t + ε), deriv (sqgConcreteMollifier ε s t) τ = -1 := by
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt
+        (fun x _ => sqgConcreteMollifier_hasDerivAt ε s t x)
+        (sqgConcreteMollifier_deriv_intervalIntegrable ε s t _ _),
+      sqgConcreteMollifier_zero_of_ge_right hε (le_refl _),
+      sqgConcreteMollifier_eq_one_of_mem_Icc ⟨hst, le_refl t⟩ hε]
+  ring
+
 end SqgIdentity
