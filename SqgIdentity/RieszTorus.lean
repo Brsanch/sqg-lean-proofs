@@ -8971,4 +8971,141 @@ theorem IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
   -- θ̂(t) − θ̂(s) = −∫_{[s,t]} G
   linear_combination -heq
 
+/-! ### §10.22 Phase 2.3.b — collar FTC: `SqgFourierContinuous → IsSqgCollarLhsCondition`
+
+This section executes the proof roadmap documented in §10.21. The mollifier
+`ψ_ε = sqgConcreteMollifier ε s t` is piecewise constant (= 0 outside
+`[s − ε, t + ε]`, = 1 on `[s, t]`), so its derivative is supported on the two
+**collars** `[s − ε, s]` and `[t, t + ε]`. On the left collar the mollifier
+reduces to `Real.smoothTransition ((τ − s + ε)/ε)` (right factor = 1); on the
+right collar it reduces to `Real.smoothTransition ((t − τ + ε)/ε)` (left
+factor = 1). Each factor is monotone in the scaled variable, so:
+
+* **Tier 1 — monotonicity.** `sqgConcreteMollifier` is `MonotoneOn` the left
+  collar and `AntitoneOn` the right collar. This is the substrate all sign
+  statements below rest on.
+* **Tier 2 — derivative sign / vanishing.** On `Ioo s t` the function is
+  locally constant ⇒ `deriv = 0`. Outside `[s − ε, t + ε]` the same holds.
+  On the interior of each collar the local monotone representative makes
+  `deriv` non-negative (left) or non-positive (right).
+
+Tiers 3–6 (FTC mass identities, integral split, collar squeeze, final
+assembly) are the subsequent commits in this plan. -/
+
+/-- **Right-factor collapse.** Symmetric companion to
+`sqgConcreteMollifier_eq_left_factor`: when `s ≤ τ`, the left factor
+`smoothTransition ((τ − s + ε)/ε)` equals 1 (its argument is `≥ 1`), so the
+mollifier reduces to the right factor. Needed for the right-collar monotone
+representation in Tier 1. -/
+theorem sqgConcreteMollifier_eq_right_factor {s t τ : ℝ} (hτs : s ≤ τ) {ε : ℝ}
+    (hε : 0 < ε) :
+    sqgConcreteMollifier ε s t τ =
+      Real.smoothTransition ((t - τ + ε) / ε) := by
+  unfold sqgConcreteMollifier
+  have h1 : Real.smoothTransition ((τ - s + ε) / ε) = 1 :=
+    Real.smoothTransition.one_of_one_le (by rw [le_div_iff₀ hε]; linarith)
+  rw [h1, one_mul]
+
+/-! #### Tier 1 — monotonicity on the two collars -/
+
+/-- **Tier 1a — MonotoneOn left collar.** On `[s − ε, s]`, the mollifier
+equals `Real.smoothTransition ((τ − s + ε)/ε)` (right factor is 1 because
+`τ ≤ s ≤ t`). Precomposition of a monotone function with an affine
+increasing map is monotone. -/
+theorem sqgConcreteMollifier_monotoneOn_left_collar {s t ε : ℝ}
+    (hε : 0 < ε) (hst : s ≤ t) :
+    MonotoneOn (sqgConcreteMollifier ε s t) (Set.Icc (s - ε) s) := by
+  intro a ha b hb hab
+  have ha_t : a ≤ t := ha.2.trans hst
+  have hb_t : b ≤ t := hb.2.trans hst
+  rw [sqgConcreteMollifier_eq_left_factor ha_t hε,
+      sqgConcreteMollifier_eq_left_factor hb_t hε]
+  apply Real.smoothTransition.monotone
+  exact (div_le_div_iff_of_pos_right hε).mpr (by linarith)
+
+/-- **Tier 1b — AntitoneOn right collar.** On `[t, t + ε]`, the mollifier
+equals `Real.smoothTransition ((t − τ + ε)/ε)` (left factor is 1 because
+`s ≤ t ≤ τ`). The argument `(t − τ + ε)/ε` is *decreasing* in `τ`, so after
+composition with the monotone `smoothTransition` the mollifier is antitone. -/
+theorem sqgConcreteMollifier_antitoneOn_right_collar {s t ε : ℝ}
+    (hε : 0 < ε) (hst : s ≤ t) :
+    AntitoneOn (sqgConcreteMollifier ε s t) (Set.Icc t (t + ε)) := by
+  intro a ha b hb hab
+  have ha_s : s ≤ a := hst.trans ha.1
+  have hb_s : s ≤ b := hst.trans hb.1
+  rw [sqgConcreteMollifier_eq_right_factor ha_s hε,
+      sqgConcreteMollifier_eq_right_factor hb_s hε]
+  apply Real.smoothTransition.monotone
+  exact (div_le_div_iff_of_pos_right hε).mpr (by linarith)
+
+/-! #### Tier 2 — derivative sign and vanishing zones -/
+
+/-- **Tier 2a — derivative vanishes on the mid-interval `Ioo s t`.** On the
+open interval `(s, t)` the mollifier is constantly 1, hence locally constant
+in a neighborhood of any `τ ∈ Ioo s t`, so `deriv = 0` by
+`Filter.EventuallyEq.deriv_eq`. -/
+theorem sqgConcreteMollifier_deriv_zero_of_mem_Ioo {s t τ ε : ℝ}
+    (hτ : τ ∈ Set.Ioo s t) (hε : 0 < ε) :
+    deriv (sqgConcreteMollifier ε s t) τ = 0 := by
+  have h : (sqgConcreteMollifier ε s t) =ᶠ[nhds τ] (fun _ : ℝ => (1 : ℝ)) := by
+    filter_upwards [Ioo_mem_nhds hτ.1 hτ.2] with x hx
+    exact sqgConcreteMollifier_eq_one_of_mem_Ioo hx hε
+  rw [h.deriv_eq]; exact deriv_const τ 1
+
+/-- **Tier 2b — derivative vanishes strictly below `s − ε`.** Below the
+support's left edge the mollifier is identically 0, so `deriv = 0`. -/
+theorem sqgConcreteMollifier_deriv_zero_of_lt_left {s t τ ε : ℝ}
+    (hτ : τ < s - ε) (hε : 0 < ε) :
+    deriv (sqgConcreteMollifier ε s t) τ = 0 := by
+  have h : (sqgConcreteMollifier ε s t) =ᶠ[nhds τ] (fun _ : ℝ => (0 : ℝ)) := by
+    filter_upwards [Iio_mem_nhds hτ] with x hx
+    exact sqgConcreteMollifier_zero_of_le_left hε hx.le
+  rw [h.deriv_eq]; exact deriv_const τ 0
+
+/-- **Tier 2c — derivative vanishes strictly above `t + ε`.** Symmetric to
+Tier 2b. -/
+theorem sqgConcreteMollifier_deriv_zero_of_gt_right {s t τ ε : ℝ}
+    (hτ : t + ε < τ) (hε : 0 < ε) :
+    deriv (sqgConcreteMollifier ε s t) τ = 0 := by
+  have h : (sqgConcreteMollifier ε s t) =ᶠ[nhds τ] (fun _ : ℝ => (0 : ℝ)) := by
+    filter_upwards [Ioi_mem_nhds hτ] with x hx
+    exact sqgConcreteMollifier_zero_of_ge_right hε hx.le
+  rw [h.deriv_eq]; exact deriv_const τ 0
+
+/-- **Tier 2d — derivative is non-negative on the interior of the left
+collar.** In a neighborhood of `τ ∈ Ioo (s − ε) s` (specifically, any nbhd
+contained in `Iic t`), the mollifier equals the monotone representative
+`x ↦ smoothTransition ((x − s + ε)/ε)`. By `Filter.EventuallyEq.deriv_eq`
+the derivative at `τ` matches, and the representative's derivative is
+non-negative by `Monotone.deriv_nonneg`. -/
+theorem sqgConcreteMollifier_deriv_nonneg_of_mem_left_collar
+    {s t τ ε : ℝ} (hτ : τ ∈ Set.Ioo (s - ε) s) (hε : 0 < ε) (hst : s ≤ t) :
+    0 ≤ deriv (sqgConcreteMollifier ε s t) τ := by
+  set f : ℝ → ℝ := fun x => Real.smoothTransition ((x - s + ε) / ε) with hf_def
+  have h_nhds : (sqgConcreteMollifier ε s t) =ᶠ[nhds τ] f := by
+    filter_upwards [Iic_mem_nhds (lt_of_lt_of_le hτ.2 hst)] with x hx
+    exact sqgConcreteMollifier_eq_left_factor hx hε
+  rw [h_nhds.deriv_eq]
+  have hf_mono : Monotone f := fun a b hab => by
+    apply Real.smoothTransition.monotone
+    exact (div_le_div_iff_of_pos_right hε).mpr (by linarith)
+  exact hf_mono.deriv_nonneg
+
+/-- **Tier 2e — derivative is non-positive on the interior of the right
+collar.** Symmetric to Tier 2d: local representative is
+`x ↦ smoothTransition ((t − x + ε)/ε)`, which is antitone, so
+`deriv ≤ 0` by `Antitone.deriv_nonpos`. -/
+theorem sqgConcreteMollifier_deriv_nonpos_of_mem_right_collar
+    {s t τ ε : ℝ} (hτ : τ ∈ Set.Ioo t (t + ε)) (hε : 0 < ε) (hst : s ≤ t) :
+    deriv (sqgConcreteMollifier ε s t) τ ≤ 0 := by
+  set f : ℝ → ℝ := fun x => Real.smoothTransition ((t - x + ε) / ε) with hf_def
+  have h_nhds : (sqgConcreteMollifier ε s t) =ᶠ[nhds τ] f := by
+    filter_upwards [Ioi_mem_nhds (lt_of_le_of_lt hst hτ.1)] with x hx
+    exact sqgConcreteMollifier_eq_right_factor hx.le hε
+  rw [h_nhds.deriv_eq]
+  have hf_anti : Antitone f := fun a b hab => by
+    apply Real.smoothTransition.monotone
+    exact (div_le_div_iff_of_pos_right hε).mpr (by linarith)
+  exact hf_anti.deriv_nonpos
+
 end SqgIdentity
