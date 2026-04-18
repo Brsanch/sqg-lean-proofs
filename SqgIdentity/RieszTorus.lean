@@ -9284,10 +9284,10 @@ theorem sqgConcreteMollifier_product_intervalIntegrable
       volume a b := by
   apply Continuous.intervalIntegrable
   apply Continuous.mul _ hF
-  have : (fun τ => deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ) =
-         (fun τ => ((deriv (sqgConcreteMollifier ε s t) τ : ℝ) : ℂ)) := by
+  have h_eq : deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) =
+              fun τ => ((deriv (sqgConcreteMollifier ε s t) τ : ℝ) : ℂ) := by
     funext τ; exact sqgConcreteMollifier_deriv_complex ε s t τ
-  rw [this]
+  rw [h_eq]
   exact Complex.continuous_ofReal.comp
     ((sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one)
 
@@ -9305,12 +9305,14 @@ theorem sqgConcreteMollifier_integral_eq_buffered
     push_neg at h
     apply hτ
     have hτ_le : τ ≤ s - ε := by linarith
+    show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
     rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst (Or.inl hτ_le)]
     ring
   · by_contra h
     push_neg at h
     apply hτ
     have hτ_ge : t + ε ≤ τ := by linarith
+    show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
     rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
           (Or.inr (Or.inr hτ_ge))]
     ring
@@ -9340,7 +9342,8 @@ theorem sqgConcreteMollifier_integral_collar_split
     apply intervalIntegral.integral_congr
     intro τ hτ
     rw [Set.uIcc_of_le (by linarith : s - ε - 1 ≤ s - ε)] at hτ
-    rw [hG_def, sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+    show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
+    rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
           (Or.inl hτ.2)]
     ring
   have h_mid : ∫ τ in s..t, G τ = 0 := by
@@ -9349,7 +9352,8 @@ theorem sqgConcreteMollifier_integral_collar_split
     apply intervalIntegral.integral_congr
     intro τ hτ
     rw [Set.uIcc_of_le hst] at hτ
-    rw [hG_def, sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+    show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
+    rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
           (Or.inr (Or.inl hτ))]
     ring
   have h_outer_right : ∫ τ in (t + ε)..(t + ε + 1), G τ = 0 := by
@@ -9359,7 +9363,8 @@ theorem sqgConcreteMollifier_integral_collar_split
     apply intervalIntegral.integral_congr
     intro τ hτ
     rw [Set.uIcc_of_le (by linarith : t + ε ≤ t + ε + 1)] at hτ
-    rw [hG_def, sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+    show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
+    rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
           (Or.inr (Or.inr hτ.1))]
     ring
   rw [h_outer_left, h_outer_right, h_mid, zero_add, add_zero]
