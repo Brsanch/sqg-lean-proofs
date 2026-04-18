@@ -8372,7 +8372,8 @@ theorem sqgNonlinearFlux_zero_theta
           (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) ℓ)
         = fun _ => (0 : ℂ) := by
     funext ℓ
-    simp [mFourierCoeff_zero]
+    rw [mFourierCoeff_zero]
+    ring
   rw [h]
   exact fourierConvolution_zero_right _ m
 
@@ -8391,7 +8392,23 @@ theorem IsSqgWeakSolutionTimeTest.zero
     IsSqgWeakSolutionTimeTest
       (fun _ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) u := by
   intro ψ _ m
-  simp [mFourierCoeff_zero, sqgNonlinearFlux_zero_theta]
+  have h1 : (fun τ : ℝ => deriv ψ τ
+      * mFourierCoeff ((fun _ : ℝ =>
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ) m)
+        = fun _ => (0 : ℂ) := by
+    funext τ
+    rw [mFourierCoeff_zero]
+    ring
+  have h2 : (fun τ : ℝ => ψ τ
+      * sqgNonlinearFlux ((fun _ : ℝ =>
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ)
+            (fun j => u j τ) m)
+        = fun _ => (0 : ℂ) := by
+    funext τ
+    rw [sqgNonlinearFlux_zero_theta]
+    ring
+  rw [h1, h2]
+  simp
 
 /-! ### §10.17 Fourier-coefficient time regularity
 
@@ -8437,7 +8454,12 @@ theorem SqgFourierContinuous.zero :
     SqgFourierContinuous
       (fun _ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) := by
   intro m
-  simp only [mFourierCoeff_zero]
+  have h : (fun τ : ℝ => mFourierCoeff ((fun _ : ℝ =>
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ) m)
+        = fun _ => (0 : ℂ) := by
+    funext τ
+    exact mFourierCoeff_zero m
+  rw [h]
   exact continuous_const
 
 /-- **Constant-in-time scalar field is Fourier-continuous.** Every
