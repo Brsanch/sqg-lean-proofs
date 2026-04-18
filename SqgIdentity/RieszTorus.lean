@@ -7743,4 +7743,162 @@ theorem SqgEvolutionAxioms.strengthen_of_duhamel
   weak := hE
   modeLipschitz := hD.modeLipschitz
 
+/-! ### §10.12 Concrete SQG nonlinear flux + PDE-identity promotion
+
+Duhamel keystone: realize the per-mode nonlinear flux `(u · ∇θ)̂(m)`
+as a **concrete Lean expression** — a sum over the two velocity
+components of `fourierConvolution`s between the velocity Fourier
+coefficients and the gradient Fourier coefficients. Bound it via
+`convolution_bounded_by_product` on each component. Discharge
+`SqgEvolutionAxioms_strong` from a **PDE-level integral identity**
+against this specific flux, under two natural ℓ² control
+hypotheses (uniform ℓ² bound on velocity coefficients and on
+gradient coefficients in time).
+
+After §10.12, the remaining open content of conditional Theorem 3 on
+`s ∈ [0, 2]` collapses to:
+
+* `MaterialMaxPrinciple.hOnePropagation` — the D14 §9 geometric
+  argument (unchanged).
+* `BKMCriterionS2.hsPropagationS2` — integer-order Ḣ² bootstrap
+  (unchanged).
+* **A single weak-form PDE identity** at the Fourier level, stated
+  cleanly as `θ̂(m, t) − θ̂(m, s) = − ∫_s^t (sqgNonlinearFlux)(m, τ) dτ`.
+  This is the PDE existence / regularity content; the flux and its
+  bound are no longer part of the open axiomatic footprint.
+
+Provided here:
+
+* `sqgNonlinearFlux θ u m` — the concrete flux definition.
+* `sqgNonlinearFlux_bounded` — the per-mode pointwise bound derived
+  from `convolution_bounded_by_product` on each component.
+* `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity` — the PDE-to-
+  `SqgEvolutionAxioms_strong` promotion theorem.
+-/
+
+/-- **Concrete SQG nonlinear flux at a fixed mode.** The Fourier-side
+realization of `(u · ∇θ)̂(m)` as a sum of convolutions:
+
+  `sqgNonlinearFlux θ u m = ∑ⱼ (û_j * (i · ·_j · θ̂))(m)`
+
+where `derivSymbol j ℓ = i · ℓ_j` is the Fourier multiplier of
+`∂_j` (from the Riesz library) and `fourierConvolution` is the
+§10.9 coefficient-sequence convolution. -/
+noncomputable def sqgNonlinearFlux
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : Fin 2 → ℤ) : ℂ :=
+  ∑ j : Fin 2, fourierConvolution
+    (fun ℓ => mFourierCoeff (u j) ℓ)
+    (fun ℓ => derivSymbol j ℓ * mFourierCoeff θ ℓ) m
+
+/-- **Per-mode bound on `sqgNonlinearFlux`.**
+
+Given ℓ²-summability of (i) the velocity Fourier coefficients of each
+`u j` and (ii) the gradient Fourier coefficients `derivSymbol j · θ̂`,
+the nonlinear flux at every mode satisfies a Young-type bound inherited
+from `convolution_bounded_by_product` on each component, summed over
+the two velocity directions via the triangle inequality. -/
+theorem sqgNonlinearFlux_bounded
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hu_sum : ∀ j, Summable (fun ℓ : Fin 2 → ℤ => ‖mFourierCoeff (u j) ℓ‖ ^ 2))
+    (hgrad_sum : ∀ j, Summable
+      (fun ℓ : Fin 2 → ℤ => ‖derivSymbol j ℓ * mFourierCoeff θ ℓ‖ ^ 2))
+    (m : Fin 2 → ℤ) :
+    ‖sqgNonlinearFlux θ u m‖
+      ≤ ∑ j : Fin 2,
+          ((∑' ℓ, ‖mFourierCoeff (u j) ℓ‖ ^ 2)
+            + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff θ ℓ‖ ^ 2)) / 2 := by
+  unfold sqgNonlinearFlux
+  calc
+    ‖∑ j : Fin 2, fourierConvolution (fun ℓ => mFourierCoeff (u j) ℓ)
+        (fun ℓ => derivSymbol j ℓ * mFourierCoeff θ ℓ) m‖
+      ≤ ∑ j : Fin 2, ‖fourierConvolution (fun ℓ => mFourierCoeff (u j) ℓ)
+          (fun ℓ => derivSymbol j ℓ * mFourierCoeff θ ℓ) m‖ :=
+          norm_sum_le _ _
+    _ ≤ ∑ j : Fin 2,
+          ((∑' ℓ, ‖mFourierCoeff (u j) ℓ‖ ^ 2)
+            + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff θ ℓ‖ ^ 2)) / 2 := by
+        apply Finset.sum_le_sum
+        intro j _
+        exact convolution_bounded_by_product _ _ (hu_sum j) (hgrad_sum j) m
+
+/-- **PDE-identity promotion to `SqgEvolutionAxioms_strong`.**
+
+The §10.12 keystone. Given:
+
+* `SqgEvolutionAxioms θ` (from the existing scaffold),
+* a concrete velocity field `u : Fin 2 → ℝ → Lp` witnessing the
+  Riesz-transform relation for `θ` at every time,
+* uniform ℓ²-summability and uniform-in-`τ` tsum bounds on the
+  velocity and gradient Fourier coefficients (supplied by the caller
+  — a one-line consequence of Parseval + Riesz L²-isometry + MMP's
+  Ḣ¹ summability, but deferred here),
+* **the PDE integral identity** at the Fourier level against
+  `sqgNonlinearFlux`,
+
+this theorem concludes `SqgEvolutionAxioms_strong θ` — the §10.10
+keystone structure.
+
+**Only PDE-specific input:** the integral identity `hDuhamel`. The
+flux is a concrete Lean expression (`sqgNonlinearFlux`), the bound is
+derived (`sqgNonlinearFlux_bounded`), and the Bochner wiring is
+already in §10.11 (`DuhamelFlux.modeLipschitz`). -/
+theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (_hu_velocity : ∀ (j : Fin 2) (τ : ℝ), IsSqgVelocityComponent (θ τ) (u j τ) j)
+    (Mu : ℝ) (hMu : 0 ≤ Mu)
+    (hu_sum : ∀ (j : Fin 2) (τ : ℝ),
+      Summable (fun ℓ : Fin 2 → ℤ => ‖mFourierCoeff (u j τ) ℓ‖ ^ 2))
+    (hu_bdd : ∀ (j : Fin 2) (τ : ℝ),
+      (∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2) ≤ Mu)
+    (Mg : ℝ) (hMg : 0 ≤ Mg)
+    (hgrad_sum : ∀ (j : Fin 2) (τ : ℝ),
+      Summable (fun ℓ : Fin 2 → ℤ => ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2))
+    (hgrad_bdd : ∀ (j : Fin 2) (τ : ℝ),
+      (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2) ≤ Mg)
+    (hDuhamel : ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
+        = -∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m) :
+    SqgEvolutionAxioms_strong θ := by
+  -- Build the `DuhamelFlux` witness with flux = sqgNonlinearFlux and K = Mu + Mg.
+  have hDF : DuhamelFlux θ := by
+    refine ⟨fun m τ => sqgNonlinearFlux (θ τ) (fun j => u j τ) m, ?_, ?_⟩
+    · -- Uniform per-mode bound.
+      intro m
+      refine ⟨Mu + Mg, by linarith, fun τ => ?_⟩
+      have hFlux :=
+        sqgNonlinearFlux_bounded (θ τ) (fun j => u j τ)
+          (fun j => hu_sum j τ) (fun j => hgrad_sum j τ) m
+      -- Each summand is at most (Mu + Mg)/2; `Fin 2` has two terms.
+      have hterm : ∀ j : Fin 2,
+          ((∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2)
+            + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2)) / 2
+          ≤ (Mu + Mg) / 2 := by
+        intro j
+        have h1 := hu_bdd j τ
+        have h2 := hgrad_bdd j τ
+        linarith
+      have hsum_le :
+          ∑ j : Fin 2,
+              ((∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2)
+                + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2)) / 2
+            ≤ Mu + Mg := by
+        calc
+          ∑ j : Fin 2,
+              ((∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2)
+                + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2)) / 2
+            ≤ ∑ _j : Fin 2, (Mu + Mg) / 2 :=
+                Finset.sum_le_sum (fun j _ => hterm j)
+          _ = (Mu + Mg) / 2 + (Mu + Mg) / 2 := Fin.sum_univ_two _
+          _ = Mu + Mg := by ring
+      linarith
+    · -- Duhamel identity.
+      intro m s t hs hst
+      exact hDuhamel m s t hs hst
+  exact hE.strengthen_of_duhamel hDF
+
 end SqgIdentity
