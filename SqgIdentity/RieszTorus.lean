@@ -10821,10 +10821,12 @@ lemma sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq
       sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero _ _ hk]
   have hnormC : ((latticeNorm ℓ : ℝ) : ℂ) = ((latticeNorm k : ℝ) : ℂ) := by
     exact_mod_cast hnorm
-  rw [hnormC, div_add_div_same]
-  have : (((ℓ 1 : ℝ) * (k 0 : ℝ) - (ℓ 0 : ℝ) * (k 1 : ℝ) : ℝ) : ℂ)
-          + (((k 1 : ℝ) * (ℓ 0 : ℝ) - (k 0 : ℝ) * (ℓ 1 : ℝ) : ℝ) : ℂ) = 0 := by
-    push_cast; ring
-  rw [this, zero_div]
+  have hLne : ((latticeNorm k : ℝ) : ℂ) ≠ 0 := by
+    have := latticeNorm_pos hk
+    exact_mod_cast ne_of_gt this
+  rw [hnormC]
+  field_simp
+  push_cast
+  ring
 
 end SqgIdentity
