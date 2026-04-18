@@ -6,8 +6,8 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.1
-date-released: "2026-04-17"
+version: 0.4.2
+date-released: "2026-04-18"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
 identifiers:
@@ -48,18 +48,21 @@ abstract: >
   Sobolev range s in [0, 1]. Combined, the conditional Theorem 3 on
   s in [0, 2] rests on integer-order axioms only. The v0.4.0 release
   eliminated all `True` placeholders from SqgEvolutionAxioms;
-  v0.4.1 adds the Fourier convolution scaffolding
-  (`fourierConvolution`, `convolution_bounded_by_product` with the
-  uniform Young bound), the mode-Lipschitz keystone upgrade
-  (`ModeLipschitz`, `SqgEvolutionAxioms_strong`), and the SQG-
-  specific Bochner wiring (`DuhamelFlux`,
-  `DuhamelFlux.modeLipschitz`, and the one-line promotion theorem
-  `SqgEvolutionAxioms.strengthen_of_duhamel`) — giving a fully
-  machine-checked path from "bounded per-mode flux" to "conditional
-  Theorem 3 on [0, 2]" whose only remaining analytic step is a
-  real-SQG-solution witness for DuhamelFlux. All content machine-
-  verified with zero `sorry`. Mathematical theorems by Bryan Sanchez;
-  Lean formalization by Bryan Sanchez with AI assistance.
+  v0.4.1 added the Fourier convolution scaffolding, the mode-
+  Lipschitz keystone upgrade, and the SQG-specific Bochner wiring.
+  v0.4.2 closes the Duhamel keystone end-to-end: a concrete
+  sqgNonlinearFlux realization of (u·∇θ)̂, ℓ²-control helpers,
+  Parseval split-at-zero-mode and full Fourier-tsum L² conservation
+  (theta_fourier_tsum_conserved), and the fully-internalized
+  promotion theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP
+  consuming only SqgEvolutionAxioms + MaterialMaxPrinciple + velocity
+  + the PDE integral identity. Headline reading: "give me a solution
+  satisfying those axioms plus the integral form of SQG against the
+  concrete nonlinear flux, and I hand you uniform Ḣˢ bounds for every
+  s ∈ [0, 2]." The only remaining SQG-specific open content is the
+  weak-form PDE identity. All content machine-verified with zero
+  `sorry`. Mathematical theorems by Bryan Sanchez; Lean formalization
+  by Bryan Sanchez with AI assistance.
 keywords:
   - Lean 4
   - mathlib
