@@ -8514,11 +8514,16 @@ noncomputable def sqgMollifier (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
     ℝ → ℂ :=
   fun τ => ((sqgMollifierBump ε s t hst hε) τ : ℂ)
 
-/-- **Mollifier is `C^∞`.** Composition of `Complex.ofRealCLM`
-(infinitely smooth linear map) with the bump (C^∞ by
-`ContDiffBump.contDiff`). -/
+/-- **Mollifier is `C¹` (in fact `C^∞`, but `C¹` is what we need).**
+Composition of `Complex.ofRealCLM` (infinitely smooth linear map)
+with the bump (`C^∞` by `ContDiffBump.contDiff`). We target
+`ContDiff ℝ 1` directly because:
+* `ContDiffBump.contDiff` provides `ContDiff ℝ (↑n) f` for
+  `n : ℕ∞`, whose max value `∞` lifts to `(∞ : WithTop ℕ∞)` — it
+  cannot reach `(⊤ : WithTop ℕ∞)` (the analytic level).
+* `IsSqgTimeTestFunction` only needs `C¹`. -/
 theorem sqgMollifier_contDiff (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
-    ContDiff ℝ ⊤ (sqgMollifier ε s t hst hε) := by
+    ContDiff ℝ 1 (sqgMollifier ε s t hst hε) := by
   unfold sqgMollifier
   exact Complex.ofRealCLM.contDiff.comp
     (sqgMollifierBump ε s t hst hε).contDiff
@@ -8536,12 +8541,12 @@ theorem sqgMollifier_hasCompactSupport
 
 /-- **Mollifier is a time test function.**
 
-Bundles `sqgMollifier_contDiff` (downcast from `⊤` to `1`) with
+Bundles `sqgMollifier_contDiff` (at level `1`) with
 `sqgMollifier_hasCompactSupport` to match `IsSqgTimeTestFunction`. -/
 theorem sqgMollifier_isSqgTimeTestFunction
     (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
     IsSqgTimeTestFunction (sqgMollifier ε s t hst hε) :=
-  ⟨(sqgMollifier_contDiff ε s t hst hε).of_le le_top,
+  ⟨sqgMollifier_contDiff ε s t hst hε,
    sqgMollifier_hasCompactSupport ε s t hst hε⟩
 
 /-- **Mollifier equals `1` on `[s, t]`.** On the core interval the
@@ -8555,7 +8560,7 @@ theorem sqgMollifier_eq_one_of_mem_Icc
   obtain ⟨h1, h2⟩ := hτ
   have hbump : (sqgMollifierBump ε s t hst hε) τ = 1 := by
     apply ContDiffBump.one_of_mem_closedBall
-    show τ ∈ Metric.closedBall ((s + t) / 2) ((t - s) / 2)
+    change τ ∈ Metric.closedBall ((s + t) / 2) ((t - s) / 2)
     rw [Metric.mem_closedBall, Real.dist_eq, abs_le]
     refine ⟨?_, ?_⟩ <;> linarith
   unfold sqgMollifier
