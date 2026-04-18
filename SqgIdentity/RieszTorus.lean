@@ -8656,7 +8656,7 @@ noncomputable def sqgConcreteMollifier (ε s t : ℝ) : ℝ → ℝ :=
 non-negative `smoothTransition` values. -/
 theorem sqgConcreteMollifier_nonneg (ε s t τ : ℝ) :
     0 ≤ sqgConcreteMollifier ε s t τ :=
-  mul_nonneg Real.smoothTransition.nonneg Real.smoothTransition.nonneg
+  mul_nonneg (Real.smoothTransition.nonneg _) (Real.smoothTransition.nonneg _)
 
 /-- `sqgConcreteMollifier` is at most 1 everywhere: product of two
 values each ≤ 1, and the product of non-negatives ≤ 1 that multiply
@@ -8666,8 +8666,8 @@ theorem sqgConcreteMollifier_le_one (ε s t τ : ℝ) :
   unfold sqgConcreteMollifier
   calc Real.smoothTransition ((τ - s + ε) / ε) *
          Real.smoothTransition ((t - τ + ε) / ε)
-      ≤ 1 * 1 := mul_le_one₀ Real.smoothTransition.le_one
-                   Real.smoothTransition.nonneg Real.smoothTransition.le_one
+      ≤ 1 * 1 := mul_le_one₀ (Real.smoothTransition.le_one _)
+                   (Real.smoothTransition.nonneg _) (Real.smoothTransition.le_one _)
     _ = 1 := one_mul 1
 
 /-- For `τ ∈ (s, t)` (open interval), both `smoothTransition` arguments
@@ -8701,8 +8701,9 @@ theorem sqgConcreteMollifier_eq_left_factor {s t τ : ℝ} (hτt : τ ≤ t) {ε
     sqgConcreteMollifier ε s t τ =
       Real.smoothTransition ((τ - s + ε) / ε) := by
   unfold sqgConcreteMollifier
-  rw [Real.smoothTransition.one_of_one_le, mul_one]
-  rw [le_div_iff₀ hε]; linarith
+  have h2 : Real.smoothTransition ((t - τ + ε) / ε) = 1 :=
+    Real.smoothTransition.one_of_one_le (by rw [le_div_iff₀ hε]; linarith)
+  rw [h2, mul_one]
 
 /-- The concrete mollifier vanishes for `τ ≤ s − ε`: the left factor's
 argument is `(τ − s + ε)/ε ≤ 0` when `τ ≤ s − ε`. -/
@@ -8737,7 +8738,7 @@ theorem sqgConcreteMollifier_contDiff (ε s t : ℝ) :
 closed interval `[s − ε, t + ε]`, hence `tsupport ⊆ [s − ε, t + ε]`. -/
 theorem sqgConcreteMollifier_hasCompactSupport {ε s t : ℝ} (hε : 0 < ε) :
     HasCompactSupport (sqgConcreteMollifier ε s t) := by
-  apply HasCompactSupport.of_support_in_compacts (K := Set.Icc (s - ε) (t + ε))
+  apply HasCompactSupport.of_support_subset_isCompact (K := Set.Icc (s - ε) (t + ε))
     isCompact_Icc
   intro τ hτ
   simp only [Function.mem_support] at hτ
@@ -8753,7 +8754,7 @@ theorem sqgConcreteMollifier_hasCompactSupport {ε s t : ℝ} (hε : 0 < ε) :
 theorem sqgConcreteMollifier_isSqgTimeTestFunction {ε s t : ℝ} (hε : 0 < ε) :
     IsSqgTimeTestFunction (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) := by
   constructor
-  · exact Complex.ofReal_clm.contDiff.comp (sqgConcreteMollifier_contDiff ε s t)
+  · exact ofRealCLM.contDiff.comp (sqgConcreteMollifier_contDiff ε s t)
   · exact (sqgConcreteMollifier_hasCompactSupport hε).comp_left (map_zero _)
 
 /-! #### Phase 2.3.c — RHS mollifier integral converges to interval integral
@@ -8788,7 +8789,7 @@ Hypotheses:
 theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
     {G : ℝ → ℂ} {K : ℝ} (hK_nn : 0 ≤ K)
     (hG_bound : ∀ τ, ‖G τ‖ ≤ K)
-    (hG_meas : MeasureTheory.AEStronglyMeasurable G MeasureTheory.Measure.volume) :
+    (hG_meas : AEStronglyMeasurable G volume) :
     Filter.Tendsto
       (fun ε => ∫ τ, (sqgConcreteMollifier ε s t τ : ℂ) * G τ)
       (nhdsWithin 0 (Set.Ioi 0))
@@ -8801,14 +8802,11 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
   · -- Measurability: for each ε, the integrand is measurable
     apply Filter.Eventually.of_forall
     intro ε
-    apply MeasureTheory.AEStronglyMeasurable.mul _ hG_meas
+    apply AEStronglyMeasurable.mul _ hG_meas
     exact (Complex.continuous_ofReal.comp
-      (Real.smoothTransition.continuous.comp (continuous_const.sub continuous_const |>.add
-        continuous_const |>.div_const _) |>.mul
-      (Real.smoothTransition.continuous.comp (continuous_const.sub continuous_const |>.add
-        continuous_const |>.div_const _)))).aestronglyMeasurable
+      ((sqgConcreteMollifier_contDiff ε s t).continuous)).aestronglyMeasurable
   · -- Domination: for ε ∈ (0, 1], the integrand is bounded by K · 𝟙_{[s-1,t+1]}
-    apply Filter.eventually_of_mem (Ioc_mem_nhdsWithin_Ioi ⟨le_refl _, one_pos⟩)
+    apply Filter.eventually_of_mem (Ioc_mem_nhdsGT (by norm_num : (0 : ℝ) < 1))
     intro ε ⟨hε_pos, hε_le⟩ τ
     simp only [Set.indicator, Set.mem_Icc]
     split_ifs with hmem
@@ -8817,12 +8815,11 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       calc ‖(sqgConcreteMollifier ε s t τ : ℂ) * G τ‖
           = ‖(sqgConcreteMollifier ε s t τ : ℂ)‖ * ‖G τ‖ := norm_mul _ _
         _ ≤ 1 * K := by
-            apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+            apply mul_le_mul _ (hG_bound τ) (norm_nonneg _) one_nonneg
             rw [Complex.norm_real, Real.norm_eq_abs,
                 abs_of_nonneg (sqgConcreteMollifier_nonneg ε s t τ)]
             exact sqgConcreteMollifier_le_one ε s t τ
         _ = K := one_mul K
-        _ ≤ K := le_refl _
     · -- τ ∉ [s-1, t+1], so mollifier = 0 (support ⊆ [s-ε, t+ε] ⊆ [s-1, t+1] for ε ≤ 1)
       rw [mul_zero]
       simp only [norm_zero, norm_nonneg]
@@ -8830,78 +8827,41 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       have hmoll : sqgConcreteMollifier ε s t τ = 0 := by
         simp only [not_and_or, not_le] at hmem
         rcases hmem with h | h
-        · exact sqgConcreteMollifier_zero_of_le_left hε_pos.le (by linarith)
-        · exact sqgConcreteMollifier_zero_of_ge_right hε_pos.le (by linarith)
+        · exact sqgConcreteMollifier_zero_of_le_left hε_pos (by linarith)
+        · exact sqgConcreteMollifier_zero_of_ge_right hε_pos (by linarith)
       simp [hmoll]
   · -- Integrability of the dominating function K · 𝟙_{[s-1, t+1]}
-    apply MeasureTheory.Integrable.const_mul _ K
-    exact MeasureTheory.integrableOn_const.mpr (Or.inr (by
-      rw [Real.volume_Icc]; exact ENNReal.ofReal_lt_top))
-      |>.indicator measurableSet_Icc
+    apply Integrable.const_mul _ K
+    exact (integrableOn_const (by
+        rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top))
+      .integrable_indicator measurableSet_Icc
   · -- Pointwise a.e. convergence
     apply Filter.Eventually.of_forall
     intro τ
-    -- Case split on τ vs [s, t]
-    by_cases hτs : s < τ
-    · by_cases hτt : τ < t
-      · -- τ ∈ (s, t): mollifier = 1 for all ε > 0; constant limit
-        have heq : ∀ᶠ ε in nhdsWithin 0 (Set.Ioi 0),
-            (sqgConcreteMollifier ε s t τ : ℂ) * G τ =
-              (Set.Icc s t).indicator G τ := by
-          apply Filter.Eventually.of_forall
-          intro ε
-          simp only [Set.indicator, Set.mem_Icc, le_of_lt hτs, le_of_lt hτt, and_self, ite_true]
-          by_cases hε : 0 < ε
-          · rw [sqgConcreteMollifier_eq_one_of_mem_Ioo ⟨hτs, hτt⟩ hε]
-            push_cast; ring
-          · -- ε ≤ 0: mollifier = 0 (both args are ≤ 0 / 0 = 0 in Lean's convention)
-            push_neg at hε
-            have : sqgConcreteMollifier ε s t τ = 0 := by
-              simp [sqgConcreteMollifier]
-              left
-              apply Real.smoothTransition.zero_of_nonpos
-              apply div_nonpos_of_nonneg_of_nonpos
-              · linarith
-              · exact hε
-            simp [this]
-        exact Filter.Tendsto.congr' (tendsto_const_nhds) heq
-      · -- τ ≥ t: indicator = 0; mollifier → 0
-        push_neg at hτt
-        have hind : (Set.Icc s t).indicator G τ = 0 := by
-          simp [Set.indicator, Set.mem_Icc, not_le.mpr (lt_of_le_of_lt hτt (lt_irrefl t) |>.elim
-            id (fun h => absurd h (not_lt.mpr hτt)))]
-          simp [Set.indicator_apply, Set.mem_Icc]
-          intro _; exact absurd hτt (not_lt.mpr ‹_›)
-        rw [hind]
-        apply tendsto_nhdsWithin_of_tendsto_nhds
-        have : Filter.Tendsto (fun ε => (sqgConcreteMollifier ε s t τ : ℂ) * G τ)
-            (nhds 0) (nhds 0) := by
-          have h0 : Filter.Tendsto (fun ε => sqgConcreteMollifier ε s t τ)
-              (nhds 0) (nhds 0) := by
-            have : sqgConcreteMollifier 0 s t τ = 0 := by
-              simp [sqgConcreteMollifier, Real.smoothTransition.zero]
-            rw [← this]
-            apply (sqgConcreteMollifier_contDiff 0 s t).continuous.continuousAt
-          exact (h0.ofReal.mul tendsto_const_nhds).congr (by simp) (by simp)
-        exact this
-    · -- τ ≤ s: indicator = 0; mollifier → 0 as ε → 0⁺
-      push_neg at hτs
-      have hind : (Set.Icc s t).indicator G τ = 0 := by
-        simp [Set.indicator, Set.mem_Icc, not_le.mpr (lt_of_le_of_lt hτs (lt_irrefl s))]
-        simp [Set.indicator_apply, Set.mem_Icc]
-        intro h; exact absurd hτs (not_lt.mpr h)
-      rw [hind]
-      apply tendsto_nhdsWithin_of_tendsto_nhds
-      have : Filter.Tendsto (fun ε => (sqgConcreteMollifier ε s t τ : ℂ) * G τ)
-          (nhds 0) (nhds 0) := by
-        have h0 : Filter.Tendsto (fun ε => sqgConcreteMollifier ε s t τ)
-            (nhds 0) (nhds 0) := by
-          have : sqgConcreteMollifier 0 s t τ = 0 := by
-            simp [sqgConcreteMollifier, Real.smoothTransition.zero]
-          rw [← this]
-          apply (sqgConcreteMollifier_contDiff 0 s t).continuous.continuousAt
-        exact (h0.ofReal.mul tendsto_const_nhds).congr (by simp) (by simp)
-      exact this
+    by_cases hτ : τ ∈ Set.Icc s t
+    · -- τ ∈ [s, t]: indicator = G τ; mollifier = 1 for all ε > 0
+      rw [Set.indicator_of_mem hτ]
+      apply Filter.Tendsto.congr' tendsto_const_nhds
+      apply Filter.eventually_nhdsWithin_of_forall
+      intro ε hε
+      rw [sqgConcreteMollifier_eq_one_of_mem_Icc hτ (Set.mem_Ioi.mp hε)]
+      push_cast; ring
+    · -- τ ∉ [s, t]: indicator = 0; mollifier eventually zero near 0⁺
+      rw [Set.indicator_of_not_mem hτ]
+      apply Filter.Tendsto.congr' tendsto_const_nhds
+      -- Show (fun ε => (sqgConcreteMollifier ε s t τ : ℂ) * G τ) =ᶠ[nhdsWithin 0 (Ioi 0)] 0
+      simp only [Set.mem_Icc, not_and_or, not_le] at hτ
+      rcases hτ with hτs | hτt
+      · -- τ < s: mollifier = 0 for all ε ∈ (0, s − τ)
+        apply Filter.eventually_of_mem (Ioc_mem_nhdsGT (by linarith : (0 : ℝ) < s - τ))
+        intro ε ⟨hε_pos, hε_le⟩
+        rw [sqgConcreteMollifier_zero_of_le_left hε_pos (by linarith)]
+        push_cast; ring
+      · -- τ > t: mollifier = 0 for all ε ∈ (0, τ − t)
+        apply Filter.eventually_of_mem (Ioc_mem_nhdsGT (by linarith : (0 : ℝ) < τ - t))
+        intro ε ⟨hε_pos, hε_le⟩
+        rw [sqgConcreteMollifier_zero_of_ge_right hε_pos (by linarith)]
+        push_cast; ring
 
 /-! ### §10.21 Phase 2.3.d — Bridge from time-test weak form to Duhamel
 
@@ -8968,9 +8928,9 @@ theorem IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
     (hG_bound : ∀ (m : Fin 2 → ℤ) (τ : ℝ),
         ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ K)
     (hG_meas : ∀ (m : Fin 2 → ℤ),
-        MeasureTheory.AEStronglyMeasurable
+        AEStronglyMeasurable
           (fun τ => sqgNonlinearFlux (θ τ) (fun j => u j τ) m)
-          MeasureTheory.Measure.volume) :
+          volume) :
     IsSqgWeakSolution θ u := by
   constructor
   intro m s t hs hst
