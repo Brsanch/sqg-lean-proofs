@@ -9782,7 +9782,7 @@ holds for the scaled class without invoking the Duhamel identity. -/
 
 Proof: rewrite the integrand using `Lp.coeFn_smul` (which gives the a.e.
 equality `(c • f) t = c * f t`), then pull `c` out of the Bochner integral
-via `integral_const_smul`. -/
+via `integral_smul`. -/
 theorem mFourierCoeff_const_smul
     {d : Type*} [Fintype d]
     (c : ℂ) (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
@@ -9796,7 +9796,7 @@ theorem mFourierCoeff_const_smul
     filter_upwards [Lp.coeFn_smul c f] with t ht
     simp only [ht, Pi.smul_apply, smul_eq_mul]
     ring
-  rw [integral_congr_ae h_ae, integral_const_smul, smul_eq_mul]
+  rw [integral_congr_ae h_ae, integral_smul, smul_eq_mul]
 
 /-- **Ḣˢ seminorm under scalar multiplication.** Scalar multiplication
 factors through every `hsSeminormSq` as `‖c‖²`:
