@@ -10931,7 +10931,7 @@ theorem sqgNonlinearFlux_shellMode_eq_zero
     unfold fourierConvolution
     apply tsum_eq_sum
     intro ℓ hℓ
-    rw [mFourierCoeff_shellVelocity, if_neg hℓ, zero_mul]
+    simp only [mFourierCoeff_shellVelocity, if_neg hℓ, zero_mul]
   rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq j)]
   -- Step 2: swap the j and ℓ sums.
   rw [Finset.sum_comm]
