@@ -9367,7 +9367,7 @@ theorem sqgConcreteMollifier_integral_collar_split
     rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
           (Or.inr (Or.inr hτ.1))]
     ring
-  rw [h_outer_left, h_outer_right, h_mid, zero_add, add_zero]
+  simp only [h_outer_left, h_outer_right, h_mid, zero_add, add_zero]
 
 /-! #### Tier 5 — collar squeeze: each collar integral tends to the endpoint value -/
 
