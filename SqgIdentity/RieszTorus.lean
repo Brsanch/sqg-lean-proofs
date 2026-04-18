@@ -10829,4 +10829,256 @@ lemma sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq
   push_cast
   ring
 
+/-! ### §10.33 Radial-shell stationary SQG witness
+
+Generalises §10.30's antipodal-pair construction `S = {m₀, -m₀}` to
+any finite `S ⊆ ℤ² \ {0}` with constant `latticeNorm` ("radial
+shell"). The witness chain:
+
+* `shellMode S a := trigPoly S a` — shell-supported θ.
+* `shellVelocity S a j := trigPoly S (sqgVelocitySymbol j · a)` —
+  Riesz-transform velocity at the shell.
+* `isSqgVelocityComponent_shellMode` — mode-by-mode velocity witness.
+* `sqgNonlinearFlux_shellMode_eq_zero` — flux vanishes everywhere.
+
+**Cancellation mechanism (for the flux).**
+Reduce `∑_j ∑'_ℓ û_j(ℓ) · ∂_j(m-ℓ) · θ̂(m-ℓ)` to a finite sum over
+`{ℓ ∈ S : m - ℓ ∈ S}` (both `û_j` and `θ̂(m-ℓ)` force ℓ and m-ℓ in S).
+Factor each ℓ-slice through `IsSqgVelocityComponent`:
+`a(ℓ) · a(m-ℓ) · C(ℓ, m-ℓ)`. Apply `Finset.sum_involution` with
+`σ(ℓ) := m - ℓ`:
+* Fixed point (m = 2ℓ): `a(ℓ)² · C(ℓ, ℓ) = 0` via base div-free.
+* Paired: `a(ℓ)·a(m-ℓ) · [C(ℓ, m-ℓ) + C(m-ℓ, ℓ)] = 0` via §10.32's
+  `sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq`,
+  with `|ℓ| = |m-ℓ|` from the radial-shell hypothesis. -/
+
+/-- **Radial-shell predicate.** All modes in `S` are nonzero and share
+a common `latticeNorm`. Equivalently, `S` lies on one integer-lattice
+Euclidean sphere. -/
+def IsRadialShell (S : Finset (Fin 2 → ℤ)) : Prop :=
+  (0 : Fin 2 → ℤ) ∉ S ∧
+    ∀ m ∈ S, ∀ n ∈ S, latticeNorm m = latticeNorm n
+
+/-- **Shell-mode θ from finite radial support.** A rename of
+`trigPoly` for downstream clarity. -/
+noncomputable def shellMode
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  trigPoly S a
+
+/-- **Shell-velocity u_j from finite radial support.** `trigPoly` with
+each Fourier amplitude weighted by `sqgVelocitySymbol j n`. -/
+noncomputable def shellVelocity
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (j : Fin 2) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  trigPoly S (fun n => sqgVelocitySymbol j n * a n)
+
+/-- Closed-form Fourier coefficients of `shellMode`. -/
+theorem mFourierCoeff_shellMode
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    mFourierCoeff (shellMode S a) m = if m ∈ S then a m else 0 :=
+  mFourierCoeff_trigPoly S a m
+
+/-- Closed-form Fourier coefficients of `shellVelocity`. -/
+theorem mFourierCoeff_shellVelocity
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ)
+    (j : Fin 2) (m : Fin 2 → ℤ) :
+    mFourierCoeff (shellVelocity S a j) m
+      = if m ∈ S then sqgVelocitySymbol j m * a m else 0 :=
+  mFourierCoeff_trigPoly S _ m
+
+/-- `shellMode` vanishes outside its Fourier support. -/
+theorem mFourierCoeff_shellMode_eq_zero_of_not_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ)
+    {m : Fin 2 → ℤ} (hm : m ∉ S) :
+    mFourierCoeff (shellMode S a) m = 0 := by
+  rw [mFourierCoeff_shellMode, if_neg hm]
+
+/-- `shellVelocity` realises the SQG Riesz-transform velocity of
+`shellMode`: at every mode, its Fourier coefficient is
+`sqgVelocitySymbol j n * mFourierCoeff (shellMode S a) n`. -/
+theorem isSqgVelocityComponent_shellMode
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (j : Fin 2) :
+    IsSqgVelocityComponent (shellMode S a) (shellVelocity S a j) j := by
+  intro n
+  rw [mFourierCoeff_shellVelocity, mFourierCoeff_shellMode]
+  by_cases hn : n ∈ S
+  · rw [if_pos hn, if_pos hn]
+  · rw [if_neg hn, if_neg hn, mul_zero]
+
+/-- **Radial-shell nonlinear flux vanishes everywhere.** This is the
+core stationarity of `shellMode` paired with its Riesz velocity. -/
+theorem sqgNonlinearFlux_shellMode_eq_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (a : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux (shellMode S a) (shellVelocity S a ·) m = 0 := by
+  unfold sqgNonlinearFlux
+  -- Step 1: reduce each inner tsum to a Finset.sum on S.
+  have h_tsum_eq : ∀ j : Fin 2,
+      fourierConvolution
+          (fun ℓ => mFourierCoeff (shellVelocity S a j) ℓ)
+          (fun ℓ => derivSymbol j ℓ * mFourierCoeff (shellMode S a) ℓ) m
+        = ∑ ℓ ∈ S,
+            mFourierCoeff (shellVelocity S a j) ℓ
+              * (derivSymbol j (m - ℓ)
+                 * mFourierCoeff (shellMode S a) (m - ℓ)) := by
+    intro j
+    unfold fourierConvolution
+    apply tsum_eq_sum
+    intro ℓ hℓ
+    rw [mFourierCoeff_shellVelocity, if_neg hℓ, zero_mul]
+  rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq j)]
+  -- Step 2: swap the j and ℓ sums.
+  rw [Finset.sum_comm]
+  -- Step 3: factor each ℓ-slice through IsSqgVelocityComponent.
+  have h_factor : ∀ ℓ ∈ S,
+      (∑ j : Fin 2,
+        mFourierCoeff (shellVelocity S a j) ℓ
+          * (derivSymbol j (m - ℓ) * mFourierCoeff (shellMode S a) (m - ℓ)))
+        = a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+            * (∑ j : Fin 2,
+                sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+    intros ℓ hℓ
+    have h_each : ∀ j : Fin 2,
+        mFourierCoeff (shellVelocity S a j) ℓ
+          * (derivSymbol j (m - ℓ) * mFourierCoeff (shellMode S a) (m - ℓ))
+          = a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+              * (sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+      intro j
+      rw [mFourierCoeff_shellVelocity, if_pos hℓ]
+      ring
+    rw [Finset.sum_congr rfl (fun j _ => h_each j), ← Finset.mul_sum]
+  rw [Finset.sum_congr rfl h_factor]
+  -- Step 4: rewrite each summand with `mFourierCoeff_shellMode` explicit,
+  -- then collapse to the filter `T := {ℓ ∈ S : m - ℓ ∈ S}` via
+  -- `Finset.sum_filter`.
+  have h_rewrite : ∀ ℓ ∈ S,
+      a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+        * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+        = if m - ℓ ∈ S then
+            a ℓ * a (m - ℓ)
+              * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+          else 0 := by
+    intros ℓ _
+    rw [mFourierCoeff_shellMode]
+    split_ifs with h
+    · rfl
+    · rw [mul_zero, zero_mul]
+  rw [Finset.sum_congr rfl h_rewrite]
+  rw [← Finset.sum_filter]
+  -- Step 5: apply `Finset.sum_involution` with σ(ℓ) = m - ℓ on the filter.
+  apply Finset.sum_involution (fun ℓ _ => m - ℓ)
+  · -- hg₁: f ℓ + f (σ ℓ) = 0
+    intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ
+    obtain ⟨hℓ_S, hmℓ_S⟩ := hℓ
+    have hnorm_eq : latticeNorm ℓ = latticeNorm (m - ℓ) :=
+      hS.2 ℓ hℓ_S (m - ℓ) hmℓ_S
+    have h_pair :=
+      sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq
+        ℓ (m - ℓ) hnorm_eq
+    have h_sub : m - (m - ℓ) = ℓ := sub_sub_cancel m ℓ
+    rw [h_sub]
+    have hring :
+        a ℓ * a (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+          + a (m - ℓ) * a ℓ
+            * (∑ j : Fin 2, sqgVelocitySymbol j (m - ℓ) * derivSymbol j ℓ)
+          = a ℓ * a (m - ℓ)
+            * ((∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+               + (∑ j : Fin 2, sqgVelocitySymbol j (m - ℓ) * derivSymbol j ℓ))
+          := by ring
+    rw [hring, h_pair, mul_zero]
+  · -- hg₃: f ℓ ≠ 0 → σ ℓ ≠ ℓ (equivalently, fixed point ⇒ f = 0)
+    intros ℓ hℓ hne h_eq
+    apply hne
+    -- h_eq : m - ℓ = ℓ ⇒ m = 2ℓ; summand reduces to a(ℓ)²·C(ℓ,ℓ) = 0.
+    rw [h_eq, sqgVelocitySymbol_mul_derivSymbol_sum_zero, mul_zero]
+  · -- g_mem: σ ℓ ∈ filter
+    intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓ_S, hmℓ_S⟩ := hℓ
+    refine ⟨hmℓ_S, ?_⟩
+    rw [sub_sub_cancel]
+    exact hℓ_S
+  · -- hg₄: σ ∘ σ = id
+    intros ℓ _
+    exact sub_sub_cancel m ℓ
+
+/-! ### §10.34 Radial-shell stationary SQG weak-solution + axiom promotions
+
+Bundle §10.33's `shellMode` / `shellVelocity` / flux = 0 into:
+
+* `IsSqgWeakSolution.shellMode_const` — Duhamel identity is
+  `∫ 0 = 0` since the flux vanishes.
+* `sqgEvolutionAxioms_shellMode_const` — constant-in-time trivially
+  satisfies L² and mean conservation; velocity witness via
+  `isSqgVelocityComponent_shellMode`.
+* `SqgEvolutionAxioms_strong.shellMode_const` — multi-mode discharge
+  of the strong axioms via `of_IsSqgWeakSolution_via_MMP`, keyed on
+  finite Fourier support through `MaterialMaxPrinciple.of_const`.
+
+Covers §10.27 (`m₀`), §10.28 (`singleMode`), §10.31
+(`antipodalMode`) as special cases and extends to any finite
+radial shell. -/
+
+/-- **`IsSqgWeakSolution` for constant-in-time radial-shell θ.**
+Duhamel identity is immediate since the flux vanishes everywhere
+(§10.33). -/
+theorem isSqgWeakSolution_shellMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    IsSqgWeakSolution
+        (fun _ : ℝ => shellMode S a)
+        (fun (j : Fin 2) (_ : ℝ) => shellVelocity S a j) where
+  duhamel := fun m s t _ _ => by
+    have h_integrand :
+        (fun τ : ℝ => sqgNonlinearFlux
+            ((fun _ : ℝ => shellMode S a) τ)
+            (fun j : Fin 2 =>
+              (fun (j : Fin 2) (_ : ℝ) => shellVelocity S a j) j τ) m)
+          = fun _ => (0 : ℂ) := by
+      funext τ
+      exact sqgNonlinearFlux_shellMode_eq_zero hS a m
+    rw [h_integrand]
+    simp
+
+/-- **`SqgEvolutionAxioms` for constant-in-time radial-shell θ.** -/
+theorem sqgEvolutionAxioms_shellMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) :
+    SqgEvolutionAxioms (fun _ : ℝ => shellMode S a) where
+  l2Conservation := fun _ _ => rfl
+  meanConservation := fun _ _ => rfl
+  velocityIsRieszTransform := fun j =>
+    ⟨fun _ : ℝ => shellVelocity S a j,
+     fun _ : ℝ => isSqgVelocityComponent_shellMode S a j⟩
+
+/-- **`SqgEvolutionAxioms_strong.shellMode_const`** — multi-mode
+stationary SQG discharge of the strong axioms for any radial shell.
+Strictly extends §10.28 (`singleMode_const`, |S| = 1) and §10.31
+(`antipodalMode_const`, S = {m₀, -m₀}). -/
+theorem SqgEvolutionAxioms_strong.shellMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    SqgEvolutionAxioms_strong (fun _ : ℝ => shellMode S a) := by
+  have hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 *
+        ‖mFourierCoeff (shellMode S a) n‖ ^ 2) :=
+    hsSeminormSq_summable_of_finite_support 1 (shellMode S a) S
+      (fun n hn => mFourierCoeff_shellMode_eq_zero_of_not_mem S a hn)
+  exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    (sqgEvolutionAxioms_shellMode_const S a)
+    (MaterialMaxPrinciple.of_const (shellMode S a) hSumm)
+    (fun j _ => shellVelocity S a j)
+    (fun j _ => isSqgVelocityComponent_shellMode S a j)
+    (isSqgWeakSolution_shellMode_const hS a)
+
 end SqgIdentity
