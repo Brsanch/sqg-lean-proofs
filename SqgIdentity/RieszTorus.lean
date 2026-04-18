@@ -7625,4 +7625,122 @@ theorem of_identically_zero
 
 end SqgEvolutionAxioms_strong
 
+/-! ### §10.11 SQG-specific Bochner wiring: `DuhamelFlux ⇒ ModeLipschitz`
+
+§10.9 gives the pointwise convolution bound
+`convolution_bounded_by_product`. §10.10 states the Lipschitz-in-time
+target `ModeLipschitz`. This subsection wires them together via the
+Bochner-integral chain
+
+  `‖∫_s^t F(m, τ) dτ‖ ≤ ∫_s^t ‖F(m, τ)‖ dτ ≤ (t − s) · sup_τ ‖F(m, τ)‖`.
+
+Concretely: the `DuhamelFlux` predicate bundles
+
+  (i)  A per-mode flux function `F : (Fin 2 → ℤ) → ℝ → ℂ`.
+  (ii) A uniform-in-`τ` bound `sup_τ ‖F(m, τ)‖ ≤ K m` (this is the
+       precise shape that `convolution_bounded_by_product` delivers).
+  (iii) The per-mode Duhamel integral identity
+       `θ̂(m, t) − θ̂(m, s) = − ∫_s^t F(m, τ) dτ`.
+
+`DuhamelFlux.modeLipschitz` then discharges `ModeLipschitz` via a
+one-shot application of `MeasureTheory.norm_setIntegral_le_of_norm_le_const`
+combined with `Real.volume_Icc` for the interval-length identity.
+
+**This is the SQG-specific wiring** the §10.9 / §10.10 scaffolding
+was built for: given a real SQG solution supplying `DuhamelFlux`
+(with flux witnessed by a sum of `fourierConvolution`s and the bound
+witnessed by `convolution_bounded_by_product` on the velocity/gradient
+coefficient sequences), `SqgEvolutionAxioms_strong` follows
+immediately. No intermediate integrability argument is needed — the
+mathlib lemma packages it inside. -/
+
+/-- **Duhamel-flux representation of an SQG-type evolution.**
+
+Witnesses a per-mode Fourier-side Duhamel identity for `θ`:
+
+  `θ̂(m, t) − θ̂(m, s) = −∫_s^t F(m, τ) dτ`  for  `0 ≤ s ≤ t`,
+
+together with a uniform-in-`τ` bound `‖F(m, τ)‖ ≤ K m` on each mode's
+flux — the precise shape that `convolution_bounded_by_product`
+delivers when `F(m, τ)` is realized as a sum of
+`fourierConvolution`s of ℓ²-summable sequences. -/
+def DuhamelFlux
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  ∃ F : (Fin 2 → ℤ) → ℝ → ℂ,
+    (∀ m, ∃ K : ℝ, 0 ≤ K ∧ ∀ τ : ℝ, ‖F m τ‖ ≤ K) ∧
+    (∀ m (s t : ℝ), 0 ≤ s → s ≤ t →
+      mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
+        = -∫ τ in Set.Icc s t, F m τ)
+
+/-- **Zero-solution discharge of `DuhamelFlux`.** Take the identically-
+zero flux; both sides of the Duhamel identity vanish. -/
+theorem DuhamelFlux.of_identically_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    DuhamelFlux θ := by
+  refine ⟨fun _ _ => (0 : ℂ), ?_, ?_⟩
+  · intro m
+    refine ⟨0, le_refl 0, fun τ => ?_⟩
+    simp
+  · intro m s t hs hst
+    -- LHS: mFourierCoeff (θ t) m - mFourierCoeff (θ s) m = 0 since θ ≡ 0.
+    -- RHS: -∫ τ in Icc s t, 0 = 0.
+    rw [hθ t, hθ s, sub_self]
+    simp
+
+/-- **SQG-specific Bochner wiring: `DuhamelFlux ⇒ ModeLipschitz`.**
+
+The single analytic fact between the §10.9/§10.10 scaffolding and a
+real-solution discharge of `SqgEvolutionAxioms_strong`. Given a
+Duhamel-flux witness with per-mode bound `K_m`, every Fourier
+coefficient is Lipschitz-in-time with constant `K_m`:
+
+  `‖θ̂(m, t) − θ̂(m, s)‖ ≤ (t − s) · K_m`.
+
+Proof is a one-shot application of
+`MeasureTheory.norm_setIntegral_le_of_norm_le_const` on `Set.Icc s t`
+under the `volume` measure, combined with `Real.volume_Icc` to
+evaluate `volume.real (Icc s t) = t − s` for `s ≤ t`. -/
+theorem DuhamelFlux.modeLipschitz
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (h : DuhamelFlux θ) : ModeLipschitz θ := by
+  intro m
+  obtain ⟨F, hbound, hduhamel⟩ := h
+  obtain ⟨K, hK_nn, hK⟩ := hbound m
+  refine ⟨K, hK_nn, fun s t hs hst => ?_⟩
+  -- Rewrite via Duhamel, drop the leading minus sign.
+  rw [hduhamel m s t hs hst, norm_neg]
+  -- `Icc s t` has finite `volume`.
+  have hvol_lt_top : (volume : Measure ℝ) (Set.Icc s t) < ⊤ := by
+    rw [Real.volume_Icc]
+    exact ENNReal.ofReal_lt_top
+  -- Per-point bound on the flux over `Icc s t`.
+  have hbound_on : ∀ τ ∈ Set.Icc s t, ‖F m τ‖ ≤ K := fun τ _ => hK τ
+  -- Apply the mathlib Bochner lemma.
+  have hbochner :
+      ‖∫ τ in Set.Icc s t, F m τ‖
+        ≤ K * ((volume : Measure ℝ).real (Set.Icc s t)) :=
+    MeasureTheory.norm_setIntegral_le_of_norm_le_const hvol_lt_top hbound_on
+  -- Evaluate the interval length.
+  have hvol_real : ((volume : Measure ℝ).real (Set.Icc s t)) = t - s := by
+    simp [MeasureTheory.measureReal_def, Real.volume_Icc,
+          ENNReal.toReal_ofReal (show (0 : ℝ) ≤ t - s by linarith)]
+  -- Combine.
+  calc ‖∫ τ in Set.Icc s t, F m τ‖
+      ≤ K * ((volume : Measure ℝ).real (Set.Icc s t)) := hbochner
+    _ = K * (t - s) := by rw [hvol_real]
+    _ = (t - s) * K := by ring
+
+/-- **Structured-form: `DuhamelFlux` promotes `SqgEvolutionAxioms`
+to `SqgEvolutionAxioms_strong`.** The single remaining step
+between "real SQG solution with Duhamel representation" and the
+§10.10 keystone structure. -/
+theorem SqgEvolutionAxioms.strengthen_of_duhamel
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    (hD : DuhamelFlux θ) :
+    SqgEvolutionAxioms_strong θ where
+  weak := hE
+  modeLipschitz := hD.modeLipschitz
+
 end SqgIdentity
