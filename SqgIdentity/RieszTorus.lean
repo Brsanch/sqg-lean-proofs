@@ -9168,12 +9168,13 @@ theorem sqgConcreteMollifier_deriv_zero_at_s_minus_ε {s t ε : ℝ} (hε : 0 < 
   have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
     (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
   have h_left_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-      (𝓝[<] (s - ε)) (𝓝 0) := by
+      (nhdsWithin (s - ε) (Set.Iio (s - ε))) (nhds 0) := by
     apply Filter.Tendsto.congr' _ tendsto_const_nhds
     filter_upwards [self_mem_nhdsWithin] with x hx
     rw [sqgConcreteMollifier_deriv_zero_of_lt_left hx hε]
   have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-      (𝓝[<] (s - ε)) (𝓝 (deriv (sqgConcreteMollifier ε s t) (s - ε))) :=
+      (nhdsWithin (s - ε) (Set.Iio (s - ε)))
+      (nhds (deriv (sqgConcreteMollifier ε s t) (s - ε))) :=
     hcont.continuousAt.mono_left nhdsWithin_le_nhds
   exact tendsto_nhds_unique h_full_tendsto h_left_lim
 
@@ -9184,12 +9185,13 @@ theorem sqgConcreteMollifier_deriv_zero_at_t_plus_ε {s t ε : ℝ} (hε : 0 < �
   have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
     (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
   have h_right_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-      (𝓝[>] (t + ε)) (𝓝 0) := by
+      (nhdsWithin (t + ε) (Set.Ioi (t + ε))) (nhds 0) := by
     apply Filter.Tendsto.congr' _ tendsto_const_nhds
     filter_upwards [self_mem_nhdsWithin] with x hx
     rw [sqgConcreteMollifier_deriv_zero_of_gt_right hx hε]
   have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-      (𝓝[>] (t + ε)) (𝓝 (deriv (sqgConcreteMollifier ε s t) (t + ε))) :=
+      (nhdsWithin (t + ε) (Set.Ioi (t + ε)))
+      (nhds (deriv (sqgConcreteMollifier ε s t) (t + ε))) :=
     hcont.continuousAt.mono_left nhdsWithin_le_nhds
   exact tendsto_nhds_unique h_full_tendsto h_right_lim
 
@@ -9203,53 +9205,57 @@ theorem sqgConcreteMollifier_deriv_zero_on_mid_Icc {s t τ ε : ℝ} (hε : 0 < 
     (hst : s ≤ t) (hτ : τ ∈ Set.Icc s t) :
     deriv (sqgConcreteMollifier ε s t) τ = 0 := by
   rcases eq_or_lt_of_le hst with rfl | hst_lt
-  · -- s = t case; τ = s = t. Squeeze: deriv ≥ 0 from the left-collar side,
-    -- deriv ≤ 0 from the right-collar side, continuity forces = 0.
-    have hτ_eq : τ = t := le_antisymm hτ.2 hτ.1
-    subst hτ_eq
-    have hcont : Continuous (deriv (sqgConcreteMollifier ε t t)) :=
-      (sqgConcreteMollifier_contDiff ε t t).continuous_deriv_one
-    have hlb : 0 ≤ deriv (sqgConcreteMollifier ε t t) t := by
-      have h_t : Filter.Tendsto (deriv (sqgConcreteMollifier ε t t))
-          (𝓝[<] t) (𝓝 (deriv (sqgConcreteMollifier ε t t) t)) :=
+  · -- s = t case. From hτ : τ ∈ Icc s s, get τ = s. Then use squeeze:
+    -- deriv ≥ 0 from the left-collar limit, ≤ 0 from the right-collar limit.
+    have hτ_eq : τ = s := le_antisymm hτ.2 hτ.1
+    rw [hτ_eq]
+    have hcont : Continuous (deriv (sqgConcreteMollifier ε s s)) :=
+      (sqgConcreteMollifier_contDiff ε s s).continuous_deriv_one
+    have hlb : 0 ≤ deriv (sqgConcreteMollifier ε s s) s := by
+      have h_tend : Filter.Tendsto (deriv (sqgConcreteMollifier ε s s))
+          (nhdsWithin s (Set.Iio s))
+          (nhds (deriv (sqgConcreteMollifier ε s s) s)) :=
         hcont.continuousAt.mono_left nhdsWithin_le_nhds
-      apply ge_of_tendsto h_t
-      filter_upwards [Ioo_mem_nhdsLT (show t - ε < t by linarith)] with x hx
+      apply ge_of_tendsto h_tend
+      filter_upwards [Ioo_mem_nhdsLT (show s - ε < s by linarith)] with x hx
       exact sqgConcreteMollifier_deriv_nonneg_of_mem_left_collar hx hε le_rfl
-    have hub : deriv (sqgConcreteMollifier ε t t) t ≤ 0 := by
-      have h_t : Filter.Tendsto (deriv (sqgConcreteMollifier ε t t))
-          (𝓝[>] t) (𝓝 (deriv (sqgConcreteMollifier ε t t) t)) :=
+    have hub : deriv (sqgConcreteMollifier ε s s) s ≤ 0 := by
+      have h_tend : Filter.Tendsto (deriv (sqgConcreteMollifier ε s s))
+          (nhdsWithin s (Set.Ioi s))
+          (nhds (deriv (sqgConcreteMollifier ε s s) s)) :=
         hcont.continuousAt.mono_left nhdsWithin_le_nhds
-      apply le_of_tendsto h_t
-      filter_upwards [Ioo_mem_nhdsGT (show t < t + ε by linarith)] with x hx
+      apply le_of_tendsto h_tend
+      filter_upwards [Ioo_mem_nhdsGT (show s < s + ε by linarith)] with x hx
       exact sqgConcreteMollifier_deriv_nonpos_of_mem_right_collar hx hε le_rfl
     linarith
   · rcases eq_or_lt_of_le hτ.1 with heq_s | hτ_gt_s
-    · subst heq_s
-      -- τ = s: deriv from right is 0 (deriv = 0 on Ioo s t)
+    · -- τ = s: deriv from right is 0 (deriv = 0 on Ioo s t)
+      rw [← heq_s]
       have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
         (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
       have h_right_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-          (𝓝[>] s) (𝓝 0) := by
+          (nhdsWithin s (Set.Ioi s)) (nhds 0) := by
         apply Filter.Tendsto.congr' _ tendsto_const_nhds
         filter_upwards [Ioo_mem_nhdsGT hst_lt] with x hx
         rw [sqgConcreteMollifier_deriv_zero_of_mem_Ioo hx hε]
       have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-          (𝓝[>] s) (𝓝 (deriv (sqgConcreteMollifier ε s t) s)) :=
+          (nhdsWithin s (Set.Ioi s))
+          (nhds (deriv (sqgConcreteMollifier ε s t) s)) :=
         hcont.continuousAt.mono_left nhdsWithin_le_nhds
       exact tendsto_nhds_unique h_full_tendsto h_right_lim
     · rcases eq_or_lt_of_le hτ.2 with heq_t | hτ_lt_t
-      · subst heq_t
-        -- τ = t: deriv from left is 0
+      · -- τ = t: deriv from left is 0
+        rw [heq_t]
         have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
           (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
         have h_left_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-            (𝓝[<] τ) (𝓝 0) := by
+            (nhdsWithin t (Set.Iio t)) (nhds 0) := by
           apply Filter.Tendsto.congr' _ tendsto_const_nhds
-          filter_upwards [Ioo_mem_nhdsLT hτ_gt_s] with x hx
+          filter_upwards [Ioo_mem_nhdsLT hst_lt] with x hx
           rw [sqgConcreteMollifier_deriv_zero_of_mem_Ioo hx hε]
         have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
-            (𝓝[<] τ) (𝓝 (deriv (sqgConcreteMollifier ε s t) τ)) :=
+            (nhdsWithin t (Set.Iio t))
+            (nhds (deriv (sqgConcreteMollifier ε s t) t)) :=
           hcont.continuousAt.mono_left nhdsWithin_le_nhds
         exact tendsto_nhds_unique h_full_tendsto h_left_lim
       · exact sqgConcreteMollifier_deriv_zero_of_mem_Ioo ⟨hτ_gt_s, hτ_lt_t⟩ hε
