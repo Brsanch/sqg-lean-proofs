@@ -9434,8 +9434,14 @@ theorem sqgConcreteMollifier_left_collar_tendsto
       rw [← intervalIntegral.integral_sub hII_prod hII_prodFs]
       congr 1; funext τ; ring
     have h2 : (∫ τ in (s - ε)..s, deriv ψC τ * F s) = F s := by
-      rw [intervalIntegral.integral_mul_const, hmass_C, one_mul]
-    rw [← h2]; exact h1
+      have hcomm : (∫ τ in (s - ε)..s, deriv ψC τ * F s)
+                 = (∫ τ in (s - ε)..s, F s * deriv ψC τ) := by
+        congr 1; funext τ; ring
+      rw [hcomm, intervalIntegral.integral_const_mul, hmass_C, mul_one]
+    calc (∫ τ in (s - ε)..s, deriv ψC τ * F τ) - F s
+        = (∫ τ in (s - ε)..s, deriv ψC τ * F τ)
+            - (∫ τ in (s - ε)..s, deriv ψC τ * F s) := by rw [h2]
+      _ = ∫ τ in (s - ε)..s, deriv ψC τ * (F τ - F s) := h1
   -- Dominating function g τ = deriv ψ_R τ * (δ/2)
   set g : ℝ → ℝ := fun τ => deriv (sqgConcreteMollifier ε s t) τ * (δ / 2) with hg
   have hII_g : IntervalIntegrable g volume (s - ε) s := by
@@ -9531,10 +9537,15 @@ theorem sqgConcreteMollifier_right_collar_tendsto
       rw [← intervalIntegral.integral_sub hII_prod hII_prodFt]
       congr 1; funext τ; ring
     have h2 : (∫ τ in t..(t + ε), deriv ψC τ * F t) = - F t := by
-      rw [intervalIntegral.integral_mul_const, hmass_C]
+      have hcomm : (∫ τ in t..(t + ε), deriv ψC τ * F t)
+                 = (∫ τ in t..(t + ε), F t * deriv ψC τ) := by
+        congr 1; funext τ; ring
+      rw [hcomm, intervalIntegral.integral_const_mul, hmass_C]
       ring
-    rw [show (- F t) = (∫ τ in t..(t + ε), deriv ψC τ * F t) from h2.symm]
-    exact h1
+    calc (∫ τ in t..(t + ε), deriv ψC τ * F τ) - (- F t)
+        = (∫ τ in t..(t + ε), deriv ψC τ * F τ)
+            - (∫ τ in t..(t + ε), deriv ψC τ * F t) := by rw [h2]
+      _ = ∫ τ in t..(t + ε), deriv ψC τ * (F τ - F t) := h1
   set g : ℝ → ℝ := fun τ => - deriv (sqgConcreteMollifier ε s t) τ * (δ / 2) with hg
   have hII_g : IntervalIntegrable g volume t (t + ε) := by
     have := (sqgConcreteMollifier_deriv_intervalIntegrable ε s t t (t + ε))
