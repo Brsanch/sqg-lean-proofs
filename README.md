@@ -404,30 +404,39 @@ doesn't exist in mathlib yet:
   axiomatic.
 - **Uniform ℓ² bounds on velocity / gradient coefficients** — one-
   line consequences of Parseval + Riesz L²-isometry + MMP's Ḣ¹
-  summability. **§10.13 (latest) formalizes these as named helper
-  lemmas** — `velocity_fourier_summable`,
+  summability. §10.13 formalized these as named helpers
+  (`velocity_fourier_summable`,
   `velocity_fourier_tsum_le_of_IsSqgVelocityComponent`,
   `gradient_fourier_summable_of_hOneSummability`,
-  `gradient_fourier_tsum_le_hsSeminormSq_one`, plus the supporting
-  single-coordinate bound
-  `norm_derivSymbol_sq_le_fracDerivSymbol_one_sq`. Callers of
-  `of_sqgDuhamelIdentity` can now use these to derive three of the
-  four ℓ² control hypotheses in one line each. Only the uniform
-  velocity ℓ² tsum bound `Mu` requires additional input (combining
-  `l2Conservation` + `meanConservation` for full L² control —
-  deferred to future work).
+  `gradient_fourier_tsum_le_hsSeminormSq_one`). **§10.14 (latest)
+  closes the remaining `Mu` gap** via
+  `theta_fourier_tsum_conserved` (full L² Fourier-tsum conservation,
+  derived from `l2Conservation` + `meanConservation` via a Parseval
+  split-at-zero-mode identity), and ships
+  `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP` — the
+  fully-internalized promotion theorem consuming only
+  `SqgEvolutionAxioms + MaterialMaxPrinciple + velocity witness +
+  the PDE integral identity`.
 
 This repo is the Fourier-algebraic foundation plus a conditional
 Theorem 3 skeleton with the keystone analytic scaffolding fully
-machine-checked. As of §10.12 the path
-`convolution_bounded_by_product` → `sqgNonlinearFlux` →
-`DuhamelFlux` → `ModeLipschitz` → `SqgEvolutionAxioms_strong`
-→ §10.7 / §10.8 reductions → conditional Theorem 3 on `s ∈ [0, 2]`
-is formalized end-to-end. The remaining open content of the
-conditional conclusion collapses to: (i) a single PDE integral
-identity at the Fourier level, (ii) `MaterialMaxPrinciple.hOnePropagation`,
-and (iii) `BKMCriterionS2.hsPropagationS2`. The `s > 2` fractional
-tail remains open separately.
+machine-checked. **After §10.14** the headline reading is:
+
+> "Give me a solution satisfying `SqgEvolutionAxioms`
+> (mean + L² conservation + Riesz-transform velocity),
+> `MaterialMaxPrinciple` (uniform Ḣ¹ bound), and the integral form
+> of the SQG PDE against the concrete nonlinear flux
+> `sqgNonlinearFlux` — and I will hand you uniform Ḣˢ bounds for
+> every `s ∈ [0, 2]`."
+
+The chain `sqgNonlinearFlux` → `convolution_bounded_by_product` →
+`DuhamelFlux` → `ModeLipschitz` → `SqgEvolutionAxioms_strong` →
+§10.7 / §10.8 reductions → conditional Theorem 3 on `s ∈ [0, 2]`
+is closed end-to-end. The remaining open content collapses to:
+(i) a single PDE integral identity at the Fourier level,
+(ii) `MaterialMaxPrinciple.hOnePropagation`, and
+(iii) `BKMCriterionS2.hsPropagationS2`. The `s > 2` fractional tail
+remains open separately.
 
 ## The identity
 

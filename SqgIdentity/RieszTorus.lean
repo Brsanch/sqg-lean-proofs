@@ -7667,7 +7667,7 @@ delivers when `F(m, τ)` is realized as a sum of
 def DuhamelFlux
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
   ∃ F : (Fin 2 → ℤ) → ℝ → ℂ,
-    (∀ m, ∃ K : ℝ, 0 ≤ K ∧ ∀ τ : ℝ, ‖F m τ‖ ≤ K) ∧
+    (∀ m, ∃ K : ℝ, 0 ≤ K ∧ ∀ τ : ℝ, 0 ≤ τ → ‖F m τ‖ ≤ K) ∧
     (∀ m (s t : ℝ), 0 ≤ s → s ≤ t →
       mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
         = -∫ τ in Set.Icc s t, F m τ)
@@ -7680,7 +7680,7 @@ theorem DuhamelFlux.of_identically_zero
     DuhamelFlux θ := by
   refine ⟨fun _ _ => (0 : ℂ), ?_, ?_⟩
   · intro m
-    refine ⟨0, le_refl 0, fun τ => ?_⟩
+    refine ⟨0, le_refl 0, fun τ _ => ?_⟩
     simp
   · intro m s t hs hst
     -- LHS: mFourierCoeff (θ t) m - mFourierCoeff (θ s) m = 0 since θ ≡ 0.
@@ -7714,8 +7714,10 @@ theorem DuhamelFlux.modeLipschitz
   have hvol_lt_top : (volume : Measure ℝ) (Set.Icc s t) < ⊤ := by
     rw [Real.volume_Icc]
     exact ENNReal.ofReal_lt_top
-  -- Per-point bound on the flux over `Icc s t`.
-  have hbound_on : ∀ τ ∈ Set.Icc s t, ‖F m τ‖ ≤ K := fun τ _ => hK τ
+  -- Per-point bound on the flux over `Icc s t`. For τ ∈ Icc s t,
+  -- hs : 0 ≤ s and hτ.1 : s ≤ τ give 0 ≤ τ, so the weakened K-bound applies.
+  have hbound_on : ∀ τ ∈ Set.Icc s t, ‖F m τ‖ ≤ K :=
+    fun τ hτ => hK τ (le_trans hs hτ.1)
   -- Apply the mathlib Bochner lemma.
   have hbochner :
       ‖∫ τ in Set.Icc s t, F m τ‖
@@ -7851,14 +7853,14 @@ theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity
     (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (_hu_velocity : ∀ (j : Fin 2) (τ : ℝ), IsSqgVelocityComponent (θ τ) (u j τ) j)
     (Mu : ℝ) (hMu : 0 ≤ Mu)
-    (hu_sum : ∀ (j : Fin 2) (τ : ℝ),
+    (hu_sum : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
       Summable (fun ℓ : Fin 2 → ℤ => ‖mFourierCoeff (u j τ) ℓ‖ ^ 2))
-    (hu_bdd : ∀ (j : Fin 2) (τ : ℝ),
+    (hu_bdd : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
       (∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2) ≤ Mu)
     (Mg : ℝ) (hMg : 0 ≤ Mg)
-    (hgrad_sum : ∀ (j : Fin 2) (τ : ℝ),
+    (hgrad_sum : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
       Summable (fun ℓ : Fin 2 → ℤ => ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2))
-    (hgrad_bdd : ∀ (j : Fin 2) (τ : ℝ),
+    (hgrad_bdd : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
       (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2) ≤ Mg)
     (hDuhamel : ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
       mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
@@ -7867,20 +7869,20 @@ theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity
   -- Build the `DuhamelFlux` witness with flux = sqgNonlinearFlux and K = Mu + Mg.
   have hDF : DuhamelFlux θ := by
     refine ⟨fun m τ => sqgNonlinearFlux (θ τ) (fun j => u j τ) m, ?_, ?_⟩
-    · -- Uniform per-mode bound.
+    · -- Uniform per-mode bound (applies at τ ≥ 0).
       intro m
-      refine ⟨Mu + Mg, by linarith, fun τ => ?_⟩
+      refine ⟨Mu + Mg, by linarith, fun τ hτ => ?_⟩
       have hFlux :=
         sqgNonlinearFlux_bounded (θ τ) (fun j => u j τ)
-          (fun j => hu_sum j τ) (fun j => hgrad_sum j τ) m
+          (fun j => hu_sum j τ hτ) (fun j => hgrad_sum j τ hτ) m
       -- Each summand is at most (Mu + Mg)/2; `Fin 2` has two terms.
       have hterm : ∀ j : Fin 2,
           ((∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2)
             + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2)) / 2
           ≤ (Mu + Mg) / 2 := by
         intro j
-        have h1 := hu_bdd j τ
-        have h2 := hgrad_bdd j τ
+        have h1 := hu_bdd j τ hτ
+        have h2 := hgrad_bdd j τ hτ
         linarith
       have hsum_le :
           ∑ j : Fin 2,
@@ -7993,5 +7995,161 @@ lemma velocity_fourier_tsum_le_of_IsSqgVelocityComponent
       ≤ 1 * ‖mFourierCoeff θ ℓ‖ ^ 2 :=
         mul_le_mul_of_nonneg_right h1 (sq_nonneg _)
     _ = ‖mFourierCoeff θ ℓ‖ ^ 2 := one_mul _
+
+/-! ### §10.14 Full L² conservation + MMP-keyed promotion
+
+The last external hypothesis in §10.12's `of_sqgDuhamelIdentity` is
+`Mu` — a uniform ℓ² tsum bound on the velocity Fourier coefficients.
+Combining `l2Conservation` (which controls the non-zero modes) with
+`meanConservation` (which controls the zero mode) gives **full L²
+conservation** of `θ`; by Parseval this translates to conservation
+of `∑' n, ‖θ̂(τ) n‖²`, closing the loop.
+
+This subsection ships:
+
+* `l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero` — the
+  Parseval "split-at-zero-mode" identity, writing the full ℓ² tsum
+  as the zero-mode contribution plus `hsSeminormSq 0`.
+* `theta_fourier_tsum_conserved` — given `SqgEvolutionAxioms θ`,
+  `∑' n, ‖θ̂(τ) n‖² = ∑' n, ‖θ̂(0) n‖²` for every forward time.
+* `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP` — the
+  fully-internalized promotion theorem. Consumes **only**
+  `SqgEvolutionAxioms + MaterialMaxPrinciple + velocity witness +
+  the PDE integral identity**.
+
+**The headline reading of the repo after §10.14:**
+
+> "Give me a solution satisfying `SqgEvolutionAxioms` (which already
+> requires mean + L² conservation + Riesz-transform velocity),
+> `MaterialMaxPrinciple` (uniform Ḣ¹ bound), and the integral form
+> of the SQG PDE against `sqgNonlinearFlux` — and I will hand you
+> uniform Ḣˢ bounds for every `s ∈ [0, 2]`."
+-/
+
+/-- **Parseval split at the zero mode.** For any `f : L²(𝕋²)`,
+
+  `∫ ‖f‖² = ‖f̂(0)‖² + hsSeminormSq 0 f`.
+
+Since `fracDerivSymbol 0` vanishes at `n = 0` and equals `1` at every
+other mode, `hsSeminormSq 0 f` sums the squared Fourier coefficients
+over `n ≠ 0`, leaving the zero-mode contribution separated. -/
+lemma l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    (∫ t, ‖f t‖ ^ 2) = ‖mFourierCoeff f (0 : Fin 2 → ℤ)‖ ^ 2 + hsSeminormSq 0 f := by
+  classical
+  have hP : HasSum
+      (fun n : Fin 2 → ℤ => ‖mFourierCoeff f n‖ ^ 2) (∫ t, ‖f t‖ ^ 2) :=
+    hasSum_sq_mFourierCoeff f
+  have hsum := hP.summable
+  have h1 :
+      (∑' n : Fin 2 → ℤ, ‖mFourierCoeff f n‖ ^ 2)
+        = ‖mFourierCoeff f (0 : Fin 2 → ℤ)‖ ^ 2
+          + ∑' n : Fin 2 → ℤ, ite (n = 0) 0 (‖mFourierCoeff f n‖ ^ 2) :=
+    hsum.tsum_eq_add_tsum_ite 0
+  rw [hP.tsum_eq] at h1
+  rw [h1]
+  congr 1
+  -- Show the residual tsum equals `hsSeminormSq 0 f`.
+  unfold hsSeminormSq
+  apply tsum_congr
+  intro n
+  by_cases hn : n = 0
+  · subst hn; simp [fracDerivSymbol_zero]
+  · rw [if_neg hn, fracDerivSymbol_of_ne_zero 0 hn, Real.rpow_zero]
+    ring
+
+/-- **Full Fourier ℓ² tsum conservation for SQG solutions.**
+
+Given `SqgEvolutionAxioms θ`, for every forward time `τ ≥ 0`,
+
+  `∑' n, ‖θ̂(τ) n‖² = ∑' n, ‖θ̂(0) n‖²`.
+
+Proof: Parseval's "split at the zero mode" identity writes both sides
+as `‖θ̂(·) 0‖² + hsSeminormSq 0 (θ ·)`. The first term is conserved
+by `meanConservation`; the second by `l2Conservation`. -/
+lemma theta_fourier_tsum_conserved
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    {τ : ℝ} (hτ : 0 ≤ τ) :
+    (∑' n, ‖mFourierCoeff (θ τ) n‖ ^ 2)
+      = ∑' n, ‖mFourierCoeff (θ 0) n‖ ^ 2 := by
+  rw [(hasSum_sq_mFourierCoeff (θ τ)).tsum_eq,
+      (hasSum_sq_mFourierCoeff (θ 0)).tsum_eq,
+      l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (θ τ),
+      l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (θ 0),
+      hE.meanConservation τ hτ, hE.l2Conservation τ hτ]
+
+/-- **MMP-keyed promotion to `SqgEvolutionAxioms_strong`.** The clean
+form the §10.9–§10.13 machinery was built for.
+
+Consumes:
+* `SqgEvolutionAxioms θ`
+* `MaterialMaxPrinciple θ`
+* velocity field `u` + `IsSqgVelocityComponent` witness
+* the PDE integral identity at the Fourier level against
+  `sqgNonlinearFlux`
+
+Concludes `SqgEvolutionAxioms_strong θ`. All four ℓ² control
+hypotheses of `of_sqgDuhamelIdentity` are discharged internally:
+
+* Velocity summability: `velocity_fourier_summable` (Parseval on
+  `u j τ : Lp`).
+* Velocity tsum bound: `velocity_fourier_tsum_le_of_IsSqgVelocityComponent`
+  combined with `theta_fourier_tsum_conserved` gives a constant
+  `Mu := ∑' n, ‖θ̂(0) n‖²`.
+* Gradient summability: `gradient_fourier_summable_of_hOneSummability`
+  against `MMP.hOneSummability`.
+* Gradient tsum bound: `gradient_fourier_tsum_le_hsSeminormSq_one`
+  combined with `MMP.hOnePropagation` gives `Mg := M₁`. -/
+theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    (hMMP : MaterialMaxPrinciple θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hu_velocity : ∀ (j : Fin 2) (τ : ℝ), IsSqgVelocityComponent (θ τ) (u j τ) j)
+    (hDuhamel : ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
+        = -∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m) :
+    SqgEvolutionAxioms_strong θ := by
+  -- Velocity tsum bound Mu := ∑' n, ‖θ̂(0) n‖², constant across forward time
+  -- by `theta_fourier_tsum_conserved`.
+  set Mu : ℝ := ∑' n : Fin 2 → ℤ, ‖mFourierCoeff (θ 0) n‖ ^ 2 with hMu_def
+  have hMu_nn : 0 ≤ Mu := tsum_nonneg (fun _ => sq_nonneg _)
+  have hu_sum : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
+      Summable (fun ℓ : Fin 2 → ℤ => ‖mFourierCoeff (u j τ) ℓ‖ ^ 2) :=
+    fun j τ _ => velocity_fourier_summable (u j τ)
+  have hu_bdd : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
+      (∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2) ≤ Mu := by
+    intro j τ hτ
+    calc (∑' ℓ, ‖mFourierCoeff (u j τ) ℓ‖ ^ 2)
+        ≤ ∑' ℓ, ‖mFourierCoeff (θ τ) ℓ‖ ^ 2 :=
+          velocity_fourier_tsum_le_of_IsSqgVelocityComponent
+            (θ τ) (u j τ) j (hu_velocity j τ)
+      _ = Mu := theta_fourier_tsum_conserved hE hτ
+  -- Gradient tsum bound Mg := M₁ from MMP.hOnePropagation.
+  obtain ⟨M₁, hM₁⟩ := hMMP.hOnePropagation
+  set Mg : ℝ := M₁ with hMg_def
+  have hMg_nn : 0 ≤ Mg := by
+    have hbd := hM₁ 0 (le_refl 0)
+    have hnn : 0 ≤ hsSeminormSq 1 (θ 0) := hsSeminormSq_nonneg 1 (θ 0)
+    linarith
+  have hgrad_sum : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
+      Summable (fun ℓ : Fin 2 → ℤ =>
+        ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2) :=
+    fun j τ hτ =>
+      gradient_fourier_summable_of_hOneSummability (θ τ) j
+        (hMMP.hOneSummability τ hτ)
+  have hgrad_bdd : ∀ (j : Fin 2) (τ : ℝ), 0 ≤ τ →
+      (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2) ≤ Mg := by
+    intro j τ hτ
+    calc (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (θ τ) ℓ‖ ^ 2)
+        ≤ hsSeminormSq 1 (θ τ) :=
+          gradient_fourier_tsum_le_hsSeminormSq_one (θ τ) j
+            (hMMP.hOneSummability τ hτ)
+      _ ≤ Mg := hM₁ τ hτ
+  -- Chain through of_sqgDuhamelIdentity.
+  exact SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity
+    hE u hu_velocity Mu hMu_nn hu_sum hu_bdd Mg hMg_nn
+    hgrad_sum hgrad_bdd hDuhamel
 
 end SqgIdentity
