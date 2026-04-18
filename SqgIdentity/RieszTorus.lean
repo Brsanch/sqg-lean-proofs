@@ -8449,25 +8449,116 @@ theorem SqgFourierContinuous.const
   intro _
   exact continuous_const
 
-/-! ### Not yet provided in §10.16 / §10.17
+/-! ### §10.18 Mollifier construction for the bump-to-indicator bridge
+
+Phase 2.2 of the bridge: name the concrete mollifier family that
+Phase 2.3's limit argument will instantiate.
+
+**Primitive.** Mathlib's `ContDiffBump` delivers, for any center `c`
+in a finite-dimensional inner-product space and any `0 < rIn < rOut`,
+a `C^∞` function ℝ-valued on that space with the properties:
+* equals `1` on `closedBall c rIn`,
+* supported in `closedBall c rOut`,
+* values in `[0, 1]` everywhere.
+
+On ℝ, `closedBall c r = [c − r, c + r]`. Picking
+`c := (s + t) / 2`, `rIn := (t − s) / 2`, `rOut := (t − s) / 2 + ε`
+yields a bump that is `1` on exactly `[s, t]` and supported in
+`[s − ε, t + ε]` — exactly the Friedrichs-mollifier shape.
+
+`HasContDiffBump ℝ` is automatic via
+`hasContDiffBump_of_innerProductSpace`. `FiniteDimensional ℝ ℝ` is
+automatic (ℝ as a module over itself is 1-dimensional), so
+`ContDiffBump.hasCompactSupport` applies. -/
+
+/-- **Mollifier-data bump for `[s, t]` widened by `ε` on each side.**
+
+Centered at the midpoint with inner radius half the interval width
+and outer radius half the interval width plus `ε`. The hypotheses
+`s < t` and `0 < ε` make `0 < rIn < rOut`. -/
+noncomputable def sqgMollifierBump (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
+    ContDiffBump ((s + t) / 2 : ℝ) where
+  rIn := (t - s) / 2
+  rOut := (t - s) / 2 + ε
+  rIn_pos := by linarith
+  rIn_lt_rOut := by linarith
+
+/-- **Complex-valued mollifier function.**
+
+The underlying bump `sqgMollifierBump ε s t hst hε : ℝ → ℝ`
+composed with the `Complex.ofReal` coercion so it fits the
+`IsSqgTimeTestFunction` signature `ℝ → ℂ`. -/
+noncomputable def sqgMollifier (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
+    ℝ → ℂ :=
+  fun τ => ((sqgMollifierBump ε s t hst hε) τ : ℂ)
+
+/-- **Mollifier is `C^∞`.** Composition of `Complex.ofRealCLM`
+(infinitely smooth linear map) with the bump (C^∞ by
+`ContDiffBump.contDiff`). -/
+theorem sqgMollifier_contDiff (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
+    ContDiff ℝ ⊤ (sqgMollifier ε s t hst hε) := by
+  unfold sqgMollifier
+  exact Complex.ofRealCLM.contDiff.comp
+    (sqgMollifierBump ε s t hst hε).contDiff
+
+/-- **Mollifier has compact support.** The underlying bump has
+compact support (`ContDiffBump.hasCompactSupport`, using
+`FiniteDimensional ℝ ℝ`), and composition with `Complex.ofReal`
+preserves that because `Complex.ofReal 0 = 0`. -/
+theorem sqgMollifier_hasCompactSupport
+    (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
+    HasCompactSupport (sqgMollifier ε s t hst hε) := by
+  unfold sqgMollifier
+  exact (sqgMollifierBump ε s t hst hε).hasCompactSupport.comp_left
+    Complex.ofReal_zero
+
+/-- **Mollifier is a time test function.**
+
+Bundles `sqgMollifier_contDiff` (downcast from `⊤` to `1`) with
+`sqgMollifier_hasCompactSupport` to match `IsSqgTimeTestFunction`. -/
+theorem sqgMollifier_isSqgTimeTestFunction
+    (ε s t : ℝ) (hst : s < t) (hε : 0 < ε) :
+    IsSqgTimeTestFunction (sqgMollifier ε s t hst hε) :=
+  ⟨(sqgMollifier_contDiff ε s t hst hε).of_le le_top,
+   sqgMollifier_hasCompactSupport ε s t hst hε⟩
+
+/-- **Mollifier equals `1` on `[s, t]`.** On the core interval the
+inner bump evaluates to `1` (by `ContDiffBump.one_of_mem_closedBall`,
+since `[s, t] = closedBall ((s + t) / 2) ((t − s) / 2)`), and
+`Complex.ofReal` maps `1` to `1`. -/
+theorem sqgMollifier_eq_one_of_mem_Icc
+    (ε s t : ℝ) (hst : s < t) (hε : 0 < ε)
+    (τ : ℝ) (hτ : τ ∈ Set.Icc s t) :
+    sqgMollifier ε s t hst hε τ = 1 := by
+  obtain ⟨h1, h2⟩ := hτ
+  have hbump : (sqgMollifierBump ε s t hst hε) τ = 1 := by
+    apply ContDiffBump.one_of_mem_closedBall
+    show τ ∈ Metric.closedBall ((s + t) / 2) ((t - s) / 2)
+    rw [Metric.mem_closedBall, Real.dist_eq, abs_le]
+    refine ⟨?_, ?_⟩ <;> linarith
+  unfold sqgMollifier
+  rw [hbump]
+  norm_cast
+
+/-! ### Not yet provided in §10.16 / §10.17 / §10.18
 
 * `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` — the bump-to-
-  indicator bridge (step (B) in the §10.16 header). This is the
-  substantive remaining analysis step. Input bundle:
-  `IsSqgWeakSolutionTimeTest θ u + SqgFourierContinuous θ`. Tactical
-  outline:
-  - Construct a mollifier family `ψ_n ε s t` that is `C¹`, compactly
-    supported in `[s − ε, t + ε]`, equals `1` on `[s, t]`, and has
-    `deriv ψ_n` concentrated in two shrinking collars of size `1/n`
-    at `s` and `t`.
-  - Feed each `ψ_n` into `IsSqgWeakSolutionTimeTest` at mode `m`:
-    `∫ (deriv ψ_n)·θ̂(m) + ∫ ψ_n·F(m) = 0` where
+  indicator bridge (Phase 2.3). Input bundle:
+  `IsSqgWeakSolutionTimeTest θ u + SqgFourierContinuous θ`. Uses
+  `sqgMollifier ε s t _ _` at `ε = 1/(n+1)` and takes `n → ∞`.
+  Tactical outline:
+  - Feed each `ψ_ε := sqgMollifier ε s t hst hε` into
+    `IsSqgWeakSolutionTimeTest` at mode `m`:
+    `∫ (deriv ψ_ε)·θ̂(m) + ∫ ψ_ε·F(m) = 0` where
     `F(m) τ := sqgNonlinearFlux (θ τ) (u τ) m`.
-  - Left integral: `SqgFourierContinuous` → bounded on collars →
-    `∫ (deriv ψ_n)·θ̂(m) → θ̂(m, s) − θ̂(m, t)` as `n → ∞`.
+  - Left integral: `SqgFourierContinuous` → `θ̂(m, ·)` continuous
+    at `s` and `t` → `∫ (deriv ψ_ε)·θ̂(m) → θ̂(m, s) − θ̂(m, t)`
+    as `ε → 0⁺`.
   - Right integral: `sqgNonlinearFlux_bounded` + dominated
-    convergence → `∫ ψ_n·F(m) → ∫_s^t F(m)`.
-  - Combine: `θ̂(m, t) − θ̂(m, s) = −∫_s^t F(m)`, which is exactly
-    the `IsSqgWeakSolution.duhamel` field. -/
+    convergence → `∫ ψ_ε·F(m) → ∫_s^t F(m)`.
+  - Combine: `θ̂(m, t) − θ̂(m, s) = −∫_s^t F(m)` = the
+    `IsSqgWeakSolution.duhamel` field.
+
+  Boundary case `s = t`: handle separately; both sides are `0`. -/
 
 end SqgIdentity
