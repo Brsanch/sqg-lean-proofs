@@ -10345,4 +10345,43 @@ theorem sqgEvolutionAxioms_singleMode_const
     ⟨fun _ : ℝ => singleModeVelocity m₀ a j,
      fun _ : ℝ => isSqgVelocityComponent_singleMode m₀ a j⟩
 
+/-! ### §10.28 `SqgEvolutionAxioms_strong` for constant-in-time single-mode SQG
+
+Bundle the §10.27 witness into a named discharge of
+`SqgEvolutionAxioms_strong` via `of_IsSqgWeakSolution_via_MMP`. This is
+the first real instance of the route that consumes the four-tier
+analytic stack `SqgEvolutionAxioms + MaterialMaxPrinciple + velocity
+witness + IsSqgWeakSolution` and concludes the strengthened axioms.
+
+Ingredients assembled:
+- `sqgEvolutionAxioms_singleMode_const` — `SqgEvolutionAxioms`.
+- `MaterialMaxPrinciple.of_const` — MMP holds pointwise for
+  constant-in-time θ; the Ḣ¹ summability hypothesis is discharged by
+  `hsSeminormSq_summable_of_finite_support` (finite Fourier support).
+- `singleModeVelocity` — the Riesz-transform velocity carrier.
+- `isSqgVelocityComponent_singleMode` — velocity witness at every mode.
+- `isSqgWeakSolution_singleMode_const` — the Duhamel identity from
+  §10.27.
+
+Routing these through `of_IsSqgWeakSolution_via_MMP` closes the
+strengthened axioms with zero new content. This theorem is the
+"single-mode capstone" for downstream regularity consumers. -/
+
+theorem SqgEvolutionAxioms_strong.singleMode_const
+    [DecidableEq (Fin 2 → ℤ)]
+    (m₀ : Fin 2 → ℤ) (a : ℂ) :
+    SqgEvolutionAxioms_strong (fun _ : ℝ => singleMode m₀ a) := by
+  have hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (singleMode m₀ a) n‖ ^ 2) :=
+    hsSeminormSq_summable_of_finite_support 1 (singleMode m₀ a) {m₀}
+      (fun n hn => by
+        have hne : n ≠ m₀ := fun h => hn (by simp [h])
+        exact mFourierCoeff_singleMode_eq_zero_of_ne m₀ a hne)
+  exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    (sqgEvolutionAxioms_singleMode_const m₀ a)
+    (MaterialMaxPrinciple.of_const (singleMode m₀ a) hSumm)
+    (fun j _ => singleModeVelocity m₀ a j)
+    (fun j _ => isSqgVelocityComponent_singleMode m₀ a j)
+    (isSqgWeakSolution_singleMode_const m₀ a)
+
 end SqgIdentity
