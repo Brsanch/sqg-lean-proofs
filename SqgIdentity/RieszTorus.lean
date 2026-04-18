@@ -8246,4 +8246,98 @@ theorem SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
   SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP
     hE hMMP u hu_velocity hweak.duhamel
 
+/-! ### §10.16 Test-function weak-form predicate `IsSqgWeakSolutionTimeTest`
+
+§10.15's `IsSqgWeakSolution θ u` carries the mode-wise Duhamel identity
+as a named structural witness for
+`of_IsSqgWeakSolution_via_MMP`. This section opens the next tactical
+layer: a **test-function weak-form predicate**, stated at a
+granularity fine enough to couple with time integration but coarse
+enough to avoid a full distributional-calculus apparatus on `𝕋² × ℝ`.
+
+**Simplification of scope.** The classical distributional weak form
+of `∂_t θ + u · ∇θ = 0` pairs against smooth test functions
+`φ : 𝕋² × ℝ → ℂ` with compact time support and reads:
+
+  `∫₀^T ⟨θ(τ), ∂_τφ(·, τ) + u(τ) · ∇_x φ(·, τ)⟩_{L²(𝕋²)} dτ = 0`.
+
+Two independent analytical steps separate this from the mode-wise
+Duhamel identity carried by `IsSqgWeakSolution`:
+
+(A) **Spatial Fourier-character specialization** — pair against
+    separated test functions `φ(x, τ) = ψ(τ) · e_m(x)` and identify
+    `⟨θ(τ), e_m · u(τ) · ∇_x e_m'⟩` with
+    `sqgNonlinearFlux (θ τ) (u τ) m` via Parseval + the convolution-of-
+    Fourier-coefficients structure already proved in §10.9/§10.12.
+
+(B) **Bump-to-indicator limit in time** — take a smooth bump
+    `ψ_n → 𝟙_{[s, t]}` and use dominated convergence (legitimate
+    because `sqgNonlinearFlux_bounded` gives a uniform flux bound) to
+    recover
+    `θ̂(m, t) − θ̂(m, s) = − ∫_s^t sqgNonlinearFlux(θ τ)(u τ)(m) dτ`.
+
+§10.16 **pre-executes step (A)** by formulating the test-function
+weak form directly at the Fourier-mode level — one time test function
+`ψ : ℝ → ℂ` per mode. What remains for `IsSqgWeakSolution` is step
+(B) alone: a clean bump-to-indicator limit argument using the bounded
+flux.
+
+The advantage is modularity: step (A) becomes a property *of the
+predicate's formulation*, not a theorem that needs proof; step (B)
+stands alone as the next formalization target and lives entirely in
+time integration, not space-time Bochner. -/
+
+/-- **Time test functions.** A `C¹` function `ψ : ℝ → ℂ` with compact
+support. We use `C¹` rather than `C^∞` because §10's bump-to-indicator
+argument needs only one derivative: pair against the derivative of a
+mollified indicator, dominated by the bounded flux. -/
+def IsSqgTimeTestFunction (ψ : ℝ → ℂ) : Prop :=
+  ContDiff ℝ 1 ψ ∧ HasCompactSupport ψ
+
+/-- **Mode-wise time-weak form of SQG.**
+
+For every time test function `ψ` and every Fourier mode `m`,
+
+  `∫ τ, (deriv ψ τ) · θ̂(m, τ) dτ`
+  `  + ∫ τ, ψ τ · sqgNonlinearFlux(θ τ)(u τ)(m) dτ = 0`.
+
+Integrating by parts in time (formally — because `ψ` is compactly
+supported the boundary terms vanish) this is the Fourier projection of
+
+  `∫ τ, ψ(τ) · ((∂_τ θ̂)(m, τ) + (u · ∇θ)̂(m, τ)) dτ = 0`
+
+with `(u · ∇θ)̂(m, τ)` identified with
+`sqgNonlinearFlux(θ τ)(u τ)(m)` by the convolution structure of
+§10.9/§10.12. This is step (A) of the reduction in the §10.16 header.
+
+Strictly stronger than `IsSqgWeakSolution`: any of the Duhamel-
+identity witnesses that were in §10.15's scope must in particular
+satisfy this pairing (multiply the Duhamel identity on both sides by
+`deriv ψ τ`, integrate, and use the compact support of `ψ` to
+integrate by parts). Strictly weaker than a full space-time
+distributional weak form: we have already projected onto Fourier
+characters in space. -/
+def IsSqgWeakSolutionTimeTest
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    : Prop :=
+  ∀ (ψ : ℝ → ℂ), IsSqgTimeTestFunction ψ →
+  ∀ (m : Fin 2 → ℤ),
+    (∫ τ, (deriv ψ τ) * mFourierCoeff (θ τ) m)
+      + (∫ τ, ψ τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m) = 0
+
+/-! ### Not yet provided in §10.16
+
+* `IsSqgWeakSolutionTimeTest.zero` — the zero scalar field is a
+  trivial weak solution. Blocked on factoring
+  `mFourierCoeff (0 : Lp) m = 0` out of
+  `IsSqgVelocityComponent.of_zero` as a public lemma. Easy once that
+  extraction happens.
+* `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` — the bump-to-
+  indicator bridge (step (B) in the §10.16 header). This is the
+  substantive remaining analysis step. It uses a standard Friedrichs
+  mollifier of `𝟙_{[s, t]}`, dominated convergence against the
+  constant flux bound `K = Mu + Mg` from §10.12, and integration-by-
+  parts in time at the Fourier-coefficient level. -/
+
 end SqgIdentity
