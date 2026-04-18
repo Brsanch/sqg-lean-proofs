@@ -8664,11 +8664,8 @@ to ≤ 1. Since `0 ≤ a ≤ 1` and `0 ≤ b ≤ 1`, we have `a * b ≤ 1 * 1 = 
 theorem sqgConcreteMollifier_le_one (ε s t τ : ℝ) :
     sqgConcreteMollifier ε s t τ ≤ 1 := by
   unfold sqgConcreteMollifier
-  calc Real.smoothTransition ((τ - s + ε) / ε) *
-         Real.smoothTransition ((t - τ + ε) / ε)
-      ≤ 1 * 1 := mul_le_one₀ (Real.smoothTransition.le_one _)
-                   (Real.smoothTransition.nonneg _) (Real.smoothTransition.le_one _)
-    _ = 1 := one_mul 1
+  exact mul_le_one₀ (Real.smoothTransition.le_one _)
+         (Real.smoothTransition.nonneg _) (Real.smoothTransition.le_one _)
 
 /-- For `τ ∈ (s, t)` (open interval), both `smoothTransition` arguments
 are strictly greater than 1, so both factors equal 1 and the concrete
@@ -8744,10 +8741,10 @@ theorem sqgConcreteMollifier_hasCompactSupport {ε s t : ℝ} (hε : 0 < ε) :
   simp only [Function.mem_support] at hτ
   simp only [Set.mem_Icc]
   by_contra h
-  push_neg at h
+  simp only [not_and_or, not_le] at h
   rcases h with h | h
-  · exact hτ (sqgConcreteMollifier_zero_of_le_left hε (le_of_lt h))
-  · exact hτ (sqgConcreteMollifier_zero_of_ge_right hε (le_of_lt h))
+  · exact hτ (sqgConcreteMollifier_zero_of_le_left hε h.le)
+  · exact hτ (sqgConcreteMollifier_zero_of_ge_right hε h.le)
 
 /-- The complex-valued concrete mollifier `(sqgConcreteMollifier ε s t · : ℝ → ℂ)`
 (coerced via `↑`) is a valid time test function: `C¹` and compactly supported. -/
@@ -8755,7 +8752,8 @@ theorem sqgConcreteMollifier_isSqgTimeTestFunction {ε s t : ℝ} (hε : 0 < ε)
     IsSqgTimeTestFunction (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) := by
   constructor
   · exact ofRealCLM.contDiff.comp (sqgConcreteMollifier_contDiff ε s t)
-  · exact (sqgConcreteMollifier_hasCompactSupport hε).comp_left (map_zero _)
+  · show HasCompactSupport (Complex.ofReal ∘ sqgConcreteMollifier ε s t)
+    exact (sqgConcreteMollifier_hasCompactSupport hε).comp_left Complex.ofReal_zero
 
 /-! #### Phase 2.3.c — RHS mollifier integral converges to interval integral
 
@@ -8807,7 +8805,9 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       ((sqgConcreteMollifier_contDiff ε s t).continuous)).aestronglyMeasurable
   · -- Domination: for ε ∈ (0, 1], the integrand is bounded by K · 𝟙_{[s-1,t+1]}
     apply Filter.eventually_of_mem (Ioc_mem_nhdsGT (by norm_num : (0 : ℝ) < 1))
-    intro ε ⟨hε_pos, hε_le⟩ τ
+    intro ε ⟨hε_pos, hε_le⟩
+    apply Filter.Eventually.of_forall
+    intro τ
     simp only [Set.indicator, Set.mem_Icc]
     split_ifs with hmem
     · -- τ ∈ [s-1, t+1]
@@ -8832,8 +8832,9 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
       simp [hmoll]
   · -- Integrability of the dominating function K · 𝟙_{[s-1, t+1]}
     apply Integrable.const_mul _ K
-    exact (integrableOn_const (by
-        rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top))
+    exact (integrableOn_const
+        (hs := by rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top)
+        (hC := enorm_ne_top))
       .integrable_indicator measurableSet_Icc
   · -- Pointwise a.e. convergence
     apply Filter.Eventually.of_forall
@@ -8841,15 +8842,15 @@ theorem sqgConcreteMollifier_rhs_tendsto {s t : ℝ} (hst : s < t)
     by_cases hτ : τ ∈ Set.Icc s t
     · -- τ ∈ [s, t]: indicator = G τ; mollifier = 1 for all ε > 0
       rw [Set.indicator_of_mem hτ]
-      apply Filter.Tendsto.congr' tendsto_const_nhds
-      apply Filter.eventually_nhdsWithin_of_forall
+      apply Filter.Tendsto.congr' _ tendsto_const_nhds
+      apply Filter.eventually_of_mem self_mem_nhdsWithin
       intro ε hε
       rw [sqgConcreteMollifier_eq_one_of_mem_Icc hτ (Set.mem_Ioi.mp hε)]
       push_cast; ring
     · -- τ ∉ [s, t]: indicator = 0; mollifier eventually zero near 0⁺
-      rw [Set.indicator_of_not_mem hτ]
-      apply Filter.Tendsto.congr' tendsto_const_nhds
-      -- Show (fun ε => (sqgConcreteMollifier ε s t τ : ℂ) * G τ) =ᶠ[nhdsWithin 0 (Ioi 0)] 0
+      rw [Set.indicator_of_notMem hτ]
+      apply Filter.Tendsto.congr' _ tendsto_const_nhds
+      -- Show (fun _ => (0:ℂ)) =ᶠ[nhdsWithin 0 (Ioi 0)] (fun ε => (sqgConcreteMollifier ε s t τ : ℂ) * G τ)
       simp only [Set.mem_Icc, not_and_or, not_le] at hτ
       rcases hτ with hτs | hτt
       · -- τ < s: mollifier = 0 for all ε ∈ (0, s − τ)
@@ -8936,11 +8937,7 @@ theorem IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
   intro m s t hs hst
   -- s = t: both sides vanish
   rcases eq_or_lt_of_le hst with rfl | hst_lt
-  · have h2 : ∫ τ in Set.Icc t t,
-        sqgNonlinearFlux (θ τ) (fun j => u j τ) m = 0 :=
-      MeasureTheory.setIntegral_measure_zero
-        (by rw [Real.volume_Icc, sub_self, ENNReal.ofReal_zero])
-    simp [sub_self, h2]
+  · simp [sub_self]
   -- Main case: s < t
   -- Phase 2.3.a: weak-form identity at the concrete mollifier for every ε > 0
   have eq_eps : ∀ ε > 0,
@@ -8951,7 +8948,7 @@ theorem IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
     fun ε hε => hweak (fun τ => (sqgConcreteMollifier ε s t τ : ℂ))
                       (sqgConcreteMollifier_isSqgTimeTestFunction hε) m
   -- Phase 2.3.b: LHS → θ̂(s) − θ̂(t)
-  have lhs_lim := h_collar m s t hs hst.le
+  have lhs_lim := h_collar m s t hs hst_lt.le
   -- Phase 2.3.c: RHS → ∫_{[s,t]} G
   have rhs_lim := sqgConcreteMollifier_rhs_tendsto hst_lt hK_nn
       (hG_bound m) (hG_meas m)
@@ -8962,8 +8959,8 @@ theorem IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (∫ τ in Set.Icc s t,
                sqgNonlinearFlux (θ τ) (fun j => u j τ) m)) :=
-    rhs_lim.congr' (Filter.eventually_nhdsWithin_of_forall
-                     (fun ε hε => (eq_eps ε hε).symm))
+    rhs_lim.congr' (Filter.eventually_of_mem self_mem_nhdsWithin
+                     (fun ε hε => (eq_eps ε (Set.mem_Ioi.mp hε)).symm))
   -- Uniqueness of limits (nhdsWithin 0 (Ioi 0) is NeBot on ℝ)
   haveI : Filter.NeBot (nhdsWithin (0 : ℝ) (Set.Ioi 0)) := inferInstance
   have heq : mFourierCoeff (θ s) m - mFourierCoeff (θ t) m =
