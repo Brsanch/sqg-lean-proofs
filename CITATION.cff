@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.0
+version: 0.4.1
 date-released: "2026-04-17"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -40,12 +40,20 @@ abstract: >
   entirely by using only classical differential commutators.
   MaterialMaxPrinciple alone is shown sufficient for the intermediate
   Sobolev range s in [0, 1]. Combined, the conditional Theorem 3 on
-  s in [0, 2] now rests on integer-order axioms only. The v0.4.0
-  release also eliminates all `True` placeholders from
-  SqgEvolutionAxioms: meanConservation and velocityIsRieszTransform
-  are now real predicates. All content machine-verified with zero
-  `sorry`. Mathematical theorems by Bryan Sanchez; Lean formalization
-  by Bryan Sanchez with AI assistance.
+  s in [0, 2] rests on integer-order axioms only. The v0.4.0 release
+  eliminated all `True` placeholders from SqgEvolutionAxioms;
+  v0.4.1 adds the Fourier convolution scaffolding
+  (`fourierConvolution`, `convolution_bounded_by_product` with the
+  uniform Young bound), the mode-Lipschitz keystone upgrade
+  (`ModeLipschitz`, `SqgEvolutionAxioms_strong`), and the SQG-
+  specific Bochner wiring (`DuhamelFlux`,
+  `DuhamelFlux.modeLipschitz`, and the one-line promotion theorem
+  `SqgEvolutionAxioms.strengthen_of_duhamel`) — giving a fully
+  machine-checked path from "bounded per-mode flux" to "conditional
+  Theorem 3 on [0, 2]" whose only remaining analytic step is a
+  real-SQG-solution witness for DuhamelFlux. All content machine-
+  verified with zero `sorry`. Mathematical theorems by Bryan Sanchez;
+  Lean formalization by Bryan Sanchez with AI assistance.
 keywords:
   - Lean 4
   - mathlib
