@@ -404,9 +404,18 @@ doesn't exist in mathlib yet:
   axiomatic.
 - **Uniform ℓ² bounds on velocity / gradient coefficients** — one-
   line consequences of Parseval + Riesz L²-isometry + MMP's Ḣ¹
-  summability (already in the repo), but passed as hypotheses to
-  `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity`. Deriving them
-  inside the theorem is a future cleanup commit.
+  summability. **§10.13 (latest) formalizes these as named helper
+  lemmas** — `velocity_fourier_summable`,
+  `velocity_fourier_tsum_le_of_IsSqgVelocityComponent`,
+  `gradient_fourier_summable_of_hOneSummability`,
+  `gradient_fourier_tsum_le_hsSeminormSq_one`, plus the supporting
+  single-coordinate bound
+  `norm_derivSymbol_sq_le_fracDerivSymbol_one_sq`. Callers of
+  `of_sqgDuhamelIdentity` can now use these to derive three of the
+  four ℓ² control hypotheses in one line each. Only the uniform
+  velocity ℓ² tsum bound `Mu` requires additional input (combining
+  `l2Conservation` + `meanConservation` for full L² control —
+  deferred to future work).
 
 This repo is the Fourier-algebraic foundation plus a conditional
 Theorem 3 skeleton with the keystone analytic scaffolding fully

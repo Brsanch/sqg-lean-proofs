@@ -7901,4 +7901,97 @@ theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity
       exact hDuhamel m s t hs hst
   exact hE.strengthen_of_duhamel hDF
 
+/-! ### §10.13 ℓ²-control helpers for `sqgNonlinearFlux_bounded`
+
+§10.12's `of_sqgDuhamelIdentity` takes four ℓ²-control hypotheses.
+Three of the four are one-line consequences of data the repo already
+provides:
+
+* Velocity Fourier summability at fixed `τ`: automatic from
+  `hasSum_sq_mFourierCoeff` applied to `u j τ : Lp`.
+* Gradient Fourier summability: ℓ² domination by the
+  `(fracDerivSymbol 1)`-weighted series, whose summability comes
+  from `MaterialMaxPrinciple.hOneSummability`.
+* Velocity Fourier ℓ² tsum bound: per-mode `‖sqgVelocitySymbol‖ ≤ 1`
+  combined with `IsSqgVelocityComponent` gives
+  `‖u_j‖²_ℓ² ≤ ‖θ‖²_ℓ²` directly.
+
+This subsection formalizes those three lines as named helpers.
+Callers of `of_sqgDuhamelIdentity` can use them to derive the four
+control hypotheses from `SqgEvolutionAxioms` + `MaterialMaxPrinciple`
++ the `IsSqgVelocityComponent` witness alone (plus one external
+`∫ |θ|²` bound — the one piece that requires combining
+`l2Conservation` with `meanConservation`, deferred). -/
+
+/-- **Single-coordinate derivative symbol bound.** At every lattice
+point, `‖derivSymbol j n‖² ≤ (fracDerivSymbol 1 n)²`. At `n ≠ 0` this
+is `|n_j|² ≤ ‖n‖²`; at `n = 0` both sides vanish. -/
+lemma norm_derivSymbol_sq_le_fracDerivSymbol_one_sq
+    (j : Fin 2) (n : Fin 2 → ℤ) :
+    ‖derivSymbol j n‖ ^ 2 ≤ (fracDerivSymbol 1 n) ^ 2 := by
+  by_cases hn : n = 0
+  · subst hn
+    simp [derivSymbol]
+  · rw [norm_derivSymbol_sq, fracDerivSymbol_one_eq hn]
+    exact sq_le_latticeNorm_sq n j
+
+/-- **Gradient Fourier summability from Ḣ¹ summability.** -/
+lemma gradient_fourier_summable_of_hOneSummability
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (j : Fin 2)
+    (hθ_sum : Summable
+      (fun ℓ : Fin 2 → ℤ => (fracDerivSymbol 1 ℓ) ^ 2 * ‖mFourierCoeff θ ℓ‖ ^ 2)) :
+    Summable
+      (fun ℓ : Fin 2 → ℤ => ‖derivSymbol j ℓ * mFourierCoeff θ ℓ‖ ^ 2) := by
+  refine Summable.of_nonneg_of_le (fun _ => sq_nonneg _) ?_ hθ_sum
+  intro ℓ
+  rw [norm_mul, mul_pow]
+  exact mul_le_mul_of_nonneg_right
+    (norm_derivSymbol_sq_le_fracDerivSymbol_one_sq j ℓ) (sq_nonneg _)
+
+/-- **Gradient Fourier ℓ² tsum bound by Ḣ¹ seminorm.** -/
+lemma gradient_fourier_tsum_le_hsSeminormSq_one
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (j : Fin 2)
+    (hθ_sum : Summable
+      (fun ℓ : Fin 2 → ℤ => (fracDerivSymbol 1 ℓ) ^ 2 * ‖mFourierCoeff θ ℓ‖ ^ 2)) :
+    (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff θ ℓ‖ ^ 2) ≤ hsSeminormSq 1 θ := by
+  unfold hsSeminormSq
+  refine hasSum_le ?_
+    (gradient_fourier_summable_of_hOneSummability θ j hθ_sum).hasSum
+    hθ_sum.hasSum
+  intro ℓ
+  rw [norm_mul, mul_pow]
+  exact mul_le_mul_of_nonneg_right
+    (norm_derivSymbol_sq_le_fracDerivSymbol_one_sq j ℓ) (sq_nonneg _)
+
+/-- **Velocity Fourier summability** — automatic from Parseval on
+`u_j : Lp`. -/
+lemma velocity_fourier_summable
+    (u_j : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    Summable (fun ℓ : Fin 2 → ℤ => ‖mFourierCoeff u_j ℓ‖ ^ 2) :=
+  (hasSum_sq_mFourierCoeff u_j).summable
+
+/-- **Velocity Fourier ℓ² tsum bound from `IsSqgVelocityComponent`.**
+Per-mode `‖sqgVelocitySymbol‖ ≤ 1` gives `‖u_j‖²_ℓ² ≤ ‖θ‖²_ℓ²`. -/
+lemma velocity_fourier_tsum_le_of_IsSqgVelocityComponent
+    (θ u_j : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (j : Fin 2)
+    (hvel : IsSqgVelocityComponent θ u_j j) :
+    (∑' ℓ, ‖mFourierCoeff u_j ℓ‖ ^ 2)
+      ≤ ∑' ℓ, ‖mFourierCoeff θ ℓ‖ ^ 2 := by
+  refine hasSum_le ?_
+    (hasSum_sq_mFourierCoeff u_j).summable.hasSum
+    (hasSum_sq_mFourierCoeff θ).summable.hasSum
+  intro ℓ
+  rw [hvel ℓ, norm_mul, mul_pow]
+  have h1 : ‖sqgVelocitySymbol j ℓ‖ ^ 2 ≤ 1 := by
+    have h := sqgVelocitySymbol_norm_le_one j ℓ
+    have hnn := norm_nonneg (sqgVelocitySymbol j ℓ)
+    nlinarith
+  calc ‖sqgVelocitySymbol j ℓ‖ ^ 2 * ‖mFourierCoeff θ ℓ‖ ^ 2
+      ≤ 1 * ‖mFourierCoeff θ ℓ‖ ^ 2 :=
+        mul_le_mul_of_nonneg_right h1 (sq_nonneg _)
+    _ = ‖mFourierCoeff θ ℓ‖ ^ 2 := one_mul _
+
 end SqgIdentity
