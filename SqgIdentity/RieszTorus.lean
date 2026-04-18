@@ -6709,44 +6709,70 @@ def IsSqgVelocityComponent
   ∀ n : Fin 2 → ℤ,
     mFourierCoeff u_j n = sqgVelocitySymbol j n * mFourierCoeff θ n
 
+/-- **Fourier coefficients of the zero Lp function vanish.**
+
+For every dimension `d` and every mode `n : Fin d → ℤ`,
+`mFourierCoeff (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n = 0`.
+
+Proof: Parseval gives `∑' m, ‖mFourierCoeff 0 m‖² = ∫ ‖0‖² = 0`,
+so each term of a summable non-negative series with zero total is
+individually zero.
+
+Extracted from the previously-inline proof in
+`IsSqgVelocityComponent.of_zero` so that downstream constructors
+(notably `IsSqgWeakSolutionTimeTest.zero` in §10.16 and
+`sqgNonlinearFlux_zero_theta`) can reuse it without re-deriving the
+Parseval argument. -/
+theorem mFourierCoeff_zero
+    {d : ℕ}
+    (n : Fin d → ℤ) :
+    mFourierCoeff
+        (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n = 0 := by
+  have hP := hasSum_sq_mFourierCoeff
+    (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d))))
+  have hi : (∫ t,
+        ‖((0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) : _ → ℂ) t‖ ^ 2)
+        = 0 := by simp
+  rw [hi] at hP
+  have hle :
+      ‖mFourierCoeff
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n‖ ^ 2
+        ≤ ∑' m, ‖mFourierCoeff
+            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) m‖ ^ 2 :=
+    hP.summable.le_tsum n (fun _ _ => sq_nonneg _)
+  rw [hP.tsum_eq] at hle
+  have h_sq :
+      ‖mFourierCoeff
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n‖ ^ 2 = 0 :=
+    le_antisymm hle (sq_nonneg _)
+  have h_norm :
+      ‖mFourierCoeff
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n‖ = 0 := by
+    have hmul :
+        ‖mFourierCoeff
+            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n‖
+          * ‖mFourierCoeff
+              (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n‖
+            = 0 := by
+      nlinarith [h_sq,
+        norm_nonneg (mFourierCoeff
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin d)))) n)]
+    exact mul_self_eq_zero.mp hmul
+  exact norm_eq_zero.mp h_norm
+
 /-- **The zero function is an SQG-velocity-component of the zero scalar.**
 If `θ = 0`, then `u_j = 0` satisfies every Fourier-mode condition
-trivially (both sides are zero). A minimal existence example. -/
+trivially (both sides are zero). A minimal existence example.
+
+Proof now a three-liner after factoring `mFourierCoeff_zero` into
+a public lemma (the 30+-line inline Parseval argument has moved
+there). -/
 theorem IsSqgVelocityComponent.of_zero (j : Fin 2) :
     IsSqgVelocityComponent (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
       (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) j := by
   intro n
-  -- Both sides: mFourierCoeff 0 n = 0, and the RHS is sqgVelocitySymbol j n * 0 = 0.
-  -- We derive mFourierCoeff 0 n = 0 from Parseval + non-negativity, via hsSeminormSq_of_zero.
-  -- For the RHS, use mul_zero.
-  have h_lhs : mFourierCoeff (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n = 0 := by
-    -- Each term (fracDerivSymbol 0 n)^2 * ‖mFourierCoeff 0 n‖^2 sums to 0 and is ≥ 0.
-    -- We use Parseval directly: ∑' ‖mFourierCoeff 0 n‖^2 = 0, so each term = 0.
-    have hP := hasSum_sq_mFourierCoeff
-      (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    have hi : (∫ t, ‖((0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : _ → ℂ) t‖ ^ 2)
-          = 0 := by simp
-    rw [hi] at hP
-    have hle : ‖mFourierCoeff
-          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n‖ ^ 2
-          ≤ ∑' m, ‖mFourierCoeff
-            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) m‖ ^ 2 :=
-      hP.summable.le_tsum n (fun _ _ => sq_nonneg _)
-    rw [hP.tsum_eq] at hle
-    have h_sq : ‖mFourierCoeff
-        (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n‖ ^ 2 = 0 :=
-      le_antisymm hle (sq_nonneg _)
-    have h_norm : ‖mFourierCoeff
-        (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n‖ = 0 := by
-      have : ‖mFourierCoeff
-          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n‖
-          * ‖mFourierCoeff
-            (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n‖ = 0 := by
-        have := h_sq; nlinarith [this, norm_nonneg (mFourierCoeff
-          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n)]
-      exact (mul_self_eq_zero.mp this)
-    exact norm_eq_zero.mp h_norm
-  rw [h_lhs]; simp
+  rw [mFourierCoeff_zero]
+  simp
 
 /-- **SQG evolution axioms.** Encodes "`θ` solves SQG" at the level we
 can state without a full material-derivative operator.
@@ -8326,18 +8352,57 @@ def IsSqgWeakSolutionTimeTest
     (∫ τ, (deriv ψ τ) * mFourierCoeff (θ τ) m)
       + (∫ τ, ψ τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m) = 0
 
+/-- **Nonlinear flux of the zero scalar field vanishes.**
+
+`sqgNonlinearFlux 0 u m = 0` for every velocity field `u` and mode
+`m`. Each component convolution's right factor is
+`fun ℓ => derivSymbol j ℓ * mFourierCoeff 0 ℓ`, which is pointwise
+zero by `mFourierCoeff_zero`. The convolution with the zero sequence
+on the right is then zero by `fourierConvolution_zero_right`. -/
+theorem sqgNonlinearFlux_zero_theta
+    (u : Fin 2 → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux
+        (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) u m = 0 := by
+  unfold sqgNonlinearFlux
+  apply Finset.sum_eq_zero
+  intro j _
+  have h :
+      (fun ℓ => derivSymbol j ℓ * mFourierCoeff
+          (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) ℓ)
+        = fun _ => (0 : ℂ) := by
+    funext ℓ
+    simp [mFourierCoeff_zero]
+  rw [h]
+  exact fourierConvolution_zero_right _ m
+
+/-- **The zero scalar field is a trivial time-weak solution.**
+
+Both integrands vanish pointwise:
+* `mFourierCoeff (fun _ => 0) τ m = mFourierCoeff (0 : Lp) m = 0`
+  by `mFourierCoeff_zero`.
+* `sqgNonlinearFlux (fun _ => 0) τ u m = sqgNonlinearFlux 0 (u τ) m = 0`
+  by `sqgNonlinearFlux_zero_theta`.
+
+So each integral is zero and the weak-form identity reads `0 + 0 = 0`.
+This is the §10.16 counterpart of `IsSqgVelocityComponent.of_zero`. -/
+theorem IsSqgWeakSolutionTimeTest.zero
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    IsSqgWeakSolutionTimeTest
+      (fun _ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) u := by
+  intro ψ _ m
+  simp [mFourierCoeff_zero, sqgNonlinearFlux_zero_theta]
+
 /-! ### Not yet provided in §10.16
 
-* `IsSqgWeakSolutionTimeTest.zero` — the zero scalar field is a
-  trivial weak solution. Blocked on factoring
-  `mFourierCoeff (0 : Lp) m = 0` out of
-  `IsSqgVelocityComponent.of_zero` as a public lemma. Easy once that
-  extraction happens.
 * `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` — the bump-to-
   indicator bridge (step (B) in the §10.16 header). This is the
   substantive remaining analysis step. It uses a standard Friedrichs
   mollifier of `𝟙_{[s, t]}`, dominated convergence against the
   constant flux bound `K = Mu + Mg` from §10.12, and integration-by-
-  parts in time at the Fourier-coefficient level. -/
+  parts in time at the Fourier-coefficient level. Plausibly also
+  needs a time-regularity witness making `τ ↦ mFourierCoeff (θ τ) m`
+  continuous, which `SqgEvolutionAxioms` does not automatically
+  supply. -/
 
 end SqgIdentity
