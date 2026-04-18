@@ -9751,4 +9751,173 @@ theorem sqg_regularity_const
     (MaterialMaxPrinciple.of_const θ₀ hSumm)
     (BKMCriterionS2.of_const θ₀)
 
+/-! ### §10.24 Scaled time-varying witness class
+
+This section delivers the **first time-varying** discharge of the conditional
+Theorem 3 chain. §10.23 closed the constant case `θ(τ) = θ₀`; here we allow
+
+  `θ(τ) = c(τ) • θ₀`
+
+with `c : ℝ → ℂ` such that `‖c(τ)‖ ≤ 1` for `τ ≥ 0`. This admits decay,
+oscillation, and slow growth bounded by 1. It is *genuinely* time-varying:
+no two distinct values of `c(τ)·θ₀` agree as `Lp` elements when `θ₀ ≠ 0`.
+
+The mechanism is purely algebraic: scaling by `c(τ)` multiplies every Sobolev
+seminorm by `‖c(τ)‖² ≤ 1`, so `MaterialMaxPrinciple` and `BKMCriterionS2`
+are discharged by Sobolev-norm dominance against the initial-data bound.
+The Ḣ¹-summability hypothesis on `θ₀` transfers across the scaling via
+`Summable.mul_left`.
+
+This class does *not* satisfy the SQG PDE in general — for that one needs
+the velocity to be the Riesz transform of `θ`, which constrains the dynamics.
+But `sqg_regularity_via_s2_bootstrap` is keyed only on `MaterialMaxPrinciple`
+and `BKMCriterionS2`, both of which this class discharges abstractly. So
+the regularity *conclusion* — uniform Ḣˢ bounds for every `s ∈ [0, 2]` —
+holds for the scaled class without invoking the Duhamel identity. -/
+
+/-- **Fourier coefficient under scalar multiplication.** For `c : ℂ` and
+`f : Lp ℂ 2 (𝕋ᵈ)`, scalar multiplication factors through `mFourierCoeff`:
+
+  `mFourierCoeff (c • f) n = c * mFourierCoeff f n`.
+
+Proof: rewrite the integrand using `Lp.coeFn_smul` (which gives the a.e.
+equality `(c • f) t = c * f t`), then pull `c` out of the Bochner integral
+via `integral_const_smul`. -/
+theorem mFourierCoeff_const_smul
+    {d : Type*} [Fintype d]
+    (c : ℂ) (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (n : d → ℤ) :
+    mFourierCoeff (c • f : Lp ℂ 2 _) n = c * mFourierCoeff f n := by
+  unfold mFourierCoeff
+  have h_ae :
+      (fun t => mFourier (-n) t • ((c • f : Lp ℂ 2 _) : UnitAddTorus d → ℂ) t)
+        =ᵐ[volume]
+      (fun t => c • (mFourier (-n) t • (f : UnitAddTorus d → ℂ) t)) := by
+    filter_upwards [Lp.coeFn_smul c f] with t ht
+    simp only [ht, Pi.smul_apply, smul_eq_mul]
+    ring
+  rw [integral_congr_ae h_ae, integral_const_smul, smul_eq_mul]
+
+/-- **Ḣˢ seminorm under scalar multiplication.** Scalar multiplication
+factors through every `hsSeminormSq` as `‖c‖²`:
+
+  `hsSeminormSq s (c • f) = ‖c‖² · hsSeminormSq s f`.
+
+Proof: per-mode, `‖mFourierCoeff (c • f) n‖² = ‖c‖² · ‖mFourierCoeff f n‖²`
+by `mFourierCoeff_const_smul` and `norm_mul`. Pull `‖c‖²` out of the `tsum`
+via `tsum_mul_left`. -/
+theorem hsSeminormSq_const_smul
+    {d : Type*} [Fintype d] (s : ℝ) (c : ℂ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d))) :
+    hsSeminormSq s (c • f : Lp ℂ 2 _) = ‖c‖ ^ 2 * hsSeminormSq s f := by
+  unfold hsSeminormSq
+  rw [← tsum_mul_left]
+  apply tsum_congr
+  intro n
+  rw [mFourierCoeff_const_smul, norm_mul]
+  ring
+
+/-- **MaterialMaxPrinciple for the scaled class.** With `‖c(τ)‖ ≤ 1` for
+`τ ≥ 0` and Ḣ¹-summable `θ₀`, the family `θ(τ) := c(τ) • θ₀` satisfies
+`MaterialMaxPrinciple` with the bound `M = hsSeminormSq 1 θ₀` (the initial
+Ḣ¹ seminorm).
+
+The bound comes from `hsSeminormSq_const_smul` plus `‖c(τ)‖² ≤ 1`. The
+Ḣ¹-summability hypothesis transfers via `Summable.mul_left ‖c τ‖²`. -/
+theorem MaterialMaxPrinciple.of_scaled
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (c : ℝ → ℂ)
+    (hc : ∀ τ : ℝ, 0 ≤ τ → ‖c τ‖ ≤ 1)
+    (hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2)) :
+    MaterialMaxPrinciple (fun τ : ℝ => (c τ • θ₀ : Lp ℂ 2 _)) where
+  hOnePropagation := by
+    refine ⟨hsSeminormSq 1 θ₀, fun τ hτ => ?_⟩
+    rw [hsSeminormSq_const_smul]
+    have h_norm_le_one : ‖c τ‖ ≤ 1 := hc τ hτ
+    have h_norm_sq_le_one : ‖c τ‖ ^ 2 ≤ 1 := by
+      have h_nn : 0 ≤ ‖c τ‖ := norm_nonneg _
+      nlinarith [h_norm_le_one, h_nn]
+    have h_sem_nn : 0 ≤ hsSeminormSq 1 θ₀ := by
+      unfold hsSeminormSq
+      exact tsum_nonneg (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+    calc ‖c τ‖ ^ 2 * hsSeminormSq 1 θ₀
+        ≤ 1 * hsSeminormSq 1 θ₀ :=
+            mul_le_mul_of_nonneg_right h_norm_sq_le_one h_sem_nn
+      _ = hsSeminormSq 1 θ₀ := one_mul _
+  hOneSummability := fun τ _ => by
+    have hcoeff : ∀ n : Fin 2 → ℤ,
+        (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (c τ • θ₀ : Lp ℂ 2 _) n‖ ^ 2
+        = ‖c τ‖ ^ 2
+            * ((fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2) := by
+      intro n
+      rw [mFourierCoeff_const_smul, norm_mul]
+      ring
+    have heq :
+        (fun n : Fin 2 → ℤ =>
+          (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (c τ • θ₀ : Lp ℂ 2 _) n‖ ^ 2)
+        = (fun n =>
+            ‖c τ‖ ^ 2
+              * ((fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2)) :=
+      funext hcoeff
+    rw [heq]
+    exact hSumm.mul_left _
+  freeDerivativeAtKappaMax := trivial
+  materialSegmentExpansion := trivial
+  farFieldBoundary := trivial
+
+/-- **BKMCriterionS2 discharge for the scaled class.** With `‖c(τ)‖ ≤ 1`
+for `τ ≥ 0`, every Ḣˢ seminorm of `θ(τ) = c(τ) • θ₀` is bounded by the
+corresponding seminorm of `θ₀` via `hsSeminormSq_const_smul` and `‖c(τ)‖² ≤ 1`.
+No fractional calculus needed — the bound passes through algebraic scaling. -/
+theorem BKMCriterionS2.of_scaled
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (c : ℝ → ℂ)
+    (hc : ∀ τ : ℝ, 0 ≤ τ → ‖c τ‖ ≤ 1) :
+    BKMCriterionS2 (fun τ : ℝ => (c τ • θ₀ : Lp ℂ 2 _)) where
+  hsPropagationS2 := fun _M s _hs0 _hs2 => by
+    refine ⟨hsSeminormSq s θ₀, fun τ hτ => ?_⟩
+    rw [hsSeminormSq_const_smul]
+    have h_norm_le_one : ‖c τ‖ ≤ 1 := hc τ hτ
+    have h_norm_sq_le_one : ‖c τ‖ ^ 2 ≤ 1 := by
+      have h_nn : 0 ≤ ‖c τ‖ := norm_nonneg _
+      nlinarith [h_norm_le_one, h_nn]
+    have h_sem_nn : 0 ≤ hsSeminormSq s θ₀ := by
+      unfold hsSeminormSq
+      exact tsum_nonneg (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+    calc ‖c τ‖ ^ 2 * hsSeminormSq s θ₀
+        ≤ 1 * hsSeminormSq s θ₀ :=
+            mul_le_mul_of_nonneg_right h_norm_sq_le_one h_sem_nn
+      _ = hsSeminormSq s θ₀ := one_mul _
+
+/-- **Capstone — scaled time-varying SQG family is regular on `[0, 2]`.**
+
+For any `θ₀ ∈ Lp ℂ 2 (𝕋²)` with Ḣ¹-summable Fourier data and any
+`c : ℝ → ℂ` with `‖c(τ)‖ ≤ 1` for `τ ≥ 0`, the time-varying family
+
+  `θ(τ) = c(τ) • θ₀`
+
+enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]`. This is the **first
+time-evolving** concrete discharge of conditional Theorem 3 along the
+`sqg_regularity_via_s2_bootstrap` chain.
+
+Specializations:
+- `c ≡ 1` recovers `sqg_regularity_const`.
+- `c τ = exp(-λτ)` for `λ ≥ 0` gives the decaying class.
+- `c τ = exp(iωτ)` for `ω ∈ ℝ` gives the unitary-rotation class
+  (energy-conserving phase rotation in time). -/
+theorem sqg_regularity_scaled
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (c : ℝ → ℂ)
+    (hc : ∀ τ : ℝ, 0 ≤ τ → ‖c τ‖ ≤ 1)
+    (hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2)) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((fun τ : ℝ => (c τ • θ₀ : Lp ℂ 2 _)) t) ≤ M :=
+  sqg_regularity_via_s2_bootstrap
+    (fun τ : ℝ => (c τ • θ₀ : Lp ℂ 2 _))
+    (MaterialMaxPrinciple.of_scaled θ₀ c hc hSumm)
+    (BKMCriterionS2.of_scaled θ₀ c hc)
+
 end SqgIdentity
