@@ -10271,9 +10271,9 @@ theorem sqgVelocitySymbol_mul_derivSymbol_sum_zero (m₀ : Fin 2 → ℤ) :
 
 /-- **Nonlinear flux of single-mode SQG vanishes everywhere.**
 
-For `m ≠ 2 • m₀`: the convolution support requires `ℓ = m₀` (from `û_j`)
-and `m - ℓ = m₀` (from `θ̂`), forcing `m = 2 • m₀`; otherwise the term
-is zero. For `m = 2 • m₀`: the inner sum over `j` reduces to
+For `m ≠ 2 m₀`: the convolution support requires `ℓ = m₀` (from `û_j`)
+and `m - ℓ = m₀` (from `θ̂`), forcing `m = 2 m₀`; otherwise the term
+is zero. For `m = 2 m₀`: the inner sum over `j` reduces to
 `a² · ∑ⱼ sqgVelocitySymbol j m₀ · derivSymbol j m₀ = 0` by the
 divergence-free identity. -/
 theorem sqgNonlinearFlux_singleMode_eq_zero
@@ -10281,6 +10281,7 @@ theorem sqgNonlinearFlux_singleMode_eq_zero
     (m₀ : Fin 2 → ℤ) (a : ℂ) (m : Fin 2 → ℤ) :
     sqgNonlinearFlux (singleMode m₀ a) (singleModeVelocity m₀ a) m = 0 := by
   unfold sqgNonlinearFlux
+  -- Per-direction convolution simplification (β-reduction via simp only).
   have h_conv : ∀ j : Fin 2,
       fourierConvolution
           (fun ℓ => mFourierCoeff (singleModeVelocity m₀ a j) ℓ)
@@ -10290,23 +10291,22 @@ theorem sqgNonlinearFlux_singleMode_eq_zero
               * (if m - m₀ = m₀ then a else 0)) := by
     intro j
     unfold fourierConvolution
-    rw [tsum_eq_single m₀ (fun ℓ hℓ => ?_)]
-    · rw [mFourierCoeff_singleModeVelocity, if_pos rfl,
-          mFourierCoeff_singleMode]
-    · rw [mFourierCoeff_singleModeVelocity, if_neg hℓ, zero_mul]
-  simp_rw [h_conv]
+    rw [tsum_eq_single m₀ (fun ℓ hℓ => by
+      simp only [mFourierCoeff_singleModeVelocity, if_neg hℓ, zero_mul])]
+    simp only [mFourierCoeff_singleModeVelocity, mFourierCoeff_singleMode,
+               if_pos rfl]
+  simp only [h_conv]
   by_cases hm : m - m₀ = m₀
-  · rw [hm]
-    simp_rw [if_pos rfl]
+  · -- m - m₀ = m₀ branch: factor out a² and apply divergence-free identity.
+    simp only [if_pos hm, hm]
     have h_factor : ∀ j : Fin 2,
         (sqgVelocitySymbol j m₀ * a) * (derivSymbol j m₀ * a)
-          = a * a * (sqgVelocitySymbol j m₀ * derivSymbol j m₀) := by
-      intro j; ring
-    rw [Finset.sum_congr rfl (fun j _ => h_factor j),
-        ← Finset.mul_sum, sqgVelocitySymbol_mul_derivSymbol_sum_zero,
-        mul_zero]
-  · simp_rw [if_neg hm, mul_zero, mul_zero]
-    exact Finset.sum_const_zero
+          = a * a * (sqgVelocitySymbol j m₀ * derivSymbol j m₀) :=
+      fun j => by ring
+    simp only [h_factor, ← Finset.mul_sum,
+               sqgVelocitySymbol_mul_derivSymbol_sum_zero, mul_zero]
+  · -- m - m₀ ≠ m₀ branch: every term has a multiplied 0.
+    simp [if_neg hm]
 
 /-- **`IsSqgWeakSolution` for the constant-in-time single-mode SQG.**
 Duhamel reduces to `0 = ∫ 0 = 0`: LHS by `sub_self` (θ constant), RHS
@@ -10316,11 +10316,12 @@ theorem isSqgWeakSolution_singleMode_const
     (m₀ : Fin 2 → ℤ) (a : ℂ) :
     IsSqgWeakSolution
         (fun _ : ℝ => singleMode m₀ a)
-        (fun j _ : ℝ => singleModeVelocity m₀ a j) where
+        (fun (j : Fin 2) (_ : ℝ) => singleModeVelocity m₀ a j) where
   duhamel := fun m s t _ _ => by
     have h_integrand :
         (fun τ : ℝ => sqgNonlinearFlux ((fun _ : ℝ => singleMode m₀ a) τ)
-            (fun j => (fun j _ : ℝ => singleModeVelocity m₀ a j) j τ) m)
+            (fun j : Fin 2 =>
+              (fun (j : Fin 2) (_ : ℝ) => singleModeVelocity m₀ a j) j τ) m)
         = fun _ => (0 : ℂ) := by
       funext τ
       exact sqgNonlinearFlux_singleMode_eq_zero m₀ a m
