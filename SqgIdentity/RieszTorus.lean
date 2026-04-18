@@ -306,7 +306,7 @@ lemma fracDerivSymbol_two_eq {d : Type*} [Fintype d]
   rw [fracDerivSymbol_of_ne_zero 2 hn]
   have h : (latticeNorm n) ^ (2 : ℝ) = (latticeNorm n) ^ (2 : ℕ) :=
     Real.rpow_natCast (latticeNorm n) 2
-  simpa using h
+  exact h
 
 /-! ### Symbol-level identity `∂_j = (-Δ)^{1/2} · R_j` -/
 
@@ -1564,7 +1564,7 @@ theorem sqg_strain_trace_free (n : Fin 2 → ℤ) :
   simp only [sqgStrainSymbol, sqgGradSymbol]
   by_cases hn : n = 0
   · simp [hn, derivSymbol, rieszSymbol]
-  · simp only [show (0 : Fin 2) = 0 from rfl, show (1 : Fin 2) ≠ 0 from by omega,
+  · simp only [show (1 : Fin 2) ≠ 0 from by omega,
                if_true, if_false]
     rw [rieszSymbol_of_ne_zero hn 0, rieszSymbol_of_ne_zero hn 1]
     simp only [derivSymbol]
@@ -2172,7 +2172,7 @@ connects strain to curvature. -/
 theorem sqgGrad_from_hess_0 {n : Fin 2 → ℤ} (hn : n ≠ 0) (i : Fin 2) :
     sqgGradSymbol i 0 n * ((latticeNorm n : ℝ) : ℂ) = -hessSymbol i 1 n := by
   unfold sqgGradSymbol hessSymbol
-  simp only [show (0 : Fin 2) = 0 from rfl, if_true]
+  simp only [if_true]
   rw [rieszSymbol_of_ne_zero hn 1]
   unfold derivSymbol
   have hL : ((latticeNorm n : ℝ) : ℂ) ≠ 0 := by
@@ -2280,7 +2280,7 @@ theorem sqg_strain_01_explicit {n : Fin 2 → ℤ} (hn : n ≠ 0) :
     sqgStrainSymbol 0 1 n * ((latticeNorm n : ℝ) : ℂ)
     = (((n 1 : ℤ) : ℂ) ^ 2 - ((n 0 : ℤ) : ℂ) ^ 2) / 2 := by
   unfold sqgStrainSymbol sqgGradSymbol
-  simp only [show (0 : Fin 2) = 0 from rfl, show (1 : Fin 2) ≠ 0 from by omega,
+  simp only [show (1 : Fin 2) ≠ 0 from by omega,
              if_true, if_false]
   rw [rieszSymbol_of_ne_zero hn 0, rieszSymbol_of_ne_zero hn 1]
   simp only [derivSymbol]
@@ -2440,7 +2440,7 @@ lemma norm_derivSymbol_le {d : Type*} [Fintype d] (i : d) (n : d → ℤ) :
 set_option maxHeartbeats 400000 in
 /-- **SQG velocity gradient norm bound (per mode).** For `n ≠ 0`,
 each velocity gradient entry satisfies `‖(∂_i u_j)^(n)‖ ≤ ‖n‖`. -/
-theorem sqgGrad_norm_le {n : Fin 2 → ℤ} (hn : n ≠ 0) (i j : Fin 2) :
+theorem sqgGrad_norm_le {n : Fin 2 → ℤ} (_hn : n ≠ 0) (i j : Fin 2) :
     ‖sqgGradSymbol i j n‖ ≤ latticeNorm n := by
   unfold sqgGradSymbol
   by_cases hj : j = 0
@@ -2698,7 +2698,7 @@ geometric mean of the `t`- and `u`-weights:
 
     `σ_s(n)² ≤ (σ_t(n)²)^{1−α} · (σ_u(n)²)^α` -/
 lemma fracDerivSymbol_sq_interpolate {d : Type*} [Fintype d]
-    {t u α : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (htu : t ≤ u)
+    {t u α : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (_htu : t ≤ u)
     (n : d → ℤ) :
     (fracDerivSymbol ((1 - α) * t + α * u) n) ^ 2 =
     ((fracDerivSymbol t n) ^ 2) ^ (1 - α) *
@@ -3051,7 +3051,7 @@ theorem sqgGrad_frobenius_tight {n : Fin 2 → ℤ} (hn : n ≠ 0) :
       = ((n i : ℤ) : ℝ) ^ 2 * ‖rieszSymbol 1 n‖ ^ 2 := by
     intro i
     unfold sqgGradSymbol derivSymbol
-    simp only [show (0 : Fin 2) = 0 from rfl, if_true]
+    simp only [if_true]
     rw [norm_mul, mul_pow]
     rw [show ‖Complex.I * ((((n i : ℤ) : ℝ) : ℂ))‖ = |((n i : ℤ) : ℝ)| from by
       rw [norm_mul, Complex.norm_I, one_mul, Complex.norm_real, Real.norm_eq_abs]]
@@ -3154,7 +3154,7 @@ Proof: Parseval + mode-level identity. -/
 theorem sqgVorticity_L2_eq_Hs1
     (θ ω : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hcoeff : ∀ n, mFourierCoeff ω n = sqgVorticitySymbol n * mFourierCoeff θ n)
-    (hsum : Summable
+    (_hsum : Summable
       (fun n ↦ (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2))
     (hω_parseval : HasSum (fun n ↦ ‖mFourierCoeff ω n‖ ^ 2) (∫ t, ‖ω t‖ ^ 2)) :
     (∫ t, ‖ω t‖ ^ 2) = hsSeminormSq 1 θ := by
@@ -3346,7 +3346,7 @@ theorem sqgVorticity_Hs_eq_Hs1
     (s : ℝ)
     (θ ω : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hcoeff : ∀ n, mFourierCoeff ω n = sqgVorticitySymbol n * mFourierCoeff θ n)
-    (hsum : Summable (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
+    (_hsum : Summable (fun n ↦ (fracDerivSymbol (s + 1) n) ^ 2 * ‖mFourierCoeff θ n‖ ^ 2)) :
     hsSeminormSq s ω = hsSeminormSq (s + 1) θ := by
   unfold hsSeminormSq
   congr 1
@@ -3582,7 +3582,7 @@ theorem mul_exp_neg_le_exp_neg_one (x : ℝ) :
       _ = Real.exp (-1) := by
           congr 1; ring
   · -- x < 0: x · exp(-x) < 0 ≤ exp(-1)
-    push_neg at hx
+    push Not at hx
     have hexp_neg_pos : 0 < Real.exp (-x) := Real.exp_pos _
     have hneg : x * Real.exp (-x) < 0 := mul_neg_of_neg_of_pos hx hexp_neg_pos
     have hpos : 0 < Real.exp (-1) := Real.exp_pos _
@@ -3624,7 +3624,7 @@ theorem fracDerivSymbol_1_sq_mul_heat_le {t : ℝ} (ht : 0 < t)
   · subst hn
     have : (fracDerivSymbol 1 (0 : Fin 2 → ℤ)) = 0 := fracDerivSymbol_zero 1
     rw [this]
-    simp [Real.exp_pos, ht.le, Real.exp_nonneg]
+    simp
     exact div_nonneg (Real.exp_pos _).le ht.le
   · rw [fracDerivSymbol_one_eq hn]
     exact latticeNorm_sq_mul_heat_le ht n
@@ -3874,7 +3874,7 @@ theorem latticeNorm_pow_mul_heat_le {k : ℕ} (hk : k ≠ 0) {t : ℝ} (ht : 0 <
     have hexp : (Real.exp (-1)) ^ k = Real.exp (-(k : ℝ)) := by
       rw [← Real.exp_nat_mul]
       congr 1
-      push_cast; ring
+      ring
     rw [hexp]
   rw [hLHS_eq] at hpow
   rw [hRHS_eq] at hpow
@@ -4266,7 +4266,7 @@ lemma fracHeatSymbol_nonneg (α t : ℝ) (n : Fin 2 → ℤ) :
   simp
 
 /-- **Fractional heat ≤ 1 for t ≥ 0 and α > 0.** -/
-lemma fracHeatSymbol_le_one {α t : ℝ} (hα : 0 < α) (ht : 0 ≤ t) (n : Fin 2 → ℤ) :
+lemma fracHeatSymbol_le_one {α t : ℝ} (_hα : 0 < α) (ht : 0 ≤ t) (n : Fin 2 → ℤ) :
     fracHeatSymbol α t n ≤ 1 := by
   unfold fracHeatSymbol
   rw [show (1 : ℝ) = Real.exp 0 from Real.exp_zero.symm]
@@ -4297,7 +4297,7 @@ theorem fracHeatSymbol_one_eq_heat (t : ℝ) (n : Fin 2 → ℤ) :
     `‖n‖^{2α} · exp(-t·‖n‖^{2α}) ≤ exp(-1)/t`
 
 Obtained by letting `y = t·‖n‖^{2α}` and using `y·exp(-y) ≤ exp(-1)`. -/
-theorem latticeNorm_rpow_mul_fracHeat_le {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 0 < t)
+theorem latticeNorm_rpow_mul_fracHeat_le {α : ℝ} (_hα : 0 < α) {t : ℝ} (ht : 0 < t)
     (n : Fin 2 → ℤ) :
     (latticeNorm n) ^ (2 * α) * fracHeatSymbol α t n ≤ Real.exp (-1) / t := by
   unfold fracHeatSymbol
@@ -5389,7 +5389,7 @@ For `s > 0` this is the positive-order; for `s < 0` it's the negative-order.
     `Λ^{-s}(n) = ‖n‖^{-s} = 1/σ_s(n)`
 
 and `0` at `n = 0`. This is `fracDerivSymbol (-s) n`. -/
-lemma fracDerivSymbol_neg_inv {s : ℝ} {n : Fin 2 → ℤ} (hn : n ≠ 0) (hs : 0 < s) :
+lemma fracDerivSymbol_neg_inv {s : ℝ} {n : Fin 2 → ℤ} (hn : n ≠ 0) (_hs : 0 < s) :
     fracDerivSymbol (-s) n * fracDerivSymbol s n = 1 := by
   rw [fracDerivSymbol_of_ne_zero _ hn, fracDerivSymbol_of_ne_zero _ hn]
   have hL_pos := latticeNorm_pos hn
@@ -6581,7 +6581,7 @@ of the three hypotheses unconditionally. -/
 theorem FracSobolevCalculus.ofMathlib
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
     FracSobolevCalculus θ where
-  hsMonotone := fun s t hst τ hsum => hsSeminormSq_mono hst (θ τ) hsum
+  hsMonotone := fun _s _t hst τ hsum => hsSeminormSq_mono hst (θ τ) hsum
   fracLaplacianIsSelfAdjointFourierMultiplier := trivial
 
 /-- **Conditional Theorem 3 — SQG global regularity (Sobolev form).**
@@ -6668,7 +6668,7 @@ identity that sources the global L²-isometry `‖u‖² = ‖θ‖²`. -/
 theorem sqgVelocitySymbol_sum_sq {n : Fin 2 → ℤ} (hn : n ≠ 0) :
     ‖sqgVelocitySymbol 0 n‖ ^ 2 + ‖sqgVelocitySymbol 1 n‖ ^ 2 = 1 := by
   unfold sqgVelocitySymbol
-  simp only [Fin.isValue, if_true, if_false, norm_neg]
+  simp only [Fin.isValue, if_true]
   have h := rieszSymbol_sum_sq (n := n) hn
   simpa [Fin.sum_univ_two, add_comm] using h
 
@@ -6690,7 +6690,7 @@ theorem sqgVelocitySymbol_divergence_free (n : Fin 2 → ℤ) (z : ℂ) :
     ((n 0 : ℝ) : ℂ) * (sqgVelocitySymbol 0 n * z)
       + ((n 1 : ℝ) : ℂ) * (sqgVelocitySymbol 1 n * z) = 0 := by
   unfold sqgVelocitySymbol
-  simp only [Fin.isValue, if_true, if_false]
+  simp only [Fin.isValue, if_true]
   exact sqg_velocity_divergence_free_symbol n z
 
 /-- **"Is-SQG-velocity-component" predicate.** A purely specificational
@@ -7137,7 +7137,7 @@ theorem sqg_regularity_via_interpolation
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hMMP : MaterialMaxPrinciple θ)
     (hBKM : BKMCriterionHighFreq θ)
-    (hE : SqgEvolutionAxioms θ) :
+    (_hE : SqgEvolutionAxioms θ) :
     ∀ s : ℝ, 0 ≤ s →
       ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M := by
   intro s hs
@@ -7151,7 +7151,7 @@ theorem sqg_regularity_via_interpolation
           hsSeminormSq_mono_of_le hs1 (θ t) (hMMP.hOneSummability t ht)
       _ ≤ M₁ := hM₁ t ht
   · -- s > 1: invoke BKMCriterionHighFreq
-    push_neg at hs1
+    push Not at hs1
     exact hBKM.hsPropagationHighFreq ⟨M₁, hM₁⟩ s hs1
 
 /-- **Structured-form interpolation reduction.** Specializes
@@ -7317,7 +7317,7 @@ theorem sqg_regularity_via_s2_bootstrap
           hsSeminormSq_mono_of_le hs1 (θ t) (hMMP.hOneSummability t ht)
       _ ≤ M₁ := hM₁ t ht
   · -- s ∈ (1, 2]: invoke BKMCriterionS2
-    push_neg at hs1
+    push Not at hs1
     exact hBKM.hsPropagationS2 ⟨M₁, hM₁⟩ s hs1 hs2
 
 /-- **Structured-form s=2 bootstrap reduction.** Specializes
