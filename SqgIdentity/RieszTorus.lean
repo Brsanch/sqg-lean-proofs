@@ -9920,4 +9920,74 @@ theorem sqg_regularity_scaled
     (MaterialMaxPrinciple.of_scaled θ₀ c hc hSumm)
     (BKMCriterionS2.of_scaled θ₀ c hc)
 
+/-! ### §10.25 Finite-Fourier-support automatic summability
+
+§10.24 left the Ḣ¹-summability hypothesis on the user. This section
+discharges it automatically whenever `θ₀` has **finite Fourier support**
+— i.e. its Fourier coefficients vanish outside some finite set
+`S ⊆ ℤ²`. Trigonometric polynomials, single Fourier modes, and any
+finite linear combination of `mFourierLp 2 n` fall in this class.
+
+The mechanism: a function `f : (Fin 2 → ℤ) → ℝ` that vanishes outside
+finite `S` is automatically summable (`summable_of_ne_finset_zero`).
+For `θ₀` with `Fourier-supp θ₀ ⊆ S`, the Sobolev seminorm series
+`(fracDerivSymbol s n)² · ‖mFourierCoeff θ₀ n‖²` vanishes outside `S`
+because `‖mFourierCoeff θ₀ n‖² = 0` when `mFourierCoeff θ₀ n = 0`.
+
+This collapses the user-facing API of `sqg_regularity_scaled` to just:
+the finite Fourier-support set `S`, the witness `hS` that coefficients
+vanish outside `S`, the scalar `c`, and the boundedness hypothesis on
+`c`. No summability assumption needed. -/
+
+/-- **Finite Fourier support implies Sobolev seminorm summability.**
+For any `s ≥ 0` (in fact any `s : ℝ`) and any `θ₀ : Lp ℂ 2 (𝕋²)` whose
+Fourier coefficients vanish outside a finite set `S`, the series
+
+  `(fracDerivSymbol s n)² · ‖mFourierCoeff θ₀ n‖²`
+
+is summable. Proof: outside `S` the term is zero
+(`‖0‖² · anything = 0`), so `summable_of_ne_finset_zero` applies. -/
+theorem hsSeminormSq_summable_of_finite_support
+    (s : ℝ)
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hS : ∀ n ∉ S, mFourierCoeff θ₀ n = 0) :
+    Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2) := by
+  apply summable_of_ne_finset_zero (s := S)
+  intro n hn
+  rw [hS n hn, norm_zero]
+  ring
+
+/-- **Capstone — scaled trig-polynomial class is regular on `[0, 2]`,
+no summability hypothesis needed.**
+
+For any `θ₀` with finite Fourier support `S ⊆ ℤ²` and any `c : ℝ → ℂ`
+with `‖c(τ)‖ ≤ 1` for `τ ≥ 0`, the time-varying family
+
+  `θ(τ) = c(τ) • θ₀`
+
+enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]` — *unconditionally*
+in `θ₀`'s coefficients (no summability axiom remains). The Ḣ¹
+summability hypothesis of `sqg_regularity_scaled` is discharged by
+`hsSeminormSq_summable_of_finite_support`.
+
+Concrete witness classes covered:
+- Single Fourier mode: `θ₀ = a • mFourierLp 2 m₀`, `S = {m₀}`.
+- Finite Fourier sum: `θ₀ = ∑ n ∈ S, a n • mFourierLp 2 n` for any
+  finite `S` and complex coefficients `a`.
+- Combined with any `c` of unit-bounded modulus (constant, decaying,
+  oscillating, slowly growing). -/
+theorem sqg_regularity_scaled_finiteSupport
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hS : ∀ n ∉ S, mFourierCoeff θ₀ n = 0)
+    (c : ℝ → ℂ)
+    (hc : ∀ τ : ℝ, 0 ≤ τ → ‖c τ‖ ≤ 1) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((fun τ : ℝ => (c τ • θ₀ : Lp ℂ 2 _)) t) ≤ M :=
+  sqg_regularity_scaled θ₀ c hc
+    (hsSeminormSq_summable_of_finite_support 1 θ₀ S hS)
+
 end SqgIdentity
