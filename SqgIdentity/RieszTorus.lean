@@ -9434,10 +9434,11 @@ theorem sqgConcreteMollifier_left_collar_tendsto
       rw [← intervalIntegral.integral_sub hII_prod hII_prodFs]
       congr 1; funext τ; ring
     have h2 : (∫ τ in (s - ε)..s, deriv ψC τ * F s) = F s := by
-      have hcomm : (∫ τ in (s - ε)..s, deriv ψC τ * F s)
-                 = (∫ τ in (s - ε)..s, F s * deriv ψC τ) := by
-        congr 1; funext τ; ring
-      rw [hcomm, intervalIntegral.integral_const_mul, hmass_C, mul_one]
+      calc (∫ τ in (s - ε)..s, deriv ψC τ * F s)
+          = (∫ τ in (s - ε)..s, deriv ψC τ) * F s :=
+              intervalIntegral.integral_mul_const (F s) (deriv ψC)
+        _ = 1 * F s := by rw [hmass_C]
+        _ = F s := one_mul _
     calc (∫ τ in (s - ε)..s, deriv ψC τ * F τ) - F s
         = (∫ τ in (s - ε)..s, deriv ψC τ * F τ)
             - (∫ τ in (s - ε)..s, deriv ψC τ * F s) := by rw [h2]
@@ -9470,7 +9471,14 @@ theorem sqgConcreteMollifier_left_collar_tendsto
   have h_g_int : (∫ τ in (s - ε)..s, g τ) = δ / 2 := by
     show (∫ τ in (s - ε)..s,
             deriv (sqgConcreteMollifier ε s t) τ * (δ / 2)) = δ / 2
-    rw [intervalIntegral.integral_mul_const, hmass_R, one_mul]
+    calc (∫ τ in (s - ε)..s,
+            deriv (sqgConcreteMollifier ε s t) τ * (δ / 2))
+        = (∫ τ in (s - ε)..s,
+              deriv (sqgConcreteMollifier ε s t) τ) * (δ / 2) :=
+              intervalIntegral.integral_mul_const (δ / 2)
+                (deriv (sqgConcreteMollifier ε s t))
+      _ = 1 * (δ / 2) := by rw [hmass_R]
+      _ = δ / 2 := one_mul _
   -- Finish
   rw [dist_eq_norm, hΔ]
   calc ‖∫ τ in (s - ε)..s, deriv ψC τ * (F τ - F s)‖
@@ -9537,11 +9545,11 @@ theorem sqgConcreteMollifier_right_collar_tendsto
       rw [← intervalIntegral.integral_sub hII_prod hII_prodFt]
       congr 1; funext τ; ring
     have h2 : (∫ τ in t..(t + ε), deriv ψC τ * F t) = - F t := by
-      have hcomm : (∫ τ in t..(t + ε), deriv ψC τ * F t)
-                 = (∫ τ in t..(t + ε), F t * deriv ψC τ) := by
-        congr 1; funext τ; ring
-      rw [hcomm, intervalIntegral.integral_const_mul, hmass_C]
-      ring
+      calc (∫ τ in t..(t + ε), deriv ψC τ * F t)
+          = (∫ τ in t..(t + ε), deriv ψC τ) * F t :=
+              intervalIntegral.integral_mul_const (F t) (deriv ψC)
+        _ = (-1 : ℂ) * F t := by rw [hmass_C]
+        _ = - F t := by ring
     calc (∫ τ in t..(t + ε), deriv ψC τ * F τ) - (- F t)
         = (∫ τ in t..(t + ε), deriv ψC τ * F τ)
             - (∫ τ in t..(t + ε), deriv ψC τ * F t) := by rw [h2]
@@ -9573,11 +9581,20 @@ theorem sqgConcreteMollifier_right_collar_tendsto
   have h_g_int : (∫ τ in t..(t + ε), g τ) = δ / 2 := by
     show (∫ τ in t..(t + ε),
             - deriv (sqgConcreteMollifier ε s t) τ * (δ / 2)) = δ / 2
-    rw [intervalIntegral.integral_mul_const,
-        show (fun τ => - deriv (sqgConcreteMollifier ε s t) τ) =
-             fun τ => (-1 : ℝ) * deriv (sqgConcreteMollifier ε s t) τ from by funext; ring,
-        intervalIntegral.integral_const_mul, hmass_R]
-    ring
+    have h_swap : (∫ τ in t..(t + ε),
+            - deriv (sqgConcreteMollifier ε s t) τ * (δ / 2))
+            = (∫ τ in t..(t + ε),
+                deriv (sqgConcreteMollifier ε s t) τ * (-(δ / 2))) := by
+      congr 1; funext τ; ring
+    rw [h_swap]
+    calc (∫ τ in t..(t + ε),
+            deriv (sqgConcreteMollifier ε s t) τ * (-(δ / 2)))
+        = (∫ τ in t..(t + ε),
+              deriv (sqgConcreteMollifier ε s t) τ) * (-(δ / 2)) :=
+              intervalIntegral.integral_mul_const (-(δ / 2))
+                (deriv (sqgConcreteMollifier ε s t))
+      _ = (-1 : ℝ) * (-(δ / 2)) := by rw [hmass_R]
+      _ = δ / 2 := by ring
   rw [dist_eq_norm, hΔ]
   calc ‖∫ τ in t..(t + ε), deriv ψC τ * (F τ - F t)‖
       ≤ ∫ τ in t..(t + ε), g τ := h_int_bound
