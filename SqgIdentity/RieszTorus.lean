@@ -10554,4 +10554,41 @@ lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_neg (m₀ : Fin 2 → ℤ) :
       = ∑ j : Fin 2, sqgVelocitySymbol j m₀ * derivSymbol j m₀ := by
         refine Finset.sum_congr rfl ?_; intro j _; ring
     _ = 0 := this
+
+/-- **Cross div-free identity (θ mode flipped).**
+`∑_j sqgVelocitySymbol j m₀ · derivSymbol j (-m₀) = 0` via odd-symmetry
+of `derivSymbol` and the base div-free identity. -/
+lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_cross₁ (m₀ : Fin 2 → ℤ) :
+    ∑ j : Fin 2, sqgVelocitySymbol j m₀ * derivSymbol j (-m₀) = 0 := by
+  have h := sqgVelocitySymbol_mul_derivSymbol_sum_zero m₀
+  rw [Fin.sum_univ_two] at h ⊢
+  simp only [derivSymbol_neg] at *
+  linear_combination -h
+
+/-- **Cross div-free identity (u mode flipped).**
+`∑_j sqgVelocitySymbol j (-m₀) · derivSymbol j m₀ = 0` via odd-symmetry
+of `sqgVelocitySymbol` and the base div-free identity. -/
+lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_cross₂ (m₀ : Fin 2 → ℤ) :
+    ∑ j : Fin 2, sqgVelocitySymbol j (-m₀) * derivSymbol j m₀ = 0 := by
+  have h := sqgVelocitySymbol_mul_derivSymbol_sum_zero m₀
+  rw [Fin.sum_univ_two] at h ⊢
+  simp only [sqgVelocitySymbol_neg] at *
+  linear_combination -h
+
+/-- **Unified antipodal div-free identity.** For any pair
+`(ℓ, k) ∈ {m₀, -m₀} × {m₀, -m₀}`, the j-sum
+`∑_j sqgVelocitySymbol j ℓ · derivSymbol j k` vanishes. Combines the
+four specific identities above via 2×2 case split. -/
+lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_antipodal_pair
+    (m₀ ℓ k : Fin 2 → ℤ)
+    (hℓ : ℓ = m₀ ∨ ℓ = -m₀) (hk : k = m₀ ∨ k = -m₀) :
+    ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k = 0 := by
+  rcases hℓ with h1 | h1
+  · rcases hk with h2 | h2
+    · rw [h1, h2]; exact sqgVelocitySymbol_mul_derivSymbol_sum_zero m₀
+    · rw [h1, h2]; exact sqgVelocitySymbol_mul_derivSymbol_sum_zero_cross₁ m₀
+  · rcases hk with h2 | h2
+    · rw [h1, h2]; exact sqgVelocitySymbol_mul_derivSymbol_sum_zero_cross₂ m₀
+    · rw [h1, h2]; exact sqgVelocitySymbol_mul_derivSymbol_sum_zero_neg m₀
+
 end SqgIdentity
