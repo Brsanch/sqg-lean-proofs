@@ -9148,4 +9148,213 @@ theorem sqgConcreteMollifier_integral_deriv_right_collar {ε s t : ℝ}
       sqgConcreteMollifier_eq_one_of_mem_Icc ⟨hst, le_refl t⟩ hε]
   ring
 
+/-! #### Tier 4 — split the full real integral into two collar interval integrals -/
+
+/-- **Tier 4 plumbing — complex derivative via real derivative coercion.**
+`deriv (τ ↦ ↑(ψ_ε τ)) = ↑(deriv ψ_ε τ)` because coercion `ℝ → ℂ` is `ℝ`-linear
+and `ψ_ε` is real-differentiable at every point. -/
+theorem sqgConcreteMollifier_deriv_complex (ε s t x : ℝ) :
+    deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) x =
+      ((deriv (sqgConcreteMollifier ε s t) x : ℝ) : ℂ) :=
+  ((sqgConcreteMollifier_hasDerivAt ε s t x).ofReal_comp).deriv
+
+/-- **Tier 4 plumbing — `deriv ψ_ε` is zero at the left edge of the left
+collar, `τ = s − ε`.** The derivative is continuous (by `ContDiff 1`) and
+identically zero on the open half-line `(−∞, s − ε)`; uniqueness of the
+one-sided limit from the left then pins down the boundary value. -/
+theorem sqgConcreteMollifier_deriv_zero_at_s_minus_ε {s t ε : ℝ} (hε : 0 < ε) :
+    deriv (sqgConcreteMollifier ε s t) (s - ε) = 0 := by
+  have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
+    (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
+  have h_left_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+      (𝓝[<] (s - ε)) (𝓝 0) := by
+    apply Filter.Tendsto.congr' _ tendsto_const_nhds
+    filter_upwards [self_mem_nhdsWithin] with x hx
+    rw [sqgConcreteMollifier_deriv_zero_of_lt_left hx hε]
+  have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+      (𝓝[<] (s - ε)) (𝓝 (deriv (sqgConcreteMollifier ε s t) (s - ε))) :=
+    hcont.continuousAt.mono_left nhdsWithin_le_nhds
+  exact tendsto_nhds_unique h_full_tendsto h_left_lim
+
+/-- **Tier 4 plumbing — `deriv ψ_ε` is zero at the right edge, `τ = t + ε`.**
+Symmetric to `_deriv_zero_at_s_minus_ε`. -/
+theorem sqgConcreteMollifier_deriv_zero_at_t_plus_ε {s t ε : ℝ} (hε : 0 < ε) :
+    deriv (sqgConcreteMollifier ε s t) (t + ε) = 0 := by
+  have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
+    (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
+  have h_right_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+      (𝓝[>] (t + ε)) (𝓝 0) := by
+    apply Filter.Tendsto.congr' _ tendsto_const_nhds
+    filter_upwards [self_mem_nhdsWithin] with x hx
+    rw [sqgConcreteMollifier_deriv_zero_of_gt_right hx hε]
+  have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+      (𝓝[>] (t + ε)) (𝓝 (deriv (sqgConcreteMollifier ε s t) (t + ε))) :=
+    hcont.continuousAt.mono_left nhdsWithin_le_nhds
+  exact tendsto_nhds_unique h_full_tendsto h_right_lim
+
+/-- **Tier 4 plumbing — `deriv ψ_ε` vanishes on the closed mid-interval
+`[s, t]`.** On `Ioo s t` it is zero by Tier 2a; at the endpoints `s` and
+`t` (with `s < t`) the one-sided limit of the continuous `deriv` equals zero
+by approaching from the inside, pinning the value down. When `s = t` we use
+the boundary-edge vanishing at `s = t` directly, approached from outside the
+collars on the other side. -/
+theorem sqgConcreteMollifier_deriv_zero_on_mid_Icc {s t τ ε : ℝ} (hε : 0 < ε)
+    (hst : s ≤ t) (hτ : τ ∈ Set.Icc s t) :
+    deriv (sqgConcreteMollifier ε s t) τ = 0 := by
+  rcases eq_or_lt_of_le hst with rfl | hst_lt
+  · -- s = t case; τ = s = t. Squeeze: deriv ≥ 0 from the left-collar side,
+    -- deriv ≤ 0 from the right-collar side, continuity forces = 0.
+    have hτ_eq : τ = t := le_antisymm hτ.2 hτ.1
+    subst hτ_eq
+    have hcont : Continuous (deriv (sqgConcreteMollifier ε t t)) :=
+      (sqgConcreteMollifier_contDiff ε t t).continuous_deriv_one
+    have hlb : 0 ≤ deriv (sqgConcreteMollifier ε t t) t := by
+      have h_t : Filter.Tendsto (deriv (sqgConcreteMollifier ε t t))
+          (𝓝[<] t) (𝓝 (deriv (sqgConcreteMollifier ε t t) t)) :=
+        hcont.continuousAt.mono_left nhdsWithin_le_nhds
+      apply ge_of_tendsto h_t
+      filter_upwards [Ioo_mem_nhdsLT (show t - ε < t by linarith)] with x hx
+      exact sqgConcreteMollifier_deriv_nonneg_of_mem_left_collar hx hε le_rfl
+    have hub : deriv (sqgConcreteMollifier ε t t) t ≤ 0 := by
+      have h_t : Filter.Tendsto (deriv (sqgConcreteMollifier ε t t))
+          (𝓝[>] t) (𝓝 (deriv (sqgConcreteMollifier ε t t) t)) :=
+        hcont.continuousAt.mono_left nhdsWithin_le_nhds
+      apply le_of_tendsto h_t
+      filter_upwards [Ioo_mem_nhdsGT (show t < t + ε by linarith)] with x hx
+      exact sqgConcreteMollifier_deriv_nonpos_of_mem_right_collar hx hε le_rfl
+    linarith
+  · rcases eq_or_lt_of_le hτ.1 with heq_s | hτ_gt_s
+    · subst heq_s
+      -- τ = s: deriv from right is 0 (deriv = 0 on Ioo s t)
+      have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
+        (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
+      have h_right_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+          (𝓝[>] s) (𝓝 0) := by
+        apply Filter.Tendsto.congr' _ tendsto_const_nhds
+        filter_upwards [Ioo_mem_nhdsGT hst_lt] with x hx
+        rw [sqgConcreteMollifier_deriv_zero_of_mem_Ioo hx hε]
+      have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+          (𝓝[>] s) (𝓝 (deriv (sqgConcreteMollifier ε s t) s)) :=
+        hcont.continuousAt.mono_left nhdsWithin_le_nhds
+      exact tendsto_nhds_unique h_full_tendsto h_right_lim
+    · rcases eq_or_lt_of_le hτ.2 with heq_t | hτ_lt_t
+      · subst heq_t
+        -- τ = t: deriv from left is 0
+        have hcont : Continuous (deriv (sqgConcreteMollifier ε s t)) :=
+          (sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one
+        have h_left_lim : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+            (𝓝[<] τ) (𝓝 0) := by
+          apply Filter.Tendsto.congr' _ tendsto_const_nhds
+          filter_upwards [Ioo_mem_nhdsLT hτ_gt_s] with x hx
+          rw [sqgConcreteMollifier_deriv_zero_of_mem_Ioo hx hε]
+        have h_full_tendsto : Filter.Tendsto (deriv (sqgConcreteMollifier ε s t))
+            (𝓝[<] τ) (𝓝 (deriv (sqgConcreteMollifier ε s t) τ)) :=
+          hcont.continuousAt.mono_left nhdsWithin_le_nhds
+        exact tendsto_nhds_unique h_full_tendsto h_left_lim
+      · exact sqgConcreteMollifier_deriv_zero_of_mem_Ioo ⟨hτ_gt_s, hτ_lt_t⟩ hε
+
+/-- **Tier 4 — derivative (complex-valued) vanishes outside the two open
+collars (extended to include their separating boundaries).** -/
+theorem sqgConcreteMollifier_deriv_complex_zero_off_collars
+    {ε s t τ : ℝ} (hε : 0 < ε) (hst : s ≤ t)
+    (hτ : τ ≤ s - ε ∨ τ ∈ Set.Icc s t ∨ t + ε ≤ τ) :
+    deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ = 0 := by
+  rw [sqgConcreteMollifier_deriv_complex]
+  rcases hτ with h | h | h
+  · rcases eq_or_lt_of_le h with rfl | h
+    · rw [sqgConcreteMollifier_deriv_zero_at_s_minus_ε hε]; simp
+    · rw [sqgConcreteMollifier_deriv_zero_of_lt_left h hε]; simp
+  · rw [sqgConcreteMollifier_deriv_zero_on_mid_Icc hε hst h]; simp
+  · rcases eq_or_lt_of_le h with rfl | h
+    · rw [sqgConcreteMollifier_deriv_zero_at_t_plus_ε hε]; simp
+    · rw [sqgConcreteMollifier_deriv_zero_of_gt_right h hε]; simp
+
+/-- **Tier 4 plumbing — interval integrability of the product integrand.** -/
+theorem sqgConcreteMollifier_product_intervalIntegrable
+    (ε s t : ℝ) {F : ℝ → ℂ} (hF : Continuous F) (a b : ℝ) :
+    IntervalIntegrable
+      (fun τ => deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ)
+      volume a b := by
+  apply Continuous.intervalIntegrable
+  apply Continuous.mul _ hF
+  have : (fun τ => deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ) =
+         (fun τ => ((deriv (sqgConcreteMollifier ε s t) τ : ℝ) : ℂ)) := by
+    funext τ; exact sqgConcreteMollifier_deriv_complex ε s t τ
+  rw [this]
+  exact Complex.continuous_ofReal.comp
+    ((sqgConcreteMollifier_contDiff ε s t).continuous_deriv_one)
+
+/-- **Tier 4 — the full real integral equals the buffered interval integral.** -/
+theorem sqgConcreteMollifier_integral_eq_buffered
+    {ε s t : ℝ} (hε : 0 < ε) (hst : s ≤ t) (F : ℝ → ℂ) :
+    ∫ τ, deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ
+      = ∫ τ in (s - ε - 1)..(t + ε + 1),
+          deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ := by
+  symm
+  apply intervalIntegral.integral_eq_integral_of_support_subset
+  intro τ hτ
+  refine ⟨?_, ?_⟩
+  · by_contra h
+    push_neg at h
+    apply hτ
+    have hτ_le : τ ≤ s - ε := by linarith
+    rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst (Or.inl hτ_le)]
+    ring
+  · by_contra h
+    push_neg at h
+    apply hτ
+    have hτ_ge : t + ε ≤ τ := by linarith
+    rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+          (Or.inr (Or.inr hτ_ge))]
+    ring
+
+/-- **Tier 4 — full real integral decomposed as a sum over the two collars.** -/
+theorem sqgConcreteMollifier_integral_collar_split
+    {ε s t : ℝ} (hε : 0 < ε) (hst : s ≤ t) {F : ℝ → ℂ} (hF : Continuous F) :
+    ∫ τ, deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ
+      = (∫ τ in (s - ε)..s,
+          deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ)
+      + (∫ τ in t..(t + ε),
+          deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ) := by
+  set G : ℝ → ℂ := fun τ =>
+    deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ with hG_def
+  have hII : ∀ a b : ℝ, IntervalIntegrable G volume a b :=
+    fun a b => sqgConcreteMollifier_product_intervalIntegrable ε s t hF a b
+  rw [sqgConcreteMollifier_integral_eq_buffered hε hst F]
+  rw [← intervalIntegral.integral_add_adjacent_intervals
+        (hII (s - ε - 1) (s - ε)) (hII (s - ε) _),
+      ← intervalIntegral.integral_add_adjacent_intervals (hII (s - ε) s) (hII s _),
+      ← intervalIntegral.integral_add_adjacent_intervals (hII s t) (hII t _),
+      ← intervalIntegral.integral_add_adjacent_intervals (hII t (t + ε)) (hII (t + ε) _)]
+  have h_outer_left : ∫ τ in (s - ε - 1)..(s - ε), G τ = 0 := by
+    rw [show (∫ τ in (s - ε - 1)..(s - ε), G τ)
+          = ∫ τ in (s - ε - 1)..(s - ε), (0 : ℂ) from ?_,
+        intervalIntegral.integral_zero]
+    apply intervalIntegral.integral_congr
+    intro τ hτ
+    rw [Set.uIcc_of_le (by linarith : s - ε - 1 ≤ s - ε)] at hτ
+    rw [hG_def, sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+          (Or.inl hτ.2)]
+    ring
+  have h_mid : ∫ τ in s..t, G τ = 0 := by
+    rw [show (∫ τ in s..t, G τ) = ∫ τ in s..t, (0 : ℂ) from ?_,
+        intervalIntegral.integral_zero]
+    apply intervalIntegral.integral_congr
+    intro τ hτ
+    rw [Set.uIcc_of_le hst] at hτ
+    rw [hG_def, sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+          (Or.inr (Or.inl hτ))]
+    ring
+  have h_outer_right : ∫ τ in (t + ε)..(t + ε + 1), G τ = 0 := by
+    rw [show (∫ τ in (t + ε)..(t + ε + 1), G τ)
+          = ∫ τ in (t + ε)..(t + ε + 1), (0 : ℂ) from ?_,
+        intervalIntegral.integral_zero]
+    apply intervalIntegral.integral_congr
+    intro τ hτ
+    rw [Set.uIcc_of_le (by linarith : t + ε ≤ t + ε + 1)] at hτ
+    rw [hG_def, sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst
+          (Or.inr (Or.inr hτ.1))]
+    ring
+  rw [h_outer_left, h_outer_right, h_mid, zero_add, add_zero]
+
 end SqgIdentity
