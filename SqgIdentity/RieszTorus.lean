@@ -8393,16 +8393,81 @@ theorem IsSqgWeakSolutionTimeTest.zero
   intro ψ _ m
   simp [mFourierCoeff_zero, sqgNonlinearFlux_zero_theta]
 
-/-! ### Not yet provided in §10.16
+/-! ### §10.17 Fourier-coefficient time regularity
+
+The bump-to-indicator bridge (step (B) of §10.16) from
+`IsSqgWeakSolutionTimeTest` to `IsSqgWeakSolution` needs a time-
+regularity witness: on mollified indicators `ψ_n → 𝟙_{[s, t]}`, the
+left-hand pairing `∫ (deriv ψ_n)·θ̂(m)` tends to a boundary evaluation
+`θ̂(m, t) − θ̂(m, s)`, and that limit is pointwise only if
+`τ ↦ θ̂(m, τ)` is continuous at `s` and `t`.
+
+This section names the minimal continuity predicate needed.
+`SqgEvolutionAxioms` alone does NOT supply it: mean + L²
+conservation + Riesz-transform velocity are constants of the motion,
+not pointwise regularity. A real SQG solution constructed from
+smooth initial data and the material-derivative flow delivers
+Fourier-coefficient continuity as a property of the construction;
+this predicate abstracts that property so the bridge can consume it
+without reference to any specific construction.
+
+Contents:
+* `SqgFourierContinuous θ` — every mode coefficient `τ ↦ θ̂(m, τ)`
+  is continuous in `τ`.
+* `SqgFourierContinuous.zero` — the zero scalar field satisfies it
+  trivially (every coefficient is the zero constant).
+* `SqgFourierContinuous.const` — any constant-in-time field does
+  too (every coefficient is a real constant). -/
+
+/-- **Fourier-coefficient continuity in time.**
+
+For every Fourier mode `m`, the map `τ ↦ mFourierCoeff (θ τ) m` is
+continuous. This is strictly weaker than requiring `τ ↦ θ τ` to be
+continuous in `Lp ℂ 2` (which by boundedness of `mFourierCoeff`
+would imply Fourier-coefficient continuity uniformly across modes),
+but is exactly what the bump-to-indicator limit needs for a fixed
+mode at fixed endpoints `(s, t)`. -/
+def SqgFourierContinuous
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  ∀ m : Fin 2 → ℤ, Continuous (fun τ => mFourierCoeff (θ τ) m)
+
+/-- **Zero scalar field is Fourier-continuous.** Every coefficient
+is the zero constant (by `mFourierCoeff_zero`), hence continuous. -/
+theorem SqgFourierContinuous.zero :
+    SqgFourierContinuous
+      (fun _ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) := by
+  intro m
+  simp only [mFourierCoeff_zero]
+  exact continuous_const
+
+/-- **Constant-in-time scalar field is Fourier-continuous.** Every
+coefficient `mFourierCoeff θ₀ m` is a time-independent complex
+number. -/
+theorem SqgFourierContinuous.const
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    SqgFourierContinuous (fun _ => θ₀) := by
+  intro _
+  exact continuous_const
+
+/-! ### Not yet provided in §10.16 / §10.17
 
 * `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` — the bump-to-
   indicator bridge (step (B) in the §10.16 header). This is the
-  substantive remaining analysis step. It uses a standard Friedrichs
-  mollifier of `𝟙_{[s, t]}`, dominated convergence against the
-  constant flux bound `K = Mu + Mg` from §10.12, and integration-by-
-  parts in time at the Fourier-coefficient level. Plausibly also
-  needs a time-regularity witness making `τ ↦ mFourierCoeff (θ τ) m`
-  continuous, which `SqgEvolutionAxioms` does not automatically
-  supply. -/
+  substantive remaining analysis step. Input bundle:
+  `IsSqgWeakSolutionTimeTest θ u + SqgFourierContinuous θ`. Tactical
+  outline:
+  - Construct a mollifier family `ψ_n ε s t` that is `C¹`, compactly
+    supported in `[s − ε, t + ε]`, equals `1` on `[s, t]`, and has
+    `deriv ψ_n` concentrated in two shrinking collars of size `1/n`
+    at `s` and `t`.
+  - Feed each `ψ_n` into `IsSqgWeakSolutionTimeTest` at mode `m`:
+    `∫ (deriv ψ_n)·θ̂(m) + ∫ ψ_n·F(m) = 0` where
+    `F(m) τ := sqgNonlinearFlux (θ τ) (u τ) m`.
+  - Left integral: `SqgFourierContinuous` → bounded on collars →
+    `∫ (deriv ψ_n)·θ̂(m) → θ̂(m, s) − θ̂(m, t)` as `n → ∞`.
+  - Right integral: `sqgNonlinearFlux_bounded` + dominated
+    convergence → `∫ ψ_n·F(m) → ∫_s^t F(m)`.
+  - Combine: `θ̂(m, t) − θ̂(m, s) = −∫_s^t F(m)`, which is exactly
+    the `IsSqgWeakSolution.duhamel` field. -/
 
 end SqgIdentity
