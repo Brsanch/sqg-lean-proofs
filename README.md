@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
 
-Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
+Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.3 (current) · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
 
 Lean 4 + mathlib formalization of Fourier-space identities for the
 Surface Quasi-Geostrophic (SQG) equation, working towards a machine-checked
@@ -13,20 +13,26 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **~7900 lines, zero errors, zero `sorry`**. §10.8
-replaced the last `True` placeholders in `SqgEvolutionAxioms` with
-real predicates and introduced the **s=2 integer-order BKM
-bootstrap**. §10.9–§10.10 added the Fourier convolution scaffolding
-and mode-Lipschitz keystone upgrade. §10.11 completed the SQG-
-specific **Bochner wiring** `DuhamelFlux ⇒ ModeLipschitz`.
-**§10.12 (most recent)** completes the Duhamel keystone:
-`sqgNonlinearFlux` realizes `(u·∇θ)̂(m)` as a concrete sum of
-`fourierConvolution`s; `sqgNonlinearFlux_bounded` derives its bound
-from `convolution_bounded_by_product` on each component; and
-`SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity` promotes
-`SqgEvolutionAxioms → SqgEvolutionAxioms_strong` from a **PDE-level
-integral identity against this concrete flux**. The flux and its
-bound are no longer in the open axiomatic footprint.
+Current state: **9751 lines, zero errors, zero `sorry`**. §10.8
+replaced the last `True` placeholders in `SqgEvolutionAxioms` and
+introduced the **s=2 integer-order BKM bootstrap**. §10.9–§10.11
+added the Fourier convolution scaffolding, mode-Lipschitz keystone,
+and SQG-specific Bochner wiring `DuhamelFlux ⇒ ModeLipschitz`.
+**§10.12–§10.14** completed the Duhamel keystone:
+`sqgNonlinearFlux` realizes `(u·∇θ)̂(m)` concretely; full Fourier-tsum
+L² conservation; `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP`
+consuming only axioms + MMP + PDE integral identity.
+**§10.15–§10.22 (v0.4.3)** close the bump-to-indicator bridge:
+`IsSqgWeakSolution` ⇒ TimeTest form; `sqgConcreteMollifier` built from
+`Real.smoothTransition`; DCT-based RHS limit; full LHS collar FTC
+(monotonicity, derivative sign/vanishing, FTC mass, integral split,
+collar squeeze); and **`SqgFourierContinuous.toCollarLhsCondition`** —
+Phase 2.3.b closed.
+**§10.23 (most recent)** delivers the first **non-zero concrete
+discharge** of the conditional Theorem 3 chain: for any
+`θ₀ ∈ Lp ℂ 2 𝕋²` with Ḣ¹ summability, the constant-in-time evolution
+`θ(τ) = θ₀` paired with zero velocity satisfies uniform Ḣˢ bounds for
+every `s ∈ [0, 2]` — **unconditionally**, via `sqg_regularity_const`.
 
 ## What's proven
 

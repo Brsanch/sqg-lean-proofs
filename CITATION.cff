@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.2
+version: 0.4.3
 date-released: "2026-04-18"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -57,15 +57,22 @@ abstract: >
   sqgNonlinearFlux realization of (u·∇θ)̂, ℓ²-control helpers,
   Parseval split-at-zero-mode and full Fourier-tsum L² conservation
   (theta_fourier_tsum_conserved), and the fully-internalized
-  promotion theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP
-  consuming only SqgEvolutionAxioms + MaterialMaxPrinciple + velocity
-  + the PDE integral identity. Headline reading: "give me a solution
-  satisfying those axioms plus the integral form of SQG against the
-  concrete nonlinear flux, and I hand you uniform Ḣˢ bounds for every
-  s ∈ [0, 2]." The only remaining SQG-specific open content is the
-  weak-form PDE identity. All content machine-verified with zero
-  `sorry`. Mathematical theorems by Bryan Sanchez; Lean formalization
-  by Bryan Sanchez with AI assistance.
+  promotion theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP.
+  v0.4.3 adds §10.20–§10.22: concrete mollifier family built from
+  Real.smoothTransition, DCT-based RHS bump-to-indicator limit
+  (sqgConcreteMollifier_rhs_tendsto), and the full LHS collar FTC —
+  monotonicity, derivative sign/vanishing, FTC mass identities (∫ deriv
+  on each collar = ±1), full-integral split, and collar squeeze via
+  ε-δ continuity — delivering SqgFourierContinuous.toCollarLhsCondition
+  that closes Phase 2.3.b of the bump-to-indicator bridge. §10.23 ships
+  the first non-zero concrete discharge: IsSqgWeakSolution.const_zero_u
+  (Duhamel witness for constant-in-time θ with zero velocity),
+  MaterialMaxPrinciple.of_const, BKMCriterionS2.of_const, and the
+  capstone sqg_regularity_const — certifying uniform Ḣˢ bounds on
+  [0, 2] for any Ḣ¹-summable constant-in-time scalar field,
+  unconditionally. All content machine-verified with zero `sorry`
+  across 9751 lines. Mathematical theorems by Bryan Sanchez; Lean
+  formalization by Bryan Sanchez with AI assistance.
 keywords:
   - Lean 4
   - mathlib
