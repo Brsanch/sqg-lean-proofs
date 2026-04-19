@@ -11926,4 +11926,64 @@ theorem SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape
     (fun j _ => isSqgVelocityComponent_shellMode S a j)
     (isSqgWeakSolution_shellMode_const_of_stationaryShape hS a)
 
+/-! ### §10.50 Unified stationary-shape regularity capstone
+
+Consumer-facing: for any `S` with `IsStationaryShape` and any `a`, the
+constant-in-time `shellMode S a` enjoys uniform Ḣˢ bounds on `[0, 2]`
+**unconditionally**. Same statement as `sqg_regularity_shellMode_const`
+(§10.35) but with the stationarity hypothesis made explicit — useful
+in proofs where the shape predicate is tracked. -/
+
+theorem sqg_regularity_via_stationaryShape
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (_hS : IsStationaryShape S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((fun _ : ℝ => shellMode S a) t) ≤ M :=
+  sqg_regularity_shellMode_const S a
+
+/-! ### §10.52 Axis-aligned stationary SQG
+
+Specific instance of `IsCollinear` (§10.40): all modes on a single
+coordinate axis (x-axis or y-axis). Stationary by reduction to
+`IsCollinear`, i.e., via per-pair `C(ℓ, k) = 0` from
+ℓ × k = 0 when both on the same axis. -/
+
+/-- **y-axis shell.** Modes with `n 0 = 0`, excluding origin. -/
+def IsYAxisShell (S : Finset (Fin 2 → ℤ)) : Prop :=
+  (0 : Fin 2 → ℤ) ∉ S ∧ ∀ n ∈ S, n 0 = 0
+
+/-- **x-axis shell.** Modes with `n 1 = 0`, excluding origin. -/
+def IsXAxisShell (S : Finset (Fin 2 → ℤ)) : Prop :=
+  (0 : Fin 2 → ℤ) ∉ S ∧ ∀ n ∈ S, n 1 = 0
+
+/-- y-axis ⟹ collinear. -/
+theorem IsYAxisShell.isCollinear
+    {S : Finset (Fin 2 → ℤ)} (hS : IsYAxisShell S) :
+    IsCollinear S := by
+  intros ℓ hℓ k hk
+  rw [hS.2 ℓ hℓ, hS.2 k hk]
+  ring
+
+/-- x-axis ⟹ collinear. -/
+theorem IsXAxisShell.isCollinear
+    {S : Finset (Fin 2 → ℤ)} (hS : IsXAxisShell S) :
+    IsCollinear S := by
+  intros ℓ hℓ k hk
+  rw [hS.2 ℓ hℓ, hS.2 k hk]
+  ring
+
+/-- y-axis ⟹ stationary shape. -/
+theorem IsYAxisShell.isStationaryShape
+    {S : Finset (Fin 2 → ℤ)} (hS : IsYAxisShell S) :
+    IsStationaryShape S :=
+  IsStationaryShape.of_isCollinear hS.1 hS.isCollinear
+
+/-- x-axis ⟹ stationary shape. -/
+theorem IsXAxisShell.isStationaryShape
+    {S : Finset (Fin 2 → ℤ)} (hS : IsXAxisShell S) :
+    IsStationaryShape S :=
+  IsStationaryShape.of_isCollinear hS.1 hS.isCollinear
+
 end SqgIdentity
