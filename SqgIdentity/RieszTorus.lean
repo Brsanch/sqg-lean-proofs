@@ -13058,7 +13058,7 @@ lemma star_sqgVelocitySymbol (j : Fin 2) (n : Fin 2 → ℤ) :
   unfold sqgVelocitySymbol
   split_ifs
   · exact star_rieszSymbol 1 n
-  · rw [star_neg, star_rieszSymbol]; ring
+  · rw [star_neg, star_rieszSymbol]
 
 /-- **Riesz instance for `IsRealFourier`.** For `c` satisfying
 `IsRealCoeff S c` (and support in `S` for both `ℓ` and `-ℓ`), the
@@ -13073,7 +13073,7 @@ lemma isRealFourier_riesz
     (hOff : ∀ n ∉ S, c n = 0) :
     IsRealFourier (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) := by
   intros j ℓ
-  show sqgVelocitySymbol j (-ℓ) * c (-ℓ) = star (sqgVelocitySymbol j ℓ * c ℓ)
+  change sqgVelocitySymbol j (-ℓ) * c (-ℓ) = star (sqgVelocitySymbol j ℓ * c ℓ)
   by_cases hℓ : ℓ ∈ S
   · -- ℓ ∈ S: use sqgVelocitySymbol_neg + hRealC.
     rw [sqgVelocitySymbol_neg, hRealC ℓ hℓ, star_mul, star_sqgVelocitySymbol]
