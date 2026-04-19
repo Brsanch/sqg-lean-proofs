@@ -11275,4 +11275,56 @@ theorem galerkin_radial_shell_constant_is_solution
   rw [galerkinVectorField_eq_zero_of_isRadialShell hS]
   exact hasDerivAt_const τ c₀
 
+/-! ### §10.39 Continuity of the Galerkin vector field
+
+The Galerkin ODE RHS is a polynomial (degree ≤ 2) map on the
+finite-dim Pi space `↥S → ℂ`. Each coordinate is a finite sum of
+bilinear forms in the coordinate projections — hence continuous. This
+is the minimal regularity needed before invoking mathlib's ODE
+existence theorems; it will extend to `ContDiff ℝ ∞` in a later step,
+but continuity alone already supports the Peano existence theorem on
+bounded cylinders.
+
+This section ships only continuity; `ContDiff` and Lipschitz are
+Phase 2.D. -/
+
+/-- **Continuity of the zero-extension map.** For any fixed mode
+`m : Fin 2 → ℤ`, the evaluation map `c ↦ galerkinExtend S c m` is
+continuous in `c : ↥S → ℂ`. Either a fixed coordinate projection
+(if `m ∈ S`) or the zero constant (if not). -/
+theorem galerkinExtend_continuous_apply
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (m : Fin 2 → ℤ) :
+    Continuous (fun c : ↥S → ℂ => galerkinExtend S c m) := by
+  by_cases hm : m ∈ S
+  · have h_eq : (fun c : ↥S → ℂ => galerkinExtend S c m)
+            = (fun c : ↥S → ℂ => c ⟨m, hm⟩) := by
+      funext c
+      exact galerkinExtend_apply_of_mem S c hm
+    rw [h_eq]
+    exact continuous_apply _
+  · have h_eq : (fun c : ↥S → ℂ => galerkinExtend S c m) = (fun _ => 0) := by
+      funext c
+      exact galerkinExtend_apply_of_not_mem S c hm
+    rw [h_eq]
+    exact continuous_const
+
+/-- **Continuity of the Galerkin vector field.** On the finite-dim
+Pi space, each coordinate is a finite sum of products of continuous
+projections, so the whole map is continuous. -/
+theorem galerkinVectorField_continuous
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)] :
+    Continuous (galerkinVectorField S) := by
+  apply continuous_pi
+  intro m
+  show Continuous (fun c : ↥S → ℂ =>
+    galerkinRHS S (galerkinExtend S c) ↑m)
+  unfold galerkinRHS
+  refine Continuous.neg ?_
+  refine continuous_finset_sum _ ?_
+  intro ℓ _
+  refine Continuous.mul (Continuous.mul ?_ ?_) continuous_const
+  · exact galerkinExtend_continuous_apply S ℓ
+  · exact galerkinExtend_continuous_apply S (↑m - ℓ)
+
 end SqgIdentity
