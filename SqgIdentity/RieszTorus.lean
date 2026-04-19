@@ -13200,4 +13200,75 @@ theorem advectionSummand_swap_add_star_eq_zero
   rw [hStarProd]
   ring
 
+/-! ### §10.74 Advection cancellation on `pairIdx S`
+
+Given `IsSymmetricSupport S` + `IsFourierDivFree u` + `IsRealFourier u`,
+the total advection sum satisfies `Σ + star(Σ) = 0`, i.e., its real part
+is zero. This is the **advection cancellation theorem**:
+```
+Re (Σ_{p ∈ pairIdx S} advectionSummand u c p) = 0
+```
+
+Proof:
+1. Reindex via `advectionSwap` (a bijection of `pairIdx S` under
+   `IsSymmetricSupport S` + `advectionSwap_involutive`): `Σ F = Σ F ∘ σ`.
+2. Sum of `F(σ p) + star(F p) = 0` pointwise gives `Σ F ∘ σ + Σ star F = 0`.
+3. Equivalently `Σ F + star (Σ F) = 0` via `star_sum`.
+4. `z + star z = 2·(z.re : ℂ)` gives `(Σ F).re = 0`.
+
+This closes the analytic content of the advection term of the energy
+derivative; §10.75 handles the commutator term separately. -/
+
+/-- **Reindex via `advectionSwap`:** `Σ F p = Σ F (σ p)` on `pairIdx S`. -/
+theorem advectionSum_reindex_swap
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ) :
+    (∑ p ∈ pairIdx S, advectionSummand u c p)
+      = ∑ p ∈ pairIdx S, advectionSummand u c (advectionSwap p) := by
+  apply Finset.sum_nbij' (fun p => advectionSwap p) (fun p => advectionSwap p)
+  · intros p hp; exact advectionSwap_mem_pairIdx hS hp
+  · intros p hp; exact advectionSwap_mem_pairIdx hS hp
+  · intros p _; exact advectionSwap_involutive p
+  · intros p _; exact advectionSwap_involutive p
+  · intros p _
+    rw [advectionSwap_involutive]
+
+/-- **Advection cancellation:** the total sum equals its own negative
+conjugate, i.e., `Σ + star(Σ) = 0`. -/
+theorem advectionSum_add_star_eq_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u) :
+    (∑ p ∈ pairIdx S, advectionSummand u c p)
+      + star (∑ p ∈ pairIdx S, advectionSummand u c p) = 0 := by
+  rw [star_sum]
+  rw [advectionSum_reindex_swap hS u c]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_eq_zero
+  intros p _
+  exact advectionSummand_swap_add_star_eq_zero hDivFree hReal p
+
+/-- **Advection cancellation (real-part form):** `Re(Σ_{pairIdx} F) = 0`.
+The headline consequence. -/
+theorem advectionSum_re_eq_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u) :
+    (∑ p ∈ pairIdx S, advectionSummand u c p).re = 0 := by
+  have h := advectionSum_add_star_eq_zero hS hDivFree hReal
+  -- z + star z = (2 * z.re : ℝ) : ℂ
+  have hAC : (∑ p ∈ pairIdx S, advectionSummand u c p)
+               + star (∑ p ∈ pairIdx S, advectionSummand u c p)
+             = ((2 * (∑ p ∈ pairIdx S, advectionSummand u c p).re : ℝ) : ℂ) :=
+    Complex.add_conj _
+  rw [hAC] at h
+  -- h : ((2 * Re(Σ) : ℝ) : ℂ) = 0
+  -- Take .re of both sides to get a real equation.
+  have h_re := congr_arg Complex.re h
+  simp at h_re
+  linarith
+
 end SqgIdentity
