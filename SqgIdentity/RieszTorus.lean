@@ -13768,9 +13768,10 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
                       c' ℓ * c' (m - ℓ)
                         * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := rfl
         rw [hGR]
-        -- Push negations outward and distribute coefficients into the sum.
-        simp only [mul_neg, Finset.mul_sum]
-        rw [neg_inj]
+        -- Push negations outward explicitly: s * (-∑) → -(s * ∑); r * (-X) → -(r * X).
+        rw [mul_neg, mul_neg, neg_inj]
+        -- Distribute r and star (c' m) over the sum.
+        rw [Finset.mul_sum, Finset.mul_sum]
         apply Finset.sum_congr rfl
         intros ℓ _
         ring]
@@ -13834,14 +13835,15 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum
       = -2 * (∑ p ∈ pairIdx S,
           commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
             (galerkinExtend S c) p).re := by
-  set c' := galerkinExtend S c
   rw [trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum h0 c]
   -- Split ∑ (A + C) = ∑ A + ∑ C, then Re distributes over +.
-  rw [Finset.sum_add_distrib, Complex.add_re]
+  simp only [Finset.sum_add_distrib, Complex.add_re]
   -- §10.74: Re(∑ advectionSummand) = 0.
-  have hOff : ∀ n ∉ S, c' n = 0 := fun n hn => galerkinExtend_apply_of_not_mem _ _ hn
-  rw [advectionSum_re_eq_zero hSym (isFourierDivFree_riesz c')
-        (isRealFourier_riesz hSym c' hRealCoeff hOff)]
+  have hOff : ∀ n ∉ S, galerkinExtend S c n = 0 := fun n hn =>
+    galerkinExtend_apply_of_not_mem _ _ hn
+  rw [advectionSum_re_eq_zero hSym
+        (isFourierDivFree_riesz (galerkinExtend S c))
+        (isRealFourier_riesz hSym (galerkinExtend S c) hRealCoeff hOff)]
   rw [zero_add]
 
 /-! ### §10.85 Per-mode L² bound from the Ḣ² energy
@@ -13864,11 +13866,14 @@ lemma sqNorm_le_trigPolyEnergyHs2
   have hm_ne : m ≠ 0 := fun h => h0 (h ▸ hm)
   have hLat : 1 ≤ latticeNorm m := latticeNorm_ge_one_of_ne_zero hm_ne
   have hLat_nn : 0 ≤ latticeNorm m := latticeNorm_nonneg m
-  -- (fracDerivSymbol 2 m)² ≥ 1 since fracDerivSymbol 2 m = (latticeNorm m)² ≥ 1.
+  -- (fracDerivSymbol 2 m)² = ((latticeNorm m)²)² = (latticeNorm m)⁴ ≥ 1.
   have hFD_eq : fracDerivSymbol 2 m = (latticeNorm m)^2 :=
     fracDerivSymbol_two_eq hm_ne
   have hFDSq_ge_one : 1 ≤ (fracDerivSymbol 2 m)^2 := by
-    rw [hFD_eq]; nlinarith
+    rw [hFD_eq]
+    calc (1 : ℝ) = 1^4 := by norm_num
+      _ ≤ (latticeNorm m)^4 := pow_le_pow_left₀ (by norm_num : (0:ℝ) ≤ 1) hLat 4
+      _ = ((latticeNorm m)^2)^2 := by ring
   -- Reduce ‖galerkinExtend S c m‖² to ‖c ⟨m, hm⟩‖².
   have hCEq : ‖galerkinExtend S c m‖ = ‖c ⟨m, hm⟩‖ := by
     rw [galerkinExtend_apply_of_mem _ _ hm]
