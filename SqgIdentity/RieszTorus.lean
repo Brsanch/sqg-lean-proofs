@@ -14102,4 +14102,36 @@ theorem BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound
   exact BKMCriterionS2.of_galerkin_energy_inequality α hSupport K T M₀ hT_pos hK_nn hM₀_nn
     hE_cont hE_deriv hE_bound hZeroMode hExtend
 
+/-! ### §10.88 Zero-mode-trivial specialization of §10.87
+
+When `0 ∉ S`, the zero-mode Fourier coefficient `mFourierCoeff (galerkinToLp S c) 0`
+equals `galerkinExtend S c 0 = 0` — so the `hZeroMode` hypothesis of §10.87
+holds trivially with `M₀ = 0`. This specialization drops `hZeroMode` and `M₀`
+from the parameter list. -/
+
+/-- **BKMCriterionS2 from Galerkin dynamics + L^∞ bound (zero-mode-trivial).**
+Specialization of §10.87: when `0 ∉ S`, the zero-mode hypothesis is automatic
+with `M₀ = 0`. -/
+theorem BKMCriterionS2.of_galerkin_dynamics_zero_excluded
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S) (hSym : IsSymmetricSupport S)
+    {D : ℝ} (hD_nn : 0 ≤ D) (hSupport_le : ∀ n ∈ S, latticeNorm n ≤ D)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealCoeff : ∀ τ : ℝ, ∀ n ∈ S,
+                    galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    {M T : ℝ} (hT_pos : 0 < T) (hM_nn : 0 ≤ M)
+    (hCBound : ∀ τ ∈ Set.Icc (0:ℝ) T, ∀ m, ‖galerkinExtend S (α τ) m‖ ≤ M)
+    (hExtend : ∀ τ : ℝ, T < τ →
+      ∀ n, mFourierCoeff (galerkinToLp S (α τ)) n = 0) :
+    BKMCriterionS2 (fun τ => galerkinToLp S (α τ)) := by
+  -- Zero-mode is 0 since 0 ∉ S.
+  have hZeroMode : ∀ τ : ℝ, 0 ≤ τ → τ ≤ T →
+      ‖mFourierCoeff (galerkinToLp S (α τ)) (0 : Fin 2 → ℤ)‖ ≤ 0 := by
+    intros τ _ _
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ h0, norm_zero]
+  exact BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound
+    h0 hSym hD_nn hSupport_le α hα hRealCoeff hT_pos hM_nn (M₀ := 0) le_rfl hCBound
+    hZeroMode hExtend
+
 end SqgIdentity
