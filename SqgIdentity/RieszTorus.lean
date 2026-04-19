@@ -13426,21 +13426,21 @@ lemma commutatorSummand_norm_le_on_support
                  - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖ with hNdiff
   set Nsq := ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ with hNsq
   set Nj := ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖ with hNj
-  set Σu := ∑ j : Fin 2, ‖u j ℓ‖ with hΣu
+  set SumU := ∑ j : Fin 2, ‖u j ℓ‖ with hSumU
   have hNdiff_nn : 0 ≤ Ndiff := norm_nonneg _
   have hNsq_nn : 0 ≤ Nsq := norm_nonneg _
   have hNj_nn : 0 ≤ Nj := norm_nonneg _
   have hDiffSq' : Ndiff * Nsq ≤ 6 * D ^ 4 := hDiffSq
-  have hJsum_le' : Nj ≤ D * Σu := hJsum_le
+  have hJsum_le' : Nj ≤ D * SumU := hJsum_le
   have hD_nn4 : 0 ≤ 6 * D ^ 4 := by positivity
   calc Ndiff * Nsq * Nj * ‖c k‖ * ‖c (k + ℓ)‖
       = (Ndiff * Nsq) * Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
     _ ≤ (6 * D ^ 4) * Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by
         have : 0 ≤ Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by positivity
         nlinarith [hDiffSq', hNj_nn, hCK_nn, hCKL_nn]
-    _ ≤ (6 * D ^ 4) * (D * Σu) * ‖c k‖ * ‖c (k + ℓ)‖ := by
+    _ ≤ (6 * D ^ 4) * (D * SumU) * ‖c k‖ * ‖c (k + ℓ)‖ := by
         have : 0 ≤ 6 * D ^ 4 * ‖c k‖ * ‖c (k + ℓ)‖ := by positivity
         nlinarith [hJsum_le', hD_nn4, hCK_nn, hCKL_nn]
-    _ = 6 * D ^ 5 * Σu * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
+    _ = 6 * D ^ 5 * SumU * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
 
 end SqgIdentity
