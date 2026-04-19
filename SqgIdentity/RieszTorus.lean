@@ -14135,4 +14135,206 @@ theorem BKMCriterionS2.of_galerkin_dynamics_zero_excluded
     h0 hSym hD_nn hSupport_le α hα hRealCoeff hT_pos hM_nn (M₀ := 0) le_rfl hCBound
     hZeroMode hExtend
 
+/-! ### §10.89 On-support weak solution → `ModeLipschitz` (route 3)
+
+For a trajectory with finite Fourier support `S`, the `ModeLipschitz`
+bound that feeds `SqgEvolutionAxioms_strong` only needs the Fourier-
+mode Duhamel identity **at modes `m ∈ S`**. Off-support the coefficient
+is identically zero (by `hSupport`), so the Lipschitz bound at
+`m ∉ S` is automatic with constant `0`.
+
+This bypasses the need to construct a global `DuhamelFlux` from a
+Galerkin trajectory — which would require the flux to vanish
+off-support, a property that holds only for stationary shapes
+(§10.33, §10.49) where the Galerkin dynamics are trivial (§10.60).
+
+By rescoping the Duhamel hypothesis to `m ∈ S`, non-trivial Galerkin
+trajectories (§10.87) can feed §10.58-style capstones. -/
+
+/-- **On-support weak-solution predicate.** Demands the Fourier-mode
+Duhamel identity only at modes `m ∈ S`. For `m ∉ S` the identity is
+vacuous given the support hypothesis. -/
+def IsSqgWeakSolutionOnSupport
+    (S : Finset (Fin 2 → ℤ))
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  ∀ m ∈ S, ∀ s t : ℝ, 0 ≤ s → s ≤ t →
+    mFourierCoeff (θ t) m - mFourierCoeff (θ s) m
+      = -∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m
+
+/-- **`IsSqgWeakSolution` promotes to `IsSqgWeakSolutionOnSupport`.** For
+any `S`, the global weak-solution identity implies its on-support
+restriction (forget the `m ∉ S` Duhamel identities). -/
+theorem IsSqgWeakSolution.toOnSupport
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hWeak : IsSqgWeakSolution θ u) (S : Finset (Fin 2 → ℤ)) :
+    IsSqgWeakSolutionOnSupport S θ u :=
+  fun m _ s t hs hst => hWeak.duhamel m s t hs hst
+
+/-- **`ModeLipschitz` from finite support + on-support Duhamel identity.**
+
+Mirror of `DuhamelFlux.modeLipschitz`'s Bochner chain (§10.11), but with
+the Duhamel hypothesis restricted to modes `m ∈ S`. At `m ∉ S`, the
+coefficient is zero for all `τ` (from `hSupport`), so the Lipschitz
+bound is immediate with constant `0`.
+
+Per-mode flux bound `hFluxBound` is taken as a hypothesis: callers
+(e.g. Galerkin + finite-support + uniform `L^∞` bound) supply it via
+`sqgNonlinearFlux_bounded` + ℓ²-summability of velocity/gradient
+coefficients. -/
+theorem ModeLipschitz.of_finite_support_weak_on_support
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hFluxBound : ∀ m ∈ S, ∃ K : ℝ, 0 ≤ K ∧
+      ∀ τ : ℝ, 0 ≤ τ → ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ K)
+    (hDuhamelOnS : IsSqgWeakSolutionOnSupport S θ u) :
+    ModeLipschitz θ := by
+  intro m
+  by_cases hm : m ∈ S
+  · -- On-support: Bochner bound on the Duhamel integral.
+    obtain ⟨K, hK_nn, hK⟩ := hFluxBound m hm
+    refine ⟨K, hK_nn, fun s t hs hst => ?_⟩
+    rw [hDuhamelOnS m hm s t hs hst, norm_neg]
+    have hvol_lt_top : (volume : Measure ℝ) (Set.Icc s t) < ⊤ := by
+      rw [Real.volume_Icc]
+      exact ENNReal.ofReal_lt_top
+    have hbound_on : ∀ τ ∈ Set.Icc s t,
+        ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ K :=
+      fun τ hτ => hK τ (le_trans hs hτ.1)
+    have hbochner :
+        ‖∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖
+          ≤ K * ((volume : Measure ℝ).real (Set.Icc s t)) :=
+      MeasureTheory.norm_setIntegral_le_of_norm_le_const hvol_lt_top hbound_on
+    have hvol_real : ((volume : Measure ℝ).real (Set.Icc s t)) = t - s := by
+      simp [MeasureTheory.measureReal_def, Real.volume_Icc,
+            ENNReal.toReal_ofReal (show (0 : ℝ) ≤ t - s by linarith)]
+    calc ‖∫ τ in Set.Icc s t, sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖
+        ≤ K * ((volume : Measure ℝ).real (Set.Icc s t)) := hbochner
+      _ = K * (t - s) := by rw [hvol_real]
+      _ = (t - s) * K := by ring
+  · -- Off-support: both coefficients are zero, Lipschitz bound trivial.
+    refine ⟨0, le_refl 0, fun s t _ _ => ?_⟩
+    rw [hSupport t m hm, hSupport s m hm, sub_self, norm_zero, mul_zero]
+
+/-! ### §10.90 `SqgEvolutionAxioms_strong` capstone from on-support Duhamel
+
+Parallel to §10.58 `SqgEvolutionAxioms_strong.of_finite_support_weak_solution`,
+but consumes the on-support Duhamel predicate (§10.89). Wraps Phase A's
+`ModeLipschitz` construction into the full `SqgEvolutionAxioms_strong`
+bundle via the weak-axiom carrier `hE`. -/
+
+/-- **`SqgEvolutionAxioms_strong` from finite support + on-support Duhamel.**
+Rescoped §10.58: consumes `IsSqgWeakSolutionOnSupport` (Duhamel only at
+modes `m ∈ S`) instead of global `IsSqgWeakSolution`. The off-support
+Duhamel identity is not needed because `ModeLipschitz` at `m ∉ S` is
+trivially satisfied with constant `0`. -/
+theorem SqgEvolutionAxioms_strong.of_finite_support_weak_on_support
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (hE : SqgEvolutionAxioms θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hFluxBound : ∀ m ∈ S, ∃ K : ℝ, 0 ≤ K ∧
+      ∀ τ : ℝ, 0 ≤ τ → ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ K)
+    (hDuhamelOnS : IsSqgWeakSolutionOnSupport S θ u) :
+    SqgEvolutionAxioms_strong θ where
+  weak := hE
+  modeLipschitz :=
+    ModeLipschitz.of_finite_support_weak_on_support
+      S hSupport u hFluxBound hDuhamelOnS
+
+/-! ### §10.91 Galerkin dynamics → `IsSqgWeakSolutionOnSupport`
+
+The on-support Duhamel identity holds for the lifted Galerkin trajectory
+at every mode `m ∈ S`. Composes §10.55 `galerkin_mode_FTC` (per-mode FTC
+on the coefficient function) with §10.48 `galerkinRHS_eq_neg_sqgNonlinearFlux`
+(algebraic identification of the Galerkin ODE RHS with the SQG flux) and
+the standard `intervalIntegral → Set.Icc` bridge for Lebesgue volume.
+
+Off-support modes are out of scope for `IsSqgWeakSolutionOnSupport` — they
+are handled downstream by Phase A/B via the `hSupport` hypothesis. -/
+
+/-- **Galerkin dynamics yields `IsSqgWeakSolutionOnSupport`.** For any
+Galerkin coefficient trajectory `α` on a finite shell `S` solving
+`d/dτ α = galerkinVectorField S α`, the lifted `Lp` trajectory satisfies
+the Fourier-mode Duhamel identity at every mode `m ∈ S`. -/
+theorem IsSqgWeakSolutionOnSupport.of_galerkin_dynamics
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, HasDerivAt α (galerkinVectorField S (α τ)) τ) :
+    IsSqgWeakSolutionOnSupport S
+      (fun τ => galerkinToLp S (α τ))
+      (fun j τ => shellVelocity S (galerkinExtend S (α τ)) j) := by
+  intro m hm s t hs hst
+  -- Step 1: LHS to α-coefficient difference via `mFourierCoeff_galerkinToLp`.
+  have hLHS :
+      mFourierCoeff (galerkinToLp S (α t)) m -
+          mFourierCoeff (galerkinToLp S (α s)) m
+        = α t ⟨m, hm⟩ - α s ⟨m, hm⟩ := by
+    rw [mFourierCoeff_galerkinToLp, mFourierCoeff_galerkinToLp,
+        galerkinExtend_apply_of_mem _ _ hm, galerkinExtend_apply_of_mem _ _ hm]
+  -- Step 2: FTC (§10.55) turns the α-difference into the interval integral.
+  have hFTC : α t ⟨m, hm⟩ - α s ⟨m, hm⟩
+      = ∫ τ in s..t, (galerkinVectorField S (α τ)) ⟨m, hm⟩ :=
+    galerkin_mode_FTC α hα ⟨m, hm⟩ s t
+  -- Step 3: §10.48 identifies the integrand as `-sqgNonlinearFlux`.
+  have h_vf : ∀ τ : ℝ,
+      (galerkinVectorField S (α τ)) ⟨m, hm⟩
+        = -sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m := fun τ =>
+    galerkinRHS_eq_neg_sqgNonlinearFlux S (α τ) m
+  have h_integrand :
+      ∫ τ in s..t, (galerkinVectorField S (α τ)) ⟨m, hm⟩
+        = ∫ τ in s..t, -sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m :=
+    intervalIntegral.integral_congr (fun τ _ => h_vf τ)
+  -- Step 4: Chain hLHS + hFTC + h_integrand + factor out `-1`.
+  rw [hLHS, hFTC, h_integrand, intervalIntegral.integral_neg]
+  -- Goal: -∫ τ in s..t, flux = -∫ τ in Set.Icc s t, flux
+  -- Step 5: Bridge interval integral (Ioc) to `Set.Icc` via `integral_of_le`
+  -- (→ Ioc) and `integral_Icc_eq_integral_Ioc` (Icc = Ioc under `NoAtoms volume`).
+  congr 1
+  rw [intervalIntegral.integral_of_le hst,
+      ← MeasureTheory.integral_Icc_eq_integral_Ioc]
+
+/-! ### §10.92 Unified capstone: Galerkin dynamics → `SqgEvolutionAxioms_strong`
+
+Composes §10.91 (Galerkin → on-support Duhamel) with §10.90 (on-support
+Duhamel → strong axioms) for the lifted Galerkin trajectory. Takes the
+base `SqgEvolutionAxioms` witness and a per-mode flux bound as hypotheses
+— `hSupport` is automatic from `galerkinExtend_apply_of_not_mem`. -/
+
+/-- **Galerkin dynamics + per-mode flux bound → `SqgEvolutionAxioms_strong`.**
+End-to-end capstone: any Galerkin trajectory on a finite shell `S` with
+(i) the base SQG evolution axioms (l² conservation + zero-mode + Riesz
+velocity), and (ii) a uniform-in-time per-mode flux bound, yields the
+strengthened axiom bundle.
+
+The flux-bound hypothesis is ordinarily discharged from a uniform `L^∞`
+coefficient bound via `sqgNonlinearFlux_bounded` applied pointwise — but
+is taken abstractly here so that callers can supply any convenient
+witness. -/
+theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, HasDerivAt α (galerkinVectorField S (α τ)) τ)
+    (hE : SqgEvolutionAxioms (fun τ => galerkinToLp S (α τ)))
+    (hFluxBound : ∀ m ∈ S, ∃ K : ℝ, 0 ≤ K ∧
+      ∀ τ : ℝ, 0 ≤ τ →
+        ‖sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m‖ ≤ K) :
+    SqgEvolutionAxioms_strong (fun τ => galerkinToLp S (α τ)) := by
+  -- Automatic support in `S` from the `galerkinExtend` zero-padding.
+  have hSupport : ∀ τ : ℝ, ∀ n ∉ S,
+      mFourierCoeff (galerkinToLp S (α τ)) n = 0 := fun τ n hn => by
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn]
+  exact SqgEvolutionAxioms_strong.of_finite_support_weak_on_support
+    (fun τ => galerkinToLp S (α τ)) S hSupport hE
+    (fun j τ => shellVelocity S (galerkinExtend S (α τ)) j)
+    hFluxBound
+    (IsSqgWeakSolutionOnSupport.of_galerkin_dynamics α hα)
+
 end SqgIdentity
