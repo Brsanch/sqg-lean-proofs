@@ -13639,10 +13639,12 @@ lemma sum_pair_diff_eq_sum_pairIdx
     rwa [add_sub_cancel_right]
   · intros p _
     obtain ⟨k, ℓ⟩ := p
-    simp only [add_sub_cancel_right]
+    show (k - ℓ + ℓ, ℓ) = (k, ℓ)
+    rw [sub_add_cancel]
   · intros p _
     obtain ⟨m, ℓ⟩ := p
-    simp only [sub_add_cancel]
+    show (m + ℓ - ℓ, ℓ) = (m, ℓ)
+    rw [add_sub_cancel_right]
   · intros p _
     obtain ⟨m, ℓ⟩ := p
     show F (m, ℓ) = F ((m - ℓ) + ℓ, ℓ)
@@ -13679,8 +13681,7 @@ form amenable to the pair-sum reindexing. -/
 /-- **Real inner product on `ℂ` = `Re(star z · w)`.** -/
 lemma inner_real_complex_eq_re_star_mul (z w : ℂ) :
     @inner ℝ ℂ _ z w = (star z * w).re := by
-  rw [RCLike.real_inner_eq_re_inner]
-  congr 1
-  exact Complex.inner_def z w
+  rw [Complex.inner, mul_comm]
+  rfl
 
 end SqgIdentity
