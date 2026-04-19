@@ -11484,7 +11484,7 @@ theorem galerkinExtend_contDiff_apply
       funext c
       exact galerkinExtend_apply_of_mem S c hm
     rw [h_eq]
-    exact contDiff_apply ℝ ℂ ⟨m, hm⟩
+    exact contDiff_apply ℝ ℂ (⟨m, hm⟩ : ↥S)
   · have h_eq : (fun c : ↥S → ℂ => galerkinExtend S c m) = (fun _ => 0) := by
       funext c
       exact galerkinExtend_apply_of_not_mem S c hm
