@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
 
-Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.8 (current) · v0.4.7 · v0.4.6 · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
+Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.8 (current): [10.5281/zenodo.19653165](https://doi.org/10.5281/zenodo.19653165) · v0.4.7 · v0.4.6 · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
 
 Lean 4 + mathlib formalization of Fourier-space identities for the
 Surface Quasi-Geostrophic (SQG) equation, working towards a machine-checked
