@@ -13360,9 +13360,7 @@ lemma commutatorSummand_norm_le_on_support
           nlinarith [h1, h2, h3, hℓ_nn]
       _ = 6 * D ^ 2 := by ring
   have hKLSq_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ ≤ D ^ 2 := by
-    rw [show (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)
-          = (((latticeNorm (k + ℓ)) ^ 2 : ℝ) : ℂ) from by push_cast; ring,
-        Complex.norm_real, abs_of_nonneg (sq_nonneg _)]
+    rw [norm_pow, Complex.norm_real, abs_of_nonneg hkℓ_nn]
     exact pow_le_pow_left₀ hkℓ_nn hkℓD 2
   have hJsum_le :
       ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖
