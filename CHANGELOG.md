@@ -4,6 +4,37 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.10 — 2026-04-19
+
+Galerkin dynamics → `SqgEvolutionAxioms_strong` chain closed via rescoped
+`IsSqgWeakSolutionOnSupport`. 15,049 lines (14,340 `RieszTorus` + 709
+`Basic`), zero `sorry`, zero new axioms.
+
+Closes the last "analytic-input → strong-axioms" mile for the finite-
+Fourier-support Galerkin class. §10.48's universal-over-`m` statement
+cannot feed `IsSqgWeakSolution` off-support (the Galerkin nonlinearity
+leaks into modes outside `S` unless `S` is a radial/stationary shell,
+where dynamics are trivial by §10.60). The fix is to rescope the Duhamel
+hypothesis to `m ∈ S` and observe that `ModeLipschitz`'s per-mode chain
+is trivial off-support under `hSupport`.
+
+- §10.89 `IsSqgWeakSolutionOnSupport` predicate (Duhamel only at `m ∈ S`)
+  and `IsSqgWeakSolution.toOnSupport` forgetful bridge. Direct construction
+  `ModeLipschitz.of_finite_support_weak_on_support`: Bochner on-support
+  (reusing §10.11's pattern), trivial off-support via `hSupport`.
+- §10.90 `SqgEvolutionAxioms_strong.of_finite_support_weak_on_support`
+  capstone mirroring §10.58 but consuming the rescoped Duhamel hypothesis.
+- §10.91 `IsSqgWeakSolutionOnSupport.of_galerkin_dynamics`: composes §10.55
+  `galerkin_mode_FTC` with §10.48 `galerkinRHS_eq_neg_sqgNonlinearFlux`,
+  bridges `intervalIntegral` (Ioc) to `Set.Icc` via mathlib's
+  `integral_Icc_eq_integral_Ioc` (Lebesgue `volume` is `NoAtoms`).
+- §10.92 `SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support`
+  end-to-end capstone: any Galerkin trajectory with base
+  `SqgEvolutionAxioms` + per-mode flux bound yields the strong axioms.
+  `hSupport` is automatic from `galerkinExtend_apply_of_not_mem`.
+
+Archive: [TBD — Zenodo DOI pending].
+
 ## v0.4.9 — 2026-04-19
 
 Energy inequality derived directly from Galerkin dynamics; unconditional
