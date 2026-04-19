@@ -13262,7 +13262,9 @@ theorem advectionSum_re_eq_zero
     {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
     (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u) :
     (∑ p ∈ pairIdx S, advectionSummand u c p).re = 0 := by
-  have h := advectionSum_add_star_eq_zero hS hDivFree hReal
+  have h : (∑ p ∈ pairIdx S, advectionSummand u c p)
+             + star (∑ p ∈ pairIdx S, advectionSummand u c p) = 0 :=
+    advectionSum_add_star_eq_zero hS hDivFree hReal
   -- Take .re of both sides.
   have h_re := congr_arg Complex.re h
   rw [Complex.add_re, star_re_complex, Complex.zero_re] at h_re
