@@ -12062,4 +12062,49 @@ theorem galerkin_local_exists
     galerkin_local_exists_given_bounds S c₀ hε_pos hLip_ball hBound hTime
   exact ⟨ε, hε_pos, α, hα₀, hα⟩
 
+/-! ### §10.56 Finite-Fourier-support MMP with uniform coefficient bound
+
+`MaterialMaxPrinciple` is an open axiom for general time-varying θ
+(classical Constantin-Córdoba analysis). But for the specific class
+of θ with **uniformly bounded coefficients on a fixed finite Fourier
+support `S`**, MMP reduces to a finite-dim polynomial-in-M bound on
+the Ḣ¹ seminorm. This section discharges that case unconditionally.
+
+Downstream consumer: any time-varying Galerkin trajectory with
+`‖coefficients‖∞ ≤ M` (uniform in time) and support in `S` produces
+MMP via this lemma, closing the `SqgEvolutionAxioms_strong` chain
+for the lifted trajectory (once the Duhamel identity also holds).
+
+**Bound formula.** `hsSeminormSq 1 (θ t) ≤ M² · ∑_{n ∈ S} σ₁(n)²`
+where `σ₁(n) = fracDerivSymbol 1 n`. Right-hand side is a constant
+depending only on `S` and `M`. -/
+
+theorem MaterialMaxPrinciple.of_finite_support_uniform
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (M : ℝ)
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖mFourierCoeff (θ τ) n‖ ≤ M) :
+    MaterialMaxPrinciple θ where
+  hOnePropagation := by
+    refine ⟨M ^ 2 * (∑ n ∈ S, (fracDerivSymbol 1 n) ^ 2), ?_⟩
+    intros t ht
+    unfold hsSeminormSq
+    rw [tsum_eq_sum (s := S) (fun n hn => by
+      rw [hSupport t n hn, norm_zero]; ring)]
+    calc ∑ n ∈ S, (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (θ t) n‖ ^ 2
+        ≤ ∑ n ∈ S, (fracDerivSymbol 1 n) ^ 2 * M ^ 2 := by
+          apply Finset.sum_le_sum
+          intros n _
+          apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+          exact pow_le_pow_left (norm_nonneg _) (hBound t ht n) 2
+      _ = M ^ 2 * ∑ n ∈ S, (fracDerivSymbol 1 n) ^ 2 := by
+          rw [Finset.mul_sum]; apply Finset.sum_congr rfl
+          intros n _; ring
+  hOneSummability := fun t _ =>
+    hsSeminormSq_summable_of_finite_support 1 (θ t) S (hSupport t)
+  freeDerivativeAtKappaMax := trivial
+  materialSegmentExpansion := trivial
+  farFieldBoundary := trivial
+
 end SqgIdentity
