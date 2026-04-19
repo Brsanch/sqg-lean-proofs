@@ -11524,7 +11524,7 @@ neighborhood `U` of `c₀` on which `galerkinVectorField S` is
 theorem galerkinVectorField_locally_lipschitz
     (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
     (c₀ : ↥S → ℂ) :
-    ∃ K : NNReal, ∃ U ∈ 𝓝 c₀, LipschitzOnWith K (galerkinVectorField S) U :=
+    ∃ K : NNReal, ∃ U ∈ nhds c₀, LipschitzOnWith K (galerkinVectorField S) U :=
   ((galerkinVectorField_contDiff S (n := 1)).contDiffAt).exists_lipschitzOnWith
 
 /-! ### §10.43 Unified stationary-shape predicate
