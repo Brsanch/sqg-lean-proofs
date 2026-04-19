@@ -13909,4 +13909,130 @@ lemma normPairProd_le_trigPolyEnergyHs2
   have hAMGM : α * β ≤ (α^2 + β^2) / 2 := by nlinarith [sq_nonneg (α - β)]
   linarith
 
+/-! ### §10.86 Energy inequality |d/dt E| ≤ 24·D⁵·M·|S|²·E
+
+Combining §10.84 (advection cancellation), §10.75 (commutator pointwise
+bound), §10.85 (per-pair L² bound), and the brutal pair count
+`|pairIdx S| ≤ |S|²`, we obtain the linear energy inequality
+```
+|d/dt trigPolyEnergyHs2 S c| ≤ K · trigPolyEnergyHs2 S c
+```
+with `K = 24·D⁵·M·|S|²`, under hypotheses:
+- 0 ∉ S, IsSymmetricSupport S, IsRealCoeff
+- Support diameter `D` (`∀ n ∈ S, latticeNorm n ≤ D`)
+- L^∞ bound `M` on `galerkinExtend S c` over all of `Fin 2 → ℤ`
+
+Discharges the `hE_bound` hypothesis of §10.78. -/
+
+/-- **Energy inequality for the Galerkin trajectory.** -/
+theorem trigPolyEnergyHs2_deriv_abs_le
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S) (hSym : IsSymmetricSupport S)
+    {D : ℝ} (hD_nn : 0 ≤ D) (hSupport_le : ∀ n ∈ S, latticeNorm n ≤ D)
+    {M : ℝ} (hM_nn : 0 ≤ M)
+    (c : ↥S → ℂ)
+    (hRealCoeff : ∀ n ∈ S, galerkinExtend S c (-n) = star (galerkinExtend S c n))
+    (hCBound : ∀ m, ‖galerkinExtend S c m‖ ≤ M) :
+    |∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
+        (2 * (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m)))|
+      ≤ 24 * D^5 * M * (S.card : ℝ)^2 * trigPolyEnergyHs2 S c := by
+  -- Apply §10.84 to reduce to commutator-only sum.
+  rw [trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum h0 hSym c hRealCoeff]
+  set u : Fin 2 → (Fin 2 → ℤ) → ℂ :=
+    fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ'
+  set E := trigPolyEnergyHs2 S c with hE_def
+  have hE_nn : 0 ≤ E := trigPolyEnergyHs2_nonneg c
+  -- Per-pair commutator bound.
+  have hPairBound : ∀ p ∈ pairIdx S,
+      ‖commutatorSummand u (galerkinExtend S c) p‖ ≤ 12 * D^5 * M * E := by
+    intros p hp
+    have h75 := commutatorSummand_norm_le_on_support u (galerkinExtend S c) D
+                  hD_nn hSupport_le p hp
+    -- Riesz velocity bound: ∑ⱼ ‖u_j p.2‖ ≤ 2·‖galerkinExtend S c p.2‖.
+    have h_uj : ∀ j : Fin 2, ‖u j p.2‖ ≤ ‖galerkinExtend S c p.2‖ := by
+      intro j
+      show ‖sqgVelocitySymbol j p.2 * galerkinExtend S c p.2‖
+            ≤ ‖galerkinExtend S c p.2‖
+      rw [norm_mul]
+      have h_sqgVS : ‖sqgVelocitySymbol j p.2‖ ≤ 1 :=
+        sqgVelocitySymbol_norm_le_one j p.2
+      nlinarith [norm_nonneg (galerkinExtend S c p.2)]
+    have h_uSum : (∑ j : Fin 2, ‖u j p.2‖)
+                  ≤ 2 * ‖galerkinExtend S c p.2‖ := by
+      calc (∑ j : Fin 2, ‖u j p.2‖)
+          ≤ ∑ _j : Fin 2, ‖galerkinExtend S c p.2‖ :=
+              Finset.sum_le_sum (fun j _ => h_uj j)
+        _ = 2 * ‖galerkinExtend S c p.2‖ := by
+              rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+              ring
+    rw [mem_pairIdx] at hp
+    obtain ⟨hp1, hp2, hpKL⟩ := hp
+    have h_pp_le_E : ‖galerkinExtend S c p.1‖
+                    * ‖galerkinExtend S c (p.1 + p.2)‖ ≤ E :=
+      normPairProd_le_trigPolyEnergyHs2 h0 c hp1 hpKL
+    have h_p2_le_M : ‖galerkinExtend S c p.2‖ ≤ M := hCBound p.2
+    have h_p2_nn : 0 ≤ ‖galerkinExtend S c p.2‖ := norm_nonneg _
+    have h_pp_nn : 0 ≤ ‖galerkinExtend S c p.1‖
+                      * ‖galerkinExtend S c (p.1 + p.2)‖ := by positivity
+    have h_6D5_nn : (0 : ℝ) ≤ 6 * D^5 := by positivity
+    calc ‖commutatorSummand u (galerkinExtend S c) p‖
+        ≤ 6 * D^5 * (∑ j : Fin 2, ‖u j p.2‖) * ‖galerkinExtend S c p.1‖
+              * ‖galerkinExtend S c (p.1 + p.2)‖ := h75
+      _ ≤ 6 * D^5 * (2 * ‖galerkinExtend S c p.2‖) * ‖galerkinExtend S c p.1‖
+              * ‖galerkinExtend S c (p.1 + p.2)‖ := by
+            nlinarith [h_uSum, norm_nonneg (galerkinExtend S c p.1),
+                       norm_nonneg (galerkinExtend S c (p.1 + p.2))]
+      _ = 12 * D^5 * ‖galerkinExtend S c p.2‖
+              * (‖galerkinExtend S c p.1‖
+                    * ‖galerkinExtend S c (p.1 + p.2)‖) := by ring
+      _ ≤ 12 * D^5 * M
+              * (‖galerkinExtend S c p.1‖
+                    * ‖galerkinExtend S c (p.1 + p.2)‖) := by
+            have h_12D5_nn : (0 : ℝ) ≤ 12 * D^5 := by positivity
+            nlinarith [h_p2_le_M]
+      _ ≤ 12 * D^5 * M * E := by
+            have h_12DM_nn : (0 : ℝ) ≤ 12 * D^5 * M := by positivity
+            nlinarith [h_pp_le_E]
+  -- Sum bound.
+  have hSumBound : (∑ p ∈ pairIdx S,
+                      ‖commutatorSummand u (galerkinExtend S c) p‖)
+                  ≤ 12 * D^5 * M * (S.card : ℝ)^2 * E := by
+    calc (∑ p ∈ pairIdx S, ‖commutatorSummand u (galerkinExtend S c) p‖)
+        ≤ ∑ _ ∈ pairIdx S, 12 * D^5 * M * E := Finset.sum_le_sum hPairBound
+      _ = ((pairIdx S).card : ℝ) * (12 * D^5 * M * E) := by
+            rw [Finset.sum_const]; ring
+      _ ≤ ((S.card : ℝ) * (S.card : ℝ)) * (12 * D^5 * M * E) := by
+            have h_pic_le : (pairIdx S).card ≤ S.card * S.card := by
+              calc (pairIdx S).card
+                  ≤ (S ×ˢ S).card := Finset.card_filter_le _ _
+                _ = S.card * S.card := Finset.card_product _ _
+            have h_cast : ((pairIdx S).card : ℝ)
+                        ≤ (S.card : ℝ) * (S.card : ℝ) := by exact_mod_cast h_pic_le
+            have h_E_nn : (0 : ℝ) ≤ 12 * D^5 * M * E := by positivity
+            nlinarith
+      _ = 12 * D^5 * M * (S.card : ℝ)^2 * E := by ring
+  -- Bound the energy derivative.
+  have h_re_le_norm :
+      |(∑ p ∈ pairIdx S, commutatorSummand u (galerkinExtend S c) p).re|
+        ≤ ‖∑ p ∈ pairIdx S, commutatorSummand u (galerkinExtend S c) p‖ :=
+    abs_re_le_norm _
+  have h_norm_le_sum :
+      ‖∑ p ∈ pairIdx S, commutatorSummand u (galerkinExtend S c) p‖
+        ≤ ∑ p ∈ pairIdx S, ‖commutatorSummand u (galerkinExtend S c) p‖ :=
+    norm_sum_le _ _
+  -- Final calc: |-2 · X.re| = 2 · |X.re| ≤ 2 · ∑ ‖components‖ ≤ ...
+  have h_two_pos : (0 : ℝ) < 2 := two_pos
+  calc |(-2) * (∑ p ∈ pairIdx S, commutatorSummand u (galerkinExtend S c) p).re|
+      = 2 * |(∑ p ∈ pairIdx S, commutatorSummand u (galerkinExtend S c) p).re| := by
+            rw [abs_mul]
+            have h_two : |(-2 : ℝ)| = 2 := by norm_num
+            rw [h_two]
+    _ ≤ 2 * (12 * D^5 * M * (S.card : ℝ)^2 * E) := by
+            have h_chain : |(∑ p ∈ pairIdx S,
+                              commutatorSummand u (galerkinExtend S c) p).re|
+                          ≤ 12 * D^5 * M * (S.card : ℝ)^2 * E :=
+              le_trans h_re_le_norm (le_trans h_norm_le_sum hSumBound)
+            nlinarith
+    _ = 24 * D^5 * M * (S.card : ℝ)^2 * E := by ring
+
 end SqgIdentity
