@@ -13035,15 +13035,11 @@ lemma star_rieszSymbol {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
     star (rieszSymbol j n) = -rieszSymbol j n := by
   by_cases hn : n = 0
   · subst hn; simp
-  · unfold rieszSymbol
-    rw [if_neg hn]
-    rw [star_div', star_mul, star_neg, star_one, star_I]
-    have hLR : star (((latticeNorm n : ℝ) : ℂ)) = ((latticeNorm n : ℝ) : ℂ) :=
-      Complex.conj_ofReal _
-    have hnjR : star (((n j : ℝ) : ℂ)) = ((n j : ℝ) : ℂ) :=
-      Complex.conj_ofReal _
-    rw [hnjR, hLR]
-    ring
+  simp only [rieszSymbol, if_neg hn]
+  rw [star_div₀, star_mul, star_neg, Complex.star_def, Complex.conj_I,
+      Complex.star_def, Complex.conj_ofReal, Complex.star_def,
+      Complex.conj_ofReal]
+  ring
 
 /-- **Star identity for `sqgVelocitySymbol`.** -/
 lemma star_sqgVelocitySymbol (j : Fin 2) (n : Fin 2 → ℤ) :
@@ -13066,6 +13062,7 @@ lemma isRealFourier_riesz
     (hOff : ∀ n ∉ S, c n = 0) :
     IsRealFourier (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) := by
   intros j ℓ
+  show sqgVelocitySymbol j (-ℓ) * c (-ℓ) = star (sqgVelocitySymbol j ℓ * c ℓ)
   by_cases hℓ : ℓ ∈ S
   · -- ℓ ∈ S: use sqgVelocitySymbol_neg + hRealC.
     rw [sqgVelocitySymbol_neg, hRealC ℓ hℓ, star_mul, star_sqgVelocitySymbol]
