@@ -12051,11 +12051,12 @@ theorem galerkin_local_exists
     linarith
   have hε_pos : 0 < ε := div_pos ha_pos hLp1
   have hTime : (L : ℝ) * ε ≤ (a : ℝ) := by
-    rw [hε_def, mul_div_assoc]
-    apply mul_le_of_le_one_right ha_pos.le
-    apply div_le_one_of_le
-    · linarith
-    · linarith
+    have hL_le : (L : ℝ) ≤ (L : ℝ) + 1 := by linarith
+    have h_mul_eq : ((L : ℝ) + 1) * ε = (a : ℝ) := by
+      rw [hε_def]; field_simp
+    have h_mul_le : (L : ℝ) * ε ≤ ((L : ℝ) + 1) * ε :=
+      mul_le_mul_of_nonneg_right hL_le hε_pos.le
+    linarith
   -- Step 7: apply §10.44.
   obtain ⟨α, hα₀, hα⟩ :=
     galerkin_local_exists_given_bounds S c₀ hε_pos hLip_ball hBound hTime
