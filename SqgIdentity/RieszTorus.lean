@@ -12236,4 +12236,37 @@ theorem SqgEvolutionAxioms_strong.of_finite_support_weak_solution
     (MaterialMaxPrinciple.of_finite_support_uniform θ S hSupport M hBound)
     u hu_velocity hweak
 
+/-! ### §10.59 Demo: `shellMode_const` via §10.58 subsumption
+
+Concrete re-derivation of §10.49 (`SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape`)
+via §10.58's finite-support weak-solution route. Verifies that the new
+finite-support capstone is strong enough to recover the pre-existing
+stationary-shape discharge. Sanity check that the machinery composes
+end-to-end.
+
+Bound: `‖mFourierCoeff (shellMode S a) n‖ ≤ ∑_{m ∈ S} ‖a m‖` — sum
+of amplitudes bounds any single coefficient (trivially on S, zero
+off S). -/
+
+theorem SqgEvolutionAxioms_strong.shellMode_const_via_finite_support
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsStationaryShape S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    SqgEvolutionAxioms_strong (fun _ : ℝ => shellMode S a) := by
+  refine SqgEvolutionAxioms_strong.of_finite_support_weak_solution
+    (fun _ : ℝ => shellMode S a) S ?_ (∑ m ∈ S, ‖a m‖) ?_
+    (sqgEvolutionAxioms_shellMode_const S a)
+    (fun j _ => shellVelocity S a j)
+    (fun j _ => isSqgVelocityComponent_shellMode S a j)
+    (isSqgWeakSolution_shellMode_const_of_stationaryShape hS a)
+  · intros _ n hn
+    exact mFourierCoeff_shellMode_eq_zero_of_not_mem S a hn
+  · intros _ _ n
+    rw [mFourierCoeff_shellMode]
+    split_ifs with hn
+    · exact Finset.single_le_sum (f := fun m => ‖a m‖)
+        (fun m _ => norm_nonneg _) hn
+    · rw [norm_zero]
+      exact Finset.sum_nonneg (fun _ _ => norm_nonneg _)
+
 end SqgIdentity
