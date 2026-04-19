@@ -13588,4 +13588,81 @@ lemma advectionSummand_add_commutatorSummand
   -- collapses by `ring` after recognising `((·:ℝ):ℂ)^4 = ((·:ℝ):ℂ)^2 · ((·:ℝ):ℂ)^2`.
   ring
 
+/-! ### §10.80 Pair-Finset reindexing for the energy double sum
+
+Bijection between the index set `{(m, ℓ) ∈ S × S : m - ℓ ∈ S}` arising
+from the Galerkin RHS expansion and `pairIdx S = {(k, ℓ) ∈ S × S :
+k + ℓ ∈ S}` used by §10.74/§10.75. The map `(m, ℓ) ↦ (m - ℓ, ℓ)` is the
+natural bijection (inverse `(k, ℓ) ↦ (k + ℓ, ℓ)`).
+
+Used by §10.81 to reindex `∑_m ∑_{ℓ : m-ℓ ∈ S} F(m, ℓ) =
+∑_{(k, ℓ) ∈ pairIdx S} F(k+ℓ, ℓ)` so the §10.79 factorization applies. -/
+
+/-- **Pair-Finset reindexing lemma.** -/
+lemma sum_pair_diff_eq_sum_pairIdx
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    {α : Type*} [AddCommMonoid α]
+    (F : (Fin 2 → ℤ) × (Fin 2 → ℤ) → α) :
+    (∑ m ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), F (m, ℓ))
+      = ∑ p ∈ pairIdx S, F (p.1 + p.2, p.2) := by
+  -- Step 1: convert double sum (filter inside) to single sum (filter outside).
+  have hCombine : (∑ m ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), F (m, ℓ))
+                = ∑ p ∈ (S ×ˢ S).filter (fun p => p.1 - p.2 ∈ S), F p := by
+    rw [Finset.sum_filter]
+    rw [show (∑ m ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), F (m, ℓ))
+            = ∑ m ∈ S, ∑ ℓ ∈ S, if m - ℓ ∈ S then F (m, ℓ) else 0 from
+          Finset.sum_congr rfl (fun m _ => Finset.sum_filter _ _)]
+    rw [← Finset.sum_product]
+  rw [hCombine]
+  -- Step 2: bijection (m, ℓ) ↦ (m - ℓ, ℓ) on (S ×ˢ S).filter (m - ℓ ∈ S) → pairIdx S.
+  refine Finset.sum_nbij' (fun p => (p.1 - p.2, p.2)) (fun p => (p.1 + p.2, p.2)) ?_ ?_ ?_ ?_ ?_
+  · intros p hp
+    rw [Finset.mem_filter, Finset.mem_product] at hp
+    obtain ⟨⟨_, hℓ⟩, hmℓ⟩ := hp
+    rw [mem_pairIdx]
+    refine ⟨hmℓ, hℓ, ?_⟩
+    show p.1 - p.2 + p.2 ∈ S
+    rwa [sub_add_cancel]
+  · intros p hp
+    rw [mem_pairIdx] at hp
+    obtain ⟨hk, hℓ, hkℓ⟩ := hp
+    rw [Finset.mem_filter, Finset.mem_product]
+    refine ⟨⟨hkℓ, hℓ⟩, ?_⟩
+    show p.1 + p.2 - p.2 ∈ S
+    rwa [add_sub_cancel_right]
+  · intros p _
+    obtain ⟨k, ℓ⟩ := p
+    show (k + ℓ - ℓ, ℓ) = (k, ℓ)
+    rw [add_sub_cancel_right]
+  · intros p _
+    obtain ⟨m, ℓ⟩ := p
+    show (m - ℓ + ℓ, ℓ) = (m, ℓ)
+    rw [sub_add_cancel]
+  · intros p _
+    obtain ⟨m, ℓ⟩ := p
+    show F (m, ℓ) = F ((m - ℓ) + ℓ, ℓ)
+    rw [sub_add_cancel]
+
+/-! ### §10.81 Energy summand factorization at fixed `(k, ℓ)`
+
+At each `(k, ℓ) ∈ pairIdx S` with `k + ℓ ≠ 0` (true whenever `0 ∉ S`),
+the algebraic factor that appears in §10.69's energy-derivative formula
+after substituting `m = k + ℓ` matches `advectionSummand u c̃ + commutatorSummand u c̃`
+under the Riesz velocity `u_j ℓ = sqgVelocitySymbol j ℓ * c̃ ℓ`.
+
+This is the per-pair piece of the §10.82 main identity. -/
+
+/-- **Energy summand factorization at fixed `(k, ℓ)`.** -/
+lemma energySummand_eq_advectionSummand_add_commutatorSummand
+    (c̃ : (Fin 2 → ℤ) → ℂ) {k ℓ : Fin 2 → ℤ} (hkℓ : k + ℓ ≠ 0) :
+    (((fracDerivSymbol 2 (k + ℓ)) ^ 2 : ℝ) : ℂ) * star (c̃ (k + ℓ))
+        * c̃ ℓ * c̃ k * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
+      = advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c̃ ℓ') c̃ (k, ℓ)
+        + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c̃ ℓ') c̃ (k, ℓ) := by
+  rw [advectionSummand_add_commutatorSummand]
+  rw [fracDerivSymbol_two_eq hkℓ]
+  unfold derivSymbol
+  push_cast
+  ring
+
 end SqgIdentity
