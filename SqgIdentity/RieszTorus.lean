@@ -13270,4 +13270,162 @@ theorem advectionSum_re_eq_zero
   rw [Complex.add_re, star_re_complex, Complex.zero_re] at h_re
   linarith
 
+/-! ### §10.75 Commutator pair-summand + pointwise bound
+
+After the advection split `|k+ℓ|⁴ = |k|²·|k+ℓ|² + (|k+ℓ|² - |k|²)·|k+ℓ|²`,
+the commutator term of `⟨Λ²(u·∇θ), Λ²θ⟩` has Fourier factor
+```
+G(k, ℓ) = (|k+ℓ|² - |k|²) · |k+ℓ|² · i·(k·û(ℓ)) · c(k) · star(c(k+ℓ))
+```
+This section ships:
+
+1. `commutatorSummand` — the above pair-summand, isolated from
+   `advectionSummand` by the split `|k+ℓ|⁴ = advection + commutator`.
+2. `commutatorSummand_norm_le_on_support` — pointwise bound when all
+   momenta are bounded by `D`:
+   `‖commutatorSummand u c p‖ ≤ 6·D⁵·‖û(p.2)‖·‖c p.1‖·‖c (p.1 + p.2)‖`
+   via `abs_latticeNorm_add_sq_sub_sq_le` (§10.62) + triangle on the
+   j-sum + bounded-support factoring.
+
+The sum bound connecting to energy (§10.76) uses this pointwise
+estimate together with Cauchy-Schwarz on the double sum. -/
+
+/-- **Commutator pair-summand** at `(k, ℓ)`: the leftover Fourier factor
+after removing the advection piece from `⟨Λ²(u·∇θ), Λ²θ⟩`. -/
+noncomputable def commutatorSummand
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) : ℂ :=
+  Complex.I
+    * (((latticeNorm (p.1 + p.2) : ℝ) : ℂ) ^ 2
+        - ((latticeNorm p.1 : ℝ) : ℂ) ^ 2)
+    * (((latticeNorm (p.1 + p.2) : ℝ) : ℂ) ^ 2)
+    * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
+    * c p.1 * star (c (p.1 + p.2))
+
+/-- **Pointwise norm bound** for `commutatorSummand` on bounded support.
+For `(k, ℓ) ∈ pairIdx S` with support diameter `D`,
+`‖commutatorSummand u c (k, ℓ)‖ ≤ 6·D⁵·(Σ_j ‖u_j ℓ‖)·‖c k‖·‖c (k+ℓ)‖`.
+
+Proof chain:
+- `Σ_j (k_j : ℂ) · u_j ℓ` has norm `≤ ‖k‖·(Σ_j ‖u_j ℓ‖)` via triangle
+  + componentwise bound `‖k_j‖ ≤ ‖k‖`.
+- `|(‖k+ℓ‖² - ‖k‖²)|` has bound `3·(‖k‖+‖ℓ‖)·‖ℓ‖` via §10.62.
+- On support, all norms bounded by `D`, so product `≤ 6·D⁵·‖ℓ‖·...`.
+
+This is the analog of §10.63's `comSymb_abs_le_of_bounded` for the
+full commutator-summand; §10.76 uses it plus CS to bound the sum. -/
+lemma commutatorSummand_norm_le_on_support
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ)
+    (D : ℝ) (hD : 0 ≤ D)
+    (hSupport_le : ∀ n ∈ S, latticeNorm n ≤ D)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) (hp : p ∈ pairIdx S) :
+    ‖commutatorSummand u c p‖
+      ≤ 6 * D ^ 5 * (∑ j : Fin 2, ‖u j p.2‖) * ‖c p.1‖ * ‖c (p.1 + p.2)‖ := by
+  obtain ⟨k, ℓ⟩ := p
+  rw [mem_pairIdx] at hp
+  obtain ⟨hk, hℓ, hkℓ⟩ := hp
+  have hkD : latticeNorm k ≤ D := hSupport_le k hk
+  have hℓD : latticeNorm ℓ ≤ D := hSupport_le ℓ hℓ
+  have hkℓD : latticeNorm (k + ℓ) ≤ D := hSupport_le (k + ℓ) hkℓ
+  have hk_nn : 0 ≤ latticeNorm k := latticeNorm_nonneg _
+  have hℓ_nn : 0 ≤ latticeNorm ℓ := latticeNorm_nonneg _
+  have hkℓ_nn : 0 ≤ latticeNorm (k + ℓ) := latticeNorm_nonneg _
+  unfold commutatorSummand
+  -- Bound each factor.
+  -- 1) ‖I · X‖ = ‖X‖
+  -- 2) ‖(|k+ℓ|² - |k|²)‖ = |(|k+ℓ|² - |k|²)| ≤ 3·(‖k‖+‖ℓ‖)·‖ℓ‖ ≤ 3·2D·D = 6D²
+  -- 3) ‖|k+ℓ|²‖ = (|k+ℓ|)² ≤ D²
+  -- 4) ‖Σ_j k_j·u_j ℓ‖ ≤ Σ_j |k_j|·‖u_j ℓ‖ ≤ ‖k‖·Σ_j ‖u_j ℓ‖ ≤ D·Σ_j ‖u_j ℓ‖
+  -- 5) ‖c k‖, ‖c (k+ℓ)‖ as-is
+  -- Total: 1 · 6D² · D² · D·Σ · ‖c k‖·‖c (k+ℓ)‖ = 6·D⁵·Σ·‖c k‖·‖c (k+ℓ)‖
+  have hDiff_abs :
+      ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
+        ≤ 3 * (latticeNorm k + latticeNorm ℓ) * latticeNorm ℓ := by
+    have hReal_diff :
+        ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2
+          = (((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2 : ℝ) : ℂ) := by
+      push_cast; ring
+    rw [hReal_diff, Complex.norm_real]
+    exact abs_latticeNorm_add_sq_sub_sq_le k ℓ
+  have hDiff_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+                    - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
+                 ≤ 6 * D ^ 2 := by
+    calc ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
+        ≤ 3 * (latticeNorm k + latticeNorm ℓ) * latticeNorm ℓ := hDiff_abs
+      _ ≤ 3 * (2 * D) * D := by
+          have h1 : latticeNorm k + latticeNorm ℓ ≤ 2 * D := by linarith
+          have h2 : latticeNorm ℓ ≤ D := hℓD
+          have h3 : 0 ≤ latticeNorm k + latticeNorm ℓ := by linarith
+          nlinarith [h1, h2, h3, hℓ_nn]
+      _ = 6 * D ^ 2 := by ring
+  have hKLSq_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ ≤ D ^ 2 := by
+    rw [show (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)
+          = (((latticeNorm (k + ℓ)) ^ 2 : ℝ) : ℂ) from by push_cast; ring,
+        Complex.norm_real, abs_of_nonneg (sq_nonneg _)]
+    exact pow_le_pow_left₀ hkℓ_nn hkℓD 2
+  have hJsum_le :
+      ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖
+        ≤ D * (∑ j : Fin 2, ‖u j ℓ‖) := by
+    calc ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖
+        ≤ ∑ j : Fin 2, ‖((k j : ℝ) : ℂ) * u j ℓ‖ := norm_sum_le _ _
+      _ = ∑ j : Fin 2, |((k j : ℝ))| * ‖u j ℓ‖ := by
+          apply Finset.sum_congr rfl
+          intros j _
+          rw [norm_mul, Complex.norm_real]
+      _ ≤ ∑ j : Fin 2, latticeNorm k * ‖u j ℓ‖ := by
+          apply Finset.sum_le_sum
+          intros j _
+          have hComp : |((k j : ℝ))| ≤ latticeNorm k := by
+            have h1 : ((k j : ℝ)) ^ 2 ≤ (latticeNorm k) ^ 2 :=
+              sq_le_latticeNorm_sq k j
+            have h2 : 0 ≤ latticeNorm k := latticeNorm_nonneg _
+            nlinarith [h1, abs_nonneg ((k j : ℝ)), sq_abs ((k j : ℝ))]
+          exact mul_le_mul_of_nonneg_right hComp (norm_nonneg _)
+      _ ≤ ∑ j : Fin 2, D * ‖u j ℓ‖ := by
+          apply Finset.sum_le_sum
+          intros j _
+          exact mul_le_mul_of_nonneg_right hkD (norm_nonneg _)
+      _ = D * (∑ j : Fin 2, ‖u j ℓ‖) := by rw [← Finset.mul_sum]
+  -- Combine all bounds.
+  have hJsum_nn : 0 ≤ (∑ j : Fin 2, ‖u j ℓ‖) :=
+    Finset.sum_nonneg (fun _ _ => norm_nonneg _)
+  have hD_pow_nn : 0 ≤ D ^ 2 := sq_nonneg _
+  have hNormI : ‖Complex.I‖ = 1 := Complex.norm_I
+  -- The full product:
+  -- ‖I · (diff) · (sq) · jsum · c k · star(c (k+ℓ))‖
+  -- = ‖I‖ · ‖diff‖ · ‖sq‖ · ‖jsum‖ · ‖c k‖ · ‖star(c (k+ℓ))‖
+  -- = 1 · ‖diff‖ · ‖sq‖ · ‖jsum‖ · ‖c k‖ · ‖c (k+ℓ)‖  (star preserves norm)
+  rw [show (Complex.I
+            * (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2)
+            * ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+            * (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+            * c k * star (c (k + ℓ)))
+        = Complex.I * ((((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2)
+            * (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+            * ((∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+            * (c k * star (c (k + ℓ)))))) from by ring]
+  rw [norm_mul, hNormI, one_mul]
+  rw [norm_mul, norm_mul, norm_mul, norm_mul]
+  rw [Complex.norm_star]
+  -- Goal: ‖diff‖ · ‖sq‖ · ‖jsum‖ · ‖c k‖ · ‖c (k+ℓ)‖ ≤ 6·D⁵·Σ‖u_j ℓ‖·‖c k‖·‖c (k+ℓ)‖
+  have hCK_nn : 0 ≤ ‖c k‖ := norm_nonneg _
+  have hCKL_nn : 0 ≤ ‖c (k + ℓ)‖ := norm_nonneg _
+  -- Chain of mul_le_mul: ‖diff‖·‖sq‖ ≤ 6D²·D² = 6D⁴
+  have hDiffSq : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+                  - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
+                * ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ ≤ 6 * D ^ 4 := by
+    calc ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
+         * ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖
+        ≤ (6 * D ^ 2) * (D ^ 2) := by
+          apply mul_le_mul hDiff_le hKLSq_le (norm_nonneg _)
+          nlinarith [hD]
+      _ = 6 * D ^ 4 := by ring
+  -- Full chain
+  nlinarith [hDiffSq, hJsum_le, hJsum_nn, hCK_nn, hCKL_nn, hD, hD_pow_nn,
+             norm_nonneg (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+                         - ((latticeNorm k : ℝ) : ℂ) ^ 2),
+             norm_nonneg (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2),
+             norm_nonneg (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)]
+
 end SqgIdentity
