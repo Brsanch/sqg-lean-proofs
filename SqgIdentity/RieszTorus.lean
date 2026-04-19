@@ -13116,6 +13116,12 @@ noncomputable def advectionSummand
     * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
     * c p.1 * star (c (p.1 + p.2))
 
+/-- Helper: `star` of a real-cast in `ℂ` is itself (real is self-conjugate).
+Bridges the `star` vs `Complex.conj` notation mismatch — `Complex.conj_ofReal`
+has pattern `(starRingEnd ℂ) ↑r`, but downstream proofs use `star ↑r`. -/
+lemma star_ofReal_complex (r : ℝ) : star ((r : ℂ)) = ((r : ℂ)) :=
+  Complex.conj_ofReal r
+
 /-- **Key j-sum identity** (§10.73 core): under Fourier div-free + real-
 Fourier hypotheses, the `τ`-swapped j-sum `Σ_j (k+ℓ)_j · u_j(-ℓ)` equals
 the star of the original `Σ_j k_j · u_j(ℓ)`. -/
@@ -13147,7 +13153,7 @@ lemma advection_jsum_swap_eq_star
       rw [star_sum]
       apply Finset.sum_congr rfl
       intros j _
-      rw [star_mul', Complex.conj_ofReal]
+      rw [star_mul', star_ofReal_complex]
     rw [hEq, hDivFree ℓ, star_zero]
   -- Step C: k-part equals star(U).
   have hKPart_eq :
@@ -13156,7 +13162,7 @@ lemma advection_jsum_swap_eq_star
     rw [star_sum]
     apply Finset.sum_congr rfl
     intros j _
-    rw [star_mul', Complex.conj_ofReal]
+    rw [star_mul', star_ofReal_complex]
   rw [hLHS_split, hℓPart_zero, add_zero, hKPart_eq]
 
 /-- **Kernel identity:** `advectionSummand (τ p) + star (advectionSummand p)
@@ -13179,7 +13185,7 @@ theorem advectionSummand_swap_add_star_eq_zero
   -- Helper facts (using star_mul' since ℂ is commutative).
   have hSI : star Complex.I = -Complex.I := Complex.conj_I
   have hSrealSq : ∀ r : ℝ, star (((r : ℝ) : ℂ) ^ 2) = ((r : ℝ) : ℂ) ^ 2 := by
-    intro r; rw [star_pow, Complex.conj_ofReal]
+    intro r; rw [star_pow, star_ofReal_complex]
   -- Rewrite the star of the full product.
   have hStarProd :
       star (Complex.I * ((latticeNorm k : ℝ) : ℂ) ^ 2
