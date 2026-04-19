@@ -13768,9 +13768,9 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
                       c' ℓ * c' (m - ℓ)
                         * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := rfl
         rw [hGR]
-        -- Push negations outward: r * (s * -X) = -(r * s * X), then neg_inj.
-        simp only [mul_neg]
-        rw [neg_inj, Finset.mul_sum]
+        -- Push negations outward and distribute coefficients into the sum.
+        simp only [mul_neg, Finset.mul_sum]
+        rw [neg_inj]
         apply Finset.sum_congr rfl
         intros ℓ _
         ring]
@@ -13837,15 +13837,7 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum
   set c' := galerkinExtend S c
   rw [trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum h0 c]
   -- Split ∑ (A + C) = ∑ A + ∑ C, then Re distributes over +.
-  rw [show (∑ p ∈ pairIdx S,
-              advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p
-              + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p)
-          = (∑ p ∈ pairIdx S,
-                advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p)
-            + (∑ p ∈ pairIdx S,
-                commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p) from
-        Finset.sum_add_distrib]
-  rw [Complex.add_re]
+  rw [Finset.sum_add_distrib, Complex.add_re]
   -- §10.74: Re(∑ advectionSummand) = 0.
   have hOff : ∀ n ∉ S, c' n = 0 := fun n hn => galerkinExtend_apply_of_not_mem _ _ hn
   rw [advectionSum_re_eq_zero hSym (isFourierDivFree_riesz c')
