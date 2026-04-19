@@ -14862,7 +14862,9 @@ from §10.98. -/
 lemma star_derivSymbol (j : Fin 2) (n : Fin 2 → ℤ) :
     star (derivSymbol j n) = -derivSymbol j n := by
   unfold derivSymbol
-  rw [star_mul', Complex.conj_I, star_ofReal_complex]
+  rw [star_mul']
+  have hSI : star Complex.I = -Complex.I := Complex.conj_I
+  rw [hSI, star_ofReal_complex]
   ring
 
 /-- **K-kernel is real (self-star).** The symbol sum
@@ -14899,7 +14901,8 @@ theorem galerkinRHS_neg_eq_star_of_realSymmetric
   rw [star_neg, star_sum]
   congr 1
   -- Reindex via ℓ ↔ -ℓ.
-  apply Finset.sum_nbij' (i := fun ℓ _ => -ℓ) (j := fun ℓ _ => -ℓ)
+  refine Finset.sum_nbij' (fun (ℓ : Fin 2 → ℤ) _ => -ℓ)
+      (fun (ℓ : Fin 2 → ℤ) _ => -ℓ) ?_ ?_ ?_ ?_ ?_
   -- Forward membership.
   · intros ℓ hℓ
     rw [Finset.mem_filter] at hℓ ⊢
