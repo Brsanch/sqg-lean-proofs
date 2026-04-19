@@ -12898,7 +12898,7 @@ theorem trigPolyEnergyHs2_hasDerivAt
       (∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
         (2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m)))) τ := by
   unfold trigPolyEnergyHs2
-  apply HasDerivAt.sum
+  apply HasDerivAt.fun_sum
   intros m _
   -- The coordinate map `t ↦ (α t) m` has derivative `galerkinVectorField S (α τ) m`.
   have hαm : HasDerivAt (fun t => α t m) (galerkinVectorField S (α τ) m) τ :=
