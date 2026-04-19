@@ -13346,7 +13346,10 @@ lemma commutatorSummand_norm_le_on_support
         ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2
           = (((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2 : ℝ) : ℂ) := by
       push_cast; ring
-    rw [hReal_diff, Complex.norm_real]
+    rw [hReal_diff]
+    rw [show ‖((((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2 : ℝ)) : ℂ)‖
+          = |((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2)| from
+        Complex.norm_real _]
     exact abs_latticeNorm_add_sq_sub_sq_le k ℓ
   have hDiff_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
                     - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
@@ -13360,9 +13363,7 @@ lemma commutatorSummand_norm_le_on_support
           nlinarith [h1, h2, h3, hℓ_nn]
       _ = 6 * D ^ 2 := by ring
   have hKLSq_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ ≤ D ^ 2 := by
-    rw [show (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)
-          = (((latticeNorm (k + ℓ)) ^ 2 : ℝ) : ℂ) from by push_cast; ring,
-        Complex.norm_real, abs_of_nonneg (sq_nonneg _)]
+    rw [norm_pow, Complex.norm_real, abs_of_nonneg hkℓ_nn]
     exact pow_le_pow_left₀ hkℓ_nn hkℓD 2
   have hJsum_le :
       ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖
@@ -13372,7 +13373,9 @@ lemma commutatorSummand_norm_le_on_support
       _ = ∑ j : Fin 2, |((k j : ℝ))| * ‖u j ℓ‖ := by
           apply Finset.sum_congr rfl
           intros j _
-          rw [norm_mul, Complex.norm_real]
+          rw [norm_mul]
+          congr 1
+          exact Complex.norm_real _
       _ ≤ ∑ j : Fin 2, latticeNorm k * ‖u j ℓ‖ := by
           apply Finset.sum_le_sum
           intros j _
@@ -13407,7 +13410,7 @@ lemma commutatorSummand_norm_le_on_support
             * (c k * star (c (k + ℓ)))))) from by ring]
   rw [norm_mul, hNormI, one_mul]
   rw [norm_mul, norm_mul, norm_mul, norm_mul]
-  rw [Complex.norm_star]
+  rw [show ‖star (c (k + ℓ))‖ = ‖c (k + ℓ)‖ from norm_star _]
   -- Goal: ‖diff‖ · ‖sq‖ · ‖jsum‖ · ‖c k‖ · ‖c (k+ℓ)‖ ≤ 6·D⁵·Σ‖u_j ℓ‖·‖c k‖·‖c (k+ℓ)‖
   have hCK_nn : 0 ≤ ‖c k‖ := norm_nonneg _
   have hCKL_nn : 0 ≤ ‖c (k + ℓ)‖ := norm_nonneg _
