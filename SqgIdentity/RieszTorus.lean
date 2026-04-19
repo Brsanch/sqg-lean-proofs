@@ -12813,4 +12813,64 @@ theorem BKMCriterionS2.of_galerkinEnergyGronwall
       exact hM_nn
   exact BKMCriterionS2.of_finite_support_uniform θ S hSupport M hBound
 
+/-! ### §10.68 Trig-poly finite-sum energy and bridge to `hsSeminormSq`
+
+Defines `trigPolyEnergyHs2 S c` as the finite-sum form of the Ḣ²
+seminorm squared for a Galerkin coefficient vector `c : ↥S → ℂ`:
+```
+trigPolyEnergyHs2 S c := ∑ m : ↥S, (fracDerivSymbol 2 m.val)² · ‖c m‖²
+```
+This is the **pointwise-differentiable** form of the energy used in
+§§10.69-10.72, whereas `hsSeminormSq 2 (galerkinToLp S c)` is defined
+as a tsum over all of `ℤ²` (not immediately differentiable).
+
+`trigPolyEnergyHs2_eq_hsSeminormSq` establishes the equality: since
+`mFourierCoeff (galerkinToLp S c) n = 0` for `n ∉ S`, the tsum collapses
+to the finite sum over `S` via `tsum_eq_sum`. -/
+
+/-- **Trig-poly Ḣ² energy (finite-sum form).** -/
+noncomputable def trigPolyEnergyHs2
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : ℝ :=
+  ∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 * ‖c m‖ ^ 2
+
+lemma trigPolyEnergyHs2_nonneg
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)] (c : ↥S → ℂ) :
+    0 ≤ trigPolyEnergyHs2 S c := by
+  unfold trigPolyEnergyHs2
+  exact Finset.sum_nonneg (fun m _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+
+/-- **Bridge: finite-sum energy equals `hsSeminormSq 2 (galerkinToLp S c)`.**
+Uses `galerkinExtend` support (`= 0` outside `S`) to collapse the tsum
+into a Finset sum via `tsum_eq_sum`, then re-indexes from `Fin 2 → ℤ`
+to `↥S` via `Finset.sum_attach`. -/
+theorem trigPolyEnergyHs2_eq_hsSeminormSq
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) :
+    trigPolyEnergyHs2 S c = hsSeminormSq 2 (galerkinToLp S c) := by
+  unfold trigPolyEnergyHs2 hsSeminormSq
+  -- Show the tsum collapses to a Finset sum over `S`.
+  have hZeroOff : ∀ n ∉ S,
+      (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2 = 0 := by
+    intros n hn
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn,
+        norm_zero]; ring
+  rw [tsum_eq_sum (s := S) (fun n hn => hZeroOff n hn)]
+  -- Rewrite the Finset sum over S as a sum over the subtype ↥S.
+  rw [← Finset.sum_attach S (fun n =>
+      (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2)]
+  apply Finset.sum_congr rfl
+  intros m _
+  rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_mem _ _ m.property]
+
+/-- **Uniform energy bound transferred from trig-poly to `hsSeminormSq`.**
+For downstream use: bounding `trigPolyEnergyHs2 S (α τ)` uniformly gives
+a bound on `hsSeminormSq 2 (galerkinToLp S (α τ))` suitable for
+`GalerkinEnergyGronwall`. -/
+lemma hsSeminormSq_le_of_trigPolyEnergyHs2_le
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (E : ℝ) (hE : trigPolyEnergyHs2 S c ≤ E) :
+    hsSeminormSq 2 (galerkinToLp S c) ≤ E := by
+  rw [← trigPolyEnergyHs2_eq_hsSeminormSq]; exact hE
+
 end SqgIdentity
