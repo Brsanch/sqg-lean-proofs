@@ -12514,4 +12514,81 @@ lemma comSymb_abs_le {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
       ≤ (3 * (b + c) * c) * (2 * (b + c) ^ 2) := hProd_le
     _ = 6 * (b + c) ^ 3 * c := by ring
 
+/-! ### §10.63 Bounded-support specialization and Cauchy-Schwarz helpers
+
+Builds on §10.62 toward the commutator trilinear estimate. Two results:
+
+1. `comSymb_abs_le_of_bounded` — on any pair `(k, ℓ)` with both norms
+   bounded by `D`, the symbol shrinks to `|comSymb k ℓ| ≤ 48 D^3 · ‖ℓ‖`.
+   This is the form used against trig-poly trajectories, where `D` is
+   the diameter of the Fourier support.
+2. `sum_mul_abs_le_CS_sqrt` — elementary Cauchy-Schwarz on a Finset in
+   the "sqrt" form `∑ a·b ≤ √(∑ a²)·√(∑ b²)`. Together with §10.62's
+   `sum_mul_sq_le_sq_mul_sq`, this is the scaffolding for the §10.65
+   energy-evolution bilinear bound.
+
+Note: the full Kato-Ponce trilinear bound `‖ℓ‖ · gradInftyFS · ‖θ‖²_{Ḣ²}`
+is deferred to a subsequent session. §10.63 lands the two cleanest
+ingredients needed; §§10.64-10.67 build on them. -/
+
+/-- **Bounded-support specialization of the symbol bound.** If both
+`‖k‖` and `‖ℓ‖` are bounded by `D ≥ 0`, then
+`|comSymb k ℓ| ≤ 48 · D^3 · ‖ℓ‖`. Direct corollary of §10.62's
+`comSymb_abs_le` via `(‖k‖ + ‖ℓ‖)^3 ≤ (2D)^3 = 8D^3`. -/
+lemma comSymb_abs_le_of_bounded {d : Type*} [Fintype d]
+    (k ℓ : d → ℤ) (D : ℝ) (hD : 0 ≤ D)
+    (hk : latticeNorm k ≤ D) (hℓ : latticeNorm ℓ ≤ D) :
+    |comSymb k ℓ| ≤ 48 * D ^ 3 * latticeNorm ℓ := by
+  have hBase := comSymb_abs_le k ℓ
+  have hkNn : 0 ≤ latticeNorm k := latticeNorm_nonneg _
+  have hℓNn : 0 ≤ latticeNorm ℓ := latticeNorm_nonneg _
+  have hSum_le : latticeNorm k + latticeNorm ℓ ≤ 2 * D := by linarith
+  have hSum_nn : 0 ≤ latticeNorm k + latticeNorm ℓ := by linarith
+  have hSumCube : (latticeNorm k + latticeNorm ℓ) ^ 3 ≤ (2 * D) ^ 3 :=
+    pow_le_pow_left₀ hSum_nn hSum_le 3
+  have hCube_expand : (2 * D) ^ 3 = 8 * D ^ 3 := by ring
+  have hFinal :
+      6 * (latticeNorm k + latticeNorm ℓ) ^ 3 * latticeNorm ℓ
+        ≤ 6 * (8 * D ^ 3) * latticeNorm ℓ := by
+    have h1 : 0 ≤ (6 : ℝ) := by norm_num
+    have h2 : 6 * (latticeNorm k + latticeNorm ℓ) ^ 3
+        ≤ 6 * (8 * D ^ 3) := by
+      rw [← hCube_expand]
+      exact mul_le_mul_of_nonneg_left hSumCube h1
+    exact mul_le_mul_of_nonneg_right h2 hℓNn
+  calc |comSymb k ℓ|
+      ≤ 6 * (latticeNorm k + latticeNorm ℓ) ^ 3 * latticeNorm ℓ := hBase
+    _ ≤ 6 * (8 * D ^ 3) * latticeNorm ℓ := hFinal
+    _ = 48 * D ^ 3 * latticeNorm ℓ := by ring
+
+/-- **Cauchy-Schwarz on a Finset in the sqrt form.**
+`∑ a·b ≤ √(∑ a²) · √(∑ b²)`, with all terms nonneg so the bound is
+also an upper bound on `|∑ a·b|`. Direct consequence of
+`Finset.sum_mul_sq_le_sq_mul_sq` + `Real.sqrt_mul` + `Real.sqrt_sq`. -/
+lemma sum_mul_abs_le_CS_sqrt {ι : Type*} (S : Finset ι) (a b : ι → ℝ) :
+    |∑ i ∈ S, a i * b i|
+      ≤ Real.sqrt (∑ i ∈ S, a i ^ 2) * Real.sqrt (∑ i ∈ S, b i ^ 2) := by
+  set T : ℝ := ∑ i ∈ S, a i * b i
+  have hCSSq : T ^ 2 ≤ (∑ i ∈ S, a i ^ 2) * (∑ i ∈ S, b i ^ 2) :=
+    Finset.sum_mul_sq_le_sq_mul_sq _ _ _
+  have hANn : 0 ≤ ∑ i ∈ S, a i ^ 2 :=
+    Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+  have hBNn : 0 ≤ ∑ i ∈ S, b i ^ 2 :=
+    Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+  have hProdSqrt :
+      Real.sqrt ((∑ i ∈ S, a i ^ 2) * (∑ i ∈ S, b i ^ 2))
+        = Real.sqrt (∑ i ∈ S, a i ^ 2) * Real.sqrt (∑ i ∈ S, b i ^ 2) :=
+    Real.sqrt_mul hANn _
+  have hAbsSq : |T| ^ 2 = T ^ 2 := sq_abs T
+  have hAbsNn : 0 ≤ |T| := abs_nonneg _
+  have hAbsBound : |T| ^ 2 ≤ (∑ i ∈ S, a i ^ 2) * (∑ i ∈ S, b i ^ 2) := by
+    rw [hAbsSq]; exact hCSSq
+  have hSqrtMono :
+      Real.sqrt (|T| ^ 2)
+        ≤ Real.sqrt ((∑ i ∈ S, a i ^ 2) * (∑ i ∈ S, b i ^ 2)) :=
+    Real.sqrt_le_sqrt hAbsBound
+  have hSqrtAbs : Real.sqrt (|T| ^ 2) = |T| := Real.sqrt_sq hAbsNn
+  rw [hSqrtAbs, hProdSqrt] at hSqrtMono
+  exact hSqrtMono
+
 end SqgIdentity
