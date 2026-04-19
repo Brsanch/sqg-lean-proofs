@@ -12269,4 +12269,45 @@ theorem SqgEvolutionAxioms_strong.shellMode_const_via_finite_support
     · rw [norm_zero]
       exact Finset.sum_nonneg (fun _ _ => norm_nonneg _)
 
+/-! ### §10.60 L² conservation on a radial shell (trivial case)
+
+For a Galerkin ODE solution on a radial shell, the vector field is
+identically zero (§10.37), so the derivative vanishes everywhere and
+the solution is **constant in time** by
+`is_const_of_deriv_eq_zero`. Consequently the L² norm
+`∑_{m∈S} ‖α t m‖²` is also constant — trivial instance of the general
+SQG L² conservation law.
+
+The **non-trivial** L² conservation (for general real-symmetric
+Galerkin trajectories) requires the `div u = 0` Fourier identity and
+is deferred; the radial-shell case discharges it directly. -/
+
+/-- **Radial-shell Galerkin solutions are constant in time.**
+`galerkinVectorField ≡ 0` on a radial shell, so the derivative
+vanishes everywhere and `is_const_of_deriv_eq_zero` applies. -/
+theorem galerkin_radialShell_constant
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, HasDerivAt α (galerkinVectorField S (α τ)) τ)
+    (s t : ℝ) : α s = α t := by
+  have hDiff : Differentiable ℝ α := fun τ => (hα τ).differentiableAt
+  have hDeriv : ∀ τ, deriv α τ = 0 := fun τ => by
+    rw [(hα τ).deriv]
+    exact galerkinVectorField_eq_zero_of_isRadialShell hS (α τ)
+  exact is_const_of_deriv_eq_zero hDiff hDeriv s t
+
+/-- **L² norm is conserved along a radial-shell Galerkin solution.**
+Trivial corollary of `galerkin_radialShell_constant`: `α` is time-
+constant, so every symmetric function of `α t`, including the L²
+coordinate sum, is constant. -/
+theorem galerkin_radialShell_L2_conserved
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, HasDerivAt α (galerkinVectorField S (α τ)) τ)
+    (s t : ℝ) :
+    (∑ m, ‖α t m‖ ^ 2) = (∑ m, ‖α s m‖ ^ 2) := by
+  rw [galerkin_radialShell_constant hS α hα t s]
+
 end SqgIdentity
