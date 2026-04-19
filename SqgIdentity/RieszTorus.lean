@@ -13836,15 +13836,29 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum
           commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
             (galerkinExtend S c) p).re := by
   rw [trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum h0 c]
-  -- Split ∑ (A + C) = ∑ A + ∑ C, then Re distributes over +.
-  simp only [Finset.sum_add_distrib, Complex.add_re]
+  -- Split (∑ p, A p + C p).re = (∑ p, A p).re + (∑ p, C p).re via an explicit have.
+  have h_split : (∑ p ∈ pairIdx S,
+        advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+          (galerkinExtend S c) p
+        + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+          (galerkinExtend S c) p).re
+      = (∑ p ∈ pairIdx S,
+          advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+            (galerkinExtend S c) p).re
+      + (∑ p ∈ pairIdx S,
+          commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+            (galerkinExtend S c) p).re := by
+    rw [Finset.sum_add_distrib, Complex.add_re]
   -- §10.74: Re(∑ advectionSummand) = 0.
   have hOff : ∀ n ∉ S, galerkinExtend S c n = 0 := fun n hn =>
     galerkinExtend_apply_of_not_mem _ _ hn
-  rw [advectionSum_re_eq_zero hSym
-        (isFourierDivFree_riesz (galerkinExtend S c))
-        (isRealFourier_riesz hSym (galerkinExtend S c) hRealCoeff hOff)]
-  rw [zero_add]
+  have h_adv_zero : (∑ p ∈ pairIdx S,
+        advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+          (galerkinExtend S c) p).re = 0 :=
+    advectionSum_re_eq_zero hSym
+      (isFourierDivFree_riesz (galerkinExtend S c))
+      (isRealFourier_riesz hSym (galerkinExtend S c) hRealCoeff hOff)
+  rw [h_split, h_adv_zero, zero_add]
 
 /-! ### §10.85 Per-mode L² bound from the Ḣ² energy
 
