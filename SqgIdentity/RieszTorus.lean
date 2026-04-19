@@ -12097,7 +12097,7 @@ theorem MaterialMaxPrinciple.of_finite_support_uniform
           apply Finset.sum_le_sum
           intros n _
           apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
-          exact pow_le_pow_left (norm_nonneg _) (hBound t ht n) 2
+          exact pow_le_pow_left₀ (norm_nonneg _) (hBound t ht n) 2
       _ = M ^ 2 * ∑ n ∈ S, (fracDerivSymbol 1 n) ^ 2 := by
           rw [Finset.mul_sum]; apply Finset.sum_congr rfl
           intros n _; ring
