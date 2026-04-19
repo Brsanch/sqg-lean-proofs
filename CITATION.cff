@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.8
+version: 0.4.9
 date-released: "2026-04-19"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -168,7 +168,29 @@ abstract: >
   application are all formalized; deriving the energy-inequality
   hypothesis from Galerkin dynamics + §10.48 flux identity is
   mechanical assembly deferred to a subsequent release.
-  All content machine-verified with zero `sorry` across 14267 lines.
+  v0.4.9 (§10.79-§10.87) closes the last mile: deriving the energy
+  inequality directly from Galerkin dynamics. §10.79 combined
+  advection + commutator factorization (ring closes via §10.62 split);
+  §10.80 pair-Finset reindexing (m, ℓ) ↔ (m-ℓ, ℓ) via
+  Finset.sum_nbij'; §10.81 per-pair algebraic identity bridging energy
+  summand to Riesz velocity form; §10.82 inner_real_complex_eq_re_star_mul
+  via Complex.inner + mul_comm; §10.83 pair-sum form of energy derivative
+  (8-step proof composing §10.69 + §10.48 + §10.79-82 + Complex.re_ofReal_mul
+  + Complex.re_sum + Finset.sum_attach via Finset.univ_eq_attach);
+  §10.84 advection cancellation in the energy derivative via §10.74;
+  §10.85 per-mode and per-pair L² bounds from Ḣ² energy
+  (latticeNorm_ge_one_of_ne_zero + pow_le_pow_left₀); §10.86 energy
+  inequality |d/dt E| ≤ 24·D⁵·M·|S|² · trigPolyEnergyHs2 S c
+  via §10.84 + §10.75 + gcongr-driven monotonicity; §10.87
+  BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound — top-level
+  capstone composing §10.69 (HasDerivAt → continuity, HasDerivWithinAt)
+  with §10.86 (energy inequality) and §10.78 (BKMCriterionS2 from energy
+  inequality), producing unconditional BKMCriterionS2 from any Galerkin
+  trajectory with finite Fourier support, real-coefficient symmetry,
+  and uniform L^∞ coefficient bound — the §10.78 hypothesis is no
+  longer a black-box but is derived end-to-end from the dynamics.
+  K = 24·D⁵·M·|S|² is computed automatically.
+  All content machine-verified with zero `sorry` across 14105 lines.
   Mathematical theorems by Bryan Sanchez; Lean formalization by
   Bryan Sanchez with AI assistance.
 keywords:

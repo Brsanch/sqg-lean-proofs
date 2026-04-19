@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
 
-Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.8 (current): [10.5281/zenodo.19653165](https://doi.org/10.5281/zenodo.19653165) · v0.4.7 · v0.4.6 · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
+Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.9 (current) · v0.4.8: [10.5281/zenodo.19653165](https://doi.org/10.5281/zenodo.19653165) · v0.4.7 · v0.4.6 · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
 
 Lean 4 + mathlib formalization of Fourier-space identities for the
 Surface Quasi-Geostrophic (SQG) equation, working towards a machine-checked
@@ -150,14 +150,64 @@ grounded in the classical Kato-Ponce + advection-cancellation argument.
   via §10.77 → §10.67 → §10.57. This is the **derived BKM discharge**
   route, closing "ambitious #3" from the v0.4.7 handoff.
 
-**Final milestone (v0.4.8).** The full commutator-based BKM chain
-(§10.61–§10.78) is now formalized: Kato-Ponce symbol bound, pair-swap
-advection cancellation (via `Finset.sum_nbij'` + div-free Fourier +
-real-Fourier reality), commutator pointwise estimate, Gronwall application,
-and the derived capstone. The remaining analytic "last mile" — deriving
-the energy-inequality hypothesis directly from Galerkin dynamics via
-§10.69's `HasDerivAt` + §10.48's flux identity + §10.74 + §10.75 — is
-mechanical assembly of existing pieces (~200 lines, next session).
+**§10.79–§10.87 (v0.4.9 — most recent)** close the **last mile** —
+deriving the energy-inequality hypothesis of §10.78 directly from Galerkin
+dynamics, producing an unconditional `BKMCriterionS2` from any Galerkin
+trajectory with uniform L^∞ coefficient bound:
+
+- **§10.79–§10.81** algebraic kernel: combined `advectionSummand +
+  commutatorSummand` factorization (`ring`-closed via §10.62 split);
+  pair-Finset reindexing `(m, ℓ) ↔ (m-ℓ, ℓ)` between
+  `{(m, ℓ) ∈ S × S : m - ℓ ∈ S}` and `pairIdx S` via `Finset.sum_nbij'`;
+  per-pair algebraic identity bridging the energy summand at `(p.1+p.2, p.2)`
+  to `advectionSummand u c̃ + commutatorSummand u c̃` with Riesz velocity
+  `u_j ℓ := sqgVS j ℓ · c̃ ℓ`, closed via `Finset.mul_sum` + `push_cast`
+  + `ring`.
+
+- **§10.82** mathlib bridge: `@inner ℝ ℂ _ z w = (star z * w).re`
+  via `Complex.inner` + `mul_comm` (note arg order — first arg is the
+  conjugated one).
+
+- **§10.83** **pair-sum form of the energy derivative**: an 8-step proof
+  composing §10.69 (`HasDerivAt` formula), §10.48 (galerkinRHS bridge),
+  §10.80 (reindexing), §10.81 (per-pair factorization),
+  `Complex.re_ofReal_mul`, `Complex.re_sum`, and `Finset.sum_attach`
+  (after `Finset.univ_eq_attach`) to produce
+  `Σ m, (fracDerivSymbol 2 m.val)² · 2 · ⟪c m, GVF S c m⟫_ℝ
+   = -2 · Re(Σ_{p ∈ pairIdx S} (advection u c̃ p + commutator u c̃ p))`.
+
+- **§10.84** advection cancellation in the energy derivative: combine
+  §10.83 with §10.74 to drop the advection sum, leaving
+  `-2 · Re(Σ commutator u c̃ p)`.
+
+- **§10.85** per-mode and per-pair L² bounds from Ḣ² energy:
+  `‖c̃ m‖² ≤ trigPolyEnergyHs2 S c` for `m ∈ S` (uses
+  `latticeNorm_ge_one_of_ne_zero` + `pow_le_pow_left₀`);
+  `‖c̃ a‖ · ‖c̃ b‖ ≤ E` via AM-GM.
+
+- **§10.86** **energy inequality**:
+  `|Σ m, (fracDerivSymbol 2 m.val)² · 2 · ⟪c m, GVF S c m⟫_ℝ|
+   ≤ 24·D⁵·M·|S|² · trigPolyEnergyHs2 S c`
+  under `0 ∉ S`, `IsSymmetricSupport S`, `IsRealCoeff`, support diameter
+  `D`, and uniform L^∞ bound `M`. Combines §10.84 + §10.75 with
+  `gcongr`-driven multiplicative monotonicity. Discharges the
+  `hE_bound` hypothesis of §10.78 with `K = 24·D⁵·M·|S|²`.
+
+- **§10.87** top-level capstone: `BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound`
+  composing §10.69 (HasDerivAt → continuity, HasDerivWithinAt) with §10.86
+  (energy inequality) and §10.78 (BKMCriterionS2 from energy inequality).
+  Hypotheses: Galerkin dynamics `hα`, `IsRealCoeff` per time, support diameter,
+  uniform L^∞ bound, zero-mode bound, extension convention. Conclusion:
+  `BKMCriterionS2 (fun τ => galerkinToLp S (α τ))` with no energy-inequality
+  black box.
+
+**Final milestone (v0.4.9).** The §10.61-§10.78 chain is now
+unconditional: from any Galerkin trajectory with finite Fourier support
+(`0 ∉ S`), real-coefficient symmetry, and uniform L^∞ bound on
+coefficients, `BKMCriterionS2` follows automatically. The energy
+inequality is no longer a black-box hypothesis but is derived end-to-end
+from the dynamics via the Kato-Ponce + advection-cancellation + per-pair
+L² bound machinery. Closes "ambitious #4" from the v0.4.7 handoff.
 
 ## What's proven
 
