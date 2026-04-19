@@ -13346,10 +13346,7 @@ lemma commutatorSummand_norm_le_on_support
         ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 - ((latticeNorm k : ℝ) : ℂ) ^ 2
           = (((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2 : ℝ) : ℂ) := by
       push_cast; ring
-    rw [hReal_diff]
-    rw [show ‖((((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2 : ℝ)) : ℂ)‖
-          = |((latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2)| from
-        Complex.norm_real _]
+    rw [hReal_diff, Complex.norm_real, Real.norm_eq_abs]
     exact abs_latticeNorm_add_sq_sub_sq_le k ℓ
   have hDiff_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
                     - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖
@@ -13363,7 +13360,7 @@ lemma commutatorSummand_norm_le_on_support
           nlinarith [h1, h2, h3, hℓ_nn]
       _ = 6 * D ^ 2 := by ring
   have hKLSq_le : ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ ≤ D ^ 2 := by
-    rw [norm_pow, Complex.norm_real, abs_of_nonneg hkℓ_nn]
+    rw [norm_pow, Complex.norm_of_nonneg hkℓ_nn]
     exact pow_le_pow_left₀ hkℓ_nn hkℓD 2
   have hJsum_le :
       ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖
@@ -13424,11 +13421,26 @@ lemma commutatorSummand_norm_le_on_support
           apply mul_le_mul hDiff_le hKLSq_le (norm_nonneg _)
           nlinarith [hD]
       _ = 6 * D ^ 4 := by ring
-  -- Full chain
-  nlinarith [hDiffSq, hJsum_le, hJsum_nn, hCK_nn, hCKL_nn, hD, hD_pow_nn,
-             norm_nonneg (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
-                         - ((latticeNorm k : ℝ) : ℂ) ^ 2),
-             norm_nonneg (((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2),
-             norm_nonneg (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)]
+  -- Full chain: explicit calc to avoid nlinarith friction on products.
+  set Ndiff := ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+                 - ((latticeNorm k : ℝ) : ℂ) ^ 2)‖ with hNdiff
+  set Nsq := ‖(((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2)‖ with hNsq
+  set Nj := ‖(∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)‖ with hNj
+  set Σu := ∑ j : Fin 2, ‖u j ℓ‖ with hΣu
+  have hNdiff_nn : 0 ≤ Ndiff := norm_nonneg _
+  have hNsq_nn : 0 ≤ Nsq := norm_nonneg _
+  have hNj_nn : 0 ≤ Nj := norm_nonneg _
+  have hDiffSq' : Ndiff * Nsq ≤ 6 * D ^ 4 := hDiffSq
+  have hJsum_le' : Nj ≤ D * Σu := hJsum_le
+  have hD_nn4 : 0 ≤ 6 * D ^ 4 := by positivity
+  calc Ndiff * Nsq * Nj * ‖c k‖ * ‖c (k + ℓ)‖
+      = (Ndiff * Nsq) * Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
+    _ ≤ (6 * D ^ 4) * Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by
+        have : 0 ≤ Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by positivity
+        nlinarith [hDiffSq', hNj_nn, hCK_nn, hCKL_nn]
+    _ ≤ (6 * D ^ 4) * (D * Σu) * ‖c k‖ * ‖c (k + ℓ)‖ := by
+        have : 0 ≤ 6 * D ^ 4 * ‖c k‖ * ‖c (k + ℓ)‖ := by positivity
+        nlinarith [hJsum_le', hD_nn4, hCK_nn, hCKL_nn]
+    _ = 6 * D ^ 5 * Σu * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
 
 end SqgIdentity
