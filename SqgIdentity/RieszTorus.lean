@@ -13666,9 +13666,21 @@ lemma energySummand_eq_advectionSummand_add_commutatorSummand
         * c' ℓ * c' k * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
       = advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' (k, ℓ)
         + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' (k, ℓ) := by
-  rw [advectionSummand_add_commutatorSummand]
-  rw [fracDerivSymbol_two_eq hkℓ]
-  unfold derivSymbol
+  rw [advectionSummand_add_commutatorSummand, fracDerivSymbol_two_eq hkℓ]
+  -- Rewrite both j-sums into the canonical form Σ j, sqgVS j ℓ · ((k j : ℝ) : ℂ),
+  -- pulling out I (LHS) and c' ℓ (RHS) so `ring` can close the rest.
+  have hLHS_sum : (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
+                  = Complex.I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * ((k j : ℝ) : ℂ)) := by
+    unfold derivSymbol
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intros j _; ring
+  have hRHS_sum : (∑ j : Fin 2, ((k j : ℝ) : ℂ) * (sqgVelocitySymbol j ℓ * c' ℓ))
+                  = c' ℓ * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * ((k j : ℝ) : ℂ)) := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intros j _; ring
+  rw [hLHS_sum, hRHS_sum]
   push_cast
   ring
 
