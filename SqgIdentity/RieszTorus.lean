@@ -13744,12 +13744,15 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
             = (∑ m : ↥S, (((fracDerivSymbol 2 m.val) ^ 2 : ℝ) : ℂ) *
                           (star (c' m.val) * galerkinRHS S c' m.val)).re from
         (Complex.re_sum _ _).symm]
-  -- Step 3: ↥S → S via Finset.sum_attach.
+  -- Step 3: ↥S → S via Finset.sum_attach (going through Finset.univ_eq_attach).
   rw [show (∑ m : ↥S, (((fracDerivSymbol 2 m.val) ^ 2 : ℝ) : ℂ) *
                        (star (c' m.val) * galerkinRHS S c' m.val))
           = ∑ m ∈ S, (((fracDerivSymbol 2 m) ^ 2 : ℝ) : ℂ) *
-                       (star (c' m) * galerkinRHS S c' m) from
-        Finset.sum_attach S _]
+                       (star (c' m) * galerkinRHS S c' m) from by
+        rw [show ((Finset.univ : Finset ↥S)) = S.attach from Finset.univ_eq_attach S]
+        exact Finset.sum_attach S
+          (fun m => (((fracDerivSymbol 2 m) ^ 2 : ℝ) : ℂ) *
+                     (star (c' m) * galerkinRHS S c' m))]
   -- Step 4: substitute galerkinRHS, distribute, factor reorder.
   rw [show (∑ m ∈ S, (((fracDerivSymbol 2 m) ^ 2 : ℝ) : ℂ) *
                       (star (c' m) * galerkinRHS S c' m))
@@ -13773,7 +13776,7 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
         (fun p : (Fin 2 → ℤ) × (Fin 2 → ℤ) =>
           (((fracDerivSymbol 2 p.1) ^ 2 : ℝ) : ℂ) * star (c' p.1) * c' p.2 * c' (p.1 - p.2) *
           (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j (p.1 - p.2)))]
-  -- Step 6: simplify (p.1 + p.2 - p.2) = p.1.
+  -- Step 6: simplify (p.1 + p.2 - p.2) = p.1 (in c' and derivSymbol).
   rw [show (∑ p ∈ pairIdx S,
               (((fracDerivSymbol 2 (p.1 + p.2)) ^ 2 : ℝ) : ℂ) * star (c' (p.1 + p.2)) *
               c' p.2 * c' (p.1 + p.2 - p.2) *
@@ -13784,7 +13787,7 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
               (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j p.1) from by
         apply Finset.sum_congr rfl
         intros p _
-        rw [add_sub_cancel_right]]
+        simp_rw [add_sub_cancel_right]]
   -- Step 7: Apply §10.81 per pair to recognize as advection + commutator.
   rw [show (∑ p ∈ pairIdx S,
               (((fracDerivSymbol 2 (p.1 + p.2)) ^ 2 : ℝ) : ℂ) * star (c' (p.1 + p.2)) *
