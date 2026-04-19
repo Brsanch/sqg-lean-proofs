@@ -11875,4 +11875,55 @@ theorem galerkinRHS_eq_neg_sqgNonlinearFlux
   unfold galerkinRHS
   rfl
 
+/-! ### §10.49 Unified stationary-shape `SqgEvolutionAxioms_strong`
+
+Bundles the §10.43 unified flux-vanishing theorem into a universal
+multi-mode discharge of `SqgEvolutionAxioms_strong`. Strictly subsumes
+§10.34 (`shellMode_const` for radial shell) and §10.40
+(`shellMode_const_of_collinear`) as corollaries via
+`IsStationaryShape.of_isRadialShell` / `of_isCollinear`. -/
+
+/-- **`IsSqgWeakSolution` for stationary-shape θ.** Analogue of
+`isSqgWeakSolution_shellMode_const` (§10.34) under the unified
+predicate. -/
+theorem isSqgWeakSolution_shellMode_const_of_stationaryShape
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsStationaryShape S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    IsSqgWeakSolution
+        (fun _ : ℝ => shellMode S a)
+        (fun (j : Fin 2) (_ : ℝ) => shellVelocity S a j) where
+  duhamel := fun m s t _ _ => by
+    have h_integrand :
+        (fun τ : ℝ => sqgNonlinearFlux
+            ((fun _ : ℝ => shellMode S a) τ)
+            (fun j : Fin 2 =>
+              (fun (j : Fin 2) (_ : ℝ) => shellVelocity S a j) j τ) m)
+          = fun _ => (0 : ℂ) := by
+      funext τ
+      exact sqgNonlinearFlux_shellMode_eq_zero_of_stationaryShape hS a m
+    rw [h_integrand]
+    simp
+
+/-- **Unified `SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape`.**
+Multi-mode discharge for any stationary-shape `S`. Recovers §10.34
+(radial shell via `IsStationaryShape.of_isRadialShell`) and §10.40
+(collinear via `IsStationaryShape.of_isCollinear`) as corollaries. -/
+theorem SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsStationaryShape S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    SqgEvolutionAxioms_strong (fun _ : ℝ => shellMode S a) := by
+  have hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 *
+        ‖mFourierCoeff (shellMode S a) n‖ ^ 2) :=
+    hsSeminormSq_summable_of_finite_support 1 (shellMode S a) S
+      (fun n hn => mFourierCoeff_shellMode_eq_zero_of_not_mem S a hn)
+  exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    (sqgEvolutionAxioms_shellMode_const S a)
+    (MaterialMaxPrinciple.of_const (shellMode S a) hSumm)
+    (fun j _ => shellVelocity S a j)
+    (fun j _ => isSqgVelocityComponent_shellMode S a j)
+    (isSqgWeakSolution_shellMode_const_of_stationaryShape hS a)
+
 end SqgIdentity
