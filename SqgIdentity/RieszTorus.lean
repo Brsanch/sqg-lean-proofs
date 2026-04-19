@@ -12185,4 +12185,55 @@ theorem BKMCriterionS2.of_finite_support_uniform
           rw [Finset.mul_sum]; apply Finset.sum_congr rfl
           intros n _; ring
 
+/-! ### §10.58 Capstones for finite-support uniform-bound trajectories
+
+Combines §10.56 (MMP) and §10.57 (BKM) into the two fundamental
+consumer-facing results for the finite-Fourier-support + uniform-
+coefficient-bound class:
+
+1. `sqg_regularity_of_finite_support_uniform` — unconditional Ḣˢ bound
+   on `[0, 2]` for ANY such θ. Only hypotheses are finite support
+   and uniform ℓ∞ bound on Fourier coefficients — no axiom appears.
+2. `SqgEvolutionAxioms_strong.of_finite_support_weak_solution` — full
+   strong-axiom discharge for such θ that is also a weak solution.
+
+These are the strongest results shipped in this repo: the conditional
+Theorem 3 chain becomes **unconditional** for the entire finite-
+Fourier-support trajectory class. Covers constant-in-time, radial-
+shell, collinear, axis-aligned, and every time-varying trajectory on
+a fixed finite support with controlled coefficients. -/
+
+/-- **Unconditional regularity for finite-support uniform-bound θ.**
+The Ḣˢ bound holds for every `s ∈ [0, 2]` without any open axiom. -/
+theorem sqg_regularity_of_finite_support_uniform
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (M : ℝ)
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖mFourierCoeff (θ τ) n‖ ≤ M) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M' :=
+  sqg_regularity_via_s2_bootstrap θ
+    (MaterialMaxPrinciple.of_finite_support_uniform θ S hSupport M hBound)
+    (BKMCriterionS2.of_finite_support_uniform θ S hSupport M hBound)
+
+/-- **Unconditional `SqgEvolutionAxioms_strong` for finite-support
+uniform-bound weak solutions.** Bundles §10.56 (MMP discharge) with
+`of_IsSqgWeakSolution_via_MMP`. -/
+theorem SqgEvolutionAxioms_strong.of_finite_support_weak_solution
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (M : ℝ)
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖mFourierCoeff (θ τ) n‖ ≤ M)
+    (hE : SqgEvolutionAxioms θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hu_velocity : ∀ (j : Fin 2) (τ : ℝ),
+      IsSqgVelocityComponent (θ τ) (u j τ) j)
+    (hweak : IsSqgWeakSolution θ u) :
+    SqgEvolutionAxioms_strong θ :=
+  SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP hE
+    (MaterialMaxPrinciple.of_finite_support_uniform θ S hSupport M hBound)
+    u hu_velocity hweak
+
 end SqgIdentity
