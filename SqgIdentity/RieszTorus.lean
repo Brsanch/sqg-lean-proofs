@@ -13087,4 +13087,145 @@ lemma isRealFourier_riesz
     rw [hOff ℓ hℓ, hOff (-ℓ) hnegℓ]
     simp
 
+/-! ### §10.73 Advection pair-summand + algebraic kernel identity
+
+Defines `advectionSummand u c p` — the scalar factor appearing in the
+Fourier expansion of `⟨u·∇(Λ²θ), Λ²θ⟩` at the pair `p = (k, ℓ)`:
+```
+F(k, ℓ) = i · ‖k‖² · ‖k+ℓ‖² · (k · û(ℓ)) · c(k) · star(c(k+ℓ))
+```
+where `k · û(ℓ) := Σ_j (k_j : ℂ) · u_j ℓ`.
+
+**Algebraic kernel identity (§10.73 target):**
+`advectionSummand u c (advectionSwap p) + star (advectionSummand u c p) = 0`
+under `IsFourierDivFree u` + `IsRealFourier u`.
+
+Derivation (sketch): the two summands differ by real multiplicative
+factors, sharing `(k+ℓ)_j - k_j = ℓ_j` in the j-sum after using
+`u_j(-ℓ) = star(u_j ℓ)`. The surviving factor is `Σ_j ℓ_j · star(u_j ℓ)
+= star(Σ_j ℓ_j · u_j ℓ) = star(0) = 0` by div-free.
+
+§10.74 will apply `Finset.sum_involution` with `advectionSwap` +
+this kernel to conclude `Re Σ_{pairIdx} advectionSummand = 0`. -/
+
+/-- **Advection pair-summand** at `(k, ℓ)` — the scalar factor of the
+Fourier expansion of `⟨u·∇(Λ²θ), Λ²θ⟩`. -/
+noncomputable def advectionSummand
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) : ℂ :=
+  Complex.I * (((latticeNorm p.1 : ℝ) : ℂ) ^ 2)
+    * (((latticeNorm (p.1 + p.2) : ℝ) : ℂ) ^ 2)
+    * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
+    * c p.1 * star (c (p.1 + p.2))
+
+/-- **Kernel identity:** `advectionSummand (τ p) + star (advectionSummand p)
+= 0` under div-free + reality hypotheses. The algebraic core of the
+advection cancellation. -/
+theorem advectionSummand_swap_add_star_eq_zero
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) :
+    advectionSummand u c (advectionSwap p) + star (advectionSummand u c p) = 0 := by
+  obtain ⟨k, ℓ⟩ := p
+  simp only [advectionSwap_apply]
+  -- Name the three real-casted norm factors.
+  set A : ℂ := ((latticeNorm k : ℝ) : ℂ) ^ 2 with hA_def
+  set B : ℂ := ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2 with hB_def
+  -- For `τ(k, ℓ) = (k+ℓ, -ℓ)`, the new `|k'|²` is B, new `|k'+ℓ'|²` is A.
+  have hNewNorm : ((latticeNorm ((k + ℓ) + -ℓ) : ℝ) : ℂ) ^ 2 = A := by
+    have h : (k + ℓ) + -ℓ = k := by abel
+    rw [h]
+  unfold advectionSummand
+  simp only [advectionSwap_apply]
+  rw [show (k + ℓ + -ℓ) = k from by abel]
+  -- Now both terms share common factor `A * B · c(k+ℓ) · star(c(k))`,
+  -- times the j-sum difference.
+  -- Denote U := Σ_j (k_j : ℂ) · u j ℓ   (original j-sum).
+  -- Denote V := Σ_j ((k+ℓ)_j : ℂ) · u j (-ℓ)   (τ-swapped j-sum).
+  -- We show: i·B·A·V·c(k+ℓ)·star(c k) + star(i·A·B·U·c k·star(c(k+ℓ))) = 0.
+  -- star(...) = -i·A·B·star(U)·star(c k)·c(k+ℓ).
+  -- Difference: i·A·B·c(k+ℓ)·star(c k)·(V - star(U)).
+  -- Claim: V = star(U) + (something) where the discrepancy is Σ_j ℓ_j · star(u j ℓ)
+  -- which equals star(div-free sum) = 0.
+  -- Actually compute: V = Σ (k+ℓ)_j · u(-ℓ)_j = Σ (k+ℓ)_j · star(u ℓ_j) (by real).
+  -- star(U) = Σ k_j · star(u ℓ_j) (star over real coeffs is identity).
+  -- V - star(U) = Σ ((k+ℓ)_j - k_j) · star(u ℓ_j) = Σ ℓ_j · star(u ℓ_j)
+  --            = star(Σ ℓ_j · u ℓ_j) = star(0) = 0  (div-free).
+  have hU_def : ∀ j : Fin 2, star (((k j : ℝ) : ℂ) * u j ℓ)
+      = ((k j : ℝ) : ℂ) * star (u j ℓ) := by
+    intro j
+    rw [star_mul]
+    rw [show star (((k j : ℝ) : ℂ)) = ((k j : ℝ) : ℂ) from Complex.conj_ofReal _]
+    ring
+  have hStarU : star (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+      = ∑ j : Fin 2, ((k j : ℝ) : ℂ) * star (u j ℓ) := by
+    rw [map_sum]
+    apply Finset.sum_congr rfl
+    intros j _
+    exact hU_def j
+  have hV_eq : (∑ j : Fin 2, (((k + ℓ) j : ℝ) : ℂ) * u j (-ℓ))
+      = ∑ j : Fin 2, (((k + ℓ) j : ℝ) : ℂ) * star (u j ℓ) := by
+    apply Finset.sum_congr rfl
+    intros j _
+    rw [hReal j ℓ]
+  have hDiff_eq : (∑ j : Fin 2, (((k + ℓ) j : ℝ) : ℂ) * u j (-ℓ))
+      - (∑ j : Fin 2, ((k j : ℝ) : ℂ) * star (u j ℓ))
+      = ∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * star (u j ℓ) := by
+    rw [hV_eq, ← Finset.sum_sub_distrib]
+    apply Finset.sum_congr rfl
+    intros j _
+    have hCast : (((k + ℓ) j : ℝ) : ℂ) = ((k j : ℝ) : ℂ) + ((ℓ j : ℝ) : ℂ) := by
+      show (((k j + ℓ j) : ℝ) : ℂ) = _
+      push_cast; rfl
+    rw [hCast]; ring
+  have hDivFree_star : star (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * u j ℓ) = 0 := by
+    rw [hDivFree ℓ, map_zero]
+  have hJsum_star : (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * star (u j ℓ)) = 0 := by
+    calc (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * star (u j ℓ))
+        = ∑ j : Fin 2, star (((ℓ j : ℝ) : ℂ) * u j ℓ) := by
+          apply Finset.sum_congr rfl
+          intros j _
+          rw [star_mul, Complex.conj_ofReal]; ring
+      _ = star (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * u j ℓ) := (map_sum _ _ _).symm
+      _ = 0 := hDivFree_star
+  -- Now assemble the final identity.
+  -- Target (after `simp only [advectionSwap_apply]` + `rw [show ...]` above):
+  --   I · B · A · V · c(k+ℓ) · star(c k)
+  --   + star (I · A · B · U · c k · star(c(k+ℓ))) = 0
+  have hStarAC : star ((((latticeNorm k : ℝ) : ℂ)) ^ 2) = A := by
+    rw [hA_def]
+    rw [show ((latticeNorm k : ℝ) : ℂ) ^ 2
+        = ((latticeNorm k : ℝ) : ℂ) * ((latticeNorm k : ℝ) : ℂ) from sq _]
+    rw [star_mul, Complex.conj_ofReal, Complex.conj_ofReal]
+    rw [← sq]
+  have hStarBC : star ((((latticeNorm (k + ℓ) : ℝ) : ℂ)) ^ 2) = B := by
+    rw [hB_def]
+    rw [show ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+        = ((latticeNorm (k + ℓ) : ℝ) : ℂ) * ((latticeNorm (k + ℓ) : ℝ) : ℂ) from sq _]
+    rw [star_mul, Complex.conj_ofReal, Complex.conj_ofReal]
+    rw [← sq]
+  have hStarI : star (Complex.I) = -Complex.I := Complex.conj_I
+  have hStarStar : ∀ z : ℂ, star (star z) = z := star_star
+  -- Unfold and compute.
+  set U : ℂ := ∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ with hU_abbrev
+  set V : ℂ := ∑ j : Fin 2, (((k + ℓ) j : ℝ) : ℂ) * u j (-ℓ) with hV_abbrev
+  -- star of the second summand
+  have hStar2 :
+      star (Complex.I * A * B * U * c k * star (c (k + ℓ)))
+        = -Complex.I * A * B * star U * star (c k) * c (k + ℓ) := by
+    rw [star_mul, star_mul, star_mul, star_mul, star_mul, hStarI,
+        hStarAC, hStarBC, star_star]
+    ring
+  rw [hStar2]
+  -- The goal now has the form:
+  --   I · B · A · V · c(k+ℓ) · star(c k) + (-I) · A · B · star U · star(c k) · c(k+ℓ) = 0
+  -- Factor and use V - star(U) from hDiff_eq + hJsum_star.
+  have hVSubStar : V - star U = 0 := by
+    rw [hV_abbrev, show star U = ∑ j : Fin 2, ((k j : ℝ) : ℂ) * star (u j ℓ) from hStarU]
+    rw [hDiff_eq]
+    exact hJsum_star
+  have hV_eq_starU : V = star U := sub_eq_zero.mp hVSubStar
+  rw [hV_eq_starU]
+  ring
+
 end SqgIdentity
