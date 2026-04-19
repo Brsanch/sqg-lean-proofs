@@ -11986,4 +11986,79 @@ theorem IsXAxisShell.isStationaryShape
     IsStationaryShape S :=
   IsStationaryShape.of_isCollinear hS.1 hS.isCollinear
 
+/-! ### §10.51 Auto-Picard — local existence from ContDiff alone
+
+Automatic consumer-facing version of §10.44. Constants are derived
+automatically from:
+* `galerkinVectorField_locally_lipschitz` (§10.42) — local Lipschitz.
+* `Metric.mem_nhds_iff` — open-ball neighborhood inside the Lipschitz
+  region; shrink to a closed ball `closedBall c₀ (δ/2)`.
+* `isCompact_closedBall` in the finite-dim Pi space
+  (ProperSpace via Fintype).
+* `galerkinVectorField_continuous` + `IsCompact.bddAbove_image` —
+  uniform bound `L` on the closed ball.
+* Pick `ε := a / (L + 1)`, yielding `L · ε < a` for the
+  `mul_max_le` Picard-Lindelöf hypothesis. -/
+
+theorem galerkin_local_exists
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c₀ : ↥S → ℂ) :
+    ∃ ε : ℝ, 0 < ε ∧ ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      ∀ t ∈ Set.Icc (-ε) ε,
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (-ε) ε) t := by
+  classical
+  -- Step 1: local Lipschitz K on some neighborhood U.
+  obtain ⟨K, U, hU, hLip⟩ := galerkinVectorField_locally_lipschitz S c₀
+  -- Step 2: U contains an open ball of radius δ.
+  obtain ⟨δ, hδ_pos, hδ_sub⟩ := Metric.mem_nhds_iff.mp hU
+  -- Step 3: shrink to closed ball of radius a := δ/2.
+  have ha_pos : (0 : ℝ) < δ / 2 := by linarith
+  set a : NNReal := ⟨δ / 2, ha_pos.le⟩ with ha_def
+  have ha_coe : (a : ℝ) = δ / 2 := rfl
+  have h_closedBall_sub : Metric.closedBall c₀ (a : ℝ) ⊆ U := by
+    intro x hx
+    apply hδ_sub
+    rw [Metric.mem_ball]
+    rw [Metric.mem_closedBall] at hx
+    rw [ha_coe] at hx
+    linarith
+  have hLip_ball : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (a : ℝ)) :=
+    hLip.mono h_closedBall_sub
+  -- Step 4: closedBall is compact (finite-dim Pi).
+  have hCompact : IsCompact (Metric.closedBall c₀ (a : ℝ)) :=
+    isCompact_closedBall c₀ _
+  -- Step 5: galerkinVectorField is continuous ⟹ ‖·‖ bounded on ball.
+  have hCont : Continuous (galerkinVectorField S) :=
+    galerkinVectorField_continuous S
+  have h_bdd := hCompact.bddAbove_image hCont.norm.continuousOn
+  obtain ⟨Lreal, hLreal⟩ := h_bdd
+  have hL0 : 0 ≤ Lreal := by
+    have h_c₀_in : c₀ ∈ Metric.closedBall c₀ (a : ℝ) :=
+      Metric.mem_closedBall_self ha_pos.le
+    have h_norm_le : ‖galerkinVectorField S c₀‖ ≤ Lreal :=
+      hLreal ⟨c₀, h_c₀_in, rfl⟩
+    exact le_trans (norm_nonneg _) h_norm_le
+  set L : NNReal := ⟨Lreal, hL0⟩ with hL_def
+  have hBound : ∀ c ∈ Metric.closedBall c₀ (a : ℝ),
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) := by
+    intros c hc
+    exact hLreal ⟨c, hc, rfl⟩
+  -- Step 6: pick ε := a / (L + 1); then L · ε < a.
+  set ε : ℝ := (a : ℝ) / ((L : ℝ) + 1) with hε_def
+  have hLp1 : 0 < (L : ℝ) + 1 := by
+    have : (L : ℝ) = Lreal := rfl
+    linarith
+  have hε_pos : 0 < ε := div_pos ha_pos hLp1
+  have hTime : (L : ℝ) * ε ≤ (a : ℝ) := by
+    rw [hε_def, mul_div_assoc]
+    apply mul_le_of_le_one_right ha_pos.le
+    apply div_le_one_of_le
+    · linarith
+    · linarith
+  -- Step 7: apply §10.44.
+  obtain ⟨α, hα₀, hα⟩ :=
+    galerkin_local_exists_given_bounds S c₀ hε_pos hLip_ball hBound hTime
+  exact ⟨ε, hε_pos, α, hα₀, hα⟩
+
 end SqgIdentity
