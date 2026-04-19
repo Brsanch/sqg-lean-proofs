@@ -12908,4 +12908,82 @@ theorem trigPolyEnergyHs2_hasDerivAt
   -- Finally multiply by the constant weight `(fracDerivSymbol 2 m.val)²`.
   exact hNormSq.const_mul _
 
+/-! ### §10.70 Pair-index Finset + advection-swap involution
+
+Foundation for the advection-cancellation argument of §10.74. The
+bilinear Galerkin flux `galerkinRHS S c m` is a sum over
+`ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S)`; when paired against the energy
+weight `|m|^4 · conj(c(m))`, it becomes a double sum over pairs
+`(k, ℓ) ∈ S × S` with `k + ℓ ∈ S` (setting `k := m - ℓ`).
+
+`pairIdx S` packages this index set as a Finset of pairs. The
+involution `advectionSwap : (k, ℓ) ↦ (k+ℓ, -ℓ)` self-maps this set
+under `IsSymmetricSupport S` and is its own inverse (`advectionSwap²
+= id`). §10.74 will apply `Finset.sum_involution` with this map to
+collapse the advection term.
+
+The geometric meaning: swapping the "scalar mode" `k` and "output
+mode" `k+ℓ` while reversing the velocity direction `ℓ ↦ -ℓ`
+rearranges the same physical interaction seen from the opposite
+endpoint. Combined with the div-free Fourier condition
+`ℓ · û(ℓ) = 0` and the Fourier-reality `û(-ℓ) = star û(ℓ)`, the
+paired contributions cancel at the Re level. -/
+
+/-- **Pair-index Finset for the advection double-sum.** -/
+noncomputable def pairIdx (S : Finset (Fin 2 → ℤ))
+    [DecidableEq (Fin 2 → ℤ)] :
+    Finset ((Fin 2 → ℤ) × (Fin 2 → ℤ)) :=
+  (S ×ˢ S).filter (fun p => p.1 + p.2 ∈ S)
+
+lemma mem_pairIdx {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    {p : (Fin 2 → ℤ) × (Fin 2 → ℤ)} :
+    p ∈ pairIdx S ↔ p.1 ∈ S ∧ p.2 ∈ S ∧ p.1 + p.2 ∈ S := by
+  unfold pairIdx
+  rw [Finset.mem_filter, Finset.mem_product]
+  tauto
+
+/-- **Advection-swap involution.** `τ(k, ℓ) = (k + ℓ, -ℓ)`. -/
+def advectionSwap :
+    (Fin 2 → ℤ) × (Fin 2 → ℤ) → (Fin 2 → ℤ) × (Fin 2 → ℤ) :=
+  fun p => (p.1 + p.2, -p.2)
+
+@[simp]
+lemma advectionSwap_apply (k ℓ : Fin 2 → ℤ) :
+    advectionSwap (k, ℓ) = (k + ℓ, -ℓ) := rfl
+
+lemma advectionSwap_involutive (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) :
+    advectionSwap (advectionSwap p) = p := by
+  obtain ⟨k, ℓ⟩ := p
+  simp [advectionSwap]
+
+lemma advectionSwap_mem_pairIdx
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {p : (Fin 2 → ℤ) × (Fin 2 → ℤ)} (hp : p ∈ pairIdx S) :
+    advectionSwap p ∈ pairIdx S := by
+  obtain ⟨k, ℓ⟩ := p
+  rw [mem_pairIdx] at hp
+  obtain ⟨hk, hℓ, hkℓ⟩ := hp
+  rw [advectionSwap_apply, mem_pairIdx]
+  refine ⟨hkℓ, ?_, ?_⟩
+  · exact hS ℓ hℓ
+  · -- (k + ℓ) + (-ℓ) = k ∈ S
+    have : k + ℓ + -ℓ = k := by abel
+    rw [this]; exact hk
+
+/-- **Fixed points of `advectionSwap`.** Fixed iff `ℓ = 0`. The `k+ℓ = k`
+condition already forces `ℓ = 0`, making `-ℓ = ℓ` redundant. -/
+lemma advectionSwap_eq_self_iff
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) :
+    advectionSwap p = p ↔ p.2 = 0 := by
+  obtain ⟨k, ℓ⟩ := p
+  simp only [advectionSwap_apply, Prod.mk.injEq]
+  constructor
+  · rintro ⟨hk, _⟩
+    -- k + ℓ = k ⇒ ℓ = 0
+    have : k + ℓ - k = k - k := by rw [hk]
+    simpa [add_sub_cancel_left, sub_self] using this
+  · rintro rfl
+    refine ⟨?_, ?_⟩ <;> simp
+
 end SqgIdentity
