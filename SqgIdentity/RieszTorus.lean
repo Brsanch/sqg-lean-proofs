@@ -13696,4 +13696,112 @@ lemma inner_real_complex_eq_re_star_mul (z w : ℂ) :
   rw [Complex.inner, mul_comm]
   rfl
 
+/-! ### §10.83 Pair-sum form of the energy-derivative
+
+Combining §10.69 (HasDerivAt formula), §10.82 (inner-product → Re form),
+§10.80 (pair-Finset reindexing), §10.81 (per-pair factorization), and
+§10.48-style `galerkinRHS` unfolding, the Ḣ² energy-derivative summand
+admits the pair-sum form:
+```
+∑ m : ↥S, (fracDerivSymbol 2 m.val)² · 2 · ⟪c m, galerkinVectorField S c m⟫_ℝ
+  = -2 · Re(∑_{p ∈ pairIdx S} (advectionSummand u c' p + commutatorSummand u c' p))
+```
+where `c' = galerkinExtend S c` and `u_j ℓ = sqgVelocitySymbol j ℓ · c' ℓ`
+(Riesz-transform velocity).
+
+Requires `0 ∉ S` so `fracDerivSymbol_two_eq` applies at every `k + ℓ ∈ S`. -/
+
+/-- **Pair-sum form of the energy derivative.** -/
+theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (c : ↥S → ℂ) :
+    (∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
+        (2 * (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m))))
+      = -2 * (∑ p ∈ pairIdx S,
+          advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+            (galerkinExtend S c) p
+          + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+            (galerkinExtend S c) p).re := by
+  set c' := galerkinExtend S c
+  -- Step 1: per-term inner-product → Re conversion + factor extraction.
+  have hTerm : ∀ m : ↥S,
+      (fracDerivSymbol 2 m.val) ^ 2 * (2 * (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m)))
+        = 2 * ((((fracDerivSymbol 2 m.val) ^ 2 : ℝ) : ℂ) *
+                (star (c' m.val) * galerkinRHS S c' m.val)).re := by
+    intro m
+    rw [inner_real_complex_eq_re_star_mul]
+    rw [show c m = c' m.val from
+          (galerkinExtend_apply_of_mem _ _ m.property).symm]
+    rw [show galerkinVectorField S c m = galerkinRHS S c' m.val from rfl]
+    rw [Complex.re_ofReal_mul]
+    ring
+  rw [Finset.sum_congr rfl (fun m _ => hTerm m)]
+  rw [← Finset.mul_sum]
+  -- Step 2: Re commutes with sum.
+  rw [show (∑ m : ↥S, ((((fracDerivSymbol 2 m.val) ^ 2 : ℝ) : ℂ) *
+                          (star (c' m.val) * galerkinRHS S c' m.val)).re)
+            = (∑ m : ↥S, (((fracDerivSymbol 2 m.val) ^ 2 : ℝ) : ℂ) *
+                          (star (c' m.val) * galerkinRHS S c' m.val)).re from
+        (Complex.re_sum _ _).symm]
+  -- Step 3: ↥S → S via Finset.sum_attach.
+  rw [show (∑ m : ↥S, (((fracDerivSymbol 2 m.val) ^ 2 : ℝ) : ℂ) *
+                       (star (c' m.val) * galerkinRHS S c' m.val))
+          = ∑ m ∈ S, (((fracDerivSymbol 2 m) ^ 2 : ℝ) : ℂ) *
+                       (star (c' m) * galerkinRHS S c' m) from
+        Finset.sum_attach S _]
+  -- Step 4: substitute galerkinRHS, distribute, factor reorder.
+  rw [show (∑ m ∈ S, (((fracDerivSymbol 2 m) ^ 2 : ℝ) : ℂ) *
+                      (star (c' m) * galerkinRHS S c' m))
+          = -∑ m ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+                (((fracDerivSymbol 2 m) ^ 2 : ℝ) : ℂ) * star (c' m) *
+                c' ℓ * c' (m - ℓ) *
+                (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) from by
+        rw [← Finset.sum_neg_distrib]
+        apply Finset.sum_congr rfl
+        intros m _
+        rw [show galerkinRHS S c' m = -∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+                  c' ℓ * c' (m - ℓ)
+                    * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+                from rfl]
+        rw [mul_neg, neg_inj, Finset.mul_sum]
+        apply Finset.sum_congr rfl
+        intros ℓ _
+        ring]
+  -- Step 5: §10.80 reindexing.
+  rw [sum_pair_diff_eq_sum_pairIdx
+        (fun p : (Fin 2 → ℤ) × (Fin 2 → ℤ) =>
+          (((fracDerivSymbol 2 p.1) ^ 2 : ℝ) : ℂ) * star (c' p.1) * c' p.2 * c' (p.1 - p.2) *
+          (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j (p.1 - p.2)))]
+  -- Step 6: simplify (p.1 + p.2 - p.2) = p.1.
+  rw [show (∑ p ∈ pairIdx S,
+              (((fracDerivSymbol 2 (p.1 + p.2)) ^ 2 : ℝ) : ℂ) * star (c' (p.1 + p.2)) *
+              c' p.2 * c' (p.1 + p.2 - p.2) *
+              (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j (p.1 + p.2 - p.2)))
+          = ∑ p ∈ pairIdx S,
+              (((fracDerivSymbol 2 (p.1 + p.2)) ^ 2 : ℝ) : ℂ) * star (c' (p.1 + p.2)) *
+              c' p.2 * c' p.1 *
+              (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j p.1) from by
+        apply Finset.sum_congr rfl
+        intros p _
+        rw [add_sub_cancel_right]]
+  -- Step 7: Apply §10.81 per pair to recognize as advection + commutator.
+  rw [show (∑ p ∈ pairIdx S,
+              (((fracDerivSymbol 2 (p.1 + p.2)) ^ 2 : ℝ) : ℂ) * star (c' (p.1 + p.2)) *
+              c' p.2 * c' p.1 *
+              (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j p.1))
+          = ∑ p ∈ pairIdx S,
+              (advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' (p.1, p.2)
+              + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' (p.1, p.2))
+            from by
+        apply Finset.sum_congr rfl
+        intros p hp
+        rw [mem_pairIdx] at hp
+        obtain ⟨_, _, hkℓ⟩ := hp
+        have h_ne : p.1 + p.2 ≠ 0 := fun h => h0 (h ▸ hkℓ)
+        exact energySummand_eq_advectionSummand_add_commutatorSummand c' h_ne]
+  -- Step 8: 2 * (-X).re = -2 * X.re via Complex.neg_re + ring.
+  rw [Complex.neg_re]
+  ring
+
 end SqgIdentity
