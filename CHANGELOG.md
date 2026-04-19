@@ -4,6 +4,39 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.11 — 2026-04-19
+
+Phase-3 self-contained Galerkin → `SqgEvolutionAxioms_strong` capstone.
+15,553 lines (14,844 `RieszTorus` + 709 `Basic`), zero `sorry`, zero new
+axioms.
+
+Closes the remaining `hE : SqgEvolutionAxioms θ` hypothesis of v0.4.10's
+§10.94 by deriving it internally from Galerkin dynamics + symmetric
+support + zero-excluded + real-coefficient symmetry. Final capstone
+`SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound` takes
+only the Galerkin ODE, structural conditions on `S`, real-coefficient
+symmetry, and the uniform `L^∞` coefficient bound — no auxiliary
+hypotheses.
+
+- §10.95 `advectionSummandH0` + Ḣ⁰ advection cancellation paralleling
+  §10.73-§10.74 (weights stripped; `Complex.I` prefix retained for the
+  `star I = -I` cancellation).
+- §10.96 `galerkinRHS_inner_sum_eq_neg_advectionSumH0` + real-part
+  vanishing: composes §10.48's flux decomposition with §10.80's
+  pair-Finset reindex. Perfect alignment of conventions — no extra
+  swap reindex needed.
+- §10.97 L² conservation via `HasDerivAt.norm_sq` + `HasDerivAt.fun_sum`
+  + §10.96's `Re = 0`, then `is_const_of_deriv_eq_zero`. Ports to
+  `hsSeminormSq 0 (galerkinToLp ...)` under `0 ∉ S`.
+- §10.98 `SqgEvolutionAxioms.of_galerkin_dynamics` bundles L² + zero-mode
+  triviality + Riesz velocity into the axiom witness; composes with
+  §10.94 Phase-2 capstone for the final self-contained result.
+
+One-shot CI green (no iterations across 4 chunk pushes); 338 new lines
+vs. the ~400-500 line pessimistic estimate.
+
+Archive: [TBD — Zenodo DOI pending].
+
 ## v0.4.10 — 2026-04-19
 
 Galerkin dynamics → `SqgEvolutionAxioms_strong` chain closed via rescoped
