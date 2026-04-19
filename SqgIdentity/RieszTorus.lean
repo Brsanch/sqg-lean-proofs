@@ -12382,4 +12382,153 @@ lemma comSymb_zero_right {d : Type*} [Fintype d] (k : d → ℤ) :
   unfold comSymb
   simp
 
+/-! ### §10.62 Triangle inequality, Cauchy-Schwarz, and symbol bound
+
+Three building blocks for the commutator estimate of §10.63:
+
+1. `latticeNorm_add_le` — triangle inequality on the integer lattice
+   norm. Derived from `EuclideanSpace ℝ d`'s normed-space triangle by
+   bridging `d → ℤ` through the real cast `toEuclid`.
+2. `latticeNorm_inner_abs_le` — Cauchy-Schwarz: `|Σⱼ kⱼ·ℓⱼ| ≤ ‖k‖·‖ℓ‖`.
+3. `comSymb_abs_le` — the symbol bound
+   `|‖k+ℓ‖^4 - ‖k‖^4| ≤ 6 · (‖k‖+‖ℓ‖)^3 · ‖ℓ‖`, proved via the
+   factorisation `a^4 - b^4 = (a²-b²)(a²+b²)` and the elementary
+   expansion `‖k+ℓ‖² - ‖k‖² = 2·⟨k,ℓ⟩ + ‖ℓ‖²`. Constant 6 is
+   sub-optimal (classical Kato-Ponce is 4) but sufficient. -/
+
+/-- Real-valued cast of an integer lattice point into `EuclideanSpace ℝ d`. -/
+noncomputable def toEuclid {d : Type*} [Fintype d]
+    (n : d → ℤ) : EuclideanSpace ℝ d :=
+  fun j => (n j : ℝ)
+
+lemma toEuclid_add {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
+    toEuclid (k + ℓ) = toEuclid k + toEuclid ℓ := by
+  funext j
+  show ((k + ℓ) j : ℝ) = (k j : ℝ) + (ℓ j : ℝ)
+  push_cast
+  rfl
+
+lemma norm_toEuclid_sq {d : Type*} [Fintype d] (n : d → ℤ) :
+    ‖toEuclid n‖ ^ 2 = ∑ j, (n j : ℝ) ^ 2 :=
+  EuclideanSpace.real_norm_sq_eq (toEuclid n)
+
+lemma norm_toEuclid_eq_latticeNorm {d : Type*} [Fintype d] (n : d → ℤ) :
+    ‖toEuclid n‖ = latticeNorm n := by
+  have h1 : ‖toEuclid n‖ ^ 2 = (latticeNorm n) ^ 2 := by
+    rw [norm_toEuclid_sq, latticeNorm_sq]
+  have h2 : 0 ≤ ‖toEuclid n‖ := norm_nonneg _
+  have h3 : 0 ≤ latticeNorm n := latticeNorm_nonneg _
+  calc ‖toEuclid n‖
+      = Real.sqrt (‖toEuclid n‖ ^ 2) := (Real.sqrt_sq h2).symm
+    _ = Real.sqrt ((latticeNorm n) ^ 2) := by rw [h1]
+    _ = latticeNorm n := Real.sqrt_sq h3
+
+/-- **Triangle inequality for `latticeNorm`.** -/
+lemma latticeNorm_add_le {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
+    latticeNorm (k + ℓ) ≤ latticeNorm k + latticeNorm ℓ := by
+  rw [← norm_toEuclid_eq_latticeNorm, ← norm_toEuclid_eq_latticeNorm,
+      ← norm_toEuclid_eq_latticeNorm, toEuclid_add]
+  exact norm_add_le _ _
+
+/-- **Cauchy-Schwarz on the integer lattice.**
+`|Σⱼ (kⱼ : ℝ) · (ℓⱼ : ℝ)| ≤ ‖k‖ · ‖ℓ‖`. -/
+lemma latticeNorm_inner_abs_le {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
+    |∑ j, (k j : ℝ) * (ℓ j : ℝ)| ≤ latticeNorm k * latticeNorm ℓ := by
+  have hInner : @inner ℝ (EuclideanSpace ℝ d) _ (toEuclid k) (toEuclid ℓ)
+      = ∑ j, (k j : ℝ) * (ℓ j : ℝ) := by
+    rw [PiLp.inner_apply]
+    apply Finset.sum_congr rfl
+    intros j _
+    show (k j : ℝ) * (ℓ j : ℝ) = (k j : ℝ) * (ℓ j : ℝ)
+    rfl
+  have hCS := abs_real_inner_le_norm (toEuclid k) (toEuclid ℓ)
+  rw [hInner, norm_toEuclid_eq_latticeNorm, norm_toEuclid_eq_latticeNorm] at hCS
+  exact hCS
+
+/-- **Expansion of `‖k+ℓ‖² - ‖k‖²`.** -/
+lemma latticeNorm_add_sq_sub_sq {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
+    (latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2
+      = 2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ)) + (latticeNorm ℓ) ^ 2 := by
+  rw [latticeNorm_sq, latticeNorm_sq, latticeNorm_sq]
+  have hAdd : ∀ j, ((k + ℓ) j : ℝ) = (k j : ℝ) + (ℓ j : ℝ) := by
+    intros j; push_cast; rfl
+  have hSum : ∑ j, ((k + ℓ) j : ℝ) ^ 2
+      = ∑ j, ((k j : ℝ) ^ 2 + 2 * ((k j : ℝ) * (ℓ j : ℝ)) + (ℓ j : ℝ) ^ 2) := by
+    apply Finset.sum_congr rfl
+    intros j _
+    rw [hAdd j]
+    ring
+  rw [hSum]
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, ← Finset.mul_sum]
+  ring
+
+/-- **Algebraic bound on `|‖k+ℓ‖² - ‖k‖²|`.** -/
+lemma abs_latticeNorm_add_sq_sub_sq_le {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
+    |(latticeNorm (k + ℓ)) ^ 2 - (latticeNorm k) ^ 2|
+      ≤ 3 * (latticeNorm k + latticeNorm ℓ) * latticeNorm ℓ := by
+  rw [latticeNorm_add_sq_sub_sq]
+  have hCS := latticeNorm_inner_abs_le k ℓ
+  have hℓ_nn : 0 ≤ latticeNorm ℓ := latticeNorm_nonneg _
+  have hk_nn : 0 ≤ latticeNorm k := latticeNorm_nonneg _
+  have hSumBd : |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ))|
+      ≤ 2 * (latticeNorm k * latticeNorm ℓ) := by
+    rw [abs_mul, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 2)]
+    exact mul_le_mul_of_nonneg_left hCS (by norm_num : (0 : ℝ) ≤ 2)
+  have hSqNn : 0 ≤ (latticeNorm ℓ) ^ 2 := sq_nonneg _
+  have hTri : |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ)) + (latticeNorm ℓ) ^ 2|
+      ≤ 2 * (latticeNorm k * latticeNorm ℓ) + (latticeNorm ℓ) ^ 2 := by
+    calc |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ)) + (latticeNorm ℓ) ^ 2|
+        ≤ |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ))| + |(latticeNorm ℓ) ^ 2| :=
+            abs_add _ _
+      _ = |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ))| + (latticeNorm ℓ) ^ 2 := by
+            rw [abs_of_nonneg hSqNn]
+      _ ≤ 2 * (latticeNorm k * latticeNorm ℓ) + (latticeNorm ℓ) ^ 2 := by
+            linarith
+  calc |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ)) + (latticeNorm ℓ) ^ 2|
+      ≤ 2 * (latticeNorm k * latticeNorm ℓ) + (latticeNorm ℓ) ^ 2 := hTri
+    _ = (2 * latticeNorm k + latticeNorm ℓ) * latticeNorm ℓ := by ring
+    _ ≤ 3 * (latticeNorm k + latticeNorm ℓ) * latticeNorm ℓ := by
+          have h : (2 * latticeNorm k + latticeNorm ℓ)
+              ≤ 3 * (latticeNorm k + latticeNorm ℓ) := by linarith
+          exact mul_le_mul_of_nonneg_right h hℓ_nn
+
+/-- **Symbol bound for `comSymb`.** The Kato-Ponce–shaped Lipschitz
+estimate on the s=2 commutator symbol:
+`|‖k+ℓ‖^4 - ‖k‖^4| ≤ 6 · (‖k‖+‖ℓ‖)^3 · ‖ℓ‖`. Constant `6` is
+sub-optimal (classical bound is 4) but suffices for §10.63. -/
+lemma comSymb_abs_le {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
+    |comSymb k ℓ| ≤ 6 * (latticeNorm k + latticeNorm ℓ) ^ 3 * latticeNorm ℓ := by
+  unfold comSymb
+  set a := latticeNorm (k + ℓ)
+  set b := latticeNorm k
+  set c := latticeNorm ℓ
+  have hc_nn : 0 ≤ c := latticeNorm_nonneg _
+  have hb_nn : 0 ≤ b := latticeNorm_nonneg _
+  have ha_nn : 0 ≤ a := latticeNorm_nonneg _
+  have ha_le : a ≤ b + c := latticeNorm_add_le k ℓ
+  -- Factor `a^4 - b^4 = (a² - b²)(a² + b²)`.
+  have hFactor : a ^ 4 - b ^ 4 = (a ^ 2 - b ^ 2) * (a ^ 2 + b ^ 2) := by ring
+  rw [hFactor, abs_mul]
+  have hDiff : |a ^ 2 - b ^ 2| ≤ 3 * (b + c) * c :=
+    abs_latticeNorm_add_sq_sub_sq_le k ℓ
+  have hSum_bound : a ^ 2 + b ^ 2 ≤ 2 * (b + c) ^ 2 := by
+    have hb_sq : b ^ 2 ≤ (b + c) ^ 2 := by
+      have := sq_nonneg (b + c)
+      nlinarith [hb_nn, hc_nn]
+    have ha_sq : a ^ 2 ≤ (b + c) ^ 2 :=
+      pow_le_pow_left₀ ha_nn ha_le 2
+    linarith
+  have hSum_nn : 0 ≤ a ^ 2 + b ^ 2 := by positivity
+  have hAbsSum : |a ^ 2 + b ^ 2| = a ^ 2 + b ^ 2 := abs_of_nonneg hSum_nn
+  rw [hAbsSum]
+  have hProd_le :
+      |a ^ 2 - b ^ 2| * (a ^ 2 + b ^ 2)
+        ≤ (3 * (b + c) * c) * (2 * (b + c) ^ 2) := by
+    have h1 : 0 ≤ |a ^ 2 - b ^ 2| := abs_nonneg _
+    have h2 : 0 ≤ 3 * (b + c) * c := by positivity
+    exact mul_le_mul hDiff hSum_bound hSum_nn h2
+  calc |a ^ 2 - b ^ 2| * (a ^ 2 + b ^ 2)
+      ≤ (3 * (b + c) * c) * (2 * (b + c) ^ 2) := hProd_le
+    _ = 6 * (b + c) ^ 3 * c := by ring
+
 end SqgIdentity
