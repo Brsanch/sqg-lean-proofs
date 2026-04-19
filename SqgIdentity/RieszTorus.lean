@@ -11327,4 +11327,142 @@ theorem galerkinVectorField_continuous
   · exact galerkinExtend_continuous_apply S ℓ
   · exact galerkinExtend_continuous_apply S (↑m - ℓ)
 
+/-! ### §10.40 Collinear-support stationary SQG
+
+A second, independent class of unconditional stationary SQG witnesses,
+distinct from radial shells: any finite `S ⊆ ℤ² \ {0}` whose modes are
+pairwise collinear (i.e. `S ⊆ ℤ · v` for some primitive `v`). The
+cancellation mechanism here is **per-pair** rather than paired: for any
+ℓ, k parallel to a common direction, the 2D cross product `ℓ × k = 0`,
+so the j-sum `∑_j sqgVelocitySymbol j ℓ · derivSymbol j k` vanishes
+individually (before any pairing).
+
+Physically this corresponds to the classical "functions of a single
+coordinate" stationary class: `θ(x) = f(v · x)` where `v ∈ ℤ²` fixes
+the level-set direction; the velocity is along the level sets and
+never sees `∇θ`.
+
+Unlike radial shells, collinear `S` can have arbitrary norms on its
+elements (e.g. `{v, 2v, 3v, …}`), so this is a strictly different
+extension — the `IsRadialShell` and `IsCollinear` witnesses overlap
+only at `|S| ≤ 2` (antipodal pair) or singletons. -/
+
+/-- **Per-pair inner-sum vanishes on collinear pairs.** For any
+`ℓ, k : Fin 2 → ℤ` with zero 2D cross product, `C(ℓ, k) = 0`.
+Immediate corollary of the closed-form lemma
+`sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero`. -/
+lemma sqgVelocitySymbol_mul_derivSymbol_sum_zero_of_cross_zero
+    (ℓ k : Fin 2 → ℤ) (hcross : ℓ 0 * k 1 = ℓ 1 * k 0) :
+    (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k) = 0 := by
+  by_cases hℓ : ℓ = 0
+  · subst hℓ
+    simp [sqgVelocitySymbol_zero]
+  rw [sum_sqgVelocitySymbol_mul_derivSymbol_of_ne_zero _ _ hℓ]
+  have h_num_R : (ℓ 1 : ℝ) * (k 0 : ℝ) - (ℓ 0 : ℝ) * (k 1 : ℝ) = 0 := by
+    have hR : (ℓ 0 : ℝ) * (k 1 : ℝ) = (ℓ 1 : ℝ) * (k 0 : ℝ) := by
+      exact_mod_cast hcross
+    linarith
+  have h_num_C :
+      (((ℓ 1 : ℝ) * (k 0 : ℝ) - (ℓ 0 : ℝ) * (k 1 : ℝ) : ℝ) : ℂ) = 0 := by
+    exact_mod_cast h_num_R
+  rw [h_num_C, zero_div]
+
+/-- **Collinearity predicate.** `S` is collinear: every pair of modes
+shares a zero 2D cross product. Equivalently, `S` lies on one line
+through the origin in `ℤ²`. -/
+def IsCollinear (S : Finset (Fin 2 → ℤ)) : Prop :=
+  ∀ ℓ ∈ S, ∀ k ∈ S, ℓ 0 * k 1 = ℓ 1 * k 0
+
+/-- **Collinear stationary SQG flux = 0.** Same outer structure as
+`sqgNonlinearFlux_shellMode_eq_zero` (§10.33), but each ℓ-slice
+individually vanishes via the collinearity cross-product identity —
+no pairing/involution needed. -/
+theorem sqgNonlinearFlux_shellMode_eq_zero_of_collinear
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsCollinear S)
+    (a : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux (shellMode S a) (shellVelocity S a ·) m = 0 := by
+  unfold sqgNonlinearFlux
+  have h_tsum_eq : ∀ j : Fin 2,
+      fourierConvolution
+          (fun ℓ => mFourierCoeff (shellVelocity S a j) ℓ)
+          (fun ℓ => derivSymbol j ℓ * mFourierCoeff (shellMode S a) ℓ) m
+        = ∑ ℓ ∈ S,
+            mFourierCoeff (shellVelocity S a j) ℓ
+              * (derivSymbol j (m - ℓ)
+                 * mFourierCoeff (shellMode S a) (m - ℓ)) := by
+    intro j
+    unfold fourierConvolution
+    apply tsum_eq_sum
+    intro ℓ hℓ
+    simp only [mFourierCoeff_shellVelocity, if_neg hℓ, zero_mul]
+  rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq j)]
+  rw [Finset.sum_comm]
+  apply Finset.sum_eq_zero
+  intro ℓ hℓ_S
+  -- The inner j-sum factors to `a(ℓ) · θ̂(m-ℓ) · C(ℓ, m-ℓ)`; the
+  -- collinearity case-splits m-ℓ ∈ S (then C = 0 by hS) or ∉ S
+  -- (then θ̂(m-ℓ) = 0).
+  have h_factor : ∀ j : Fin 2,
+      mFourierCoeff (shellVelocity S a j) ℓ
+        * (derivSymbol j (m - ℓ) * mFourierCoeff (shellMode S a) (m - ℓ))
+        = a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+          * (sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+    intro j
+    rw [mFourierCoeff_shellVelocity, if_pos hℓ_S]
+    ring
+  rw [Finset.sum_congr rfl (fun j _ => h_factor j), ← Finset.mul_sum]
+  by_cases hmℓ : m - ℓ ∈ S
+  · -- m - ℓ ∈ S: inner j-sum vanishes by collinearity.
+    rw [sqgVelocitySymbol_mul_derivSymbol_sum_zero_of_cross_zero ℓ (m - ℓ)
+          (hS ℓ hℓ_S (m - ℓ) hmℓ),
+        mul_zero]
+  · -- m - ℓ ∉ S: θ̂(m-ℓ) = 0 kills the factor.
+    rw [mFourierCoeff_shellMode, if_neg hmℓ, mul_zero, zero_mul]
+
+/-- **Collinear stationary SQG — `IsSqgWeakSolution`.** Analogue of
+`isSqgWeakSolution_shellMode_const` (§10.34) for collinear support. -/
+theorem isSqgWeakSolution_shellMode_const_of_collinear
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsCollinear S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    IsSqgWeakSolution
+        (fun _ : ℝ => shellMode S a)
+        (fun (j : Fin 2) (_ : ℝ) => shellVelocity S a j) where
+  duhamel := fun m s t _ _ => by
+    have h_integrand :
+        (fun τ : ℝ => sqgNonlinearFlux
+            ((fun _ : ℝ => shellMode S a) τ)
+            (fun j : Fin 2 =>
+              (fun (j : Fin 2) (_ : ℝ) => shellVelocity S a j) j τ) m)
+          = fun _ => (0 : ℂ) := by
+      funext τ
+      exact sqgNonlinearFlux_shellMode_eq_zero_of_collinear hS a m
+    rw [h_integrand]
+    simp
+
+/-- **`SqgEvolutionAxioms_strong.shellMode_const_of_collinear`.**
+Companion multi-mode discharge for collinear support, parallel to
+§10.34's radial-shell version. Routes through
+`of_IsSqgWeakSolution_via_MMP` with MMP discharged by finite-support
+Ḣ¹ summability. Subsumes §10.28 (singleMode) and §10.31 (antipodal)
+as the special cases |S| = 1 and |S| = 2 where the collinearity
+reduces to the trivial direction. -/
+theorem SqgEvolutionAxioms_strong.shellMode_const_of_collinear
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsCollinear S)
+    (a : (Fin 2 → ℤ) → ℂ) :
+    SqgEvolutionAxioms_strong (fun _ : ℝ => shellMode S a) := by
+  have hSumm : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 n) ^ 2 *
+        ‖mFourierCoeff (shellMode S a) n‖ ^ 2) :=
+    hsSeminormSq_summable_of_finite_support 1 (shellMode S a) S
+      (fun n hn => mFourierCoeff_shellMode_eq_zero_of_not_mem S a hn)
+  exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    (sqgEvolutionAxioms_shellMode_const S a)
+    (MaterialMaxPrinciple.of_const (shellMode S a) hSumm)
+    (fun j _ => shellVelocity S a j)
+    (fun j _ => isSqgVelocityComponent_shellMode S a j)
+    (isSqgWeakSolution_shellMode_const_of_collinear hS a)
+
 end SqgIdentity
