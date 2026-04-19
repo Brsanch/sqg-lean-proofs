@@ -12427,8 +12427,9 @@ lemma latticeNorm_add_sq_sub_sq {d : Type*} [Fintype d] (k ℓ : d → ℤ) :
       = ∑ j, ((k j : ℝ) ^ 2 + 2 * ((k j : ℝ) * (ℓ j : ℝ)) + (ℓ j : ℝ) ^ 2) := by
     apply Finset.sum_congr rfl
     intros j _
-    have : ((k + ℓ) j : ℝ) = (k j : ℝ) + (ℓ j : ℝ) := by push_cast; rfl
-    rw [this]; ring
+    have hCast : ((k + ℓ) j : ℝ) = (k j : ℝ) + (ℓ j : ℝ) := by
+      simp only [Pi.add_apply, Int.cast_add]
+    rw [hCast]; ring
   rw [hSum, Finset.sum_add_distrib, Finset.sum_add_distrib, ← Finset.mul_sum]
   ring
 
@@ -12458,8 +12459,7 @@ lemma abs_latticeNorm_add_sq_sub_sq_le {d : Type*} [Fintype d] (k ℓ : d → �
   have hSqNn : 0 ≤ (latticeNorm ℓ) ^ 2 := sq_nonneg _
   have hSumBd : |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ))|
       ≤ 2 * (latticeNorm k * latticeNorm ℓ) := by
-    rw [show |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ))| = 2 * |∑ j, (k j : ℝ) * (ℓ j : ℝ)| from by
-          rw [abs_mul]; simp [abs_of_pos (by norm_num : (0 : ℝ) < 2)]]
+    rw [abs_mul, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 2)]
     exact mul_le_mul_of_nonneg_left hCS (by norm_num : (0 : ℝ) ≤ 2)
   have hTri : |2 * (∑ j, (k j : ℝ) * (ℓ j : ℝ)) + (latticeNorm ℓ) ^ 2|
       ≤ 2 * (latticeNorm k * latticeNorm ℓ) + (latticeNorm ℓ) ^ 2 := by
