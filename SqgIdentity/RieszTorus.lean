@@ -12107,4 +12107,43 @@ theorem MaterialMaxPrinciple.of_finite_support_uniform
   materialSegmentExpansion := trivial
   farFieldBoundary := trivial
 
+/-! ### §10.55 Mode-wise FTC for Galerkin trajectories
+
+Given a Galerkin solution `α : ℝ → (↥S → ℂ)` satisfying
+`HasDerivAt α (galerkinVectorField S (α τ)) τ` at every `τ`, the
+mode-wise difference `α t m - α s m` equals the interval integral of
+the mode-projected vector field over `[s, t]`.
+
+Direct consequence of mathlib's `intervalIntegral.integral_eq_sub_of_hasDerivAt`
+after projecting `α` and its derivative to a single coordinate via
+`hasDerivAt_pi`. Continuity of the integrand follows from continuity
+of `α` (every `HasDerivAt` is continuous) composed with continuity of
+`galerkinVectorField` (§10.39).
+
+Combining with §10.48 `galerkinRHS_eq_neg_sqgNonlinearFlux`, this
+gives the Duhamel identity at the Galerkin level — `θ̂(m, t) - θ̂(m, s)
+= -∫_s^t sqgNonlinearFlux` — the final piece needed to show the
+Galerkin lift is an `IsSqgWeakSolution` for modes `m ∈ S`. -/
+
+theorem galerkin_mode_FTC
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, HasDerivAt α (galerkinVectorField S (α τ)) τ)
+    (m : ↥S) (s t : ℝ) :
+    α t m - α s m = ∫ τ in s..t, (galerkinVectorField S (α τ)) m := by
+  have hProj : ∀ τ, HasDerivAt (fun τ => α τ m)
+      ((galerkinVectorField S (α τ)) m) τ :=
+    fun τ => (hasDerivAt_pi.mp (hα τ)) m
+  have hα_cont : Continuous α :=
+    continuous_iff_continuousAt.mpr (fun τ => (hα τ).continuousAt)
+  have hGVF_cont : Continuous (galerkinVectorField S) :=
+    galerkinVectorField_continuous S
+  have h_integrand_cont :
+      Continuous (fun τ => (galerkinVectorField S (α τ)) m) :=
+    (continuous_apply m).comp (hGVF_cont.comp hα_cont)
+  symm
+  apply intervalIntegral.integral_eq_sub_of_hasDerivAt
+  · intros τ _; exact hProj τ
+  · exact h_integrand_cont.intervalIntegrable _ _
+
 end SqgIdentity
