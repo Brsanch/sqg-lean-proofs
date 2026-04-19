@@ -13608,11 +13608,18 @@ lemma sum_pair_diff_eq_sum_pairIdx
   -- Step 1: convert double sum (filter inside) to single sum (filter outside).
   have hCombine : (∑ m ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), F (m, ℓ))
                 = ∑ p ∈ (S ×ˢ S).filter (fun p => p.1 - p.2 ∈ S), F p := by
+    -- Inner sum filter → if-then-else
+    have hInner : ∀ m ∈ S,
+        (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), F (m, ℓ))
+          = ∑ ℓ ∈ S, if m - ℓ ∈ S then F (m, ℓ) else 0 := by
+      intros m _; rw [Finset.sum_filter]
+    rw [Finset.sum_congr rfl hInner]
+    -- Combine product
+    rw [← Finset.sum_product
+          (f := fun p : (Fin 2 → ℤ) × (Fin 2 → ℤ) =>
+                  if p.1 - p.2 ∈ S then F p else 0)]
+    -- Outer if-then-else → filter (back direction)
     rw [Finset.sum_filter]
-    rw [show (∑ m ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), F (m, ℓ))
-            = ∑ m ∈ S, ∑ ℓ ∈ S, if m - ℓ ∈ S then F (m, ℓ) else 0 from
-          Finset.sum_congr rfl (fun m _ => Finset.sum_filter _ _)]
-    rw [← Finset.sum_product]
   rw [hCombine]
   -- Step 2: bijection (m, ℓ) ↦ (m - ℓ, ℓ) on (S ×ˢ S).filter (m - ℓ ∈ S) → pairIdx S.
   refine Finset.sum_nbij' (fun p => (p.1 - p.2, p.2)) (fun p => (p.1 + p.2, p.2)) ?_ ?_ ?_ ?_ ?_
@@ -13632,12 +13639,10 @@ lemma sum_pair_diff_eq_sum_pairIdx
     rwa [add_sub_cancel_right]
   · intros p _
     obtain ⟨k, ℓ⟩ := p
-    show (k + ℓ - ℓ, ℓ) = (k, ℓ)
-    rw [add_sub_cancel_right]
+    simp only [add_sub_cancel_right]
   · intros p _
     obtain ⟨m, ℓ⟩ := p
-    show (m - ℓ + ℓ, ℓ) = (m, ℓ)
-    rw [sub_add_cancel]
+    simp only [sub_add_cancel]
   · intros p _
     obtain ⟨m, ℓ⟩ := p
     show F (m, ℓ) = F ((m - ℓ) + ℓ, ℓ)
@@ -13654,11 +13659,11 @@ This is the per-pair piece of the §10.82 main identity. -/
 
 /-- **Energy summand factorization at fixed `(k, ℓ)`.** -/
 lemma energySummand_eq_advectionSummand_add_commutatorSummand
-    (c̃ : (Fin 2 → ℤ) → ℂ) {k ℓ : Fin 2 → ℤ} (hkℓ : k + ℓ ≠ 0) :
-    (((fracDerivSymbol 2 (k + ℓ)) ^ 2 : ℝ) : ℂ) * star (c̃ (k + ℓ))
-        * c̃ ℓ * c̃ k * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
-      = advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c̃ ℓ') c̃ (k, ℓ)
-        + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c̃ ℓ') c̃ (k, ℓ) := by
+    (c' : (Fin 2 → ℤ) → ℂ) {k ℓ : Fin 2 → ℤ} (hkℓ : k + ℓ ≠ 0) :
+    (((fracDerivSymbol 2 (k + ℓ)) ^ 2 : ℝ) : ℂ) * star (c' (k + ℓ))
+        * c' ℓ * c' k * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
+      = advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' (k, ℓ)
+        + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' (k, ℓ) := by
   rw [advectionSummand_add_commutatorSummand]
   rw [fracDerivSymbol_two_eq hkℓ]
   unfold derivSymbol
