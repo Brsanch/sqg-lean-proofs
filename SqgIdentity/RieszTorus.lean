@@ -13718,11 +13718,11 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
     (c : ↥S → ℂ) :
     (∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
         (2 * (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m))))
-      = -2 * (∑ p ∈ pairIdx S,
+      = -2 * (∑ p ∈ pairIdx S, (
           advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-            (galerkinExtend S c) p
+              (galerkinExtend S c) p
           + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-            (galerkinExtend S c) p).re := by
+              (galerkinExtend S c) p)).re := by
   set c' := galerkinExtend S c
   -- Step 1: per-term inner-product → Re conversion + factor extraction.
   have hTerm : ∀ m : ↥S,
@@ -14029,5 +14029,77 @@ theorem trigPolyEnergyHs2_deriv_abs_le
               le_trans h_re_le_norm (le_trans h_norm_le_sum hSumBound)
             nlinarith
     _ = 24 * D^5 * M * (S.card : ℝ)^2 * E := by ring
+
+/-! ### §10.87 Top-level `BKMCriterionS2` from Galerkin dynamics + L^∞ bound
+
+The complete capstone: combining §10.69 (HasDerivAt formula), §10.86
+(energy inequality), and §10.78 (`BKMCriterionS2.of_galerkin_energy_inequality`),
+we obtain `BKMCriterionS2` from Galerkin dynamics plus a uniform L^∞ bound
+on the coefficients along the trajectory, discharging the energy-inequality
+hypothesis automatically.
+
+K = 24 · D⁵ · M · |S|². -/
+
+/-- **BKMCriterionS2 from Galerkin dynamics + L^∞ bound.** Top-level capstone
+of the §10.61-§10.87 chain. -/
+theorem BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S) (hSym : IsSymmetricSupport S)
+    {D : ℝ} (hD_nn : 0 ≤ D) (hSupport_le : ∀ n ∈ S, latticeNorm n ≤ D)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealCoeff : ∀ τ : ℝ, ∀ n ∈ S,
+                    galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    {M T M₀ : ℝ} (hT_pos : 0 < T) (hM_nn : 0 ≤ M) (hM₀_nn : 0 ≤ M₀)
+    (hCBound : ∀ τ ∈ Set.Icc (0:ℝ) T, ∀ m, ‖galerkinExtend S (α τ) m‖ ≤ M)
+    (hZeroMode : ∀ τ : ℝ, 0 ≤ τ → τ ≤ T →
+      ‖mFourierCoeff (galerkinToLp S (α τ)) (0 : Fin 2 → ℤ)‖ ≤ M₀)
+    (hExtend : ∀ τ : ℝ, T < τ →
+      ∀ n, mFourierCoeff (galerkinToLp S (α τ)) n = 0) :
+    BKMCriterionS2 (fun τ => galerkinToLp S (α τ)) := by
+  set K : ℝ := 24 * D^5 * M * (S.card : ℝ)^2 with hK_def
+  have hK_nn : 0 ≤ K := by unfold_let K; positivity
+  -- Support condition for BKM.
+  have hSupport : ∀ τ : ℝ, ∀ n ∉ S,
+      mFourierCoeff (galerkinToLp S (α τ)) n = 0 := by
+    intros τ n hn
+    rw [mFourierCoeff_galerkinToLp]
+    exact galerkinExtend_apply_of_not_mem _ _ hn
+  -- Energy's derivative from §10.69.
+  have hE_hasDeriv : ∀ τ, HasDerivAt (fun t => trigPolyEnergyHs2 S (α t))
+      (∑ m : ↥S, (fracDerivSymbol 2 m.val)^2 *
+        (2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m)))) τ :=
+    fun τ => trigPolyEnergyHs2_hasDerivAt α hα τ
+  -- ContinuousOn from HasDerivAt everywhere.
+  have hE_cont : ContinuousOn
+      (fun t => trigPolyEnergyHs2 S (α t)) (Set.Icc 0 T) := by
+    refine Continuous.continuousOn ?_
+    exact continuous_iff_continuousAt.mpr (fun τ => (hE_hasDeriv τ).continuousAt)
+  -- HasDerivWithinAt from HasDerivAt via `.hasDerivWithinAt`.
+  have hE_deriv : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      HasDerivWithinAt (fun t => trigPolyEnergyHs2 S (α t))
+        (deriv (fun t => trigPolyEnergyHs2 S (α t)) x) (Set.Ici x) x := by
+    intros x _
+    have h := hE_hasDeriv x
+    rw [h.deriv]
+    exact h.hasDerivWithinAt
+  -- Energy bound from §10.86.
+  have hE_bound : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |deriv (fun t => trigPolyEnergyHs2 S (α t)) x|
+        ≤ K * |trigPolyEnergyHs2 S (α x)| := by
+    intros x hx
+    have h_in_Icc : x ∈ Set.Icc (0:ℝ) T := ⟨hx.1, hx.2.le⟩
+    have hBound := trigPolyEnergyHs2_deriv_abs_le h0 hSym hD_nn hSupport_le hM_nn
+                    (α x) (hRealCoeff x) (hCBound x h_in_Icc)
+    rw [(hE_hasDeriv x).deriv]
+    have h_E_nn : 0 ≤ trigPolyEnergyHs2 S (α x) := trigPolyEnergyHs2_nonneg (α x)
+    calc |∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
+              (2 * (@inner ℝ ℂ _ (α x m) (galerkinVectorField S (α x) m)))|
+        ≤ 24 * D^5 * M * (S.card : ℝ)^2 * trigPolyEnergyHs2 S (α x) := hBound
+      _ = K * trigPolyEnergyHs2 S (α x) := by unfold_let K; ring
+      _ = K * |trigPolyEnergyHs2 S (α x)| := by rw [abs_of_nonneg h_E_nn]
+  -- Apply §10.78.
+  exact BKMCriterionS2.of_galerkin_energy_inequality α hSupport K T M₀ hT_pos hK_nn hM₀_nn
+    hE_cont hE_deriv hE_bound hZeroMode hExtend
 
 end SqgIdentity
