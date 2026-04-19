@@ -14503,4 +14503,91 @@ theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_suppo
   exact SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support
     α hα hE hFluxBound
 
+/-! ### §10.95 Ḣ⁰ advection cancellation
+
+Parallel to the Ḣ² advection cancellation of §10.73-§10.74, but without
+the `|k|²·|k+ℓ|²` weights. Used for L² conservation: the Fourier form of
+`Re ⟨θ, u·∇θ⟩ = 0` under `div u = 0`.
+
+Summand: `F(k, ℓ) = i · (k · û(ℓ)) · c(k) · star(c(k+ℓ))`. Under `advectionSwap`
+(defined in §10.70) and div-free + real-Fourier hypotheses on `u`,
+`F(σ p) + star(F p) = 0`, giving `Re(Σ F) = 0` via the same pair-swap
+cancellation as §10.74. -/
+
+/-- **Ḣ⁰ advection pair-summand** at `(k, ℓ)`. Strips the `|k|²·|k+ℓ|²`
+weights of `advectionSummand` (§10.72); the `Complex.I` prefix from
+`derivSymbol` is retained because it is essential for the
+`star I = -I` cancellation. -/
+noncomputable def advectionSummandH0
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) : ℂ :=
+  Complex.I * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
+    * c p.1 * star (c (p.1 + p.2))
+
+/-- **Kernel identity for Ḣ⁰:** `advectionSummandH0 (τ p) + star (advectionSummandH0 p)
+= 0` under div-free + reality hypotheses. Simpler than §10.73 because no
+real-norm squared factors need to be handled. -/
+theorem advectionSummandH0_swap_add_star_eq_zero
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) :
+    advectionSummandH0 u c (advectionSwap p) + star (advectionSummandH0 u c p) = 0 := by
+  obtain ⟨k, ℓ⟩ := p
+  unfold advectionSummandH0
+  simp only [advectionSwap_apply]
+  rw [show (k + ℓ) + -ℓ = k from by abel]
+  rw [advection_jsum_swap_eq_star hDivFree hReal]
+  have hSI : star Complex.I = -Complex.I := Complex.conj_I
+  have hStarProd :
+      star (Complex.I
+              * (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+              * c k * star (c (k + ℓ)))
+        = -Complex.I
+            * star (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+            * star (c k) * c (k + ℓ) := by
+    simp only [star_mul', hSI, star_star]
+  rw [hStarProd]
+  ring
+
+/-- **Reindex via `advectionSwap` for Ḣ⁰:** `Σ F p = Σ F (σ p)` on `pairIdx S`. -/
+theorem advectionSumH0_reindex_swap
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ) :
+    (∑ p ∈ pairIdx S, advectionSummandH0 u c p)
+      = ∑ p ∈ pairIdx S, advectionSummandH0 u c (advectionSwap p) := by
+  apply Finset.sum_nbij' (fun p => advectionSwap p) (fun p => advectionSwap p)
+  · intros p hp; exact advectionSwap_mem_pairIdx hS hp
+  · intros p hp; exact advectionSwap_mem_pairIdx hS hp
+  · intros p _; exact advectionSwap_involutive p
+  · intros p _; exact advectionSwap_involutive p
+  · intros p _; rw [advectionSwap_involutive]
+
+/-- **Ḣ⁰ advection cancellation:** `Σ + star(Σ) = 0`. -/
+theorem advectionSumH0_add_star_eq_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u) :
+    (∑ p ∈ pairIdx S, advectionSummandH0 u c p)
+      + star (∑ p ∈ pairIdx S, advectionSummandH0 u c p) = 0 := by
+  rw [star_sum, advectionSumH0_reindex_swap hS u c, ← Finset.sum_add_distrib]
+  apply Finset.sum_eq_zero
+  intros p _
+  exact advectionSummandH0_swap_add_star_eq_zero hDivFree hReal p
+
+/-- **Ḣ⁰ advection cancellation (real-part form):** `Re(Σ F) = 0`. -/
+theorem advectionSumH0_re_eq_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u) :
+    (∑ p ∈ pairIdx S, advectionSummandH0 u c p).re = 0 := by
+  have h : (∑ p ∈ pairIdx S, advectionSummandH0 u c p)
+             + star (∑ p ∈ pairIdx S, advectionSummandH0 u c p) = 0 :=
+    advectionSumH0_add_star_eq_zero hS hDivFree hReal
+  have h_re := congr_arg Complex.re h
+  rw [Complex.add_re, star_re_complex, Complex.zero_re] at h_re
+  linarith
+
 end SqgIdentity
