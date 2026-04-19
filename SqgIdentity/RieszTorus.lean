@@ -11759,4 +11759,120 @@ of `S`.) -/
 def IsRealCoeff (S : Finset (Fin 2 → ℤ)) (c : (Fin 2 → ℤ) → ℂ) : Prop :=
   ∀ n ∈ S, c (-n) = star (c n)
 
+/-! ### §10.47 Galerkin-to-`Lp` lift
+
+Given a Galerkin state `c : ↥S → ℂ`, its canonical `Lp` lift is
+`trigPoly S (galerkinExtend S c)` — a finite-support trigonometric
+polynomial with amplitudes drawn from `c`. This packages the state
+into the `Lp ℂ 2` setting used by `IsSqgWeakSolution`, closing the
+gap between the ODE framework (on `↥S → ℂ`) and the PDE framework
+(on `Lp ℂ 2`).
+
+Given a Galerkin trajectory `α : ℝ → (↥S → ℂ)`, the `Lp` trajectory
+is `fun t => galerkinToLp S (α t)`. -/
+
+/-- Lift a Galerkin state to `Lp` via `trigPoly`. -/
+noncomputable def galerkinToLp
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  trigPoly S (galerkinExtend S c)
+
+/-- Closed-form Fourier coefficients of `galerkinToLp`. -/
+theorem mFourierCoeff_galerkinToLp
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (m : Fin 2 → ℤ) :
+    mFourierCoeff (galerkinToLp S c) m = galerkinExtend S c m := by
+  unfold galerkinToLp
+  rw [mFourierCoeff_trigPoly]
+  by_cases hm : m ∈ S
+  · rw [if_pos hm, galerkinExtend_apply_of_mem _ _ hm]
+  · rw [if_neg hm, galerkinExtend_apply_of_not_mem _ _ hm]
+
+/-! ### §10.48 Bridge `galerkinVectorField` ↔ `sqgNonlinearFlux`
+
+At the Fourier level, the Galerkin ODE RHS `galerkinVectorField S c`
+equals (minus) the SQG nonlinear flux of the lifted `shellMode`
+paired with the lifted `shellVelocity` — restricted to the shell
+support. This is the algebraic content that makes Galerkin-ODE
+solutions satisfy the same mode-wise evolution equation as SQG weak
+solutions on span `{e_n : n ∈ S}`.
+
+For modes outside `S`, both sides are zero (velocity support), but
+the lifted Galerkin trajectory only tracks the shell modes anyway, so
+the Galerkin ODE is equivalent to the SQG mode-wise equation on `S`. -/
+
+/-- Galerkin RHS on the extended coefficient function equals `-sqgNonlinearFlux`
+at every mode `m ∈ S`. Both sides decompose as the same Finset sum over
+`{ℓ ∈ S : m-ℓ ∈ S}` of `a(ℓ) · a(m-ℓ) · C(ℓ, m-ℓ)`. -/
+theorem galerkinRHS_eq_neg_sqgNonlinearFlux
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ)) (c : ↥S → ℂ) (m : Fin 2 → ℤ) :
+    galerkinRHS S (galerkinExtend S c) m
+      = -sqgNonlinearFlux (galerkinToLp S c)
+          (shellVelocity S (galerkinExtend S c) ·) m := by
+  -- Show sqgNonlinearFlux equals the positive Finset.sum over the filter.
+  have h_flux : sqgNonlinearFlux (galerkinToLp S c)
+          (shellVelocity S (galerkinExtend S c) ·) m
+        = ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+            galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ)
+              * (∑ j : Fin 2,
+                  sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+    unfold sqgNonlinearFlux
+    have h_tsum_eq : ∀ j : Fin 2,
+        fourierConvolution
+            (fun ℓ => mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ)
+            (fun ℓ => derivSymbol j ℓ
+                      * mFourierCoeff (galerkinToLp S c) ℓ) m
+          = ∑ ℓ ∈ S,
+              mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ
+                * (derivSymbol j (m - ℓ)
+                   * mFourierCoeff (galerkinToLp S c) (m - ℓ)) := by
+      intro j
+      unfold fourierConvolution
+      apply tsum_eq_sum
+      intro ℓ hℓ
+      simp only [mFourierCoeff_shellVelocity, if_neg hℓ, zero_mul]
+    rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq j), Finset.sum_comm]
+    have h_factor : ∀ ℓ ∈ S,
+        (∑ j : Fin 2,
+          mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ
+            * (derivSymbol j (m - ℓ)
+               * mFourierCoeff (galerkinToLp S c) (m - ℓ)))
+          = galerkinExtend S c ℓ
+            * mFourierCoeff (galerkinToLp S c) (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+      intros ℓ hℓ
+      have h_each : ∀ j : Fin 2,
+          mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ
+            * (derivSymbol j (m - ℓ)
+               * mFourierCoeff (galerkinToLp S c) (m - ℓ))
+            = galerkinExtend S c ℓ
+              * mFourierCoeff (galerkinToLp S c) (m - ℓ)
+              * (sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+        intro j
+        rw [mFourierCoeff_shellVelocity, if_pos hℓ,
+            galerkinExtend_apply_of_mem _ _ hℓ]
+        ring
+      rw [Finset.sum_congr rfl (fun j _ => h_each j), ← Finset.mul_sum]
+    rw [Finset.sum_congr rfl h_factor]
+    have h_if : ∀ ℓ ∈ S,
+        galerkinExtend S c ℓ
+          * mFourierCoeff (galerkinToLp S c) (m - ℓ)
+          * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+          = if m - ℓ ∈ S then
+              galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ)
+                * (∑ j : Fin 2,
+                    sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+            else 0 := by
+      intros ℓ _
+      rw [mFourierCoeff_galerkinToLp]
+      split_ifs with hmℓ
+      · rfl
+      · rw [galerkinExtend_apply_of_not_mem _ _ hmℓ, mul_zero, zero_mul]
+    rw [Finset.sum_congr rfl h_if, ← Finset.sum_filter]
+  -- Now conclude: galerkinRHS S (ext c) m = -(h_flux RHS) = -h_flux
+  rw [h_flux]
+  unfold galerkinRHS
+  rfl
+
 end SqgIdentity
