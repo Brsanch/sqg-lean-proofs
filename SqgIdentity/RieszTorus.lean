@@ -13433,14 +13433,18 @@ lemma commutatorSummand_norm_le_on_support
   have hDiffSq' : Ndiff * Nsq ≤ 6 * D ^ 4 := hDiffSq
   have hJsum_le' : Nj ≤ D * SumU := hJsum_le
   have hD_nn4 : 0 ≤ 6 * D ^ 4 := by positivity
-  calc Ndiff * Nsq * Nj * ‖c k‖ * ‖c (k + ℓ)‖
+  calc Ndiff * (Nsq * (Nj * (‖c k‖ * ‖c (k + ℓ)‖)))
       = (Ndiff * Nsq) * Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
     _ ≤ (6 * D ^ 4) * Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by
-        have : 0 ≤ Nj * ‖c k‖ * ‖c (k + ℓ)‖ := by positivity
-        nlinarith [hDiffSq', hNj_nn, hCK_nn, hCKL_nn]
+        have h1 : 0 ≤ Nj := hNj_nn
+        have h2 : 0 ≤ ‖c k‖ := hCK_nn
+        have h3 : 0 ≤ ‖c (k + ℓ)‖ := hCKL_nn
+        nlinarith [hDiffSq', h1, h2, h3, mul_nonneg (mul_nonneg h1 h2) h3]
     _ ≤ (6 * D ^ 4) * (D * SumU) * ‖c k‖ * ‖c (k + ℓ)‖ := by
-        have : 0 ≤ 6 * D ^ 4 * ‖c k‖ * ‖c (k + ℓ)‖ := by positivity
-        nlinarith [hJsum_le', hD_nn4, hCK_nn, hCKL_nn]
+        have h1 : (0 : ℝ) ≤ 6 * D ^ 4 := hD_nn4
+        have h2 : 0 ≤ ‖c k‖ := hCK_nn
+        have h3 : 0 ≤ ‖c (k + ℓ)‖ := hCKL_nn
+        nlinarith [hJsum_le', h1, h2, h3, mul_nonneg (mul_nonneg h1 h2) h3]
     _ = 6 * D ^ 5 * SumU * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
 
 end SqgIdentity
