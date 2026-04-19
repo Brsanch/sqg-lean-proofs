@@ -12146,4 +12146,43 @@ theorem galerkin_mode_FTC
   · intros τ _; exact hProj τ
   · exact h_integrand_cont.intervalIntegrable _ _
 
+/-! ### §10.57 Finite-support BKMCriterionS2 with uniform coefficient bound
+
+Parallel companion to §10.56 `MaterialMaxPrinciple.of_finite_support_uniform`.
+For any time-varying θ with finite Fourier support on `S` and uniform
+coefficient bound `M`, `BKMCriterionS2` holds unconditionally: every
+Ḣˢ seminorm (s ∈ (1, 2]) is bounded by `M² · ∑_{n∈S} (fracDerivSymbol s n)²`.
+
+Together §10.56 + §10.57 discharge BOTH remaining analytic axioms of
+the conditional Theorem 3 chain (`MaterialMaxPrinciple` + `BKMCriterionS2`)
+for the class of finite-Fourier-support trajectories with uniform
+coefficient bound. Consequence: `sqg_regularity_via_s2_bootstrap`
+applied to this class gives an **unconditional** Ḣˢ bound on `[0, 2]`
+for any such θ — and combined with `of_IsSqgWeakSolution_via_MMP`,
+any such θ that is a Galerkin/weak solution admits a full
+`SqgEvolutionAxioms_strong` discharge without any open axiom. -/
+
+theorem BKMCriterionS2.of_finite_support_uniform
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (M : ℝ)
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖mFourierCoeff (θ τ) n‖ ≤ M) :
+    BKMCriterionS2 θ where
+  hsPropagationS2 := fun _ s _ _ => by
+    refine ⟨M ^ 2 * (∑ n ∈ S, (fracDerivSymbol s n) ^ 2), ?_⟩
+    intros t ht
+    unfold hsSeminormSq
+    rw [tsum_eq_sum (s := S) (fun n hn => by
+      rw [hSupport t n hn, norm_zero]; ring)]
+    calc ∑ n ∈ S, (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (θ t) n‖ ^ 2
+        ≤ ∑ n ∈ S, (fracDerivSymbol s n) ^ 2 * M ^ 2 := by
+          apply Finset.sum_le_sum
+          intros n _
+          apply mul_le_mul_of_nonneg_left _ (sq_nonneg _)
+          exact pow_le_pow_left₀ (norm_nonneg _) (hBound t ht n) 2
+      _ = M ^ 2 * ∑ n ∈ S, (fracDerivSymbol s n) ^ 2 := by
+          rw [Finset.mul_sum]; apply Finset.sum_congr rfl
+          intros n _; ring
+
 end SqgIdentity
