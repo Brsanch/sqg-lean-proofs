@@ -14337,4 +14337,170 @@ theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support
     hFluxBound
     (IsSqgWeakSolutionOnSupport.of_galerkin_dynamics α hα)
 
+/-! ### §10.93 Per-mode flux bound from uniform L∞ (Phase-2 input)
+
+Derives `hFluxBound` of §10.92 from a uniform ℓ∞ bound on the Galerkin
+coefficient vector, closing the remaining abstract hypothesis.
+
+Flux bound (Young-type) from `sqgNonlinearFlux_bounded`:
+  `‖flux‖ ≤ ∑_{j=0,1} (‖u_j‖²_{ℓ²} + ‖∇ⱼθ‖²_{ℓ²}) / 2`.
+For Galerkin:
+- `‖u_j‖²_{ℓ²} ≤ M² · |S|` via `‖sqgVelocitySymbol‖ ≤ 1` + Parseval.
+- `‖∇ⱼθ‖²_{ℓ²} ≤ M² · ∑_{ℓ∈S} (fracDerivSymbol 1 ℓ)²` via §10.12's
+  `norm_derivSymbol_sq_le_fracDerivSymbol_one_sq`.
+Summing over the two directions gives `M²·|S| + M²·∑_{ℓ∈S} σ₁(ℓ)²`. -/
+
+/-- **Galerkin θ-norm ℓ² tsum bounded by `M²·|S|` under uniform L∞.** -/
+lemma theta_fourier_tsum_le_galerkin_of_L_inf
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {M : ℝ}
+    (hBound : ∀ n, ‖galerkinExtend S c n‖ ≤ M) :
+    (∑' ℓ, ‖mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2)
+      ≤ M ^ 2 * (S.card : ℝ) := by
+  rw [tsum_eq_sum (s := S) (by
+    intros ℓ hℓ
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hℓ,
+        norm_zero]; ring)]
+  calc ∑ ℓ ∈ S, ‖mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2
+      = ∑ ℓ ∈ S, ‖galerkinExtend S c ℓ‖ ^ 2 :=
+        Finset.sum_congr rfl (fun ℓ _ => by rw [mFourierCoeff_galerkinToLp])
+    _ ≤ ∑ _ℓ ∈ S, M ^ 2 :=
+        Finset.sum_le_sum (fun ℓ _ =>
+          pow_le_pow_left₀ (norm_nonneg _) (hBound ℓ) 2)
+    _ = M ^ 2 * (S.card : ℝ) := by
+        rw [Finset.sum_const, nsmul_eq_mul]; ring
+
+/-- **Galerkin velocity ℓ² tsum bounded by `M²·|S|` under uniform L∞.**
+Chains through `IsSqgVelocityComponent` (via §10.27's
+`isSqgVelocityComponent_shellMode`, which applies definitionally since
+`galerkinToLp = shellMode ∘ galerkinExtend`) and
+`velocity_fourier_tsum_le_of_IsSqgVelocityComponent`. -/
+lemma velocity_fourier_tsum_le_galerkin_of_L_inf
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {M : ℝ}
+    (hBound : ∀ n, ‖galerkinExtend S c n‖ ≤ M)
+    (j : Fin 2) :
+    (∑' ℓ, ‖mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ‖ ^ 2)
+      ≤ M ^ 2 * (S.card : ℝ) := by
+  have h_vel : IsSqgVelocityComponent (galerkinToLp S c)
+      (shellVelocity S (galerkinExtend S c) j) j :=
+    isSqgVelocityComponent_shellMode S (galerkinExtend S c) j
+  calc (∑' ℓ, ‖mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ‖ ^ 2)
+      ≤ ∑' ℓ, ‖mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2 :=
+        velocity_fourier_tsum_le_of_IsSqgVelocityComponent _ _ j h_vel
+    _ ≤ M ^ 2 * (S.card : ℝ) :=
+        theta_fourier_tsum_le_galerkin_of_L_inf c hBound
+
+/-- **Galerkin gradient ℓ² tsum bounded under uniform L∞.** Finite-support
+sum against `fracDerivSymbol 1` weights. -/
+lemma gradient_fourier_tsum_le_galerkin_of_L_inf
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {M : ℝ}
+    (hBound : ∀ n, ‖galerkinExtend S c n‖ ≤ M)
+    (j : Fin 2) :
+    (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2)
+      ≤ M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 := by
+  rw [tsum_eq_sum (s := S) (by
+    intros ℓ hℓ
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hℓ,
+        mul_zero, norm_zero]; ring)]
+  calc ∑ ℓ ∈ S, ‖derivSymbol j ℓ * mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2
+      = ∑ ℓ ∈ S, ‖derivSymbol j ℓ‖ ^ 2 * ‖galerkinExtend S c ℓ‖ ^ 2 := by
+        apply Finset.sum_congr rfl
+        intros ℓ _
+        rw [mFourierCoeff_galerkinToLp, norm_mul, mul_pow]
+    _ ≤ ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 * M ^ 2 := by
+        apply Finset.sum_le_sum
+        intros ℓ _
+        have h1 : ‖derivSymbol j ℓ‖ ^ 2 ≤ (fracDerivSymbol 1 ℓ) ^ 2 :=
+          norm_derivSymbol_sq_le_fracDerivSymbol_one_sq j ℓ
+        have h2 : ‖galerkinExtend S c ℓ‖ ^ 2 ≤ M ^ 2 :=
+          pow_le_pow_left₀ (norm_nonneg _) (hBound ℓ) 2
+        have h_nn : 0 ≤ ‖galerkinExtend S c ℓ‖ ^ 2 := sq_nonneg _
+        have h_frac_nn : 0 ≤ (fracDerivSymbol 1 ℓ) ^ 2 := sq_nonneg _
+        nlinarith
+    _ = M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 := by
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl (fun ℓ _ => by ring)
+
+/-- **Per-mode flux bound for Galerkin trajectories under uniform L∞.**
+Discharges the `hFluxBound` hypothesis of §10.92 with an explicit
+constant depending only on `M` and `S`. -/
+theorem sqgNonlinearFlux_galerkin_bounded_of_L_inf
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {M : ℝ}
+    (hBound : ∀ n, ‖galerkinExtend S c n‖ ≤ M)
+    (m : Fin 2 → ℤ) :
+    ‖sqgNonlinearFlux (galerkinToLp S c)
+        (fun j => shellVelocity S (galerkinExtend S c) j) m‖
+      ≤ M ^ 2 * (S.card : ℝ)
+        + M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 := by
+  -- Summability witnesses: velocity via Parseval, gradient via finite support.
+  have hu_sum : ∀ j : Fin 2,
+      Summable (fun ℓ : Fin 2 → ℤ =>
+        ‖mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ‖ ^ 2) :=
+    fun j => velocity_fourier_summable _
+  have hgrad_sum : ∀ j : Fin 2,
+      Summable (fun ℓ : Fin 2 → ℤ =>
+        ‖derivSymbol j ℓ * mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2) := by
+    intro j
+    apply summable_of_ne_finset_zero (s := S)
+    intros ℓ hℓ
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hℓ,
+        mul_zero, norm_zero]; ring
+  have hFlux := sqgNonlinearFlux_bounded (galerkinToLp S c)
+    (fun j => shellVelocity S (galerkinExtend S c) j) hu_sum hgrad_sum m
+  calc ‖sqgNonlinearFlux (galerkinToLp S c)
+          (fun j => shellVelocity S (galerkinExtend S c) j) m‖
+      ≤ ∑ j : Fin 2,
+          ((∑' ℓ, ‖mFourierCoeff (shellVelocity S (galerkinExtend S c) j) ℓ‖ ^ 2)
+            + (∑' ℓ, ‖derivSymbol j ℓ * mFourierCoeff (galerkinToLp S c) ℓ‖ ^ 2))
+            / 2 := hFlux
+    _ ≤ ∑ _j : Fin 2,
+          (M ^ 2 * (S.card : ℝ)
+            + M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2) / 2 := by
+        apply Finset.sum_le_sum
+        intros j _
+        have h1 := velocity_fourier_tsum_le_galerkin_of_L_inf c hBound j
+        have h2 := gradient_fourier_tsum_le_galerkin_of_L_inf c hBound j
+        linarith
+    _ = M ^ 2 * (S.card : ℝ)
+          + M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 := by
+        rw [Fin.sum_univ_two]; ring
+
+/-! ### §10.94 Phase-2 capstone: Galerkin + L∞ → `SqgEvolutionAxioms_strong`
+
+Self-contained upgrade of §10.92: `hFluxBound` is discharged internally
+via §10.93, so the caller only supplies the Galerkin ODE witness, the
+base `SqgEvolutionAxioms`, and the uniform L∞ coefficient bound. -/
+
+/-- **Galerkin dynamics + uniform L∞ → `SqgEvolutionAxioms_strong`.**
+Composes §10.92 with §10.93's per-mode flux bound. Drops the abstract
+`hFluxBound` hypothesis in favour of the concrete `hBound : ‖α τ n‖ ≤ M`. -/
+theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, HasDerivAt α (galerkinVectorField S (α τ)) τ)
+    (hE : SqgEvolutionAxioms (fun τ => galerkinToLp S (α τ)))
+    {M : ℝ}
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M) :
+    SqgEvolutionAxioms_strong (fun τ => galerkinToLp S (α τ)) := by
+  set K : ℝ := M ^ 2 * (S.card : ℝ)
+    + M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 with hK_def
+  have hK_nn : 0 ≤ K := by
+    have h_card_nn : (0 : ℝ) ≤ (S.card : ℝ) := Nat.cast_nonneg _
+    have h_sum_nn : (0 : ℝ) ≤ ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 :=
+      Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+    have h_M2_nn : (0 : ℝ) ≤ M ^ 2 := sq_nonneg _
+    rw [hK_def]; nlinarith
+  have hFluxBound : ∀ m ∈ S, ∃ Km : ℝ, 0 ≤ Km ∧
+      ∀ τ : ℝ, 0 ≤ τ →
+        ‖sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m‖ ≤ Km :=
+    fun m _ => ⟨K, hK_nn, fun τ hτ => by
+      rw [hK_def]
+      exact sqgNonlinearFlux_galerkin_bounded_of_L_inf (α τ) (hBound τ hτ) m⟩
+  exact SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support
+    α hα hE hFluxBound
+
 end SqgIdentity
