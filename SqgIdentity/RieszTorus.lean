@@ -12986,4 +12986,97 @@ lemma advectionSwap_eq_self_iff
   · rintro rfl
     refine ⟨?_, ?_⟩ <;> simp
 
+/-! ### §10.71 Fourier divergence-free predicate + Riesz instance
+
+Predicate capturing the div-free condition at the Fourier level:
+`IsFourierDivFree u := ∀ ℓ, Σ_j (ℓ_j : ℂ) · u_j ℓ = 0`. In real space
+this is `∇ · u = 0`. Used by §10.73 to kill the leading term of the
+pair-swap cancellation: the kernel `F(τ(k,ℓ)) + conj(F(k,ℓ))`
+factors through `ℓ · û(ℓ)`, which this predicate forces to zero.
+
+The Riesz-transform velocity `u_j ℓ := sqgVelocitySymbol j ℓ · c(ℓ)`
+satisfies `IsFourierDivFree` for any coefficient function `c`, by
+`sqgVelocitySymbol_divergence_free` (already established in §10.8). -/
+
+/-- **Fourier-level divergence-free condition.** -/
+def IsFourierDivFree (u : Fin 2 → (Fin 2 → ℤ) → ℂ) : Prop :=
+  ∀ ℓ : Fin 2 → ℤ, ∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * u j ℓ = 0
+
+/-- **Riesz instance.** The Riesz-transform velocity of any scalar
+Fourier coefficient function is Fourier-div-free. -/
+lemma isFourierDivFree_riesz (c : (Fin 2 → ℤ) → ℂ) :
+    IsFourierDivFree (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) := by
+  intros ℓ
+  rw [Fin.sum_univ_two]
+  exact sqgVelocitySymbol_divergence_free ℓ (c ℓ)
+
+/-! ### §10.72 Fourier-reality predicate + Riesz instance
+
+Predicate: `IsRealFourier u := ∀ (j, ℓ), u_j (-ℓ) = star (u_j ℓ)`.
+This is the Fourier-side statement that `u` is real-valued in physical
+space (`u(-n) = conj u(n)` is the Fourier symmetry of real functions).
+
+Used by §10.73 to simplify `F(τ(k,ℓ))`: substituting `û(-ℓ) = star û(ℓ)`
+(along with `sqgVelocitySymbol (-ℓ) = -sqgVelocitySymbol ℓ`, the oddness
+of the Riesz kernel) is what produces the `conj(ℓ · û(ℓ))` factor that
+the `IsFourierDivFree` hypothesis then zeroes out.
+
+For the Riesz velocity of a real-symmetric coefficient function
+(`IsRealCoeff c` + `IsSymmetricSupport S`), the resulting Riesz
+velocity is automatically Fourier-real. -/
+
+/-- **Fourier-level reality condition** (each component). -/
+def IsRealFourier (u : Fin 2 → (Fin 2 → ℤ) → ℂ) : Prop :=
+  ∀ (j : Fin 2) (ℓ : Fin 2 → ℤ), u j (-ℓ) = star (u j ℓ)
+
+/-- **Star identity for the Riesz symbol.** `star (rieszSymbol j n) =
+-rieszSymbol j n`. The Riesz symbol is purely imaginary. -/
+lemma star_rieszSymbol {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
+    star (rieszSymbol j n) = -rieszSymbol j n := by
+  by_cases hn : n = 0
+  · subst hn; simp
+  · unfold rieszSymbol
+    rw [if_neg hn]
+    rw [star_div', star_mul, star_neg, star_one, star_I]
+    have hLR : star (((latticeNorm n : ℝ) : ℂ)) = ((latticeNorm n : ℝ) : ℂ) :=
+      Complex.conj_ofReal _
+    have hnjR : star (((n j : ℝ) : ℂ)) = ((n j : ℝ) : ℂ) :=
+      Complex.conj_ofReal _
+    rw [hnjR, hLR]
+    ring
+
+/-- **Star identity for `sqgVelocitySymbol`.** -/
+lemma star_sqgVelocitySymbol (j : Fin 2) (n : Fin 2 → ℤ) :
+    star (sqgVelocitySymbol j n) = -sqgVelocitySymbol j n := by
+  unfold sqgVelocitySymbol
+  split_ifs
+  · exact star_rieszSymbol 1 n
+  · rw [star_neg, star_rieszSymbol]; ring
+
+/-- **Riesz instance for `IsRealFourier`.** For `c` satisfying
+`IsRealCoeff S c` (and support in `S` for both `ℓ` and `-ℓ`), the
+Riesz velocity is Fourier-real. Stated here in an unconditional form
+that holds pointwise off-support too, because both `c(-ℓ)` and `c(ℓ)`
+vanish off `S` when `S` is symmetric and `c` vanishes off `S`. -/
+lemma isRealFourier_riesz
+    {S : Finset (Fin 2 → ℤ)}
+    (hS : IsSymmetricSupport S)
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hRealC : ∀ n ∈ S, c (-n) = star (c n))
+    (hOff : ∀ n ∉ S, c n = 0) :
+    IsRealFourier (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) := by
+  intros j ℓ
+  by_cases hℓ : ℓ ∈ S
+  · -- ℓ ∈ S: use sqgVelocitySymbol_neg + hRealC.
+    rw [sqgVelocitySymbol_neg, hRealC ℓ hℓ, star_mul, star_sqgVelocitySymbol]
+    ring
+  · -- ℓ ∉ S: c(ℓ) = 0, and also -ℓ ∉ S (hence c(-ℓ) = 0) via hS.mt.
+    have hnegℓ : -ℓ ∉ S := by
+      intro h
+      apply hℓ
+      have := hS (-ℓ) h
+      simpa using this
+    rw [hOff ℓ hℓ, hOff (-ℓ) hnegℓ]
+    simp
+
 end SqgIdentity
