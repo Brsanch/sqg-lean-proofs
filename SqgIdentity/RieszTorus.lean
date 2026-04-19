@@ -14590,4 +14590,79 @@ theorem advectionSumH0_re_eq_zero
   rw [Complex.add_re, star_re_complex, Complex.zero_re] at h_re
   linarith
 
+/-! ### §10.96 Galerkin inner-product real part = 0
+
+Connects the Galerkin RHS sum to `advectionSumH0` via §10.80's pair-Finset
+reindexing. The algebraic identity matches per-pair because §10.80's
+convention `(p.1, p.2) = (m - ℓ, ℓ)` aligns perfectly with
+`advectionSummandH0`'s `(q.1, q.2) = (outgoing-mode, velocity-mode)`. -/
+
+/-- **Galerkin inner-product sum = −`advectionSumH0`.** Identity bridging
+the Galerkin coefficient-sum form to the Ḣ⁰ pair-summand form. -/
+theorem galerkinRHS_inner_sum_eq_neg_advectionSumH0
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : (Fin 2 → ℤ) → ℂ) :
+    (∑ n ∈ S, star (c n) * galerkinRHS S c n)
+      = -∑ p ∈ pairIdx S,
+          advectionSummandH0 (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) c p := by
+  -- Step 1: Unfold galerkinRHS, distribute star(c n) through the outer negation.
+  have h1 :
+      (∑ n ∈ S, star (c n) * galerkinRHS S c n)
+        = -∑ n ∈ S, ∑ ℓ ∈ S.filter (fun ℓ => n - ℓ ∈ S),
+            star (c n) * (c ℓ * c (n - ℓ)
+              * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (n - ℓ))) := by
+    rw [← Finset.sum_neg_distrib]
+    apply Finset.sum_congr rfl
+    intros n _
+    unfold galerkinRHS
+    rw [mul_neg, Finset.mul_sum]
+  rw [h1]
+  -- Step 2: Apply §10.80 reindex to the inner double sum.
+  congr 1
+  rw [sum_pair_diff_eq_sum_pairIdx
+      (F := fun p => star (c p.1) * (c p.2 * c (p.1 - p.2)
+        * (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j (p.1 - p.2))))]
+  -- Step 3: Per-pair identity.
+  apply Finset.sum_congr rfl
+  intros p _
+  show star (c (p.1 + p.2)) * (c p.2 * c ((p.1 + p.2) - p.2)
+      * (∑ j : Fin 2, sqgVelocitySymbol j p.2 * derivSymbol j ((p.1 + p.2) - p.2)))
+    = advectionSummandH0 (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) c p
+  rw [show (p.1 + p.2) - p.2 = p.1 from by abel]
+  unfold advectionSummandH0 derivSymbol
+  have hSumL :
+      (∑ j : Fin 2, sqgVelocitySymbol j p.2 * (I * ((p.1 j : ℝ) : ℂ)))
+        = I * ∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * sqgVelocitySymbol j p.2 := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intros j _; ring
+  have hSumR :
+      (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * (sqgVelocitySymbol j p.2 * c p.2))
+        = c p.2 * ∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * sqgVelocitySymbol j p.2 := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intros j _; ring
+  rw [hSumL, hSumR]
+  ring
+
+/-- **Galerkin inner-product real part vanishes.** Under symmetric support
++ real-coefficient symmetry + off-support vanishing, the real part of
+`∑_{n ∈ S} star(c n) · galerkinRHS S c n` is zero. This is the Fourier
+form of L² conservation `Re ⟨θ, -u·∇θ⟩ = 0` under `div u = 0`. -/
+theorem galerkinRHS_inner_sum_re_eq_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hRealC : ∀ n ∈ S, c (-n) = star (c n))
+    (hOff : ∀ n ∉ S, c n = 0) :
+    (∑ n ∈ S, star (c n) * galerkinRHS S c n).re = 0 := by
+  rw [galerkinRHS_inner_sum_eq_neg_advectionSumH0, Complex.neg_re]
+  have hcancel :
+      (∑ p ∈ pairIdx S,
+        advectionSummandH0 (fun j ℓ => sqgVelocitySymbol j ℓ * c ℓ) c p).re = 0 :=
+    advectionSumH0_re_eq_zero hS
+      (isFourierDivFree_riesz c)
+      (isRealFourier_riesz hS c hRealC hOff)
+  linarith [hcancel]
+
 end SqgIdentity
