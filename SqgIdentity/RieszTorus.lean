@@ -11506,4 +11506,159 @@ theorem galerkinVectorField_contDiff
   · exact galerkinExtend_contDiff_apply S ℓ
   · exact galerkinExtend_contDiff_apply S (↑m - ℓ)
 
+/-! ### §10.42 Local Lipschitz of the Galerkin vector field
+
+Immediate corollary of `galerkinVectorField_contDiff` (§10.41): a
+`C^1` map on a real normed space is Lipschitz on some neighborhood of
+every point. This is the analytic hypothesis feeding into mathlib's
+`IsPicardLindelof` for local ODE existence.
+
+The closed-ball version at an explicit radius (needed to compose with
+Picard-Lindelöf) is deferred, since it requires choosing the ball size
+together with the time interval. -/
+
+/-- **Galerkin vector field is locally Lipschitz.** For any initial
+coefficient `c₀`, there exists a Lipschitz constant `K` and a
+neighborhood `U` of `c₀` on which `galerkinVectorField S` is
+`K`-Lipschitz. -/
+theorem galerkinVectorField_locally_lipschitz
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c₀ : ↥S → ℂ) :
+    ∃ K : ℝ≥0, ∃ U ∈ 𝓝 c₀, LipschitzOnWith K (galerkinVectorField S) U :=
+  ((galerkinVectorField_contDiff S (n := 1)).contDiffAt).exists_lipschitzOnWith
+
+/-! ### §10.43 Unified stationary-shape predicate
+
+Captures both stationary classes from §10.32-§10.40 under one
+predicate: `S` is *stationary-compatible* if every pair `(ℓ, k)` in
+`S × S` has zero pair-sum `C(ℓ, k) + C(k, ℓ) = 0`. This holds on:
+* Radial shells (§10.32): `|ℓ| = |k|` forces pair-sum to 0.
+* Collinear `S` (§10.40): per-pair `C(ℓ, k) = 0` forces pair-sum to 0.
+* More generally, any `S` where both conditions fail but the pair-sum
+  still vanishes (e.g. mixed shells where cross-shell pairs
+  happen to have the sum cancel algebraically — rare but possible).
+
+The unified predicate both *subsumes* the two specific cases and gives
+a single universal discharge theorem for stationary SQG on finite
+support, simplifying downstream consumers. -/
+
+/-- **Stationary-shape predicate.** Every pair in `S × S` has
+vanishing pair-sum of inner j-sums. Generalises `IsRadialShell` and
+`IsCollinear` simultaneously. -/
+def IsStationaryShape (S : Finset (Fin 2 → ℤ)) : Prop :=
+  0 ∉ S ∧ ∀ ℓ ∈ S, ∀ k ∈ S,
+    (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k)
+      + (∑ j : Fin 2, sqgVelocitySymbol j k * derivSymbol j ℓ) = 0
+
+/-- **Radial shell ⟹ stationary shape.** Immediate from the pair-sum
+cross div-free identity of §10.32. -/
+theorem IsStationaryShape.of_isRadialShell
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S) :
+    IsStationaryShape S := by
+  refine ⟨hS.1, fun ℓ hℓ k hk => ?_⟩
+  exact sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq
+    ℓ k (hS.2 ℓ hℓ k hk)
+
+/-- **Collinear ⟹ stationary shape.** Per-pair inner sums vanish
+individually (via `sqgVelocitySymbol_mul_derivSymbol_sum_zero_of_cross_zero`),
+so the pair-sum is trivially 0. Requires `0 ∉ S` separately. -/
+theorem IsStationaryShape.of_isCollinear
+    {S : Finset (Fin 2 → ℤ)} (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (hS : IsCollinear S) :
+    IsStationaryShape S := by
+  refine ⟨h0, fun ℓ hℓ k hk => ?_⟩
+  have h1 : (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k) = 0 :=
+    sqgVelocitySymbol_mul_derivSymbol_sum_zero_of_cross_zero ℓ k (hS ℓ hℓ k hk)
+  have h2 : (∑ j : Fin 2, sqgVelocitySymbol j k * derivSymbol j ℓ) = 0 := by
+    have h_swap : k 0 * ℓ 1 = k 1 * ℓ 0 := by
+      have := hS ℓ hℓ k hk
+      linarith
+    exact sqgVelocitySymbol_mul_derivSymbol_sum_zero_of_cross_zero k ℓ h_swap
+  rw [h1, h2, add_zero]
+
+/-- **Universal flux-zero theorem for stationary-shape `S`.** Same
+Finset.sum_involution structure as §10.33's `sqgNonlinearFlux_shellMode_eq_zero`,
+but keyed on the general `IsStationaryShape` pair-sum condition rather
+than the specific `IsRadialShell` or `IsCollinear`. -/
+theorem sqgNonlinearFlux_shellMode_eq_zero_of_stationaryShape
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsStationaryShape S)
+    (a : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    sqgNonlinearFlux (shellMode S a) (shellVelocity S a ·) m = 0 := by
+  unfold sqgNonlinearFlux
+  have h_tsum_eq : ∀ j : Fin 2,
+      fourierConvolution
+          (fun ℓ => mFourierCoeff (shellVelocity S a j) ℓ)
+          (fun ℓ => derivSymbol j ℓ * mFourierCoeff (shellMode S a) ℓ) m
+        = ∑ ℓ ∈ S,
+            mFourierCoeff (shellVelocity S a j) ℓ
+              * (derivSymbol j (m - ℓ)
+                 * mFourierCoeff (shellMode S a) (m - ℓ)) := by
+    intro j
+    unfold fourierConvolution
+    apply tsum_eq_sum
+    intro ℓ hℓ
+    simp only [mFourierCoeff_shellVelocity, if_neg hℓ, zero_mul]
+  rw [Finset.sum_congr rfl (fun j _ => h_tsum_eq j)]
+  rw [Finset.sum_comm]
+  have h_factor : ∀ ℓ ∈ S,
+      (∑ j : Fin 2,
+        mFourierCoeff (shellVelocity S a j) ℓ
+          * (derivSymbol j (m - ℓ) * mFourierCoeff (shellMode S a) (m - ℓ)))
+        = a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+    intros ℓ hℓ
+    have h_each : ∀ j : Fin 2,
+        mFourierCoeff (shellVelocity S a j) ℓ
+          * (derivSymbol j (m - ℓ) * mFourierCoeff (shellMode S a) (m - ℓ))
+          = a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+              * (sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := by
+      intro j
+      rw [mFourierCoeff_shellVelocity, if_pos hℓ]
+      ring
+    rw [Finset.sum_congr rfl (fun j _ => h_each j), ← Finset.mul_sum]
+  rw [Finset.sum_congr rfl h_factor]
+  have h_rewrite : ∀ ℓ ∈ S,
+      a ℓ * mFourierCoeff (shellMode S a) (m - ℓ)
+        * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+        = if m - ℓ ∈ S then
+            a ℓ * a (m - ℓ)
+              * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+          else 0 := by
+    intros ℓ _
+    rw [mFourierCoeff_shellMode]
+    split_ifs with h
+    · rfl
+    · rw [mul_zero, zero_mul]
+  rw [Finset.sum_congr rfl h_rewrite]
+  rw [← Finset.sum_filter]
+  apply Finset.sum_involution (fun ℓ _ => m - ℓ)
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ
+    obtain ⟨hℓ_S, hmℓ_S⟩ := hℓ
+    have h_pair := hS.2 ℓ hℓ_S (m - ℓ) hmℓ_S
+    have h_sub : m - (m - ℓ) = ℓ := sub_sub_cancel m ℓ
+    rw [h_sub]
+    have hring :
+        a ℓ * a (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+          + a (m - ℓ) * a ℓ
+            * (∑ j : Fin 2, sqgVelocitySymbol j (m - ℓ) * derivSymbol j ℓ)
+          = a ℓ * a (m - ℓ)
+            * ((∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+               + (∑ j : Fin 2, sqgVelocitySymbol j (m - ℓ) * derivSymbol j ℓ))
+          := by ring
+    rw [hring, h_pair, mul_zero]
+  · intros ℓ _ hne h_eq
+    apply hne
+    rw [h_eq, sqgVelocitySymbol_mul_derivSymbol_sum_zero, mul_zero]
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓ_S, hmℓ_S⟩ := hℓ
+    refine ⟨hmℓ_S, ?_⟩
+    rw [sub_sub_cancel]
+    exact hℓ_S
+  · intros ℓ _
+    exact sub_sub_cancel m ℓ
+
 end SqgIdentity
