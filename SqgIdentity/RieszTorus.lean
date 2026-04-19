@@ -14792,4 +14792,53 @@ theorem galerkinToLp_hsSeminormSq_zero_const
   rw [hExp (α s), hExp (α t)]
   exact galerkinEnergyH0_const hS α hα hRealC s t
 
+/-! ### §10.98 `SqgEvolutionAxioms` for Galerkin + Phase-3 final capstone
+
+Wraps §10.97 (L² conservation) with zero-mode triviality (`0 ∉ S`) and
+Riesz velocity witness to produce `SqgEvolutionAxioms` directly from the
+Galerkin ODE hypothesis. Feeds §10.94's Phase-2 capstone to yield a
+fully self-contained `SqgEvolutionAxioms_strong` result — no auxiliary
+hypotheses beyond Galerkin dynamics + structural conditions on `S` +
+real-coefficient symmetry + uniform L∞ bound. -/
+
+/-- **`SqgEvolutionAxioms` for the lifted Galerkin trajectory.** -/
+theorem SqgEvolutionAxioms.of_galerkin_dynamics
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)) :
+    SqgEvolutionAxioms (fun τ => galerkinToLp S (α τ)) where
+  l2Conservation := fun t _ =>
+    galerkinToLp_hsSeminormSq_zero_const h0 hS α hα hRealC t 0
+  meanConservation := fun t _ => by
+    rw [mFourierCoeff_galerkinToLp, mFourierCoeff_galerkinToLp,
+        galerkinExtend_apply_of_not_mem _ _ h0,
+        galerkinExtend_apply_of_not_mem _ _ h0]
+  velocityIsRieszTransform := fun j =>
+    ⟨fun τ => shellVelocity S (galerkinExtend S (α τ)) j,
+      fun τ => isSqgVelocityComponent_shellMode S (galerkinExtend S (α τ)) j⟩
+
+/-- **Phase-3 final capstone: Galerkin + L∞ → `SqgEvolutionAxioms_strong`,
+fully self-contained.** No `hE` hypothesis — `SqgEvolutionAxioms` is
+derived internally from the Galerkin ODE via §10.98. Composes with
+§10.94 to give the complete unconditional `SqgEvolutionAxioms_strong`
+for any Galerkin trajectory on a finite, symmetric, zero-excluding shell
+with real-coefficient symmetry and a uniform L∞ coefficient bound. -/
+theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    {M : ℝ}
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M) :
+    SqgEvolutionAxioms_strong (fun τ => galerkinToLp S (α τ)) :=
+  SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support
+    α hα (SqgEvolutionAxioms.of_galerkin_dynamics h0 hS α hα hRealC) hBound
+
 end SqgIdentity
