@@ -11199,4 +11199,60 @@ theorem galerkinRHS_eq_zero_of_isRadialShell
     intros ℓ _
     exact sub_sub_cancel m ℓ
 
+/-! ### §10.37 Galerkin vector field — finite-dim Banach setup
+
+Lift `galerkinRHS` to a map `galerkinVectorField S : (↥S → ℂ) → (↥S → ℂ)`
+on the finite-dim Pi space indexed by the shell. `↥S → ℂ` is
+automatically a Banach space (`Fintype ↥S`), the setting mathlib's
+`IsPicardLindelof` / `ODE_solution_exists` theorems expect.
+
+**Content:**
+* `galerkinExtend` — zero-extension `↥S → ℂ` ↦ `(Fin 2 → ℤ) → ℂ`.
+* `galerkinVectorField` — the ODE RHS on the finite-dim state space.
+* Radial-shell specialisation (trivial vector field).
+
+**Deferred:**
+* Lipschitz estimate on bounded balls (Phase 2.C).
+* Picard-Lindelöf application for local existence (Phase 2.D). -/
+
+/-- Zero-extension of a finite-support coefficient function. -/
+noncomputable def galerkinExtend
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : (Fin 2 → ℤ) → ℂ :=
+  fun m => if h : m ∈ S then c ⟨m, h⟩ else 0
+
+@[simp] lemma galerkinExtend_apply_of_mem
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {m : Fin 2 → ℤ} (hm : m ∈ S) :
+    galerkinExtend S c m = c ⟨m, hm⟩ := by
+  unfold galerkinExtend
+  rw [dif_pos hm]
+
+@[simp] lemma galerkinExtend_apply_of_not_mem
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {m : Fin 2 → ℤ} (hm : m ∉ S) :
+    galerkinExtend S c m = 0 := by
+  unfold galerkinExtend
+  rw [dif_neg hm]
+
+/-- **Galerkin vector field on the finite-dim coefficient space.**
+Evaluates `galerkinRHS` at each shell mode `m ∈ S`. -/
+noncomputable def galerkinVectorField
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : ↥S → ℂ :=
+  fun m => galerkinRHS S (galerkinExtend S c) ↑m
+
+/-- **Galerkin vector field vanishes on radial shells.** Lifts
+`galerkinRHS_eq_zero_of_isRadialShell` to the state-space setting —
+any coefficient `c : ↥S → ℂ` is a fixed point of the ODE. Consequence:
+the Galerkin ODE on a radial shell has the constant solution
+`c(τ) = c₀`, matching the §10.33 stationary witness. -/
+theorem galerkinVectorField_eq_zero_of_isRadialShell
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (c : ↥S → ℂ) : galerkinVectorField S c = 0 := by
+  funext m
+  show galerkinRHS S (galerkinExtend S c) ↑m = 0
+  exact galerkinRHS_eq_zero_of_isRadialShell hS (galerkinExtend S c) ↑m
+
 end SqgIdentity
