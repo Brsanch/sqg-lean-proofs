@@ -11705,4 +11705,58 @@ theorem galerkin_local_exists_given_bounds
   intros t ht
   exact hα t ht
 
+/-! ### §10.45 Radial-shell ODE local solution via Picard-Lindelöf
+
+Concrete application of §10.44's wrapper to the radial-shell case.
+Since `galerkinVectorField_eq_zero_of_isRadialShell` (§10.37) gives
+`galerkinVectorField S c = 0` for every `c` on a radial shell, the
+vector field is both 0-Lipschitz and bounded by 0, so Picard-Lindelöf
+produces the constant solution `c(τ) = c₀` on any time interval. -/
+
+theorem galerkin_radial_shell_picard_solution
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S) (c₀ : ↥S → ℂ)
+    (ε : ℝ) (hε : 0 < ε) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      ∀ t ∈ Set.Icc (-ε) ε,
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (-ε) ε) t := by
+  refine galerkin_local_exists_given_bounds S c₀ (a := 1) (L := 0) (K := 0) hε
+    ?_ ?_ ?_
+  · -- LipschitzOnWith 0: both sides equal 0 (vector field ≡ 0).
+    intros x _ y _
+    rw [galerkinVectorField_eq_zero_of_isRadialShell hS x,
+        galerkinVectorField_eq_zero_of_isRadialShell hS y]
+    simp
+  · -- Bound 0: vector field ≡ 0.
+    intros c _
+    rw [galerkinVectorField_eq_zero_of_isRadialShell hS]
+    simp
+  · -- L · ε = 0 · ε = 0 ≤ 1 = a.
+    push_cast
+    linarith
+
+/-! ### §10.46 Real-symmetric coefficient predicate
+
+A coefficient function `c : (Fin 2 → ℤ) → ℂ` is *real-symmetric* if
+its values on `S` satisfy the Hermitian reality condition:
+`c(-n) = star (c n)` for every `n ∈ S`, and `S` is closed under
+negation. This corresponds to `shellMode S c` being real-valued as a
+function on the torus.
+
+On the real-symmetric subspace, L² is conserved by the Galerkin ODE
+(reflecting the SQG PDE's L² conservation for real θ), yielding global
+existence from local Picard-Lindelöf. This section ships only the
+predicate; downstream L² identities are deferred. -/
+
+/-- **Real-symmetric support predicate.** `S` is closed under
+negation. -/
+def IsSymmetricSupport (S : Finset (Fin 2 → ℤ)) : Prop :=
+  ∀ n ∈ S, -n ∈ S
+
+/-- **Real-symmetric coefficients on `S`.** `c(-n) = conj (c n)` on
+every `n ∈ S`. (When `S` is `IsSymmetricSupport`, this extends to all
+of `S`.) -/
+def IsRealCoeff (S : Finset (Fin 2 → ℤ)) (c : (Fin 2 → ℤ) → ℂ) : Prop :=
+  ∀ n ∈ S, c (-n) = star (c n)
+
 end SqgIdentity
