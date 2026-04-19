@@ -13087,4 +13087,33 @@ lemma isRealFourier_riesz
     rw [hOff ℓ hℓ, hOff (-ℓ) hnegℓ]
     simp
 
+/-! ### §10.73 Advection pair-summand (definition)
+
+Defines `advectionSummand u c p` — the scalar factor appearing in the
+Fourier expansion of `⟨u·∇(Λ²θ), Λ²θ⟩` at the pair `p = (k, ℓ)`:
+```
+F(k, ℓ) = i · ‖k‖² · ‖k+ℓ‖² · (k · û(ℓ)) · c(k) · star(c(k+ℓ))
+```
+where `k · û(ℓ) := Σ_j (k_j : ℂ) · u_j ℓ`.
+
+The algebraic kernel identity
+`advectionSummand u c (advectionSwap p) + star (advectionSummand u c p) = 0`
+under `IsFourierDivFree u` + `IsRealFourier u` is deferred to a
+subsequent session — its proof requires careful `star`-distribution
+through products involving `Complex.I` and real-casted norms, and
+must be engineered against Lean's goal-reduction of `advectionSwap`
+inside `advectionSummand`. §10.70-§10.72 (pair-index, involution,
+div-free and real-Fourier predicates + Riesz instances) provide the
+entire structural scaffolding needed to state and apply it. -/
+
+/-- **Advection pair-summand** at `(k, ℓ)` — the scalar factor of the
+Fourier expansion of `⟨u·∇(Λ²θ), Λ²θ⟩`. -/
+noncomputable def advectionSummand
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) : ℂ :=
+  Complex.I * (((latticeNorm p.1 : ℝ) : ℂ) ^ 2)
+    * (((latticeNorm (p.1 + p.2) : ℝ) : ℂ) ^ 2)
+    * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
+    * c p.1 * star (c (p.1 + p.2))
+
 end SqgIdentity
