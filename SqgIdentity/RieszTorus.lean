@@ -13250,6 +13250,10 @@ theorem advectionSum_add_star_eq_zero
   intros p _
   exact advectionSummand_swap_add_star_eq_zero hDivFree hReal p
 
+/-- Helper: `.re` of `star z` equals `.re` of `z` (real part preserved
+by conjugation). Bridges the `star`/`conj` notation. -/
+lemma star_re_complex (z : ℂ) : (star z).re = z.re := Complex.conj_re z
+
 /-- **Advection cancellation (real-part form):** `Re(Σ_{pairIdx} F) = 0`.
 The headline consequence. -/
 theorem advectionSum_re_eq_zero
@@ -13259,16 +13263,9 @@ theorem advectionSum_re_eq_zero
     (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u) :
     (∑ p ∈ pairIdx S, advectionSummand u c p).re = 0 := by
   have h := advectionSum_add_star_eq_zero hS hDivFree hReal
-  -- z + star z = (2 * z.re : ℝ) : ℂ
-  have hAC : (∑ p ∈ pairIdx S, advectionSummand u c p)
-               + star (∑ p ∈ pairIdx S, advectionSummand u c p)
-             = ((2 * (∑ p ∈ pairIdx S, advectionSummand u c p).re : ℝ) : ℂ) :=
-    Complex.add_conj _
-  rw [hAC] at h
-  -- h : ((2 * Re(Σ) : ℝ) : ℂ) = 0
-  -- Take .re of both sides to get a real equation.
+  -- Take .re of both sides.
   have h_re := congr_arg Complex.re h
-  simp at h_re
+  rw [Complex.add_re, star_re_complex, Complex.zero_re] at h_re
   linarith
 
 end SqgIdentity
