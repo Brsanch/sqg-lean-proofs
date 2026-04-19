@@ -11661,4 +11661,48 @@ theorem sqgNonlinearFlux_shellMode_eq_zero_of_stationaryShape
   · intros ℓ _
     exact sub_sub_cancel m ℓ
 
+/-! ### §10.44 Picard-Lindelöf wrapper — local Galerkin ODE solution
+
+Packages mathlib's `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`
+into a form that consumes pre-chosen Lipschitz-, bound-, and
+time-constants on a closed ball around the initial condition. The
+hypotheses are: (i) `K`-Lipschitz on `closedBall c₀ a`, (ii) `L`
+uniform bound on `‖galerkinVectorField S c‖` for `c ∈ closedBall c₀ a`,
+(iii) time interval `ε` satisfies `L · ε ≤ a`.
+
+The automatic version (choosing `a, L, K, ε` from ContDiff + continuity)
+is deferred — it requires compactness → uniform-bound extraction, then
+algebraic choice of `ε`. Users can invoke this version directly for
+specific `S` where the constants are easy to compute. -/
+
+theorem galerkin_local_exists_given_bounds
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c₀ : ↥S → ℂ) {a L K : NNReal} {ε : ℝ} (hε : 0 < ε)
+    (hLip : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (a : ℝ)))
+    (hBound : ∀ c ∈ Metric.closedBall c₀ (a : ℝ),
+      ‖galerkinVectorField S c‖ ≤ L)
+    (hTime : (L : ℝ) * ε ≤ (a : ℝ)) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      ∀ t ∈ Set.Icc (-ε) ε,
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (-ε) ε) t := by
+  classical
+  -- Autonomous time-dependent vector field (constant in t).
+  set f : ℝ → (↥S → ℂ) → (↥S → ℂ) := fun _ => galerkinVectorField S with hf_def
+  have ht_in : (0 : ℝ) ∈ Set.Icc (-ε) ε := ⟨by linarith, by linarith⟩
+  set t₀ : Set.Icc (-ε) ε := ⟨0, ht_in⟩ with ht₀_def
+  have hPL : IsPicardLindelof f t₀ c₀ a 0 L K := {
+    lipschitzOnWith := fun _ _ => hLip
+    continuousOn := fun _ _ => continuousOn_const
+    norm_le := fun _ _ _ hx => hBound _ hx
+    mul_max_le := by
+      show (L : ℝ) * max (ε - (0 : ℝ)) ((0 : ℝ) - (-ε)) ≤ (a : ℝ) - 0
+      rw [sub_zero, zero_sub, neg_neg, max_self, sub_zero]
+      exact hTime
+  }
+  obtain ⟨α, hα₀, hα⟩ := hPL.exists_eq_forall_mem_Icc_hasDerivWithinAt₀
+  refine ⟨α, hα₀, ?_⟩
+  intros t ht
+  exact hα t ht
+
 end SqgIdentity
