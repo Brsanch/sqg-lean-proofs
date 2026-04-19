@@ -14058,7 +14058,7 @@ theorem BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound
       ∀ n, mFourierCoeff (galerkinToLp S (α τ)) n = 0) :
     BKMCriterionS2 (fun τ => galerkinToLp S (α τ)) := by
   set K : ℝ := 24 * D^5 * M * (S.card : ℝ)^2 with hK_def
-  have hK_nn : 0 ≤ K := by unfold_let K; positivity
+  have hK_nn : 0 ≤ K := by rw [hK_def]; positivity
   -- Support condition for BKM.
   have hSupport : ∀ τ : ℝ, ∀ n ∉ S,
       mFourierCoeff (galerkinToLp S (α τ)) n = 0 := by
@@ -14096,7 +14096,7 @@ theorem BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound
     calc |∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
               (2 * (@inner ℝ ℂ _ (α x m) (galerkinVectorField S (α x) m)))|
         ≤ 24 * D^5 * M * (S.card : ℝ)^2 * trigPolyEnergyHs2 S (α x) := hBound
-      _ = K * trigPolyEnergyHs2 S (α x) := by unfold_let K; ring
+      _ = K * trigPolyEnergyHs2 S (α x) := by rw [hK_def]
       _ = K * |trigPolyEnergyHs2 S (α x)| := by rw [abs_of_nonneg h_E_nn]
   -- Apply §10.78.
   exact BKMCriterionS2.of_galerkin_energy_inequality α hSupport K T M₀ hT_pos hK_nn hM₀_nn
