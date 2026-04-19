@@ -12873,4 +12873,39 @@ lemma hsSeminormSq_le_of_trigPolyEnergyHs2_le
     hsSeminormSq 2 (galerkinToLp S c) ≤ E := by
   rw [← trigPolyEnergyHs2_eq_hsSeminormSq]; exact hE
 
+/-! ### §10.69 Pointwise derivative of `trigPolyEnergyHs2 ∘ α`
+
+Given a Galerkin trajectory `α : ℝ → (↥S → ℂ)` with
+`HasDerivAt α (galerkinVectorField S (α τ)) τ`, each coordinate
+`τ ↦ (α τ) m` has derivative `galerkinVectorField S (α τ) m`
+(by `hasDerivAt_pi`). Combining with mathlib's `HasDerivAt.norm_sq`
+for the real inner product on `ℂ`, we obtain a pointwise derivative
+for the finite-sum energy.
+
+Output formula:
+```
+d/dτ trigPolyEnergyHs2 S (α τ)
+  = ∑ m : ↥S, (fracDerivSymbol 2 m.val)² · 2 · ⟪α τ m, galerkinVectorField S (α τ) m⟫_ℝ
+```
+where the real inner product on `ℂ` is `⟪z, w⟫_ℝ = Re(conj z · w)`. -/
+
+theorem trigPolyEnergyHs2_hasDerivAt
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (τ : ℝ) :
+    HasDerivAt (fun t => trigPolyEnergyHs2 S (α t))
+      (∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
+        (2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m)))) τ := by
+  unfold trigPolyEnergyHs2
+  apply HasDerivAt.sum
+  intros m _
+  -- The coordinate map `t ↦ (α t) m` has derivative `galerkinVectorField S (α τ) m`.
+  have hαm : HasDerivAt (fun t => α t m) (galerkinVectorField S (α τ) m) τ :=
+    (hasDerivAt_pi.mp (hα τ)) m
+  -- `HasDerivAt.norm_sq` differentiates the squared norm via the real inner product.
+  have hNormSq := hαm.norm_sq
+  -- Finally multiply by the constant weight `(fracDerivSymbol 2 m.val)²`.
+  exact hNormSq.const_mul _
+
 end SqgIdentity
