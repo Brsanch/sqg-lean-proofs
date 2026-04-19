@@ -11465,4 +11465,45 @@ theorem SqgEvolutionAxioms_strong.shellMode_const_of_collinear
     (fun j _ => isSqgVelocityComponent_shellMode S a j)
     (isSqgWeakSolution_shellMode_const_of_collinear hS a)
 
+/-! ### §10.41 `ContDiff` of the Galerkin vector field
+
+Each coordinate of `galerkinVectorField S` is a finite sum of products
+of zero-extension coordinate projections and constants. Coordinate
+projections on `Fintype`-indexed Pi types are continuous linear (hence
+`ContDiff ℝ ∞`), and `ContDiff` is closed under products, finite sums,
+and negation. So the whole map is `ContDiff ℝ ∞`. -/
+
+/-- Each evaluation `galerkinExtend S c m` is `ContDiff ℝ n` in `c`. -/
+theorem galerkinExtend_contDiff_apply
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (m : Fin 2 → ℤ) {n : WithTop ℕ∞} :
+    ContDiff ℝ n (fun c : ↥S → ℂ => galerkinExtend S c m) := by
+  by_cases hm : m ∈ S
+  · have h_eq : (fun c : ↥S → ℂ => galerkinExtend S c m)
+            = (fun c : ↥S → ℂ => c ⟨m, hm⟩) := by
+      funext c
+      exact galerkinExtend_apply_of_mem S c hm
+    rw [h_eq]
+    exact contDiff_apply ℝ ℂ ⟨m, hm⟩
+  · have h_eq : (fun c : ↥S → ℂ => galerkinExtend S c m) = (fun _ => 0) := by
+      funext c
+      exact galerkinExtend_apply_of_not_mem S c hm
+    rw [h_eq]
+    exact contDiff_const
+
+/-- **Galerkin vector field is `ContDiff ℝ ∞`.** -/
+theorem galerkinVectorField_contDiff
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)] {n : WithTop ℕ∞} :
+    ContDiff ℝ n (galerkinVectorField S) := by
+  rw [contDiff_pi]
+  intro m
+  show ContDiff ℝ n (fun c : ↥S → ℂ =>
+    galerkinRHS S (galerkinExtend S c) ↑m)
+  unfold galerkinRHS
+  refine ContDiff.neg ?_
+  refine ContDiff.sum (fun ℓ _ => ?_)
+  refine ContDiff.mul (ContDiff.mul ?_ ?_) contDiff_const
+  · exact galerkinExtend_contDiff_apply S ℓ
+  · exact galerkinExtend_contDiff_apply S (↑m - ℓ)
+
 end SqgIdentity
