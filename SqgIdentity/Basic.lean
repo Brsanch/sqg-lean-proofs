@@ -1,10 +1,11 @@
 -- Copyright (c) 2026 Bryan Sanchez. All rights reserved.
 -- Released under MIT License (see LICENSE in repo root).
--- Machine-verified formalization of D14 Theorem 1.
--- Mathematical theorem and Lean formalization by Bryan Sanchez.
+-- Machine-verified formalization of Theorem 1 from the accompanying paper
+-- (see ../paper/sqg-identity.pdf). Mathematical theorem and Lean
+-- formalization by Bryan Sanchez.
 
 /-
-Formalization target: Theorem 1 (Shear-Vorticity Identity) from paper D14.
+Formalization target: Theorem 1 (Shear-Vorticity Identity) from the accompanying paper.
 
 Paper statement (Fourier space):
   F[S_nt - ω/2](k) = |k| · sin²(φ_k) · θ̂(k)
@@ -205,7 +206,7 @@ theorem sqg_shear_perpendicular
     This bound is saturated at `β = α ± π/2` (see `sqg_shear_perpendicular`)
     and vanishes at `β = α` (see `sqg_shear_aligned`).
 
-    In the regularity analysis of D14, this controls the worst-case
+    In the regularity analysis of the paper, this controls the worst-case
     per-mode contribution to strain growth. -/
 theorem sqg_selection_rule_bound
     (absk α β : ℝ) (θ : ℂ) (habsk : 0 < absk) :

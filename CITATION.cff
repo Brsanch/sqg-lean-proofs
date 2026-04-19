@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this formalization, please cite it as below."
 type: software
-title: "Machine-Verified SQG Shear-Vorticity Identity + Conditional Theorem 3 Roadmap (Lean 4)"
+title: "SQG Identity: A Lean 4 Formalization of Fourier-Space Identities for the Surface Quasi-Geostrophic Equation with Conditional Regularity Roadmap"
 authors:
   - family-names: Sanchez
     given-names: Bryan
@@ -9,198 +9,63 @@ authors:
 version: 0.4.9
 date-released: "2026-04-19"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
+repository-code: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
 identifiers:
   - type: doi
     value: 10.5281/zenodo.19583256
-    description: Zenodo concept DOI (always points to latest version)
+    description: Zenodo concept DOI (always resolves to the latest version)
   - type: doi
     value: 10.5281/zenodo.19654673
-    description: Zenodo archive of v0.4.9
-  - type: doi
-    value: 10.5281/zenodo.19653165
-    description: Zenodo archive of v0.4.8
-  - type: doi
-    value: 10.5281/zenodo.19637844
-    description: Zenodo archive of v0.4.2
-  - type: doi
-    value: 10.5281/zenodo.19637612
-    description: Zenodo archive of v0.4.1
-  - type: doi
-    value: 10.5281/zenodo.19637609
-    description: Zenodo archive of v0.4.0
-  - type: doi
-    value: 10.5281/zenodo.19584185
-    description: Zenodo archive of v0.3.0
-  - type: doi
-    value: 10.5281/zenodo.19583417
-    description: Zenodo archive of v0.2.0
-  - type: doi
-    value: 10.5281/zenodo.19583257
-    description: Zenodo archive of v0.1.0
+    description: Archive of v0.4.9
 license: MIT
-abstract: >
-  Lean 4 + mathlib formalization of Fourier-space identities for the
-  Surface Quasi-Geostrophic equation, working towards a machine-checked
-  regularity proof. Covers Theorems 1 and 2 of paper D14 (shear-vorticity
-  identity and selection-rule bound) and supporting Riesz/Sobolev
-  infrastructure on the 2-torus. §10 adds a conditional Theorem 3
-  roadmap with named axiomatic hypotheses (MaterialMaxPrinciple,
-  BKMCriterion, FracSobolevCalculus, SqgWellPosedness) and a material
-  derivative scaffolding (SqgEvolutionAxioms). Of these hypotheses,
-  FracSobolevCalculus is discharged unconditionally, BKM's axiomatic
-  scope is reduced first to s > 1 (via interpolation) and then further
-  to the integer-order range s in (1, 2] only via the v0.4.0 S2
-  bootstrap (BKMCriterionS2) — which avoids fractional calculus
-  entirely by using only classical differential commutators.
-  MaterialMaxPrinciple alone is shown sufficient for the intermediate
-  Sobolev range s in [0, 1]. Combined, the conditional Theorem 3 on
-  s in [0, 2] rests on integer-order axioms only. The v0.4.0 release
-  eliminated all `True` placeholders from SqgEvolutionAxioms;
-  v0.4.1 added the Fourier convolution scaffolding, the mode-
-  Lipschitz keystone upgrade, and the SQG-specific Bochner wiring.
-  v0.4.2 closes the Duhamel keystone end-to-end: a concrete
-  sqgNonlinearFlux realization of (u·∇θ)̂, ℓ²-control helpers,
-  Parseval split-at-zero-mode and full Fourier-tsum L² conservation
-  (theta_fourier_tsum_conserved), and the fully-internalized
-  promotion theorem SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP.
-  v0.4.3 adds §10.20–§10.22: concrete mollifier family built from
-  Real.smoothTransition, DCT-based RHS bump-to-indicator limit
-  (sqgConcreteMollifier_rhs_tendsto), and the full LHS collar FTC —
-  monotonicity, derivative sign/vanishing, FTC mass identities (∫ deriv
-  on each collar = ±1), full-integral split, and collar squeeze via
-  ε-δ continuity — delivering SqgFourierContinuous.toCollarLhsCondition
-  that closes Phase 2.3.b of the bump-to-indicator bridge. §10.23 ships
-  the first non-zero concrete discharge: IsSqgWeakSolution.const_zero_u
-  (Duhamel witness for constant-in-time θ with zero velocity),
-  MaterialMaxPrinciple.of_const, BKMCriterionS2.of_const, and the
-  capstone sqg_regularity_const — certifying uniform Ḣˢ bounds on
-  [0, 2] for any Ḣ¹-summable constant-in-time scalar field,
-  unconditionally. v0.4.4 adds the first **multi-mode** stationary SQG
-  witness: §10.29 odd-symmetry helpers (latticeNorm_neg, rieszSymbol_neg,
-  sqgVelocitySymbol_neg, derivSymbol_neg); §10.30 antipodal-pair
-  construction antipodalMode m₀ a₁ a₂ = singleMode m₀ a₁ + singleMode
-  (-m₀) a₂ with its Riesz-transform velocity; four divergence-free
-  identities combining to a unified 2×2 helper
-  sqgVelocitySymbol_mul_derivSymbol_sum_zero_antipodal_pair;
-  antipodal_inner_sum_zero per-ℓ cancellation via factoring through
-  IsSqgVelocityComponent; and the main theorem
-  sqgNonlinearFlux_antipodalMode_eq_zero establishing the flux
-  vanishes at every target mode. §10.31 bundles this into
-  isSqgWeakSolution_antipodalMode_const,
-  sqgEvolutionAxioms_antipodalMode_const, and the multi-mode discharge
-  SqgEvolutionAxioms_strong.antipodalMode_const — routing the
-  two-mode witness through of_IsSqgWeakSolution_via_MMP. v0.4.5
-  generalises the antipodal pair to the full **radial-shell** class
-  and ships the Galerkin ODE scaffold:
-  §10.32 pair-sum cross div-free lemma keyed on equal latticeNorm;
-  §10.33-§10.34 IsRadialShell, shellMode, shellVelocity, flux=0 via
-  Finset.sum_involution, and SqgEvolutionAxioms_strong.shellMode_const;
-  §10.35 sqg_regularity_shellMode_const regularity capstone; §10.36-
-  §10.38 Galerkin ODE scaffold galerkinRHS / galerkinVectorField with
-  radial-shell constant-solution witness; §10.39 continuity; §10.40
-  **collinear-support** stationary class (second independent
-  stationary family via per-pair C(ℓ,k) = 0 from parallel lattice
-  vectors); §10.41 ContDiff ℝ ∞ of galerkinVectorField on the
-  finite-dim Pi space; §10.42 local Lipschitz via
-  ContDiffAt.exists_lipschitzOnWith; §10.43 unified IsStationaryShape
-  predicate; §10.44 Picard-Lindelöf wrapper
-  galerkin_local_exists_given_bounds producing local ODE solutions;
-  §10.45 radial-shell Picard solution (L=K=0); §10.46 real-symmetric
-  predicates IsSymmetricSupport / IsRealCoeff; §10.47 galerkinToLp
-  (Pi state lifts to Lp via trigPoly); §10.48
-  galerkinRHS_eq_neg_sqgNonlinearFlux bridging the finite-dim ODE
-  framework to the SQG weak-solution PDE framework at every mode.
-  v0.4.6 unifies the stationary theory and closes out the analytic-
-  hypothesis discharge for finite-support time-varying θ: §10.49
-  SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape as a
-  single named discharge subsuming §10.34 (radial) and §10.40
-  (collinear) via IsStationaryShape.of_isRadialShell / of_isCollinear;
-  §10.50 sqg_regularity_via_stationaryShape consumer-facing capstone;
-  §10.51 galerkin_local_exists auto-Picard deriving all ODE constants
-  (a, L, K, ε) from ContDiff + closedBall compactness +
-  IsCompact.bddAbove_image, removing the hand-chosen-constant
-  requirement of §10.44; §10.52 axis-aligned stationary classes
-  IsXAxisShell and IsYAxisShell as direct corollaries of collinear;
-  §10.56 MaterialMaxPrinciple.of_finite_support_uniform — MMP
-  discharged unconditionally for any time-varying θ with finite
-  Fourier support on a fixed S and a uniform coefficient bound M,
-  giving hsSeminormSq 1 (θ t) ≤ M² · (∑_{n∈S} (fracDerivSymbol 1 n)²).
-  v0.4.7 closes the analytic-hypothesis chain and bundles two
-  consumer-facing capstones: §10.55 galerkin_mode_FTC — mode-wise
-  FTC for Galerkin trajectories via hasDerivAt_pi +
-  intervalIntegral.integral_eq_sub_of_hasDerivAt; §10.57
-  BKMCriterionS2.of_finite_support_uniform — mirror of §10.56 for
-  the BKM axiom on the same class; §10.58 (A)
-  sqg_regularity_of_finite_support_uniform — unconditional Ḣˢ
-  bound on [0, 2] for any finite-support θ with uniform ℓ∞ bound
-  (zero axioms remain in the statement) and (B)
-  SqgEvolutionAxioms_strong.of_finite_support_weak_solution —
-  full strong-axiom discharge for such θ that is a weak solution;
-  §10.59 demo reproving shellMode_const via §10.58 (sanity check
-  that the new capstone subsumes §10.49); §10.60
-  galerkin_radialShell_L2_conserved — trivial L² conservation on
-  radial-shell Galerkin ODE (α constant in time via
-  is_const_of_deriv_eq_zero on a zero vector field). Both
-  conditional-Theorem-3 analytic axioms (MaterialMaxPrinciple and
-  BKMCriterionS2) now have **unconditional** discharges for the
-  finite-Fourier-support + uniform-coefficient-bound class.
-  v0.4.8 ships the ambitious commutator-based BKM chain (§10.61-§10.78):
-  Kato-Ponce symbol bound for s=2 commutator (comSymb k ℓ := ‖k+ℓ‖⁴ − ‖k‖⁴,
-  bounded by 6·(‖k‖+‖ℓ‖)³·‖ℓ‖ and on bounded support by 48·D³·‖ℓ‖);
-  scalar Gronwall wrapping mathlib's norm_le_gronwallBound;
-  Ḣ²→ℓ∞ coefficient extraction via integer-lattice lower bound;
-  GalerkinEnergyGronwall predicate + BKMCriterionS2.of_galerkinEnergyGronwall
-  capstone composing with §10.57; trigPolyEnergyHs2 finite-sum energy bridge
-  to hsSeminormSq via tsum_eq_sum + Finset.sum_attach + HasDerivAt.norm_sq
-  for the Galerkin trajectory derivative; pairIdx + advectionSwap involution
-  (self-map under IsSymmetricSupport); IsFourierDivFree / IsRealFourier
-  predicates + Riesz instances (star_rieszSymbol via Complex.ext on
-  real-part); the advection-cancellation theorem advectionSum_re_eq_zero
-  via Finset.sum_nbij' reindex + kernel identity (F(τp) + star(F p) = 0
-  through advection_jsum_swap_eq_star: hReal + telescoping (k+ℓ)ⱼ − kⱼ = ℓⱼ
-  + div-free); commutatorSummand + pointwise bound 6·D⁵·(Σⱼ‖u ⱼ ℓ‖)·‖c k‖·‖c (k+ℓ)‖
-  via abs_latticeNorm_add_sq_sub_sq_le + componentwise bound |kⱼ| ≤ ‖k‖;
-  trigPolyEnergy_exp_bound_of_deriv_le + galerkinEnergyGronwall_of_deriv_le
-  + BKMCriterionS2.of_galerkin_energy_inequality — top-level capstone
-  producing BKMCriterionS2 from an energy inequality |d/dt E| ≤ K·|E|,
-  zero-mode bound, and support hypotheses. This is the derived BKM
-  discharge route parallel to §10.57's trivial-M route but grounded in
-  the classical Kato-Ponce + advection-cancellation argument. Structural
-  advection cancellation, commutator pointwise bound, and Gronwall
-  application are all formalized; deriving the energy-inequality
-  hypothesis from Galerkin dynamics + §10.48 flux identity is
-  mechanical assembly deferred to a subsequent release.
-  v0.4.9 (§10.79-§10.87) closes the last mile: deriving the energy
-  inequality directly from Galerkin dynamics. §10.79 combined
-  advection + commutator factorization (ring closes via §10.62 split);
-  §10.80 pair-Finset reindexing (m, ℓ) ↔ (m-ℓ, ℓ) via
-  Finset.sum_nbij'; §10.81 per-pair algebraic identity bridging energy
-  summand to Riesz velocity form; §10.82 inner_real_complex_eq_re_star_mul
-  via Complex.inner + mul_comm; §10.83 pair-sum form of energy derivative
-  (8-step proof composing §10.69 + §10.48 + §10.79-82 + Complex.re_ofReal_mul
-  + Complex.re_sum + Finset.sum_attach via Finset.univ_eq_attach);
-  §10.84 advection cancellation in the energy derivative via §10.74;
-  §10.85 per-mode and per-pair L² bounds from Ḣ² energy
-  (latticeNorm_ge_one_of_ne_zero + pow_le_pow_left₀); §10.86 energy
-  inequality |d/dt E| ≤ 24·D⁵·M·|S|² · trigPolyEnergyHs2 S c
-  via §10.84 + §10.75 + gcongr-driven monotonicity; §10.87
-  BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound — top-level
-  capstone composing §10.69 (HasDerivAt → continuity, HasDerivWithinAt)
-  with §10.86 (energy inequality) and §10.78 (BKMCriterionS2 from energy
-  inequality), producing unconditional BKMCriterionS2 from any Galerkin
-  trajectory with finite Fourier support, real-coefficient symmetry,
-  and uniform L^∞ coefficient bound — the §10.78 hypothesis is no
-  longer a black-box but is derived end-to-end from the dynamics.
-  K = 24·D⁵·M·|S|² is computed automatically.
-  All content machine-verified with zero `sorry` across 14105 lines.
-  Mathematical theorems by Bryan Sanchez; Lean formalization by
-  Bryan Sanchez with AI assistance.
 keywords:
   - Lean 4
   - mathlib
-  - formal proof
+  - formal verification
+  - interactive theorem proving
+  - Surface Quasi-Geostrophic equation
   - SQG
-  - Surface Quasi-Geostrophic
   - fluid dynamics
-  - shear-vorticity identity
+  - partial differential equations
+  - Fourier analysis
+  - Riesz transform
+  - Sobolev spaces
+  - conditional regularity
+abstract: >
+  A Lean 4 and mathlib formalization of Fourier-space identities for the
+  inviscid Surface Quasi-Geostrophic equation on the two-dimensional torus,
+  together with a conditional regularity roadmap.
+
+  Two theorems are machine-verified unconditionally. The shear-vorticity
+  identity states that the combination of shear strain and half the
+  vorticity has Fourier multiplier |k|·sin²(α − β), and vanishes identically
+  for one-dimensional fronts. The selection-rule bound provides a pointwise
+  mode-level inequality with equality characterization, lifted to an
+  integrated Sobolev-seminorm form via Parseval.
+
+  The accompanying Riesz and Sobolev infrastructure is also machine-verified:
+  Riesz transforms on the torus via Fourier multipliers, Leray–Helmholtz
+  projection, the fractional Sobolev scale, a self-adjoint Biot–Savart
+  factorization, tight mode-level identities for the strain and vorticity
+  tensors, an α-fractional heat semigroup with smoothing and contractivity
+  bounds, and a parallel suite for the classical heat semigroup.
+
+  A conditional form of the SQG regularity theorem is formalized in §10:
+  given named Lean structures for the fractional Sobolev calculus, the
+  material maximum principle, the BKM criterion, and the SQG evolution
+  axioms, uniform Sobolev bounds follow. The axiomatic footprint is
+  inspectable, and the fractional Sobolev calculus is discharged
+  unconditionally from mathlib. On the class of trajectories with finite
+  Fourier support, real-coefficient symmetry, and a uniform L-infinity
+  coefficient bound, both analytic axioms are discharged: the material
+  maximum principle directly, and the BKM criterion via a
+  Kato–Ponce-type commutator bound together with an advection-cancellation
+  theorem for the Fourier energy derivative and a scalar Gronwall
+  argument, so that regularity on the Sobolev range s in [0, 2] is
+  unconditional on this class.
+
+  The release comprises 14,105 lines of Lean 4 source, with zero `sorry`
+  occurrences and no axioms beyond mathlib. A machine-readable build of
+  the formalization is provided via a standard `lake build` invocation
+  against mathlib v4.29.0.

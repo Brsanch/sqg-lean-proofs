@@ -9,7 +9,7 @@ import SqgIdentity.Basic
 # Riesz transforms on the unit torus `𝕋ᵈ` via Fourier multipliers
 
 This file develops the part of the Riesz-transform library needed for the
-integrated form of D14 Theorem 2 on the torus, bypassing general
+integrated form of Theorem 2 of the paper on the torus, bypassing general
 Calderón–Zygmund singular-integral theory. The key observation is that on
 the torus the Riesz transform `R_j` has a bounded Fourier multiplier
 symbol
@@ -1573,7 +1573,7 @@ theorem sqg_strain_trace_free (n : Fin 2 → ℤ) :
     field_simp
     push_cast; ring
 
-/-- **D14 Theorem 1 at the Fourier-symbol level (single mode).**
+/-- **Theorem 1 of the paper at the Fourier-symbol level (single mode).**
 
 For the SQG velocity `u = (R₁θ, -R₀θ)` on `𝕋²` and a single Fourier
 mode `n ≠ 0`, define:
@@ -1583,7 +1583,7 @@ mode `n ≠ 0`, define:
   * **normal-tangential strain** `S_{nt} = n̂ · Ŝ · t̂`.
 
 Then `S_{nt} = ω̂/(2θ̂)`, i.e. the shear strain equals half the
-vorticity — the **shear–vorticity identity**. This is D14 Theorem 1
+vorticity — the **shear–vorticity identity**. This is Theorem 1 of the paper
 restricted to single Fourier modes; the full physical-space identity
 follows because the relation is linear in the mode amplitude.
 
@@ -1809,7 +1809,7 @@ At the Fourier-symbol level, the Hessian `∂²θ/∂x_i∂x_j` has multiplier
 `(i n_i)(i n_j) = -n_i n_j`. We track these symbols, their relation to the
 Laplacian, and the tangential projection that gives `|∇θ|·κ` in Fourier space.
 
-### Key curvature-budget identity (D14 §9 context)
+### Key curvature-budget identity (§9 of the paper context)
 
 For SQG, the front curvature `κ` evolves along material trajectories. The
 shear-vorticity identity (Theorem 1) implies that at curvature maxima,
@@ -1928,7 +1928,7 @@ theorem hess_tangential_vanishes_T2 (n : Fin 2 → ℤ) :
 
 /-! ### SQG strain decomposition and residual
 
-The D14 identity tells us that for SQG, the normal-tangential strain
+The shear–vorticity identity tells us that for SQG, the normal-tangential strain
 `S_nt` decomposes as `ω/2 + residual`, where the residual vanishes when
 wavevector and front normal are aligned. The residual norm is controlled
 by the Ḣ¹ norm of θ (from the selection rule, Theorem 2).
@@ -1953,7 +1953,7 @@ noncomputable def sqgHalfVorticitySymbol (n : Fin 2 → ℤ) : ℂ :=
 /-- **SQG residual symbol.** The Fourier multiplier of the residual
 `S_nt - ω/2`, where `S_nt` is the normal-tangential strain at mode `n`.
 
-By D14 Theorem 1, this equals `|k|·sin²(α-β)` per mode, but we define
+By Theorem 1 of the paper, this equals `|k|·sin²(α-β)` per mode, but we define
 it directly from the strain contraction minus half-vorticity to track
 the residual budget without trigonometric coordinates. -/
 noncomputable def sqgResidualSymbol (n : Fin 2 → ℤ) : ℂ :=
@@ -1968,7 +1968,7 @@ noncomputable def sqgResidualSymbol (n : Fin 2 → ℤ) : ℂ :=
         + n₁ * S 1 0 n * (-n₁) + n₁ * S 1 1 n * n₀) / L ^ 2
        - sqgHalfVorticitySymbol n
 
-/-- **SQG residual vanishes (D14 Theorem 1 restated).** The residual symbol
+/-- **SQG residual vanishes (Theorem 1 of the paper restated).** The residual symbol
 `S_nt - ω/2` equals `-L/2` (from the unnormalized identity) divided by `L²`,
 minus `(-L/2)`, which is zero.
 
@@ -2533,9 +2533,10 @@ We have now formalized the following curvature-budget ingredients:
 3. **SQG strain ↔ Hessian connection** (`sqgGrad_from_hess_0/1`):
    the strain is the Hessian rotated by 90° and divided by |∇θ|-scale.
 
-4. **Residual S_nt - ω/2 = 0** (`sqgResidualSymbol_eq_zero`): the D14
-   identity kills the residual exactly. For generalized SQG (gSQG), the
-   residual is O(‖n‖) and controlled by `residual_Hs_budget`.
+4. **Residual S_nt - ω/2 = 0** (`sqgResidualSymbol_eq_zero`): the
+   shear–vorticity identity kills the residual exactly. For generalized
+   SQG (gSQG), the residual is O(‖n‖) and controlled by
+   `residual_Hs_budget`.
 
 5. **Strain norm bound** (`sqgStrain_norm_le`): `‖Ŝ_{ij}(n)‖ ≤ ‖n‖`,
    so strain is controlled by one derivative of θ.
@@ -2550,7 +2551,7 @@ We have now formalized the following curvature-budget ingredients:
    infrastructure for the curvature evolution equation `Dκ/Dt`.
 
 Together these establish that the strain field (which drives curvature
-evolution) is controlled by the Ḣ¹ norm of θ, and that the D14 identity
+evolution) is controlled by the Ḣ¹ norm of θ, and that the shear–vorticity identity
 eliminates the dangerous term in the curvature budget.
 -/
 
@@ -6398,7 +6399,7 @@ The library now provides a complete Fourier-space curvature budget:
 - `thirdDerivSymbol`, `laplacianSymbol`, `invLaplacianSymbol`
 - `heatSymbol`, `poissonSymbol`
 
-**D14 identity and residual**
+**shear–vorticity identity and residual**
 - `sqg_shear_vorticity_fourier`: `⟨n, S·n⟩ = -L³/2 · θ̂`
 - `sqgResidualSymbol_eq_zero`: residual `S_nt - ω/2` is zero
 - `residual_Hs_budget`: gSQG residual control at Ḣˢ level
@@ -6444,12 +6445,12 @@ The library now provides a complete Fourier-space curvature budget:
 /-! ## §10 Roadmap to conditional Theorem 3 (SQG regularity)
 
 This section states **Theorem 3 conditionally**. The goal is to pin
-down *exactly* which analytic facts are load-bearing for the D14
-regularity argument, by making them explicit hypotheses in the Lean
+down *exactly* which analytic facts are load-bearing for the regularity
+argument of the paper, by making them explicit hypotheses in the Lean
 statement.
 
 The current repository proves the Fourier-algebraic spine (Theorems 1
-and 2 of D14) unconditionally. It does **not** prove Theorem 3. The
+and 2 of the paper) unconditionally. It does **not** prove Theorem 3. The
 three analytic hypotheses below are the pieces the paper argument
 borrows from outside the algebraic layer; they are stated here as
 abstract propositions and will be replaced by concrete theorems as
@@ -6459,7 +6460,7 @@ Current status of each hypothesis:
 
 * `MaterialMaxPrinciple` — placeholder. Needs: DiPerna–Lions-level
   flow theory for a divergence-free velocity with `θ ∈ L²`, plus the
-  "free-derivative" property of the D14 identity at κ-maxima.
+  "free-derivative" property of the shear–vorticity identity at κ-maxima.
 * `BKMCriterion` — placeholder. Needs: the SQG analogue of the
   Beale–Kato–Majda criterion: `∫₀^T ‖∇θ‖_{L^∞} dt < ∞` ⇒ smooth on
   `[0, T]`.
@@ -6482,7 +6483,7 @@ a proved theorem, the result becomes unconditional.
 
 /-- **Material max-principle hypothesis.**
 
-Packages the analytic output of the D14 §9 bounded-κ argument:
+Packages the analytic output of the §9 of the paper bounded-κ argument:
 if the material max-principle for front curvature holds (the
 "free-derivative" property at κ-maxima, incompressibility-driven
 material-segment expansion, and far-field control combine to bound
@@ -7786,7 +7787,7 @@ gradient coefficients in time).
 After §10.12, the remaining open content of conditional Theorem 3 on
 `s ∈ [0, 2]` collapses to:
 
-* `MaterialMaxPrinciple.hOnePropagation` — the D14 §9 geometric
+* `MaterialMaxPrinciple.hOnePropagation` — the §9 of the paper geometric
   argument (unchanged).
 * `BKMCriterionS2.hsPropagationS2` — integer-order Ḣ² bootstrap
   (unchanged).
