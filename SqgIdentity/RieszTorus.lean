@@ -13116,4 +13116,82 @@ noncomputable def advectionSummand
     * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
     * c p.1 * star (c (p.1 + p.2))
 
+/-- **Key j-sum identity** (§10.73 core): under Fourier div-free + real-
+Fourier hypotheses, the `τ`-swapped j-sum `Σ_j (k+ℓ)_j · u_j(-ℓ)` equals
+the star of the original `Σ_j k_j · u_j(ℓ)`. -/
+lemma advection_jsum_swap_eq_star
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u)
+    (k ℓ : Fin 2 → ℤ) :
+    (∑ j : Fin 2, (((k + ℓ) j : ℝ) : ℂ) * u j (-ℓ))
+      = star (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ) := by
+  -- Step A: hReal converts u_j(-ℓ) to star(u_j ℓ), then (k+ℓ)_j splits.
+  have hCast : ∀ j : Fin 2,
+      (((k + ℓ) j : ℝ) : ℂ) = ((k j : ℝ) : ℂ) + ((ℓ j : ℝ) : ℂ) := by
+    intro j
+    simp only [Pi.add_apply, Int.cast_add, Complex.ofReal_add]
+  have hLHS_split :
+      (∑ j : Fin 2, (((k + ℓ) j : ℝ) : ℂ) * u j (-ℓ))
+        = (∑ j : Fin 2, ((k j : ℝ) : ℂ) * star (u j ℓ))
+          + (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * star (u j ℓ)) := by
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intros j _
+    rw [hReal j ℓ, hCast j]
+    ring
+  -- Step B: ℓ-part vanishes via star applied to div-free.
+  have hℓPart_zero :
+      (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * star (u j ℓ)) = 0 := by
+    have hEq : (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * star (u j ℓ))
+        = star (∑ j : Fin 2, ((ℓ j : ℝ) : ℂ) * u j ℓ) := by
+      rw [star_sum]
+      apply Finset.sum_congr rfl
+      intros j _
+      rw [star_mul', Complex.conj_ofReal]
+    rw [hEq, hDivFree ℓ, star_zero]
+  -- Step C: k-part equals star(U).
+  have hKPart_eq :
+      (∑ j : Fin 2, ((k j : ℝ) : ℂ) * star (u j ℓ))
+        = star (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ) := by
+    rw [star_sum]
+    apply Finset.sum_congr rfl
+    intros j _
+    rw [star_mul', Complex.conj_ofReal]
+  rw [hLHS_split, hℓPart_zero, add_zero, hKPart_eq]
+
+/-- **Kernel identity:** `advectionSummand (τ p) + star (advectionSummand p)
+= 0` under div-free + reality hypotheses. Core algebraic step for the
+advection cancellation (§10.74 applies `Finset.sum_involution` to
+collapse `Re(Σ_{pairIdx} advectionSummand) = 0`). -/
+theorem advectionSummand_swap_add_star_eq_zero
+    {u : Fin 2 → (Fin 2 → ℤ) → ℂ} {c : (Fin 2 → ℤ) → ℂ}
+    (hDivFree : IsFourierDivFree u) (hReal : IsRealFourier u)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) :
+    advectionSummand u c (advectionSwap p) + star (advectionSummand u c p) = 0 := by
+  obtain ⟨k, ℓ⟩ := p
+  unfold advectionSummand
+  simp only [advectionSwap_apply]
+  -- The τ-swapped pair has k' + ℓ' = (k+ℓ) + (-ℓ) = k.
+  rw [show (k + ℓ) + -ℓ = k from by abel]
+  -- Apply j-sum identity to collapse the τ-swapped j-sum to star U.
+  rw [advection_jsum_swap_eq_star hDivFree hReal]
+  -- Now compute star of the original term explicitly, preparing for ring.
+  -- Helper facts (using star_mul' since ℂ is commutative).
+  have hSI : star Complex.I = -Complex.I := Complex.conj_I
+  have hSrealSq : ∀ r : ℝ, star (((r : ℝ) : ℂ) ^ 2) = ((r : ℝ) : ℂ) ^ 2 := by
+    intro r; rw [star_pow, Complex.conj_ofReal]
+  -- Rewrite the star of the full product.
+  have hStarProd :
+      star (Complex.I * ((latticeNorm k : ℝ) : ℂ) ^ 2
+            * ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+            * (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+            * c k * star (c (k + ℓ)))
+        = -Complex.I * ((latticeNorm k : ℝ) : ℂ) ^ 2
+            * ((latticeNorm (k + ℓ) : ℝ) : ℂ) ^ 2
+            * star (∑ j : Fin 2, ((k j : ℝ) : ℂ) * u j ℓ)
+            * star (c k) * c (k + ℓ) := by
+    simp only [star_mul', hSI, hSrealSq, star_star]
+  rw [hStarProd]
+  ring
+
 end SqgIdentity
