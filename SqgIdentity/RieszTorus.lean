@@ -13554,4 +13554,38 @@ theorem BKMCriterionS2.of_galerkin_energy_inequality
     (fun τ => galerkinToLp S (α τ)) S hSupport
     (trigPolyEnergyHs2 S (α 0)) K T M₀ hT_pos hGW hM₀_nn hZeroMode hExtend
 
+/-! ### §10.79 Combined advection + commutator summand factorization
+
+The advection split `‖k+ℓ‖⁴ = ‖k‖²·‖k+ℓ‖² + (‖k+ℓ‖² - ‖k‖²)·‖k+ℓ‖²`
+gives the algebraic identity
+
+```
+advectionSummand u c (k, ℓ) + commutatorSummand u c (k, ℓ)
+  = i · ‖k+ℓ‖⁴ · (∑_j k_j · u_j ℓ) · c(k) · star(c(k+ℓ))
+```
+
+This is the kernel that connects §10.69's energy-derivative formula to
+the §10.74 (advection cancellation) + §10.75 (commutator bound) chain.
+The right-hand side is exactly what appears when expanding the inner
+product `⟪c m, galerkinVectorField S c m⟫_ℝ` weighted by `(fracDerivSymbol
+2 m.val)^2` and reindexing `m = k + ℓ`. -/
+
+/-- **Combined advection + commutator factorization.** -/
+lemma advectionSummand_add_commutatorSummand
+    (u : Fin 2 → (Fin 2 → ℤ) → ℂ) (c : (Fin 2 → ℤ) → ℂ)
+    (p : (Fin 2 → ℤ) × (Fin 2 → ℤ)) :
+    advectionSummand u c p + commutatorSummand u c p
+      = Complex.I * (((latticeNorm (p.1 + p.2) : ℝ) : ℂ) ^ 4)
+        * (∑ j : Fin 2, ((p.1 j : ℝ) : ℂ) * u j p.2)
+        * c p.1 * star (c (p.1 + p.2)) := by
+  obtain ⟨k, ℓ⟩ := p
+  unfold advectionSummand commutatorSummand
+  -- LHS = i·|k|²·|k+ℓ|²·X + i·(|k+ℓ|² - |k|²)·|k+ℓ|²·X
+  --     = i·|k+ℓ|²·X·(|k|² + |k+ℓ|² - |k|²)
+  --     = i·|k+ℓ|⁴·X
+  -- where X = (∑_j k_j·u_j(ℓ))·c(k)·star(c(k+ℓ))
+  -- The factor `((‖k+ℓ‖)² - ‖k‖²)·(‖k+ℓ‖)² + ‖k‖²·(‖k+ℓ‖)² = (‖k+ℓ‖)⁴`
+  -- collapses by `ring` after recognising `((·:ℝ):ℂ)^4 = ((·:ℝ):ℂ)^2 · ((·:ℝ):ℂ)^2`.
+  ring
+
 end SqgIdentity
