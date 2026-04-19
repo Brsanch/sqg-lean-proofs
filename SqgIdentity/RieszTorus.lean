@@ -12310,4 +12310,76 @@ theorem galerkin_radialShell_L2_conserved
     (∑ m, ‖α t m‖ ^ 2) = (∑ m, ‖α s m‖ ^ 2) := by
   rw [galerkin_radialShell_constant hS α hα t s]
 
+/-! ### §10.61 Commutator symbol and trig-poly gradient surrogate
+
+Foundational definitions for a genuine commutator-based BKM estimate
+on the trig-poly class. §10.57 proves `BKMCriterionS2` on finite-
+support θ via the trivial hypothesis `‖θ̂(n)‖ ≤ M`. The present
+section, and §§10.62-10.67 that follow, work toward a *derived*
+bound of the form
+```
+‖θ(t)‖²_{Ḣ²} ≤ ‖θ(0)‖²_{Ḣ²} · exp (C · K · t)
+```
+where `K` bounds a velocity Sobolev quantity rather than the
+coefficients themselves. This is the classical Kato-Ponce / Beale-
+Kato-Majda shape.
+
+Key definitions introduced here:
+
+* `gradInftyFS S u` — the ℓ¹ Fourier surrogate for `‖∇u‖_∞` on the
+  trig-poly class. For `u : (Fin 2 → ℤ) → ℂ` supported on `S`,
+  `gradInftyFS S u := ∑ ℓ ∈ S, ‖ℓ‖ · ‖u ℓ‖`. By Fourier inversion
+  this dominates `‖∇u‖_∞` in the true L∞ sense, but we never need
+  that inequality: we use `gradInftyFS` directly as the velocity
+  Sobolev hypothesis in §§10.63 and following.
+
+* `comSymb k ℓ := ‖k+ℓ‖^4 - ‖k‖^4` — the symbol of the s=2 commutator
+  `[Λ², u·∇]` on the Fourier side. §10.62 proves the pointwise
+  Lipschitz-type estimate `|comSymb k ℓ| ≤ 4 · (‖k‖+‖ℓ‖)^3 · ‖ℓ‖`
+  used in the bilinear bound of §10.63.
+
+Both definitions are noncomputable wrappers over `latticeNorm`; no
+mathlib analytic machinery is invoked here. -/
+
+/-- **ℓ¹ Fourier surrogate for `‖∇u‖_∞`.** For a Fourier coefficient
+function `u : (Fin 2 → ℤ) → ℂ` supported on a Finset `S`, returns
+`∑ ℓ ∈ S, ‖ℓ‖ · ‖u ℓ‖`. On trig-poly this bounds the true `‖∇u‖_∞`
+via the triangle inequality on the inverse Fourier sum; we take it
+as the velocity-Sobolev hypothesis directly in §§10.63-10.67. -/
+noncomputable def gradInftyFS {d : Type*} [Fintype d] [DecidableEq d]
+    (S : Finset (d → ℤ)) (u : (d → ℤ) → ℂ) : ℝ :=
+  ∑ ℓ ∈ S, latticeNorm ℓ * ‖u ℓ‖
+
+lemma gradInftyFS_nonneg {d : Type*} [Fintype d] [DecidableEq d]
+    (S : Finset (d → ℤ)) (u : (d → ℤ) → ℂ) :
+    0 ≤ gradInftyFS S u := by
+  unfold gradInftyFS
+  exact Finset.sum_nonneg (fun ℓ _ =>
+    mul_nonneg (latticeNorm_nonneg ℓ) (norm_nonneg _))
+
+lemma gradInftyFS_empty {d : Type*} [Fintype d] [DecidableEq d]
+    (u : (d → ℤ) → ℂ) :
+    gradInftyFS (∅ : Finset (d → ℤ)) u = 0 := by
+  unfold gradInftyFS
+  simp
+
+/-- **Commutator symbol at order s = 2.** This is the Fourier symbol
+appearing in `[Λ², u·∇]` — specifically the factor `‖k+ℓ‖^4 - ‖k‖^4`
+that multiplies `û(ℓ)·θ̂(k)` in the Fourier-space form of the
+commutator applied to two modes with momenta `ℓ` (velocity) and
+`k` (scalar). -/
+noncomputable def comSymb {d : Type*} [Fintype d]
+    (k ℓ : d → ℤ) : ℝ :=
+  (latticeNorm (k + ℓ)) ^ 4 - (latticeNorm k) ^ 4
+
+lemma comSymb_zero_left {d : Type*} [Fintype d] (ℓ : d → ℤ) :
+    comSymb (0 : d → ℤ) ℓ = (latticeNorm ℓ) ^ 4 := by
+  unfold comSymb
+  simp [latticeNorm]
+
+lemma comSymb_zero_right {d : Type*} [Fintype d] (k : d → ℤ) :
+    comSymb k (0 : d → ℤ) = 0 := by
+  unfold comSymb
+  simp
+
 end SqgIdentity
