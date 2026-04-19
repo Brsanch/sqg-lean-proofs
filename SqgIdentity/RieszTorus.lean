@@ -11105,4 +11105,98 @@ theorem sqg_regularity_shellMode_const
     (hsSeminormSq_summable_of_finite_support 1 (shellMode S a) S
       (fun n hn => mFourierCoeff_shellMode_eq_zero_of_not_mem S a hn))
 
+/-! ### §10.36 Galerkin truncation — finite-dim ODE scaffold
+
+For a finite non-empty `S ⊆ ℤ² \ {0}`, the SQG dynamics projected
+onto `span {e_n : n ∈ S}` reduce to a finite-dim quadratic ODE on
+coefficient functions `c : (Fin 2 → ℤ) → ℂ`:
+
+    d/dτ c(m) = galerkinRHS S c m
+              = −∑_{ℓ ∈ S, m-ℓ ∈ S} c(ℓ) · c(m-ℓ) · C(ℓ, m-ℓ)
+
+where `C(ℓ, k) := ∑_j sqgVelocitySymbol j ℓ * derivSymbol j k` is the
+same coefficient used in §10.33. For a radial shell the §10.32
+pair-sum identity forces `galerkinRHS S c m = 0` for every `c` and
+every `m`, recovering stationarity of §10.33 as a **pointwise (in `c`)**
+algebraic fact. For general finite `S` the ODE is non-trivial but
+finite-dim, so mathlib's `PicardLindelof` will give local existence;
+energy conservation (L² isometry at the mode-coefficient level) gives
+global existence.
+
+**This section ships only:**
+* `galerkinRHS` definition.
+* Identical-to-zero behaviour on radial shells.
+
+**Deferred to later sections:**
+* Local-Lipschitz of `galerkinRHS` on L∞-balls (Phase 2.B).
+* Energy conservation `d/dτ ∑ |c m|² = 0` (Phase 2.C).
+* Integration with mathlib's ODE infrastructure to produce
+  `θ^S : ℝ → Lp ℂ 2` as a weak-solution witness (Phase 2.D). -/
+
+/-- **Galerkin nonlinear RHS at mode `m`.** Finite-sum projection
+of the SQG flux onto modes whose pre-image pair lies in `S × S`. -/
+noncomputable def galerkinRHS
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ))
+    (c : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) : ℂ :=
+  -∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+      c ℓ * c (m - ℓ)
+        * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+
+/-- **Galerkin RHS vanishes on radial shells.** At the pointwise-in-`c`
+level, `galerkinRHS S c m = 0` for every `c` and every `m` when `S`
+is a radial shell. The underlying cancellation is the same
+`Finset.sum_involution` argument as
+`sqgNonlinearFlux_shellMode_eq_zero`, now expressed in purely
+coefficient-level terms: amplitude factors `c(ℓ), c(m-ℓ)` replace the
+`mFourierCoeff (shellMode …)` factors, and the j-sum cancellation
+still closes via
+`sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq`.
+
+Consequence: the Galerkin ODE on a radial shell has trivial dynamics,
+so `c` stays constant in time and the §10.33 witness re-emerges. -/
+theorem galerkinRHS_eq_zero_of_isRadialShell
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (c : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    galerkinRHS S c m = 0 := by
+  unfold galerkinRHS
+  rw [neg_eq_zero]
+  apply Finset.sum_involution (fun ℓ _ => m - ℓ)
+  · -- hg₁: paired terms sum to zero via §10.32 pair-sum + radial norm equality.
+    intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ
+    obtain ⟨hℓ_S, hmℓ_S⟩ := hℓ
+    have hnorm_eq : latticeNorm ℓ = latticeNorm (m - ℓ) :=
+      hS.2 ℓ hℓ_S (m - ℓ) hmℓ_S
+    have h_pair :=
+      sqgVelocitySymbol_mul_derivSymbol_pair_sum_zero_of_latticeNorm_eq
+        ℓ (m - ℓ) hnorm_eq
+    have h_sub : m - (m - ℓ) = ℓ := sub_sub_cancel m ℓ
+    rw [h_sub]
+    have hring :
+        c ℓ * c (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+          + c (m - ℓ) * c ℓ
+            * (∑ j : Fin 2, sqgVelocitySymbol j (m - ℓ) * derivSymbol j ℓ)
+          = c ℓ * c (m - ℓ)
+            * ((∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
+               + (∑ j : Fin 2, sqgVelocitySymbol j (m - ℓ) * derivSymbol j ℓ))
+          := by ring
+    rw [hring, h_pair, mul_zero]
+  · -- hg₃: fixed point ⇒ summand = 0.
+    intros ℓ _ hne h_eq
+    apply hne
+    rw [h_eq, sqgVelocitySymbol_mul_derivSymbol_sum_zero, mul_zero]
+  · -- g_mem.
+    intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓ_S, hmℓ_S⟩ := hℓ
+    refine ⟨hmℓ_S, ?_⟩
+    rw [sub_sub_cancel]
+    exact hℓ_S
+  · -- hg₄.
+    intros ℓ _
+    exact sub_sub_cancel m ℓ
+
 end SqgIdentity
