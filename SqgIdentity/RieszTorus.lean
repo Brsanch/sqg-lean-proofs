@@ -13807,4 +13807,46 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
   rw [Complex.neg_re]
   ring
 
+/-! ### §10.84 Energy-derivative collapses to the commutator part
+
+Combining §10.83 (pair-sum form) with §10.74 (advection cancellation)
+under the Riesz-velocity symmetry hypotheses (`IsSymmetricSupport S` +
+`IsRealCoeff` of the lifted coefficients), the energy-derivative reduces
+to a sum involving only the commutator pair-summand:
+```
+∑ m : ↥S, (fracDerivSymbol 2 m.val)² · 2 · ⟪c m, GVF S c m⟫_ℝ
+  = -2 · Re(∑_{p ∈ pairIdx S} commutatorSummand u c' p)
+```
+The Riesz velocity is automatically `IsFourierDivFree` (§10.71); reality
+follows from `IsRealCoeff c` + symmetric support via §10.72. -/
+
+/-- **Advection cancellation in the energy-derivative.** -/
+theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S) (hSym : IsSymmetricSupport S)
+    (c : ↥S → ℂ)
+    (hRealCoeff : ∀ n ∈ S, galerkinExtend S c (-n) = star (galerkinExtend S c n)) :
+    (∑ m : ↥S, (fracDerivSymbol 2 m.val) ^ 2 *
+        (2 * (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m))))
+      = -2 * (∑ p ∈ pairIdx S,
+          commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
+            (galerkinExtend S c) p).re := by
+  set c' := galerkinExtend S c
+  rw [trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum h0 c]
+  -- Split ∑ (A + C) = ∑ A + ∑ C, then Re distributes over +.
+  rw [show (∑ p ∈ pairIdx S,
+              advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p
+              + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p)
+          = (∑ p ∈ pairIdx S,
+                advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p)
+            + (∑ p ∈ pairIdx S,
+                commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * c' ℓ') c' p) from
+        Finset.sum_add_distrib]
+  rw [Complex.add_re]
+  -- §10.74: Re(∑ advectionSummand) = 0.
+  have hOff : ∀ n ∉ S, c' n = 0 := fun n hn => galerkinExtend_apply_of_not_mem _ _ hn
+  rw [advectionSum_re_eq_zero hSym (isFourierDivFree_riesz c')
+        (isRealFourier_riesz hSym c' hRealCoeff hOff)]
+  rw [zero_add]
+
 end SqgIdentity
