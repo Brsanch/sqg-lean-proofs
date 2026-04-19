@@ -24,11 +24,11 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
 
-  # Dedupe caches after the build finishes. `leanprover/lean-action@v1`
-  # saves a new cache entry on every run even when an identical-key
-  # entry already exists, so duplicates accumulate against the 10 GB
-  # per-repo Actions cache quota. This job keeps only the newest entry
-  # per key; older duplicates are pruned.
+  # Prune caches after the build finishes. `leanprover/lean-action@v1`
+  # keys caches by commit SHA, so every push creates a unique key and
+  # the per-key dedupe is a no-op. Instead, keep only the newest cache
+  # (by created_at) regardless of key, and delete the rest. This keeps
+  # the repo under the 10 GB per-repo Actions cache quota.
   dedupe-caches:
     runs-on: ubuntu-latest
     needs: build
@@ -36,20 +36,20 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: Remove duplicate caches (keep newest per key)
+      - name: Prune caches (keep newest, drop rest)
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # Group caches by key, keep the newest by created_at, delete the rest.
+          # Sort by created_at descending, drop first (newest), delete rest.
           ids=$(gh api "/repos/$REPO/actions/caches?per_page=100" \
-            --jq '.actions_caches | group_by(.key) | map(sort_by(.created_at) | .[:-1]) | flatten | .[].id')
+            --jq '.actions_caches | sort_by(.created_at) | reverse | .[1:] | .[].id')
           if [ -z "$ids" ]; then
-            echo "No duplicate caches to delete."
+            echo "No caches to prune (≤1 present)."
             exit 0
           fi
           echo "$ids" | while read id; do
-            echo "Deleting duplicate cache id=$id"
+            echo "Deleting cache id=$id"
             gh api -X DELETE "/repos/$REPO/actions/caches/$id" || true
           done
