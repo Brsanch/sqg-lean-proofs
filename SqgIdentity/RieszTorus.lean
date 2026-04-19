@@ -14665,4 +14665,131 @@ theorem galerkinRHS_inner_sum_re_eq_zero
       (isRealFourier_riesz hS c hRealC hOff)
   linarith [hcancel]
 
+/-! ### §10.97 L² conservation for Galerkin trajectories
+
+Combines §10.96 (galerkin inner-product real part vanishes) with
+`HasDerivAt.norm_sq` + `HasDerivAt.fun_sum` to show the L² norm squared
+of the Galerkin trajectory is constant in time. -/
+
+/-- **Pointwise derivative of the Galerkin Ḣ⁰ (L²) energy.** Analogue of
+§10.69 `trigPolyEnergyHs2_hasDerivAt` without the `(fracDerivSymbol 2)²`
+weighting — just `∑ m : ↥S, ‖α τ m‖²`. -/
+theorem galerkinEnergyH0_hasDerivAt
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (τ : ℝ) :
+    HasDerivAt (fun t => ∑ m : ↥S, ‖α t m‖ ^ 2)
+      (∑ m : ↥S, 2 *
+        (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m))) τ := by
+  apply HasDerivAt.fun_sum
+  intros m _
+  have hαm : HasDerivAt (fun t => α t m) (galerkinVectorField S (α τ) m) τ :=
+    (hasDerivAt_pi.mp (hα τ)) m
+  exact hαm.norm_sq
+
+/-- **Galerkin Ḣ⁰ energy derivative = 0.** Under symmetric support +
+real-coefficient symmetry, `d/dτ ∑_{m ∈ ↥S} ‖α τ m‖² = 0`. -/
+theorem galerkinEnergyH0_deriv_eq_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (τ : ℝ) :
+    deriv (fun t => ∑ m : ↥S, ‖α t m‖ ^ 2) τ = 0 := by
+  rw [(galerkinEnergyH0_hasDerivAt α hα τ).deriv]
+  -- Step 1: Per-term inner → .re conversion.
+  have hTerm : ∀ m : ↥S,
+      2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m))
+        = 2 * (star (galerkinExtend S (α τ) m.val)
+                * galerkinRHS S (galerkinExtend S (α τ)) m.val).re := by
+    intro m
+    rw [inner_real_complex_eq_re_star_mul]
+    rw [show α τ m = galerkinExtend S (α τ) m.val from
+          (galerkinExtend_apply_of_mem _ _ m.property).symm]
+    rfl
+  rw [Finset.sum_congr rfl (fun m _ => hTerm m)]
+  -- Step 2: Factor 2 out.
+  rw [← Finset.mul_sum]
+  -- Step 3: Re commutes with sum.
+  rw [show (∑ m : ↥S, (star (galerkinExtend S (α τ) m.val)
+                        * galerkinRHS S (galerkinExtend S (α τ)) m.val).re)
+           = (∑ m : ↥S, star (galerkinExtend S (α τ) m.val)
+                         * galerkinRHS S (galerkinExtend S (α τ)) m.val).re from
+       (Complex.re_sum _ _).symm]
+  -- Step 4: ↥S → S via Finset.sum_attach.
+  rw [show (∑ m : ↥S, star (galerkinExtend S (α τ) m.val)
+                        * galerkinRHS S (galerkinExtend S (α τ)) m.val)
+           = ∑ n ∈ S, star (galerkinExtend S (α τ) n)
+                       * galerkinRHS S (galerkinExtend S (α τ)) n from by
+       rw [show ((Finset.univ : Finset ↥S)) = S.attach from Finset.univ_eq_attach S]
+       exact Finset.sum_attach S
+         (fun n => star (galerkinExtend S (α τ) n)
+                    * galerkinRHS S (galerkinExtend S (α τ)) n)]
+  -- Step 5: Apply §10.96.
+  rw [galerkinRHS_inner_sum_re_eq_zero hS (galerkinExtend S (α τ))
+      (fun n hn => hRealC τ n hn)
+      (fun n hn => galerkinExtend_apply_of_not_mem _ _ hn)]
+  ring
+
+/-- **Galerkin finite-sum L² energy is constant in time.** Direct
+consequence of `galerkinEnergyH0_deriv_eq_zero` + `is_const_of_deriv_eq_zero`. -/
+theorem galerkinEnergyH0_const
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (s t : ℝ) :
+    (∑ m : ↥S, ‖α s m‖ ^ 2) = ∑ m : ↥S, ‖α t m‖ ^ 2 := by
+  have hE_hasDeriv : ∀ τ,
+      HasDerivAt (fun t' => ∑ m : ↥S, ‖α t' m‖ ^ 2) (0 : ℝ) τ := by
+    intro τ
+    have h := galerkinEnergyH0_hasDerivAt α hα τ
+    have hZero := galerkinEnergyH0_deriv_eq_zero hS α hα hRealC τ
+    rw [h.deriv] at hZero
+    rw [← hZero]; exact h
+  have hDiff : Differentiable ℝ (fun t' => ∑ m : ↥S, ‖α t' m‖ ^ 2) :=
+    fun τ => (hE_hasDeriv τ).differentiableAt
+  have hDeriv : ∀ τ, deriv (fun t' => ∑ m : ↥S, ‖α t' m‖ ^ 2) τ = 0 :=
+    fun τ => (hE_hasDeriv τ).deriv
+  exact is_const_of_deriv_eq_zero hDiff hDeriv s t
+
+/-- **L² conservation for the lifted Galerkin trajectory** in terms of
+`hsSeminormSq 0`. Requires `0 ∉ S` so the Ḣ⁰ seminorm (which zeroes the
+zero-mode contribution) coincides with the finite-sum L² energy. -/
+theorem galerkinToLp_hsSeminormSq_zero_const
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (s t : ℝ) :
+    hsSeminormSq 0 (galerkinToLp S (α s)) = hsSeminormSq 0 (galerkinToLp S (α t)) := by
+  have hExp : ∀ c : ↥S → ℂ,
+      hsSeminormSq 0 (galerkinToLp S c) = ∑ m : ↥S, ‖c m‖ ^ 2 := by
+    intro c
+    unfold hsSeminormSq
+    have hZeroOff : ∀ n ∉ S,
+        (fracDerivSymbol 0 n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2 = 0 := by
+      intros n hn
+      rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn,
+          norm_zero]; ring
+    rw [tsum_eq_sum (s := S) (fun n hn => hZeroOff n hn)]
+    rw [show ((Finset.univ : Finset ↥S)) = S.attach from Finset.univ_eq_attach S]
+    rw [← Finset.sum_attach S (fun n =>
+        (fracDerivSymbol 0 n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2)]
+    apply Finset.sum_congr rfl
+    intros m _
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_mem _ _ m.property]
+    have hm_ne : m.val ≠ 0 := fun hv => h0 (hv ▸ m.property)
+    rw [fracDerivSymbol_of_ne_zero 0 hm_ne, Real.rpow_zero]; ring
+  rw [hExp (α s), hExp (α t)]
+  exact galerkinEnergyH0_const hS α hα hRealC s t
+
 end SqgIdentity
