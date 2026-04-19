@@ -1,8 +1,10 @@
 # The Shear-Vorticity Identity and Spectral Concentration in SQG Front Dynamics
 
+**Bryan Sanchez** *(Independent)*
+
 ## Abstract
 
-We report an algebraic identity for the inviscid Surface Quasi-Geostrophic (SQG) equation: the combination $S_{nt} - \omega/2$ — shear strain minus half the vorticity — vanishes identically for any one-dimensional front configuration. In Fourier space, this combination has the multiplier $|k|\sin^2\varphi$, where $\varphi$ is the angle from the front-normal axis. The identity has three consequences for the regularity problem. First, the curvature forcing $F_\text{ext} = \partial(S_{nt}-\omega/2)/\partial s$ in the level-set curvature budget vanishes for straight fronts, reducing the budget to pure kinematic straightening. Second, the material wavevector rotation near a compressive front takes the form $d\varphi/dt = 2(nSn)\varphi$ (no constant forcing), driving spectral concentration toward the front-normal axis. Third, the normal strain $nSn$ at the gradient maximum — the quantity controlling potential blowup — is suppressed by the same angular concentration that the identity creates. Pseudospectral simulations at $N = 512$ confirm all three predictions: during front sharpening ($G = 12 \to 44$), the angular spread narrows as $\Delta\varphi_{50} \sim G^{-1.0}$, the enstrophy concentration ratio increases as $\rho(10°) \sim G^{0.38}$ ($R^2 = 0.98$), and $|nSn|$ decreases as $G^{-0.17}$ — the gradient maximum decelerates as the front sharpens. We further derive a closed-form expression for the residual $S_{nt}-\omega/2$ on a front with small perturbation $y_f(x) = \eta(x)$: $\mathrm{residual}(x) = \mathcal{F}^{-1}[-k^2 \cdot I(|k|\delta) \cdot \hat\eta(k)](x)$, where $I(q) = \int_0^\infty u/[\sinh(\pi u/2)\sqrt{q^2+u^2}]\,du$ has small-$q$ expansion $I(q) = -(2/\pi)\ln q + 0.5951 + O(q^2)$. This formula is verified to <0.2% amplitude accuracy and >0.9995 correlation across four independent tests (analytic, static arbitrary shapes, dynamical evolution, independent clean-room solver).
+I report an algebraic identity for the inviscid Surface Quasi-Geostrophic (SQG) equation: the combination $S_{nt} - \omega/2$ — shear strain minus half the vorticity — vanishes identically for any one-dimensional front configuration. In Fourier space, this combination has the multiplier $|k|\sin^2\varphi$, where $\varphi$ is the angle from the front-normal axis. The identity has three consequences for the regularity problem. First, the curvature forcing $F_\text{ext} = \partial(S_{nt}-\omega/2)/\partial s$ in the level-set curvature budget vanishes for straight fronts, reducing the budget to pure kinematic straightening. Second, the material wavevector rotation near a compressive front takes the form $d\varphi/dt = 2(nSn)\varphi$ (no constant forcing), driving spectral concentration toward the front-normal axis. Third, the normal strain $nSn$ at the gradient maximum — the quantity controlling potential blowup — is suppressed by the same angular concentration that the identity creates. Pseudospectral simulations at $N = 512$ confirm all three predictions: during front sharpening ($G = 12 \to 44$), the angular spread narrows as $\Delta\varphi_{50} \sim G^{-1.0}$, the enstrophy concentration ratio increases as $\rho(10°) \sim G^{0.38}$ ($R^2 = 0.98$), and $|nSn|$ decreases as $G^{-0.17}$ — the gradient maximum decelerates as the front sharpens. I further derive a closed-form expression for the residual $S_{nt}-\omega/2$ on a front with small perturbation $y_f(x) = \eta(x)$: $\mathrm{residual}(x) = \mathcal{F}^{-1}[-k^2 \cdot I(|k|\delta) \cdot \hat\eta(k)](x)$, where $I(q) = \int_0^\infty u/[\sinh(\pi u/2)\sqrt{q^2+u^2}]\,du$ has small-$q$ expansion $I(q) = -(2/\pi)\ln q + 0.5951 + O(q^2)$. This formula is verified to <0.2% amplitude accuracy and >0.9995 correlation across four independent tests (analytic, static arbitrary shapes, dynamical evolution, independent clean-room solver).
 
 **Keywords:** Surface Quasi-Geostrophic equation, finite-time singularity, spectral concentration, vorticity-strain cancellation, front dynamics
 
@@ -24,9 +26,9 @@ where $nSn = \hat{n}\cdot S\cdot\hat{n}$ is the normal strain (compressive, $nSn
 
 The Calderón-Zygmund (CZ) bound gives $|nSn| \leq CG$ (the strain is bounded by the gradient). Any improvement — $|nSn| = o(G)$ as $G \to \infty$ — would resolve the problem. The selection rule (parity cancellation of the Riesz kernel at the gradient maximum) gives $|nSn| \leq C_1 G\kappa^2\delta^2$, where $\kappa$ is the level-set curvature and $\delta = \|\theta\|_\infty/G$ is the front width [4]. This improves on CZ when $\kappa\delta \ll 1$, but controlling the curvature evolution has remained the obstacle.
 
-In this paper, we identify an algebraic identity that provides the missing mechanism.
+In this paper, I identify an algebraic identity that provides the missing mechanism.
 
-*Lagrangian framing.* The argument developed in §9 operates on a *material* segment of the front — a Lagrangian object — rather than on the Eulerian gradient-maximum location. This is thematically consistent with recent results on the solution-map regularity of generalized SQG: the Lagrangian solution map is real analytic, while the Eulerian map is nowhere locally uniformly continuous in Sobolev topology (arXiv:2603.12944, 2026). Our regularity proof relies on this "well-behaved" side of the dichotomy: the material segment expands under incompressibility, and the curvature maximum principle (Prop 9.9) is a Lagrangian statement on an expanding domain.
+*Lagrangian framing.* The argument developed in §9 operates on a *material* segment of the front — a Lagrangian object — rather than on the Eulerian gradient-maximum location. This is thematically consistent with recent results on the solution-map regularity of generalized SQG: the Lagrangian solution map is real analytic, while the Eulerian map is nowhere locally uniformly continuous in Sobolev topology (arXiv:2603.12944, 2026). My regularity proof relies on this "well-behaved" side of the dichotomy: the material segment expands under incompressibility, and the curvature maximum principle (Prop 9.9) is a Lagrangian statement on an expanding domain.
 
 ---
 
@@ -152,7 +154,7 @@ Pseudospectral simulations of inviscid SQG (1) on $\mathbb{T}^2 = [0,2\pi]^2$ wi
 
 ### 5.2 Identity verification
 
-At $N = 256$, $G = 12.5$ (clean sharpening phase, $t = 4.2$), we trace the $\theta$-level set through $x^*$ and sample $S_{nt}$, $\omega/2$, and their difference along the front.
+At $N = 256$, $G = 12.5$ (clean sharpening phase, $t = 4.2$), I trace the $\theta$-level set through $x^*$ and sample $S_{nt}$, $\omega/2$, and their difference along the front.
 
 | Quantity | Value at $x^*$ | Range along front |
 |----------|----------------|-------------------|
@@ -178,7 +180,7 @@ The normal strain $|nSn|$ *decreases* with $G$: the gradient maximum decelerates
 
 ### 5.4 Local amplitude of $f = S_{nt}-\omega/2$ near $x^*$
 
-The critical test: how does the amplitude of $f$ in a neighborhood of $x^*$ scale with $G$? We measure the maximum $|f|$ within $2\delta$ of $x^*$ along the front ("local amplitude") at $N = 512$:
+The critical test: how does the amplitude of $f$ in a neighborhood of $x^*$ scale with $G$? I measure the maximum $|f|$ within $2\delta$ of $x^*$ along the front ("local amplitude") at $N = 512$:
 
 | $G$ | local amplitude | local amp / $A$ | $\max|f|$ / $G$ | Phase |
 |-----|----------------|-----------------|-----------------|-------|
@@ -291,7 +293,7 @@ $$|\partial_t^2[(-\Delta)^{-1/2}\theta](x^*)| \leq C\kappa_{\psi}\|(-\Delta)^{-1
 
 where $\kappa_\psi$ is the curvature of the level sets of $\psi = (-\Delta)^{-1/2}\theta$ (the stream function). Since $\psi$ is one derivative smoother than $\theta$, its curvature is controlled by $A$ (not $G$). More precisely: $\|\nabla^2\psi\|_\infty = \|\nabla^2(-\Delta)^{-1/2}\theta\|_\infty \leq C\|\nabla\theta\|_\infty$ by CZ, but the *tangential* second derivative at $x^*$ only sees the angular structure (modes with $\varphi \neq 0$), which is $O(\psi^2 G)$ by (9). Since $\psi \lesssim \kappa\delta$ near $x^*$, this gives $|f| \lesssim \kappa^2\delta^2 G = \kappa^2 A^2/G$ — which *improves* with $G$.
 
-For the far-field piece specifically (sources at distance $\gg \delta$), these sources contribute through $\psi$ at $x^*$ with curvature set by the large-scale flow. Since $|\nabla^2\psi| \leq C\|\nabla\theta\|_\infty = CG$ globally, but the tangential curvature $\partial_t^2\psi$ at the gradient maximum satisfies $\partial_t^2\psi(x^*) = f(x^*) = S_{nt}-\omega/2$, and we are bounding this very quantity, we close with the bootstrap (§6.4) rather than pointwise.
+For the far-field piece specifically (sources at distance $\gg \delta$), these sources contribute through $\psi$ at $x^*$ with curvature set by the large-scale flow. Since $|\nabla^2\psi| \leq C\|\nabla\theta\|_\infty = CG$ globally, but the tangential curvature $\partial_t^2\psi$ at the gradient maximum satisfies $\partial_t^2\psi(x^*) = f(x^*) = S_{nt}-\omega/2$, and I am bounding this very quantity, I close with the bootstrap (§6.4) rather than pointwise.
 
 The clean bound for the far-field alone: split $\theta = \theta_\text{near} + \theta_\text{far}$ with $\theta_\text{near}$ supported in $B(x^*, L/4)$. Then $(-\Delta)^{-1/2}\theta_\text{far}$ is smooth near $x^*$ with all derivatives controlled by $\|\theta\|_\infty$: $\|\nabla^k(-\Delta)^{-1/2}\theta_\text{far}\|_{L^\infty(B(x^*,\delta))} \leq C_k A$ (standard elliptic regularity, since $\theta_\text{far}$ vanishes near $x^*$). In particular, $|\partial_t^2[(-\Delta)^{-1/2}\theta_\text{far}](x^*)| \leq CA$. $\square$
 
@@ -373,7 +375,7 @@ From (24): $dG/dt = G\,|nSn| \leq C_1\kappa_{\max}(0)^2 A^2$, so $G(t) \leq G(0)
 
 **Remark (self-reinforcement).** The bound improves with time: as $\kappa_{\max}$ decreases (from (21)), the selection rule bound (24) tightens, which reduces $|nSn|$, which accelerates the straightening. The fixed point is the one-dimensional front: $\kappa = 0$, $f = 0$, $nSn = 0$. The sharpening phase converges toward this fixed point.
 
-**Remark (conditional nature of the Gronwall closure).** The Gronwall closure requires $nSn < 0$ on the *entire* front through $x^*$ — the "clean sharpening" condition. Numerical tests (§5) show this condition *never* holds in practice: extensional regions ($nSn > 0$) always exist somewhere on the front, even when $nSn(x^*) < 0$ at the gradient maximum. We therefore require an unconditional argument. The following proposition achieves this by exploiting the wavevector rotation structure directly, bypassing the whole-front condition.
+**Remark (conditional nature of the Gronwall closure).** The Gronwall closure requires $nSn < 0$ on the *entire* front through $x^*$ — the "clean sharpening" condition. Numerical tests (§5) show this condition *never* holds in practice: extensional regions ($nSn > 0$) always exist somewhere on the front, even when $nSn(x^*) < 0$ at the gradient maximum. I therefore require an unconditional argument. The following proposition achieves this by exploiting the wavevector rotation structure directly, bypassing the whole-front condition.
 
 ### 6.5 Unconditional regularity via wavevector variance contraction
 
@@ -411,7 +413,7 @@ For the leading-order term: $d(\Delta\varphi)/dt = 2(nSn)\,\Delta\varphi$, givin
 
 $$V(t) = V(0)\,\exp\left(4\int_0^t nSn\,d\tau\right). \tag{29}$$
 
-Since $dG/dt = |nSn|\,G = -nSn\cdot G$ (equation (2), with $nSn < 0$), we have $\int_0^t nSn\,d\tau = -\int_0^t (dG/G) = -\ln(G/G_0)$. Substituting:
+Since $dG/dt = |nSn|\,G = -nSn\cdot G$ (equation (2), with $nSn < 0$), I have $\int_0^t nSn\,d\tau = -\int_0^t (dG/G) = -\ln(G/G_0)$. Substituting:
 
 $$V(t) = V_0\,e^{-4\ln(G/G_0)} = V_0\left(\frac{G_0}{G}\right)^4. \tag{30}$$
 
@@ -419,7 +421,7 @@ The higher-order correction from $R$: for concentrated spectra with $|\varphi_\a
 
 $$\frac{dV}{dt} = [4(nSn) + O(G\psi_\text{max})]\,V.$$
 
-For the variance contraction to dominate, we need $4|nSn| \gg CG\psi_\text{max}$. Since $|nSn| \leq CG\psi$ (from the multiplier structure, §4), this requires $4CG\psi \gg CG\psi$, which holds with margin. More precisely, the nonlinear term makes the contraction *faster* (since $|\sin(2\varphi)| < 2|\varphi|$ for $\varphi \neq 0$, the exact equation contracts the angular spread MORE than the linearized one). Therefore (30) is an *upper bound* on the variance. $\square$
+For the variance contraction to dominate, I need $4|nSn| \gg CG\psi_\text{max}$. Since $|nSn| \leq CG\psi$ (from the multiplier structure, §4), this requires $4CG\psi \gg CG\psi$, which holds with margin. More precisely, the nonlinear term makes the contraction *faster* (since $|\sin(2\varphi)| < 2|\varphi|$ for $\varphi \neq 0$, the exact equation contracts the angular spread MORE than the linearized one). Therefore (30) is an *upper bound* on the variance. $\square$
 
 **Remark (factor of 2 is geometric).** The factor of $4$ in (26) — equivalently, the exponent $4$ in (27) — arises because the *material gradient equation* rotates wavevectors at rate $2|nSn|$ (not $|nSn|$). Geometrically: under a strain of rate $\sigma$, a line element rotates at rate $\sigma$ but a wavevector (normal to the line element) rotates at rate $2\sigma$ in the frame co-rotating with the material. The factor of 2 in angular rate becomes a factor of 4 in the variance. This is the reason spectral concentration outpaces the forcing that would disrupt it: the forcing from the identity residual creates angular deviation at rate proportional to $\psi^2 G$ (from the $|k|\cos^2\varphi$ multiplier), while the damping removes it at rate $4|nSn|\psi^2 \geq 4C\psi\,G\,\psi^2$. The damping has an extra factor of $\psi$ — so for $\psi > 0$, it always dominates.
 
@@ -511,7 +513,7 @@ The identity suggests a diagnostic for SQG simulation quality: the residual $|S_
 
 ## 8. Closed-Form Curvature Correction to the Identity
 
-The identity (Theorem 1) states that $S_{nt} - \omega/2 = 0$ for a straight front. A curved front produces a nonzero residual. We derive a closed-form expression for this residual to leading order in the curvature, and verify it to <0.2% amplitude accuracy across four independent numerical tests.
+The identity (Theorem 1) states that $S_{nt} - \omega/2 = 0$ for a straight front. A curved front produces a nonzero residual. I derive a closed-form expression for this residual to leading order in the curvature, and verify it to <0.2% amplitude accuracy across four independent numerical tests.
 
 ### 8.1 Single-mode derivation
 
@@ -580,13 +582,13 @@ Earlier numerical fits of $R_{\text{rel}}$ vs $k\delta$ reported various power l
 
 ### 8.6 Implementation note
 
-Any pipeline testing the formula must avoid interpolation of the perturbation field. In the course of this verification we observed a spurious 14% amplitude offset traceable to `np.interp` lifting $\eta$ from a coarse specification grid to the full simulation grid: the linear-interpolation corners inject high-$k$ content that the nonlocal Riesz operator picks up as a shape-independent amplitude distortion. The fix is to construct $\eta$ directly on the full $N$-point grid via analytic evaluation or FFT-based resampling. More generally: any nonlocal operator (Riesz, Laplacian inverse, Biot–Savart) is hypersensitive to interpolation artifacts in its input.
+Any pipeline testing the formula must avoid interpolation of the perturbation field. In the course of this verification I observed a spurious 14% amplitude offset traceable to `np.interp` lifting $\eta$ from a coarse specification grid to the full simulation grid: the linear-interpolation corners inject high-$k$ content that the nonlocal Riesz operator picks up as a shape-independent amplitude distortion. The fix is to construct $\eta$ directly on the full $N$-point grid via analytic evaluation or FFT-based resampling. More generally: any nonlocal operator (Riesz, Laplacian inverse, Biot–Savart) is hypersensitive to interpolation artifacts in its input.
 
 ---
 
 ## 9. The Heartbeat Mechanism and Local Energy Budget
 
-The conditional theorem (§6.5, Note of 2026-04-13) reduces the regularity gap to: if the curvature derivative $\kappa' = d\kappa/ds$ along the front at $x^*$ is bounded, then $|nSn| \leq CA$ and regularity follows. However, direct measurement shows $\kappa'(x^*)$ grows as $G^{1.2}$ at $N=512$ — the pointwise bound does not hold. We show here that a *local energy* formulation bypasses this: the integral $\int (nSn)^2\,ds$ near $x^*$ stays bounded, which suffices for regularity. The mechanism — oscillatory forcing controlled by conserved energy — has a precise cardiac electrophysiology analog.
+The conditional theorem (§6.5, Note of 2026-04-13) reduces the regularity gap to: if the curvature derivative $\kappa' = d\kappa/ds$ along the front at $x^*$ is bounded, then $|nSn| \leq CA$ and regularity follows. However, direct measurement shows $\kappa'(x^*)$ grows as $G^{1.2}$ at $N=512$ — the pointwise bound does not hold. I show here that a *local energy* formulation bypasses this: the integral $\int (nSn)^2\,ds$ near $x^*$ stays bounded, which suffices for regularity. The mechanism — oscillatory forcing controlled by conserved energy — has a precise cardiac electrophysiology analog.
 
 ### 9.1 Maximum conditions at the gradient maximum
 
@@ -610,7 +612,7 @@ This elementary result encodes a deep constraint: **the same strain that drives 
 
 ### 9.3 The heartbeat mechanism
 
-Using spectrally exact derivatives ($\partial/\partial s = i(t_x k_x + t_y k_y)$ in Fourier space, consistency error $< 10^{-15}$), we measure the third tangential derivative of the normal velocity $F = \partial^3 u_n/\partial s^3$ at $x^*$ — the forcing term in the linearized curvature derivative evolution.
+Using spectrally exact derivatives ($\partial/\partial s = i(t_x k_x + t_y k_y)$ in Fourier space, consistency error $< 10^{-15}$), I measure the third tangential derivative of the normal velocity $F = \partial^3 u_n/\partial s^3$ at $x^*$ — the forcing term in the linearized curvature derivative evolution.
 
 **Finding 1 (Forcing growth).** $|F|/A \sim G^{3.1}$ at $N=512$ ($R^2 = 0.94$). The Eulerian forcing at $x^*$ grows faster than $G$. A simple damping argument $d\kappa'/dt = F - c\kappa'$ cannot close.
 
@@ -825,7 +827,7 @@ $$|nSn_\text{near}| \leq C\kappa^2\delta^2 G = C\kappa^2 A^2/G. \tag{54}$$
 
 Even with $\kappa = O(1)$ (bounded, not zero): $|nSn_\text{near}| = O(1/G) \to 0$. **Bounded curvature suffices for regularity.**
 
-To prove $\kappa(x^*)$ bounded, we use a maximum principle on a material segment — a domain that *expands* (via tangential stretching) rather than shrinks (like the geometric near-field window $|s| \leq R\delta$).
+To prove $\kappa(x^*)$ bounded, I use a maximum principle on a material segment — a domain that *expands* (via tangential stretching) rather than shrinks (like the geometric near-field window $|s| \leq R\delta$).
 
 **Proposition 9.8 (Material segment expansion).** *Define a material segment $\Omega(t)$ of the front containing $x^*(t)$. Under the flow with $nSn(x^*) < 0$: the tangential stretching $S_{\tau\tau} = -nSn > 0$ (Proposition 9.3) elongates $\Omega(t)$:*
 
@@ -908,7 +910,7 @@ The complete proof chain for Theorem 3:
 
 ### 10.1 Numerical certification of the material max principle
 
-A numerical scheme faithful to the continuum SQG dynamics should preserve the Prop 9.10 boundary bound along a Lagrangian-tracked material segment. We implemented such a certification by advecting 64 particles along a front with RK2 interpolation, computing the boundary curvature envelope, and comparing to the initial $C(\theta_0)$. At $N=192$, $T=1.5$, the envelope ratio $\max_t |\kappa_\text{bdry}|/|\kappa_\text{bdry}(0)|$ is $0.043$ for RK4, ETDRK4, and spectral-cutoff variants — the boundary curvature *contracts* rather than stays bounded, well within the proven envelope. This is a structural (not merely conservation-based) certification: a scheme that violated Prop 9.10 would produce a field inconsistent with Theorem 3 independent of energy or $L^p$ conservation.
+A numerical scheme faithful to the continuum SQG dynamics should preserve the Prop 9.10 boundary bound along a Lagrangian-tracked material segment. I implemented such a certification by advecting 64 particles along a front with RK2 interpolation, computing the boundary curvature envelope, and comparing to the initial $C(\theta_0)$. At $N=192$, $T=1.5$, the envelope ratio $\max_t |\kappa_\text{bdry}|/|\kappa_\text{bdry}(0)|$ is $0.043$ for RK4, ETDRK4, and spectral-cutoff variants — the boundary curvature *contracts* rather than stays bounded, well within the proven envelope. This is a structural (not merely conservation-based) certification: a scheme that violated Prop 9.10 would produce a field inconsistent with Theorem 3 independent of energy or $L^p$ conservation.
 
 ### 10.2 Extension to the generalized SQG family
 
