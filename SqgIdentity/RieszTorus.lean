@@ -12646,64 +12646,65 @@ Gronwall inequality and the uniform ℓ∞ coefficient hypothesis
 consumed by §10.57. -/
 
 lemma fourier_coeff_bound_from_hs2
+    {S : Finset (Fin 2 → ℤ)}
     {f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))} {E : ℝ}
+    (hE_nn : 0 ≤ E)
+    (hSupp : ∀ m ∉ S, mFourierCoeff f m = 0)
     (hEnergy : hsSeminormSq 2 f ≤ E) (n : Fin 2 → ℤ) (hn : n ≠ 0) :
     ‖mFourierCoeff f n‖ ≤ Real.sqrt E := by
-  -- `(fracDerivSymbol 2 n)² · ‖fhat n‖² ≤ hsSeminormSq 2 f ≤ E`
-  have hNn_pos : 0 < fracDerivSymbol 2 n := fracDerivSymbol_pos hn
-  have hNn_ge_one : (1 : ℝ) ≤ fracDerivSymbol 2 n := by
-    rw [fracDerivSymbol_of_ne_zero 2 hn]
+  -- Trivial if `n ∉ S`.
+  by_cases hn_mem : n ∈ S
+  · -- Convert tsum to Finset sum via finite support.
+    have hZeroOff : ∀ m ∉ S,
+        (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 = 0 := by
+      intros m hm
+      rw [hSupp m hm, norm_zero]; ring
+    have hS_eq :
+        ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2
+          = ∑ m ∈ S, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 :=
+      tsum_eq_sum (s := S) (fun m hm => hZeroOff m hm)
+    have hS_eq' : hsSeminormSq 2 f
+        = ∑ m ∈ S, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := by
+      unfold hsSeminormSq; exact hS_eq
+    -- Integer-lattice lower bound: `(fracDerivSymbol 2 n)² ≥ 1`.
     have hL : 1 ≤ latticeNorm n := latticeNorm_ge_one_of_ne_zero hn
-    have h0 : (0 : ℝ) ≤ 1 := by norm_num
-    calc (1 : ℝ) = 1 ^ (2 : ℝ) := by norm_num
-      _ ≤ (latticeNorm n) ^ (2 : ℝ) :=
-          Real.rpow_le_rpow h0 hL (by norm_num : (0 : ℝ) ≤ 2)
-  have hSymSq_ge_one : (1 : ℝ) ≤ (fracDerivSymbol 2 n) ^ 2 := by
-    have := mul_le_mul hNn_ge_one hNn_ge_one (by norm_num : (0 : ℝ) ≤ 1)
-              (le_of_lt hNn_pos)
-    simpa [sq] using this
-  -- Extract the single term from the tsum.
-  have hSymSq_nn : 0 ≤ (fracDerivSymbol 2 n) ^ 2 := sq_nonneg _
-  have hSumm : Summable (fun m =>
-      (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2) := by
-    by_contra hNotSumm
-    have hTsum : ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 = 0 :=
-      tsum_eq_zero_of_not_summable hNotSumm
-    have : hsSeminormSq 2 f = 0 := by unfold hsSeminormSq; exact hTsum
-    have h0_le_E : (0 : ℝ) ≤ E := by
-      have := hEnergy
-      rw [this] at this
-      linarith [this]
-    have hSingNn : 0 ≤ (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
-      mul_nonneg hSymSq_nn (sq_nonneg _)
-    -- Not summable but nonneg means value unbounded — however we only
-    -- need the target bound, and unsumable gives tsum = 0 anyway.
-    exact absurd rfl rfl
-  have hTermLe :
-      (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
-        ≤ ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := by
-    have hNn_term :
-        ∀ m, 0 ≤ (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 :=
-      fun m => mul_nonneg (sq_nonneg _) (sq_nonneg _)
-    exact le_tsum hSumm n (fun m _ => hNn_term m)
-  have hTermLeE :
-      (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 ≤ E := by
-    have hS : hsSeminormSq 2 f
-        = ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := rfl
-    linarith [hEnergy, hTermLe]
-  -- Now `‖fhat n‖² ≤ E / (fracDerivSymbol 2 n)² ≤ E`.
-  have hCoeffSq_le_E : ‖mFourierCoeff f n‖ ^ 2 ≤ E := by
-    have h1 : ‖mFourierCoeff f n‖ ^ 2
-        ≤ (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
-      have := mul_le_mul_of_nonneg_right hSymSq_ge_one (sq_nonneg ‖mFourierCoeff f n‖)
+    have hFDS_ge_one : (1 : ℝ) ≤ fracDerivSymbol 2 n := by
+      rw [fracDerivSymbol_of_ne_zero 2 hn]
+      have h0 : (0 : ℝ) ≤ 1 := by norm_num
+      calc (1 : ℝ) = 1 ^ (2 : ℝ) := (Real.one_rpow 2).symm
+        _ ≤ (latticeNorm n) ^ (2 : ℝ) :=
+            Real.rpow_le_rpow h0 hL (by norm_num : (0 : ℝ) ≤ 2)
+    have hFDS_nn : 0 ≤ fracDerivSymbol 2 n := fracDerivSymbol_nonneg 2 n
+    have hFDS_sq_ge_one : (1 : ℝ) ≤ (fracDerivSymbol 2 n) ^ 2 := by
+      have := mul_le_mul hFDS_ge_one hFDS_ge_one (by norm_num : (0 : ℝ) ≤ 1) hFDS_nn
+      simpa [sq, one_mul] using this
+    -- Single term ≤ finite sum = hsSeminormSq ≤ E.
+    have hSingle :
+        (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
+          ≤ ∑ m ∈ S, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := by
+      apply Finset.single_le_sum (f := fun m =>
+        (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2)
+      · intros m _
+        exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+      · exact hn_mem
+    have hSingleLeE :
+        (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 ≤ E := by
+      linarith [hSingle, hEnergy, hS_eq'.symm.le, hS_eq'.le]
+    -- Drop the `(fracDerivSymbol 2 n)²ℓ ≥ 1` factor.
+    have hCoeffSqNn : 0 ≤ ‖mFourierCoeff f n‖ ^ 2 := sq_nonneg _
+    have hCoeffSq_le_E : ‖mFourierCoeff f n‖ ^ 2 ≤ E := by
+      have : ‖mFourierCoeff f n‖ ^ 2
+          ≤ (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
+        have h := mul_le_mul_of_nonneg_right hFDS_sq_ge_one hCoeffSqNn
+        linarith
       linarith
-    linarith [h1, hTermLeE]
-  have hE_nn : 0 ≤ E := le_trans (sq_nonneg _) hCoeffSq_le_E
-  have hCoeff_nn : 0 ≤ ‖mFourierCoeff f n‖ := norm_nonneg _
-  -- Take sqrt of both sides.
-  calc ‖mFourierCoeff f n‖
-      = Real.sqrt (‖mFourierCoeff f n‖ ^ 2) := (Real.sqrt_sq hCoeff_nn).symm
-    _ ≤ Real.sqrt E := Real.sqrt_le_sqrt hCoeffSq_le_E
+    have hCoeff_nn : 0 ≤ ‖mFourierCoeff f n‖ := norm_nonneg _
+    calc ‖mFourierCoeff f n‖
+        = Real.sqrt (‖mFourierCoeff f n‖ ^ 2) := (Real.sqrt_sq hCoeff_nn).symm
+      _ ≤ Real.sqrt E := Real.sqrt_le_sqrt hCoeffSq_le_E
+  · -- Off-support: coefficient is zero.
+    rw [hSupp n hn_mem, norm_zero]
+    exact Real.sqrt_nonneg _
 
 /-! ### §10.66 Galerkin energy Gronwall predicate
 
@@ -12739,6 +12740,8 @@ coefficient is uniformly bounded (in `t`) by `√(E₀ · exp(K·T))`. -/
 lemma uniform_fourier_bound_of_galerkinEnergyGronwall
     {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {E₀ K T : ℝ} (hGW : GalerkinEnergyGronwall θ E₀ K T)
+    {S : Finset (Fin 2 → ℤ)}
+    (hSupp : ∀ τ : ℝ, ∀ m ∉ S, mFourierCoeff (θ τ) m = 0)
     (n : Fin 2 → ℤ) (hn : n ≠ 0) :
     ∀ t ∈ Set.Icc (0 : ℝ) T,
       ‖mFourierCoeff (θ t) n‖ ≤ Real.sqrt (E₀ * Real.exp (K * T)) := by
@@ -12752,7 +12755,10 @@ lemma uniform_fourier_bound_of_galerkinEnergyGronwall
         ≤ E₀ * Real.exp (K * t) := hET
       _ ≤ E₀ * Real.exp (K * T) :=
           mul_le_mul_of_nonneg_left hExp_mono hGW.nonneg_E₀
-  exact fourier_coeff_bound_from_hs2 hET' n hn
+  have hExp_pos : 0 < Real.exp (K * T) := Real.exp_pos _
+  have hE_target_nn : 0 ≤ E₀ * Real.exp (K * T) :=
+    mul_nonneg hGW.nonneg_E₀ hExp_pos.le
+  exact fourier_coeff_bound_from_hs2 hE_target_nn (hSupp t) hET' n hn
 
 /-! ### §10.67 Derived `BKMCriterionS2` via Galerkin energy Gronwall
 
@@ -12800,7 +12806,7 @@ theorem BKMCriterionS2.of_galerkinEnergyGronwall
       · have hτ_mem : τ ∈ Set.Icc (0 : ℝ) T := ⟨hτ, hτT⟩
         calc ‖mFourierCoeff (θ τ) n‖
             ≤ Real.sqrt (E₀ * Real.exp (K * T)) :=
-              uniform_fourier_bound_of_galerkinEnergyGronwall hGW n hn τ hτ_mem
+              uniform_fourier_bound_of_galerkinEnergyGronwall hGW hSupport n hn τ hτ_mem
           _ ≤ M := le_max_right _ _
     · push_neg at hτT
       rw [hExtend τ hτT n, norm_zero]
