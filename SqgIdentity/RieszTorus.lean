@@ -13447,4 +13447,111 @@ lemma commutatorSummand_norm_le_on_support
         nlinarith [hJsum_le', h1, h2, h3, mul_nonneg (mul_nonneg h1 h2) h3]
     _ = 6 * D ^ 5 * SumU * ‖c k‖ * ‖c (k + ℓ)‖ := by ring
 
+/-! ### §10.76 Energy-inequality-to-exponential bound
+
+The analytic cancellation (§10.74) and commutator estimate (§10.75)
+combine at the Galerkin trajectory level to an **energy inequality**:
+```
+|deriv (trigPolyEnergyHs2 S ∘ α) τ| ≤ K · trigPolyEnergyHs2 S (α τ)
+```
+for some rate `K` depending on the support diameter, velocity Sobolev
+bound, and shape constants.
+
+Given this inequality, §10.64's `scalar_gronwall_exp` immediately
+yields the exponential bound
+```
+trigPolyEnergyHs2 S (α τ) ≤ trigPolyEnergyHs2 S (α 0) · exp(K · τ)
+```
+on `[0, T]`. Bridging via §10.68's `trigPolyEnergyHs2_eq_hsSeminormSq`,
+this is exactly what `GalerkinEnergyGronwall` packages.
+
+This section wraps the Gronwall application; §10.77 promotes it to a
+`GalerkinEnergyGronwall` witness; §10.78 composes with §10.67 for the
+unconditional BKMCriterionS2. -/
+
+/-- **Energy-inequality-to-exponential bound.** -/
+theorem trigPolyEnergy_exp_bound_of_deriv_le
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ)) (K T : ℝ) (hT : 0 ≤ T) (hK_nn : 0 ≤ K)
+    (hE_cont : ContinuousOn (fun t => trigPolyEnergyHs2 S (α t)) (Set.Icc 0 T))
+    (hE_deriv : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      HasDerivWithinAt (fun t => trigPolyEnergyHs2 S (α t))
+        (deriv (fun t => trigPolyEnergyHs2 S (α t)) x) (Set.Ici x) x)
+    (hE_bound : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |deriv (fun t => trigPolyEnergyHs2 S (α t)) x|
+        ≤ K * |trigPolyEnergyHs2 S (α x)|) :
+    ∀ t ∈ Set.Icc (0 : ℝ) T,
+      trigPolyEnergyHs2 S (α t)
+        ≤ trigPolyEnergyHs2 S (α 0) * Real.exp (K * t) :=
+  scalar_gronwall_exp (fun t => trigPolyEnergyHs2 S (α t)) K T hT
+    hE_cont hE_deriv hE_bound
+    (fun _ _ => trigPolyEnergyHs2_nonneg (α _))
+
+/-! ### §10.77 Promotion to `GalerkinEnergyGronwall`
+
+Wraps the §10.76 exponential bound as a `GalerkinEnergyGronwall` witness
+for the lifted Lp trajectory `τ ↦ galerkinToLp S (α τ)`. The trig-poly
+finite-sum energy equals `hsSeminormSq 2 (galerkinToLp ...)` via §10.68,
+so the witness's `hsSeminormSq`-indexed bounds come for free. -/
+
+/-- **Promotion to `GalerkinEnergyGronwall`.** -/
+theorem galerkinEnergyGronwall_of_deriv_le
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ)) (K T : ℝ) (hT : 0 ≤ T) (hK_nn : 0 ≤ K)
+    (hE_cont : ContinuousOn (fun t => trigPolyEnergyHs2 S (α t)) (Set.Icc 0 T))
+    (hE_deriv : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      HasDerivWithinAt (fun t => trigPolyEnergyHs2 S (α t))
+        (deriv (fun t => trigPolyEnergyHs2 S (α t)) x) (Set.Ici x) x)
+    (hE_bound : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |deriv (fun t => trigPolyEnergyHs2 S (α t)) x|
+        ≤ K * |trigPolyEnergyHs2 S (α x)|) :
+    GalerkinEnergyGronwall (fun τ => galerkinToLp S (α τ))
+      (trigPolyEnergyHs2 S (α 0)) K T where
+  nonneg_T := hT
+  nonneg_E₀ := trigPolyEnergyHs2_nonneg (α 0)
+  nonneg_K := hK_nn
+  initial_bound := by
+    rw [← trigPolyEnergyHs2_eq_hsSeminormSq]
+  exp_bound := fun t ht => by
+    rw [← trigPolyEnergyHs2_eq_hsSeminormSq]
+    exact trigPolyEnergy_exp_bound_of_deriv_le α K T hT hK_nn
+      hE_cont hE_deriv hE_bound t ht
+
+/-! ### §10.78 Final capstone: unconditional `BKMCriterionS2` from energy inequality
+
+Top-level capstone of the §10.61-§10.78 chain. Composes §10.77
+(GalerkinEnergyGronwall from energy inequality) with §10.67
+(`BKMCriterionS2.of_galerkinEnergyGronwall`) to give an **unconditional**
+`BKMCriterionS2` for any Galerkin trajectory on a finite-support `S`
+satisfying the energy inequality hypothesis. -/
+
+/-- **Unconditional `BKMCriterionS2` from energy inequality.** Closes
+the §10.61-§10.78 chain: given a Galerkin trajectory `α` on finite
+support `S` with energy inequality `|d/dt E| ≤ K·|E|`, zero-mode bound,
+and extension-to-infinity convention, `BKMCriterionS2` holds for the
+lifted Lp trajectory. -/
+theorem BKMCriterionS2.of_galerkin_energy_inequality
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S,
+      mFourierCoeff (galerkinToLp S (α τ)) n = 0)
+    (K T M₀ : ℝ) (hT_pos : 0 < T) (hK_nn : 0 ≤ K) (hM₀_nn : 0 ≤ M₀)
+    (hE_cont : ContinuousOn (fun t => trigPolyEnergyHs2 S (α t)) (Set.Icc 0 T))
+    (hE_deriv : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      HasDerivWithinAt (fun t => trigPolyEnergyHs2 S (α t))
+        (deriv (fun t => trigPolyEnergyHs2 S (α t)) x) (Set.Ici x) x)
+    (hE_bound : ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |deriv (fun t => trigPolyEnergyHs2 S (α t)) x|
+        ≤ K * |trigPolyEnergyHs2 S (α x)|)
+    (hZeroMode : ∀ τ : ℝ, 0 ≤ τ → τ ≤ T →
+      ‖mFourierCoeff (galerkinToLp S (α τ)) (0 : Fin 2 → ℤ)‖ ≤ M₀)
+    (hExtend : ∀ τ : ℝ, T < τ →
+      ∀ n, mFourierCoeff (galerkinToLp S (α τ)) n = 0) :
+    BKMCriterionS2 (fun τ => galerkinToLp S (α τ)) := by
+  have hGW := galerkinEnergyGronwall_of_deriv_le α K T (le_of_lt hT_pos) hK_nn
+    hE_cont hE_deriv hE_bound
+  exact BKMCriterionS2.of_galerkinEnergyGronwall
+    (fun τ => galerkinToLp S (α τ)) S hSupport
+    (trigPolyEnergyHs2 S (α 0)) K T M₀ hT_pos hGW hM₀_nn hZeroMode hExtend
+
 end SqgIdentity
