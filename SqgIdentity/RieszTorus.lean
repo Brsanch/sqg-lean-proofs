@@ -13852,4 +13852,64 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum
         (isRealFourier_riesz hSym c' hRealCoeff hOff)]
   rw [zero_add]
 
+/-! ### §10.85 Per-mode L² bound from the Ḣ² energy
+
+For `m ∈ S` with `0 ∉ S`, the squared modulus `‖c' m‖²` is bounded by
+the full Ḣ² energy:
+```
+‖galerkinExtend S c m‖² ≤ trigPolyEnergyHs2 S c
+```
+because `(fracDerivSymbol 2 m)² = (latticeNorm m)⁴ ≥ 1` (since `m ≠ 0`)
+and the term `(fracDerivSymbol 2 m)² · ‖c' m‖²` is non-negatively
+dominated by the full sum. -/
+
+/-- **Per-mode L² bound from Ḣ² energy.** -/
+lemma sqNorm_le_trigPolyEnergyHs2
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (c : ↥S → ℂ) {m : Fin 2 → ℤ} (hm : m ∈ S) :
+    ‖galerkinExtend S c m‖^2 ≤ trigPolyEnergyHs2 S c := by
+  have hm_ne : m ≠ 0 := fun h => h0 (h ▸ hm)
+  have hLat : 1 ≤ latticeNorm m := latticeNorm_ge_one_of_ne_zero hm_ne
+  have hLat_nn : 0 ≤ latticeNorm m := latticeNorm_nonneg m
+  -- (fracDerivSymbol 2 m)² ≥ 1 since fracDerivSymbol 2 m = (latticeNorm m)² ≥ 1.
+  have hFD_eq : fracDerivSymbol 2 m = (latticeNorm m)^2 :=
+    fracDerivSymbol_two_eq hm_ne
+  have hFDSq_ge_one : 1 ≤ (fracDerivSymbol 2 m)^2 := by
+    rw [hFD_eq]; nlinarith
+  -- Reduce ‖galerkinExtend S c m‖² to ‖c ⟨m, hm⟩‖².
+  have hCEq : ‖galerkinExtend S c m‖ = ‖c ⟨m, hm⟩‖ := by
+    rw [galerkinExtend_apply_of_mem _ _ hm]
+  rw [hCEq]
+  -- ‖c ⟨m, hm⟩‖² ≤ (fracDerivSymbol 2 m)² · ‖c ⟨m, hm⟩‖².
+  have h_one_le : ‖c ⟨m, hm⟩‖^2 ≤ (fracDerivSymbol 2 m)^2 * ‖c ⟨m, hm⟩‖^2 := by
+    have h := mul_le_mul_of_nonneg_right hFDSq_ge_one (sq_nonneg ‖c ⟨m, hm⟩‖)
+    linarith
+  -- (fracDerivSymbol 2 m)² · ‖c ⟨m, hm⟩‖² ≤ trigPolyEnergyHs2 S c
+  -- (the term at ⟨m, hm⟩ is ≤ the full sum since all terms ≥ 0).
+  have h_term_le : (fracDerivSymbol 2 m)^2 * ‖c ⟨m, hm⟩‖^2 ≤ trigPolyEnergyHs2 S c := by
+    unfold trigPolyEnergyHs2
+    exact Finset.single_le_sum (s := Finset.univ)
+      (f := fun m' : ↥S => (fracDerivSymbol 2 m'.val) ^ 2 * ‖c m'‖ ^ 2)
+      (fun m' _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+      (Finset.mem_univ ⟨m, hm⟩)
+  linarith
+
+/-- **Pair-product L² bound from Ḣ² energy.** For `a, b ∈ S` with
+`0 ∉ S`, `‖c' a‖ · ‖c' b‖ ≤ trigPolyEnergyHs2 S c` via AM-GM. -/
+lemma normPairProd_le_trigPolyEnergyHs2
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (c : ↥S → ℂ) {a b : Fin 2 → ℤ} (ha : a ∈ S) (hb : b ∈ S) :
+    ‖galerkinExtend S c a‖ * ‖galerkinExtend S c b‖ ≤ trigPolyEnergyHs2 S c := by
+  have hA := sqNorm_le_trigPolyEnergyHs2 h0 c ha
+  have hB := sqNorm_le_trigPolyEnergyHs2 h0 c hb
+  set α := ‖galerkinExtend S c a‖
+  set β := ‖galerkinExtend S c b‖
+  have hα_nn : 0 ≤ α := norm_nonneg _
+  have hβ_nn : 0 ≤ β := norm_nonneg _
+  -- AM-GM: α · β ≤ (α² + β²)/2 ≤ E (since α², β² ≤ E).
+  have hAMGM : α * β ≤ (α^2 + β^2) / 2 := by nlinarith [sq_nonneg (α - β)]
+  linarith
+
 end SqgIdentity
