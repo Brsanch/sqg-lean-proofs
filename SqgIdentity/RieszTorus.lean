@@ -13029,17 +13029,28 @@ velocity is automatically Fourier-real. -/
 def IsRealFourier (u : Fin 2 → (Fin 2 → ℤ) → ℂ) : Prop :=
   ∀ (j : Fin 2) (ℓ : Fin 2 → ℤ), u j (-ℓ) = star (u j ℓ)
 
+/-- **Real part of the Riesz symbol is zero** (for nonzero `n`). -/
+lemma rieszSymbol_re {d : Type*} [Fintype d] {n : d → ℤ} (hn : n ≠ 0)
+    (j : d) :
+    (rieszSymbol j n).re = 0 := by
+  unfold rieszSymbol
+  rw [if_neg hn]
+  simp [Complex.div_re, Complex.mul_re, Complex.neg_re, Complex.I_re,
+        Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+        Complex.neg_im, Complex.normSq_ofReal]
+
 /-- **Star identity for the Riesz symbol.** `star (rieszSymbol j n) =
--rieszSymbol j n`. The Riesz symbol is purely imaginary. -/
+-rieszSymbol j n`. The Riesz symbol is purely imaginary, so its complex
+conjugate equals its negation. -/
 lemma star_rieszSymbol {d : Type*} [Fintype d] (j : d) (n : d → ℤ) :
     star (rieszSymbol j n) = -rieszSymbol j n := by
   by_cases hn : n = 0
   · subst hn; simp
-  simp only [rieszSymbol, if_neg hn]
-  rw [star_div₀, star_mul, star_neg, Complex.star_def, Complex.conj_I,
-      Complex.star_def, Complex.conj_ofReal, Complex.star_def,
-      Complex.conj_ofReal]
-  ring
+  apply Complex.ext
+  · rw [show star (rieszSymbol j n) = starRingEnd ℂ (rieszSymbol j n) from rfl,
+        Complex.conj_re, Complex.neg_re, rieszSymbol_re hn, neg_zero]
+  · rw [show star (rieszSymbol j n) = starRingEnd ℂ (rieszSymbol j n) from rfl,
+        Complex.conj_im, Complex.neg_im]
 
 /-- **Star identity for `sqgVelocitySymbol`.** -/
 lemma star_sqgVelocitySymbol (j : Fin 2) (n : Fin 2 → ℤ) :
