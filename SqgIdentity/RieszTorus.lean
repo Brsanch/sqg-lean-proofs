@@ -13836,29 +13836,17 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_commutatorSum
           commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
             (galerkinExtend S c) p).re := by
   rw [trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum h0 c]
-  -- Split (∑ p, A p + C p).re = (∑ p, A p).re + (∑ p, C p).re via an explicit have.
-  have h_split : (∑ p ∈ pairIdx S,
-        advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-          (galerkinExtend S c) p
-        + commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-          (galerkinExtend S c) p).re
-      = (∑ p ∈ pairIdx S,
-          advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-            (galerkinExtend S c) p).re
-      + (∑ p ∈ pairIdx S,
-          commutatorSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-            (galerkinExtend S c) p).re := by
-    rw [Finset.sum_add_distrib, Complex.add_re]
+  -- Strip the leading `-2 *` via congr 1 so we work with the .re directly.
+  congr 1
+  -- Goal: (∑ p, A + C).re = (∑ p, C).re
+  rw [Finset.sum_add_distrib, Complex.add_re]
   -- §10.74: Re(∑ advectionSummand) = 0.
   have hOff : ∀ n ∉ S, galerkinExtend S c n = 0 := fun n hn =>
     galerkinExtend_apply_of_not_mem _ _ hn
-  have h_adv_zero : (∑ p ∈ pairIdx S,
-        advectionSummand (fun j ℓ' => sqgVelocitySymbol j ℓ' * galerkinExtend S c ℓ')
-          (galerkinExtend S c) p).re = 0 :=
-    advectionSum_re_eq_zero hSym
-      (isFourierDivFree_riesz (galerkinExtend S c))
-      (isRealFourier_riesz hSym (galerkinExtend S c) hRealCoeff hOff)
-  rw [h_split, h_adv_zero, zero_add]
+  rw [advectionSum_re_eq_zero hSym
+        (isFourierDivFree_riesz (galerkinExtend S c))
+        (isRealFourier_riesz hSym (galerkinExtend S c) hRealCoeff hOff)]
+  exact zero_add _
 
 /-! ### §10.85 Per-mode L² bound from the Ḣ² energy
 
@@ -13993,20 +13981,14 @@ theorem trigPolyEnergyHs2_deriv_abs_le
         ≤ 6 * D^5 * (∑ j : Fin 2, ‖u j p.2‖) * ‖galerkinExtend S c p.1‖
               * ‖galerkinExtend S c (p.1 + p.2)‖ := h75
       _ ≤ 6 * D^5 * (2 * ‖galerkinExtend S c p.2‖) * ‖galerkinExtend S c p.1‖
-              * ‖galerkinExtend S c (p.1 + p.2)‖ := by
-            nlinarith [h_uSum, norm_nonneg (galerkinExtend S c p.1),
-                       norm_nonneg (galerkinExtend S c (p.1 + p.2))]
+              * ‖galerkinExtend S c (p.1 + p.2)‖ := by gcongr
       _ = 12 * D^5 * ‖galerkinExtend S c p.2‖
               * (‖galerkinExtend S c p.1‖
                     * ‖galerkinExtend S c (p.1 + p.2)‖) := by ring
       _ ≤ 12 * D^5 * M
               * (‖galerkinExtend S c p.1‖
-                    * ‖galerkinExtend S c (p.1 + p.2)‖) := by
-            have h_12D5_nn : (0 : ℝ) ≤ 12 * D^5 := by positivity
-            nlinarith [h_p2_le_M]
-      _ ≤ 12 * D^5 * M * E := by
-            have h_12DM_nn : (0 : ℝ) ≤ 12 * D^5 * M := by positivity
-            nlinarith [h_pp_le_E]
+                    * ‖galerkinExtend S c (p.1 + p.2)‖) := by gcongr
+      _ ≤ 12 * D^5 * M * E := by gcongr
   -- Sum bound.
   have hSumBound : (∑ p ∈ pairIdx S,
                       ‖commutatorSummand u (galerkinExtend S c) p‖)
@@ -14022,8 +14004,7 @@ theorem trigPolyEnergyHs2_deriv_abs_le
                 _ = S.card * S.card := Finset.card_product _ _
             have h_cast : ((pairIdx S).card : ℝ)
                         ≤ (S.card : ℝ) * (S.card : ℝ) := by exact_mod_cast h_pic_le
-            have h_E_nn : (0 : ℝ) ≤ 12 * D^5 * M * E := by positivity
-            nlinarith
+            gcongr
       _ = 12 * D^5 * M * (S.card : ℝ)^2 * E := by ring
   -- Bound the energy derivative.
   have h_re_le_norm :
