@@ -11255,4 +11255,24 @@ theorem galerkinVectorField_eq_zero_of_isRadialShell
   show galerkinRHS S (galerkinExtend S c) ↑m = 0
   exact galerkinRHS_eq_zero_of_isRadialShell hS (galerkinExtend S c) ↑m
 
+/-! ### §10.38 Radial-shell Galerkin ODE — constant solution
+
+First **ODE-level** solution statement for the Galerkin system: on a
+radial shell, any initial coefficient configuration `c₀ : ↥S → ℂ`
+induces a time-constant solution `c(τ) = c₀` of the Galerkin ODE
+`d/dτ c = galerkinVectorField S c`. Existence requires no Lipschitz
+analysis — the vector field is identically zero, so the constant
+function has the right derivative automatically.
+
+This is the ODE-level reflection of the §10.33/§10.34 stationary
+witness: the coefficient dynamics are frozen, so `shellMode S c₀`
+stays constant in time, consistent with `SqgEvolutionAxioms_strong.shellMode_const`. -/
+theorem galerkin_radial_shell_constant_is_solution
+    [DecidableEq (Fin 2 → ℤ)]
+    {S : Finset (Fin 2 → ℤ)} (hS : IsRadialShell S)
+    (c₀ : ↥S → ℂ) (τ : ℝ) :
+    HasDerivAt (fun _ : ℝ => c₀) (galerkinVectorField S c₀) τ := by
+  rw [galerkinVectorField_eq_zero_of_isRadialShell hS]
+  exact hasDerivAt_const τ c₀
+
 end SqgIdentity
