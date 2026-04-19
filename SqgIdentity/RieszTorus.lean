@@ -13763,11 +13763,14 @@ theorem trigPolyEnergyHs2_deriv_eq_neg_two_re_pairSum
         rw [← Finset.sum_neg_distrib]
         apply Finset.sum_congr rfl
         intros m _
-        rw [show galerkinRHS S c' m = -∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
-                  c' ℓ * c' (m - ℓ)
-                    * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))
-                from rfl]
-        rw [mul_neg, neg_inj, Finset.mul_sum]
+        have hGR : galerkinRHS S c' m
+                  = -∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+                      c' ℓ * c' (m - ℓ)
+                        * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)) := rfl
+        rw [hGR]
+        -- Push negations outward: r * (s * -X) = -(r * s * X), then neg_inj.
+        simp only [mul_neg]
+        rw [neg_inj, Finset.mul_sum]
         apply Finset.sum_congr rfl
         intros ℓ _
         ring]
