@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.6
+version: 0.4.7
 date-released: "2026-04-19"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -120,7 +120,26 @@ abstract: >
   discharged unconditionally for any time-varying θ with finite
   Fourier support on a fixed S and a uniform coefficient bound M,
   giving hsSeminormSq 1 (θ t) ≤ M² · (∑_{n∈S} (fracDerivSymbol 1 n)²).
-  All content machine-verified with zero `sorry` across 12818 lines.
+  v0.4.7 closes the analytic-hypothesis chain and bundles two
+  consumer-facing capstones: §10.55 galerkin_mode_FTC — mode-wise
+  FTC for Galerkin trajectories via hasDerivAt_pi +
+  intervalIntegral.integral_eq_sub_of_hasDerivAt; §10.57
+  BKMCriterionS2.of_finite_support_uniform — mirror of §10.56 for
+  the BKM axiom on the same class; §10.58 (A)
+  sqg_regularity_of_finite_support_uniform — unconditional Ḣˢ
+  bound on [0, 2] for any finite-support θ with uniform ℓ∞ bound
+  (zero axioms remain in the statement) and (B)
+  SqgEvolutionAxioms_strong.of_finite_support_weak_solution —
+  full strong-axiom discharge for such θ that is a weak solution;
+  §10.59 demo reproving shellMode_const via §10.58 (sanity check
+  that the new capstone subsumes §10.49); §10.60
+  galerkin_radialShell_L2_conserved — trivial L² conservation on
+  radial-shell Galerkin ODE (α constant in time via
+  is_const_of_deriv_eq_zero on a zero vector field). Both
+  conditional-Theorem-3 analytic axioms (MaterialMaxPrinciple and
+  BKMCriterionS2) now have **unconditional** discharges for the
+  finite-Fourier-support + uniform-coefficient-bound class.
+  All content machine-verified with zero `sorry` across 13021 lines.
   Mathematical theorems by Bryan Sanchez; Lean formalization by
   Bryan Sanchez with AI assistance.
 keywords:
