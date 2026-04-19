@@ -13665,4 +13665,17 @@ lemma energySummand_eq_advectionSummand_add_commutatorSummand
   push_cast
   ring
 
+/-! ### §10.82 Real inner-product on `ℂ` via `star z · w`
+
+Bridge helper: `@inner ℝ ℂ _ z w = (star z · w).re`. Used in §10.83 to
+convert §10.69's HasDerivAt formula (inner-product form) into the `.re`
+form amenable to the pair-sum reindexing. -/
+
+/-- **Real inner product on `ℂ` = `Re(star z · w)`.** -/
+lemma inner_real_complex_eq_re_star_mul (z w : ℂ) :
+    @inner ℝ ℂ _ z w = (star z * w).re := by
+  rw [RCLike.real_inner_eq_re_inner]
+  congr 1
+  exact Complex.inner_def z w
+
 end SqgIdentity
