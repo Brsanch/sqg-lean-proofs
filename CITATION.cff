@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.7
+version: 0.4.8
 date-released: "2026-04-19"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -139,7 +139,33 @@ abstract: >
   conditional-Theorem-3 analytic axioms (MaterialMaxPrinciple and
   BKMCriterionS2) now have **unconditional** discharges for the
   finite-Fourier-support + uniform-coefficient-bound class.
-  All content machine-verified with zero `sorry` across 13021 lines.
+  v0.4.8 ships the ambitious commutator-based BKM chain (§10.61-§10.78):
+  Kato-Ponce symbol bound for s=2 commutator (comSymb k ℓ := ‖k+ℓ‖⁴ − ‖k‖⁴,
+  bounded by 6·(‖k‖+‖ℓ‖)³·‖ℓ‖ and on bounded support by 48·D³·‖ℓ‖);
+  scalar Gronwall wrapping mathlib's norm_le_gronwallBound;
+  Ḣ²→ℓ∞ coefficient extraction via integer-lattice lower bound;
+  GalerkinEnergyGronwall predicate + BKMCriterionS2.of_galerkinEnergyGronwall
+  capstone composing with §10.57; trigPolyEnergyHs2 finite-sum energy bridge
+  to hsSeminormSq via tsum_eq_sum + Finset.sum_attach + HasDerivAt.norm_sq
+  for the Galerkin trajectory derivative; pairIdx + advectionSwap involution
+  (self-map under IsSymmetricSupport); IsFourierDivFree / IsRealFourier
+  predicates + Riesz instances (star_rieszSymbol via Complex.ext on
+  real-part); the advection-cancellation theorem advectionSum_re_eq_zero
+  via Finset.sum_nbij' reindex + kernel identity (F(τp) + star(F p) = 0
+  through advection_jsum_swap_eq_star: hReal + telescoping (k+ℓ)ⱼ − kⱼ = ℓⱼ
+  + div-free); commutatorSummand + pointwise bound 6·D⁵·(Σⱼ‖u ⱼ ℓ‖)·‖c k‖·‖c (k+ℓ)‖
+  via abs_latticeNorm_add_sq_sub_sq_le + componentwise bound |kⱼ| ≤ ‖k‖;
+  trigPolyEnergy_exp_bound_of_deriv_le + galerkinEnergyGronwall_of_deriv_le
+  + BKMCriterionS2.of_galerkin_energy_inequality — top-level capstone
+  producing BKMCriterionS2 from an energy inequality |d/dt E| ≤ K·|E|,
+  zero-mode bound, and support hypotheses. This is the derived BKM
+  discharge route parallel to §10.57's trivial-M route but grounded in
+  the classical Kato-Ponce + advection-cancellation argument. Structural
+  advection cancellation, commutator pointwise bound, and Gronwall
+  application are all formalized; deriving the energy-inequality
+  hypothesis from Galerkin dynamics + §10.48 flux identity is
+  mechanical assembly deferred to a subsequent release.
+  All content machine-verified with zero `sorry` across 14267 lines.
   Mathematical theorems by Bryan Sanchez; Lean formalization by
   Bryan Sanchez with AI assistance.
 keywords:

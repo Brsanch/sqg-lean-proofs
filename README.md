@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
 
-Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.7 (current) · v0.4.6 · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
+Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.8 (current) · v0.4.7 · v0.4.6 · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
 
 Lean 4 + mathlib formalization of Fourier-space identities for the
 Surface Quasi-Geostrophic (SQG) equation, working towards a machine-checked
@@ -13,7 +13,7 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **13021 lines, zero errors, zero `sorry`**. §10.8
+Current state: **14267 lines, zero errors, zero `sorry`, zero new axioms**. §10.8
 replaced the last `True` placeholders in `SqgEvolutionAxioms` and
 introduced the **s=2 integer-order BKM bootstrap**. §10.9–§10.11
 added the Fourier convolution scaffolding, mode-Lipschitz keystone,
@@ -94,6 +94,70 @@ vector field ≡ 0 ⇒ α constant ⇒ L² constant).
 discharges for the finite-Fourier-support + uniform-coefficient-bound
 class. The conditional Theorem 3 chain becomes unconditional on this
 entire class.
+
+**§10.61–§10.78 (v0.4.8 — most recent)** ship the **ambitious BKM
+commutator chain**: a *derived* `BKMCriterionS2` discharge via
+energy-Gronwall hypothesis, parallel to §10.57's trivial-M route but
+grounded in the classical Kato-Ponce + advection-cancellation argument.
+
+- **§10.61–§10.63** foundations: `comSymb k ℓ := ‖k+ℓ‖⁴ − ‖k‖⁴`
+  (s=2 commutator symbol); triangle + Cauchy-Schwarz on the integer
+  lattice via `Finset.sum_mul_sq_le_sq_mul_sq`; Kato-Ponce symbol bound
+  `|comSymb k ℓ| ≤ 6·(‖k‖+‖ℓ‖)³·‖ℓ‖`; bounded-support specialization
+  `≤ 48·D³·‖ℓ‖`; CS-in-sqrt helper.
+
+- **§10.64–§10.67** Gronwall infrastructure: `scalar_gronwall_exp` wrapping
+  mathlib's `norm_le_gronwallBound_of_norm_deriv_right_le`; `Ḣ²→ℓ∞`
+  coefficient extraction `fourier_coeff_bound_from_hs2` via integer-lattice
+  `(fracDerivSymbol 2 n)² ≥ 1`; `GalerkinEnergyGronwall` predicate;
+  **`BKMCriterionS2.of_galerkinEnergyGronwall`** capstone composing with §10.57.
+
+- **§10.68–§10.69** energy-as-finite-sum setup: `trigPolyEnergyHs2 S c :=
+  Σ m:↥S, (fracDerivSymbol 2 m.val)²·‖c m‖²` as a pointwise-differentiable
+  form of Ḣ², with bridge to `hsSeminormSq 2 (galerkinToLp S c)` via
+  `tsum_eq_sum` + `Finset.sum_attach`; `HasDerivAt`-formula for the
+  Galerkin-trajectory composition via `HasDerivAt.norm_sq` + `hasDerivAt_pi`.
+
+- **§10.70–§10.72** advection-cancellation scaffolding: `pairIdx S`
+  (pair index `(k, ℓ) ∈ S × S` with `k+ℓ ∈ S`) + `advectionSwap (k,ℓ) :=
+  (k+ℓ, -ℓ)` involution (self-map under `IsSymmetricSupport S`);
+  `IsFourierDivFree u := ∀ ℓ, Σⱼ (ℓⱼ : ℂ)·u ⱼ ℓ = 0` + Riesz instance;
+  `IsRealFourier u := ∀ (j, ℓ), u_j(−ℓ) = star (u_j ℓ)` + Riesz instance
+  for real-coefficient trig-poly on symmetric support. `star_rieszSymbol`
+  proved via `Complex.ext` on real-part.
+
+- **§10.73–§10.74** **advection cancellation theorem.** The kernel identity
+  `advectionSummand u c (advectionSwap p) + star (advectionSummand u c p) = 0`
+  under div-free + reality (via `advection_jsum_swap_eq_star`: V = star U
+  through `hReal` + telescoping `(k+ℓ)ⱼ − kⱼ = ℓⱼ` + div-free), then
+  applied via `Finset.sum_nbij'` reindex + `star_sum` to yield
+  `advectionSum_add_star_eq_zero`, hence `advectionSum_re_eq_zero`:
+  **`Re(Σ_{pairIdx S} advectionSummand u c) = 0`**.
+
+- **§10.75** commutator pair-summand + pointwise bound. `commutatorSummand u c p =
+  I·(‖k+ℓ‖²−‖k‖²)·‖k+ℓ‖²·(Σⱼ kⱼ·u_j ℓ)·c(k)·star(c(k+ℓ))` (residual factor
+  after advection split); proved
+  `‖commutatorSummand u c p‖ ≤ 6·D⁵·(Σⱼ‖u ⱼ ℓ‖)·‖c k‖·‖c (k+ℓ)‖` on
+  bounded support via §10.62's `abs_latticeNorm_add_sq_sub_sq_le` +
+  componentwise bound `|kⱼ| ≤ ‖k‖` + explicit calc chain.
+
+- **§10.76–§10.78** final capstone chain: `trigPolyEnergy_exp_bound_of_deriv_le`
+  (apply §10.64 scalar Gronwall to trig-poly energy); `galerkinEnergyGronwall_of_deriv_le`
+  (promote to `GalerkinEnergyGronwall` via §10.68 bridge); and **top-level
+  `BKMCriterionS2.of_galerkin_energy_inequality`** — given a Galerkin
+  trajectory with energy inequality `|d/dt E| ≤ K·|E|`, zero-mode bound,
+  finite support, and extension convention, produces `BKMCriterionS2`
+  via §10.77 → §10.67 → §10.57. This is the **derived BKM discharge**
+  route, closing "ambitious #3" from the v0.4.7 handoff.
+
+**Final milestone (v0.4.8).** The full commutator-based BKM chain
+(§10.61–§10.78) is now formalized: Kato-Ponce symbol bound, pair-swap
+advection cancellation (via `Finset.sum_nbij'` + div-free Fourier +
+real-Fourier reality), commutator pointwise estimate, Gronwall application,
+and the derived capstone. The remaining analytic "last mile" — deriving
+the energy-inequality hypothesis directly from Galerkin dynamics via
+§10.69's `HasDerivAt` + §10.48's flux identity + §10.74 + §10.75 — is
+mechanical assembly of existing pieces (~200 lines, next session).
 
 ## What's proven
 
