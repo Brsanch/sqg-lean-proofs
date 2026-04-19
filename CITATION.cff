@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.5
+version: 0.4.6
 date-released: "2026-04-19"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -105,7 +105,22 @@ abstract: >
   (Pi state lifts to Lp via trigPoly); §10.48
   galerkinRHS_eq_neg_sqgNonlinearFlux bridging the finite-dim ODE
   framework to the SQG weak-solution PDE framework at every mode.
-  All content machine-verified with zero `sorry` across 12586 lines.
+  v0.4.6 unifies the stationary theory and closes out the analytic-
+  hypothesis discharge for finite-support time-varying θ: §10.49
+  SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape as a
+  single named discharge subsuming §10.34 (radial) and §10.40
+  (collinear) via IsStationaryShape.of_isRadialShell / of_isCollinear;
+  §10.50 sqg_regularity_via_stationaryShape consumer-facing capstone;
+  §10.51 galerkin_local_exists auto-Picard deriving all ODE constants
+  (a, L, K, ε) from ContDiff + closedBall compactness +
+  IsCompact.bddAbove_image, removing the hand-chosen-constant
+  requirement of §10.44; §10.52 axis-aligned stationary classes
+  IsXAxisShell and IsYAxisShell as direct corollaries of collinear;
+  §10.56 MaterialMaxPrinciple.of_finite_support_uniform — MMP
+  discharged unconditionally for any time-varying θ with finite
+  Fourier support on a fixed S and a uniform coefficient bound M,
+  giving hsSeminormSq 1 (θ t) ≤ M² · (∑_{n∈S} (fracDerivSymbol 1 n)²).
+  All content machine-verified with zero `sorry` across 12818 lines.
   Mathematical theorems by Bryan Sanchez; Lean formalization by
   Bryan Sanchez with AI assistance.
 keywords:

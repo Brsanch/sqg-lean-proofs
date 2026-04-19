@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
 
-Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.5 (current) · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
+Concept DOI (always-latest): [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) · v0.4.6 (current) · v0.4.5 · v0.4.4 · v0.4.3 · v0.4.2: [10.5281/zenodo.19637844](https://doi.org/10.5281/zenodo.19637844) · v0.4.1: [10.5281/zenodo.19637612](https://doi.org/10.5281/zenodo.19637612) · v0.4.0: [10.5281/zenodo.19637609](https://doi.org/10.5281/zenodo.19637609) · v0.3.0: [10.5281/zenodo.19584185](https://doi.org/10.5281/zenodo.19584185) · v0.2.0: [10.5281/zenodo.19583417](https://doi.org/10.5281/zenodo.19583417) · v0.1.0: [10.5281/zenodo.19583257](https://doi.org/10.5281/zenodo.19583257)
 
 Lean 4 + mathlib formalization of Fourier-space identities for the
 Surface Quasi-Geostrophic (SQG) equation, working towards a machine-checked
@@ -13,7 +13,7 @@ Theorem 3 roadmap** with explicit axiomatic hypotheses that pin down
 *exactly* which analytic facts the regularity argument borrows from
 outside the algebraic layer.
 
-Current state: **12586 lines, zero errors, zero `sorry`**. §10.8
+Current state: **12818 lines, zero errors, zero `sorry`**. §10.8
 replaced the last `True` placeholders in `SqgEvolutionAxioms` and
 introduced the **s=2 integer-order BKM bootstrap**. §10.9–§10.11
 added the Fourier convolution scaffolding, mode-Lipschitz keystone,
@@ -42,7 +42,7 @@ and the first **multi-mode** named discharge
 `antipodal_inner_sum_zero` cancellation factoring through
 `IsSqgVelocityComponent`.
 
-**§10.32–§10.48 (v0.4.5 — most recent)** ship the radial-shell +
+**§10.32–§10.48 (v0.4.5)** ship the radial-shell +
 collinear stationary families and the Galerkin ODE scaffold:
 §10.32 pair-sum cross div-free lemma (`|ℓ| = |k|` ⇒ pair-sum = 0);
 §10.33–§10.34 `IsRadialShell` + `shellMode` + `SqgEvolutionAxioms_strong.shellMode_const`
@@ -55,8 +55,23 @@ predicate; §10.44 Picard-Lindelöf wrapper producing local ODE
 solutions from pre-chosen Lipschitz/bound/time constants; §10.45
 radial-shell Picard solution; §10.46 real-symmetric predicates
 (`IsSymmetricSupport`, `IsRealCoeff`); §10.47 `galerkinToLp` (Pi state
-lifts to `Lp` via `trigPoly`); **§10.48 `galerkinRHS_eq_neg_sqgNonlinearFlux`**
+lifts to `Lp` via `trigPoly`); §10.48 `galerkinRHS_eq_neg_sqgNonlinearFlux`
 bridging the ODE framework to the PDE weak-solution framework.
+
+**§10.49–§10.56 (v0.4.6 — most recent)** unify the stationary theory
+and close out the analytic-hypothesis discharge for finite-support
+time-varying θ: §10.49 `SqgEvolutionAxioms_strong.shellMode_const_of_stationaryShape`
+— single named discharge subsuming both §10.34 (radial) and §10.40
+(collinear); §10.50 `sqg_regularity_via_stationaryShape` consumer-
+facing regularity capstone; §10.51 **`galerkin_local_exists`** —
+auto-Picard that derives all constants (`a, L, K, ε`) from ContDiff +
+compactness, so any initial `c₀` gets a local Galerkin ODE solution
+with no hand-chosen constants; §10.52 axis-aligned stationary classes
+`IsXAxisShell` / `IsYAxisShell` (corollaries of collinear);
+**§10.56 `MaterialMaxPrinciple.of_finite_support_uniform`** — MMP
+discharged unconditionally for any time-varying θ with finite Fourier
+support and uniform coefficient bound `M`, yielding
+`hsSeminormSq 1 (θ t) ≤ M² · ∑_{n∈S} σ₁(n)²`.
 
 ## What's proven
 
