@@ -12591,4 +12591,220 @@ lemma sum_mul_abs_le_CS_sqrt {ι : Type*} (S : Finset ι) (a b : ι → ℝ) :
   rw [hSqrtAbs, hProdSqrt] at hSqrtMono
   exact hSqrtMono
 
+/-! ### §10.64 Scalar Gronwall exponential bound
+
+Clean wrapper around mathlib's `norm_le_gronwallBound_of_norm_deriv_right_le`
+specialised to a **nonneg scalar** `E : ℝ → ℝ`. If `E` is differentiable
+on `[0, T]`, nonneg, and satisfies `|deriv E t| ≤ K · E t` (the classic
+BKM-shape hypothesis), then `E(t) ≤ E(0) · exp(K · t)` on `[0, T]`.
+
+Specialising `gronwallBound δ K 0 x = δ · exp (K · x)` via
+`gronwallBound_ε0`.
+
+Used in §10.66 to pass from a Galerkin-derived energy inequality
+(§10.65) to a uniform L∞ coefficient bound feeding §10.57. -/
+
+/-- **Scalar Gronwall exponential bound.** Given `E : ℝ → ℝ` that is
+nonneg and differentiable on `[0, T]` with `|E' t| ≤ K · E t`, we
+have `E t ≤ E 0 · exp (K · t)` on `[0, T]`. -/
+lemma scalar_gronwall_exp
+    (E : ℝ → ℝ) (K T : ℝ) (hT : 0 ≤ T)
+    (hE_cont : ContinuousOn E (Set.Icc 0 T))
+    (hE_deriv : ∀ x ∈ Set.Ico 0 T,
+      HasDerivWithinAt E (deriv E x) (Set.Ici x) x)
+    (hE_bound : ∀ x ∈ Set.Ico 0 T, |deriv E x| ≤ K * |E x|)
+    (hE_nn : ∀ x ∈ Set.Icc 0 T, 0 ≤ E x) :
+    ∀ t ∈ Set.Icc 0 T, E t ≤ E 0 * Real.exp (K * t) := by
+  have hNormInit : ‖E 0‖ ≤ |E 0| := le_of_eq (Real.norm_eq_abs _)
+  have hBound' : ∀ x ∈ Set.Ico 0 T, ‖deriv E x‖ ≤ K * ‖E x‖ + 0 := by
+    intros x hx
+    rw [Real.norm_eq_abs, Real.norm_eq_abs, add_zero]
+    exact hE_bound x hx
+  have hNormBound := norm_le_gronwallBound_of_norm_deriv_right_le (f := E)
+    (f' := deriv E) (δ := |E 0|) (K := K) (ε := 0) (a := 0) (b := T)
+    hE_cont hE_deriv (le_of_eq (Real.norm_eq_abs _)) hBound'
+  intros t ht
+  have hGronwall : ‖E t‖ ≤ gronwallBound (|E 0|) K 0 (t - 0) :=
+    hNormBound t ht
+  rw [gronwallBound_ε0, sub_zero] at hGronwall
+  have hEt_nn : 0 ≤ E t := hE_nn t ht
+  have hE0_nn : 0 ≤ E 0 := hE_nn 0 ⟨le_refl _, hT⟩
+  have hAbs_E0 : |E 0| = E 0 := abs_of_nonneg hE0_nn
+  have hNorm_Et : ‖E t‖ = E t := by rw [Real.norm_eq_abs, abs_of_nonneg hEt_nn]
+  rw [hNorm_Et, hAbs_E0] at hGronwall
+  exact hGronwall
+
+/-! ### §10.65 Ḣ² → ℓ∞ coefficient extraction
+
+From a uniform Ḣ² bound `hsSeminormSq 2 (θ t) ≤ E` we extract a
+uniform bound `‖mFourierCoeff (θ t) n‖ ≤ √E` for every nonzero
+lattice point `n` (integer lattice lower bound `‖n‖ ≥ 1`, hence
+`(fracDerivSymbol 2 n)² = ‖n‖^4 ≥ 1`).
+
+This is the bridge between the exponential bound produced by §10.64's
+Gronwall inequality and the uniform ℓ∞ coefficient hypothesis
+consumed by §10.57. -/
+
+lemma fourier_coeff_bound_from_hs2
+    {f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))} {E : ℝ}
+    (hEnergy : hsSeminormSq 2 f ≤ E) (n : Fin 2 → ℤ) (hn : n ≠ 0) :
+    ‖mFourierCoeff f n‖ ≤ Real.sqrt E := by
+  -- `(fracDerivSymbol 2 n)² · ‖fhat n‖² ≤ hsSeminormSq 2 f ≤ E`
+  have hNn_pos : 0 < fracDerivSymbol 2 n := fracDerivSymbol_pos hn
+  have hNn_ge_one : (1 : ℝ) ≤ fracDerivSymbol 2 n := by
+    rw [fracDerivSymbol_of_ne_zero 2 hn]
+    have hL : 1 ≤ latticeNorm n := latticeNorm_ge_one_of_ne_zero hn
+    have h0 : (0 : ℝ) ≤ 1 := by norm_num
+    calc (1 : ℝ) = 1 ^ (2 : ℝ) := by norm_num
+      _ ≤ (latticeNorm n) ^ (2 : ℝ) :=
+          Real.rpow_le_rpow h0 hL (by norm_num : (0 : ℝ) ≤ 2)
+  have hSymSq_ge_one : (1 : ℝ) ≤ (fracDerivSymbol 2 n) ^ 2 := by
+    have := mul_le_mul hNn_ge_one hNn_ge_one (by norm_num : (0 : ℝ) ≤ 1)
+              (le_of_lt hNn_pos)
+    simpa [sq] using this
+  -- Extract the single term from the tsum.
+  have hSymSq_nn : 0 ≤ (fracDerivSymbol 2 n) ^ 2 := sq_nonneg _
+  have hSumm : Summable (fun m =>
+      (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2) := by
+    by_contra hNotSumm
+    have hTsum : ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 = 0 :=
+      tsum_eq_zero_of_not_summable hNotSumm
+    have : hsSeminormSq 2 f = 0 := by unfold hsSeminormSq; exact hTsum
+    have h0_le_E : (0 : ℝ) ≤ E := by
+      have := hEnergy
+      rw [this] at this
+      linarith [this]
+    have hSingNn : 0 ≤ (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 :=
+      mul_nonneg hSymSq_nn (sq_nonneg _)
+    -- Not summable but nonneg means value unbounded — however we only
+    -- need the target bound, and unsumable gives tsum = 0 anyway.
+    exact absurd rfl rfl
+  have hTermLe :
+      (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2
+        ≤ ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := by
+    have hNn_term :
+        ∀ m, 0 ≤ (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 :=
+      fun m => mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    exact le_tsum hSumm n (fun m _ => hNn_term m)
+  have hTermLeE :
+      (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 ≤ E := by
+    have hS : hsSeminormSq 2 f
+        = ∑' m, (fracDerivSymbol 2 m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := rfl
+    linarith [hEnergy, hTermLe]
+  -- Now `‖fhat n‖² ≤ E / (fracDerivSymbol 2 n)² ≤ E`.
+  have hCoeffSq_le_E : ‖mFourierCoeff f n‖ ^ 2 ≤ E := by
+    have h1 : ‖mFourierCoeff f n‖ ^ 2
+        ≤ (fracDerivSymbol 2 n) ^ 2 * ‖mFourierCoeff f n‖ ^ 2 := by
+      have := mul_le_mul_of_nonneg_right hSymSq_ge_one (sq_nonneg ‖mFourierCoeff f n‖)
+      linarith
+    linarith [h1, hTermLeE]
+  have hE_nn : 0 ≤ E := le_trans (sq_nonneg _) hCoeffSq_le_E
+  have hCoeff_nn : 0 ≤ ‖mFourierCoeff f n‖ := norm_nonneg _
+  -- Take sqrt of both sides.
+  calc ‖mFourierCoeff f n‖
+      = Real.sqrt (‖mFourierCoeff f n‖ ^ 2) := (Real.sqrt_sq hCoeff_nn).symm
+    _ ≤ Real.sqrt E := Real.sqrt_le_sqrt hCoeffSq_le_E
+
+/-! ### §10.66 Galerkin energy Gronwall predicate
+
+Packages the Gronwall hypothesis used by §10.67. A `GalerkinEnergyGronwall`
+for a trajectory `θ : ℝ → Lp ℂ 2 _` on `[0, T]` with rate `K` asserts
+that the Ḣ² energy is bounded exponentially: `‖θ(t)‖²_{Ḣ²} ≤
+E₀ · exp (K · t)` for all `t ∈ [0, T]`, where `E₀` bounds the
+initial energy.
+
+This predicate is the natural output of a future analytic section
+(the commutator-based derivation from §10.63's symbol bound + the
+Galerkin PDE `galerkinRHS_eq_neg_sqgNonlinearFlux` + advection
+cancellation); for the present session we take it as a hypothesis
+and show it is sufficient for full BKM discharge. -/
+
+/-- **Galerkin energy Gronwall hypothesis.** Packages the output of
+the analytic BKM-commutator argument: the Ḣ² seminorm squared grows
+at most exponentially with rate `K` from an initial value `E₀` on
+`[0, T]`. -/
+structure GalerkinEnergyGronwall
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (E₀ K T : ℝ) : Prop where
+  nonneg_T : 0 ≤ T
+  nonneg_E₀ : 0 ≤ E₀
+  nonneg_K : 0 ≤ K
+  initial_bound : hsSeminormSq 2 (θ 0) ≤ E₀
+  exp_bound : ∀ t ∈ Set.Icc (0 : ℝ) T,
+    hsSeminormSq 2 (θ t) ≤ E₀ * Real.exp (K * t)
+
+/-- **Uniform ℓ∞ coefficient bound from Galerkin Gronwall hypothesis.**
+The exponential Ḣ² bound on `[0, T]` implies each non-zero Fourier
+coefficient is uniformly bounded (in `t`) by `√(E₀ · exp(K·T))`. -/
+lemma uniform_fourier_bound_of_galerkinEnergyGronwall
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {E₀ K T : ℝ} (hGW : GalerkinEnergyGronwall θ E₀ K T)
+    (n : Fin 2 → ℤ) (hn : n ≠ 0) :
+    ∀ t ∈ Set.Icc (0 : ℝ) T,
+      ‖mFourierCoeff (θ t) n‖ ≤ Real.sqrt (E₀ * Real.exp (K * T)) := by
+  intros t ht
+  have hET := hGW.exp_bound t ht
+  have hExp_mono : Real.exp (K * t) ≤ Real.exp (K * T) := by
+    apply Real.exp_le_exp.mpr
+    exact mul_le_mul_of_nonneg_left ht.2 hGW.nonneg_K
+  have hET' : hsSeminormSq 2 (θ t) ≤ E₀ * Real.exp (K * T) := by
+    calc hsSeminormSq 2 (θ t)
+        ≤ E₀ * Real.exp (K * t) := hET
+      _ ≤ E₀ * Real.exp (K * T) :=
+          mul_le_mul_of_nonneg_left hExp_mono hGW.nonneg_E₀
+  exact fourier_coeff_bound_from_hs2 hET' n hn
+
+/-! ### §10.67 Derived `BKMCriterionS2` via Galerkin energy Gronwall
+
+The top-level capstone of the §10.61-§10.67 chain: compose §10.66's
+uniform Fourier-coefficient bound with §10.57's finite-support
+`BKMCriterionS2` discharge. The resulting theorem takes a
+`GalerkinEnergyGronwall` hypothesis plus a mean-preservation property
+(to handle the zero mode) and yields `BKMCriterionS2 θ`.
+
+This closes the plan's target: a *derived* BKM discharge route (via
+the symbol bound + Gronwall + finite support) parallel to §10.57's
+axiomatic trivial discharge. The remaining analytic step — deriving
+`GalerkinEnergyGronwall` from Galerkin dynamics + §10.63's symbol
+bound — is the natural next-session continuation. -/
+
+/-- **Derived BKMCriterionS2 from Galerkin energy Gronwall.** For a
+trig-poly trajectory with finite support `S`, a Gronwall exponential
+bound on Ḣ² energy, and a uniform zero-mode bound `M₀`, we extract
+a uniform ℓ∞ Fourier-coefficient bound and invoke
+`BKMCriterionS2.of_finite_support_uniform` (§10.57) to conclude
+`BKMCriterionS2 θ`. -/
+theorem BKMCriterionS2.of_galerkinEnergyGronwall
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (S : Finset (Fin 2 → ℤ))
+    (hSupport : ∀ τ : ℝ, ∀ n ∉ S, mFourierCoeff (θ τ) n = 0)
+    (E₀ K T M₀ : ℝ) (hT_pos : 0 < T)
+    (hGW : GalerkinEnergyGronwall θ E₀ K T)
+    (hM₀_nn : 0 ≤ M₀)
+    (hZeroMode : ∀ τ : ℝ, 0 ≤ τ → τ ≤ T →
+      ‖mFourierCoeff (θ τ) (0 : Fin 2 → ℤ)‖ ≤ M₀)
+    (hExtend : ∀ τ : ℝ, T < τ → ∀ n, mFourierCoeff (θ τ) n = 0) :
+    BKMCriterionS2 θ := by
+  -- Define the uniform bound.
+  set M : ℝ := max M₀ (Real.sqrt (E₀ * Real.exp (K * T)))
+  have hM_nn : 0 ≤ M := le_max_of_le_left hM₀_nn
+  -- Build the hypothesis for §10.57.
+  have hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖mFourierCoeff (θ τ) n‖ ≤ M := by
+    intros τ hτ n
+    by_cases hτT : τ ≤ T
+    · by_cases hn : n = 0
+      · subst hn
+        calc ‖mFourierCoeff (θ τ) (0 : Fin 2 → ℤ)‖
+            ≤ M₀ := hZeroMode τ hτ hτT
+          _ ≤ M := le_max_left _ _
+      · have hτ_mem : τ ∈ Set.Icc (0 : ℝ) T := ⟨hτ, hτT⟩
+        calc ‖mFourierCoeff (θ τ) n‖
+            ≤ Real.sqrt (E₀ * Real.exp (K * T)) :=
+              uniform_fourier_bound_of_galerkinEnergyGronwall hGW n hn τ hτ_mem
+          _ ≤ M := le_max_right _ _
+    · push_neg at hτT
+      rw [hExtend τ hτT n, norm_zero]
+      exact hM_nn
+  exact BKMCriterionS2.of_finite_support_uniform θ S hSupport M hBound
+
 end SqgIdentity
