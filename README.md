@@ -19,7 +19,7 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 14,000 lines of Lean 4 source, with
+The formalization comprises over 18,000 lines of Lean 4 source, with
 **zero `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
@@ -78,6 +78,18 @@ class, regularity is unconditional:
 - `BKMCriterionS2.of_galerkin_dynamics_with_L_inf_bound` — BKM
   criterion produced directly from Galerkin dynamics and an
   L^∞ coefficient bound; the energy inequality is derived, not assumed.
+- **`galerkin_time_global_unconditional_realSym` (§10.116).** Time-global
+  existence of a Galerkin trajectory on every symmetric Fourier support
+  `S`, from any real-symmetric initial coefficient vector `c₀` satisfying
+  `∑_{m ∈ S} ‖c₀(m)‖² ≤ (R/2)²`. Delivers, at every `t ≥ 0`:
+  `HasDerivWithinAt` of the ODE on `Ici 0`, ℓ²-sum conservation,
+  propagation of real-symmetry, and the pi-norm bound `‖α t‖_∞ ≤ R/2`.
+  No open hypotheses: the program discharges `hInv` (universal
+  ball-invariance), `hRealSymPropagates`, and every auxiliary L^∞ slack
+  bound internally, via a chain of local Picard-Lindelöf steps whose
+  ball-containment guarantee is extracted from
+  `ODE.FunSpace.compProj_mem_closedBall` and whose ℓ²-sum invariant
+  is preserved exactly by §10.110.
 
 ## What is *not* proven
 
@@ -88,6 +100,9 @@ class, regularity is unconditional:
 - A mode-wise weak-form PDE identity against the concrete
   `sqgNonlinearFlux`. Supplying this identity for a real SQG solution
   would discharge the remaining SQG-specific input.
+- The Galerkin → full-SQG limit (existence of the finite-support
+  approximation is §10.116's content; passage to a genuine SQG solution
+  on `L²(𝕋²)` is not formalized).
 
 ## Building
 
