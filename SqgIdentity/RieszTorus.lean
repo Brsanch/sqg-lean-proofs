@@ -19240,7 +19240,7 @@ theorem tendsto_integral_norm_sq_galerkinToLp_raw
       Filter.atTop (nhds (∫ x, ‖θ_lim t x‖ ^ 2)) :=
   tendsto_integral_norm_sq_of_tendsto_L2sub (tendsto_L2_proof t ht)
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 800000 in
 /-- **Raw per-`k` constancy.** No `HasAubinLionsExtraction`. -/
 theorem integral_norm_sq_galerkin_const_at_nsub_raw
     [DecidableEq (Fin 2 → ℤ)]
@@ -19251,12 +19251,12 @@ theorem integral_norm_sq_galerkin_const_at_nsub_raw
         = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
     (t : ℝ) (ht : 0 ≤ t) (k : ℕ) :
     (∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x‖ ^ 2)
-      = (∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) x‖ ^ 2) :=
-  (integral_norm_sq_galerkinToLp_sqgBox (nsub k) (α (nsub k) t)).trans
-    ((hLevel (nsub k) t ht).trans
-      (integral_norm_sq_galerkinToLp_sqgBox (nsub k) (α (nsub k) 0)).symm)
+      = (∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) x‖ ^ 2) := by
+  rw [integral_norm_sq_galerkinToLp_sqgBox (nsub k) (α (nsub k) t),
+      integral_norm_sq_galerkinToLp_sqgBox (nsub k) (α (nsub k) 0)]
+  exact hLevel (nsub k) t ht
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 800000 in
 /-- **Raw integral-level conservation.** No `HasAubinLionsExtraction`. -/
 theorem integral_norm_sq_aubinLions_const_raw
     [DecidableEq (Fin 2 → ℤ)]
@@ -19273,13 +19273,15 @@ theorem integral_norm_sq_aubinLions_const_raw
       hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
         = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
     (t : ℝ) (ht : 0 ≤ t) :
-    (∫ x, ‖θ_lim t x‖ ^ 2) = (∫ x, ‖θ_lim 0 x‖ ^ 2) :=
-  tendsto_nhds_unique
-    ((tendsto_integral_norm_sq_galerkinToLp_raw nsub α θ_lim tendsto_L2_proof t ht).congr
-      (integral_norm_sq_galerkin_const_at_nsub_raw nsub α hLevel t ht))
-    (tendsto_integral_norm_sq_galerkinToLp_raw nsub α θ_lim tendsto_L2_proof 0 le_rfl)
+    (∫ x, ‖θ_lim t x‖ ^ 2) = (∫ x, ‖θ_lim 0 x‖ ^ 2) := by
+  have h_lim_t := tendsto_integral_norm_sq_galerkinToLp_raw
+    nsub α θ_lim tendsto_L2_proof t ht
+  have h_lim_0 := tendsto_integral_norm_sq_galerkinToLp_raw
+    nsub α θ_lim tendsto_L2_proof 0 le_rfl
+  have h_const_k := integral_norm_sq_galerkin_const_at_nsub_raw nsub α hLevel t ht
+  exact tendsto_nhds_unique (h_lim_t.congr h_const_k) h_lim_0
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 800000 in
 /-- **Raw Route B `l2Conservation`.** No `HasAubinLionsExtraction`. -/
 theorem l2Conservation_of_aubinLions_raw
     [DecidableEq (Fin 2 → ℤ)]
@@ -19313,7 +19315,7 @@ theorem l2Conservation_of_aubinLions_raw
     _ = ∫ x, ‖θ_lim 0 x‖ ^ 2 := h_int_eq
     _ = hsSeminormSq 0 (θ_lim 0) := h_split_0
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 800000 in
 /-- **Route B `l2Conservation` from Aubin–Lions (bundled wrapper).**
 Thin wrapper around `l2Conservation_of_aubinLions_raw` — projects
 `HasAubinLionsExtraction` at the single call site below. -/
