@@ -19205,19 +19205,22 @@ theorem integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
   rw [h, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0), zero_add] at hEq
   exact hEq
 
+/-- **Per-level integral norm squared equals `hsSeminormSq 0`.**
+Specialized form of `integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero`
+applied to Galerkin trajectories on `sqgBox n`. -/
+theorem integral_norm_sq_galerkinToLp_sqgBox
+    (n : ℕ) (c : ↥(sqgBox n) → ℂ) :
+    (∫ x, ‖galerkinToLp (sqgBox n) c x‖ ^ 2)
+      = hsSeminormSq 0 (galerkinToLp (sqgBox n) c) :=
+  integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
+    (galerkinToLp (sqgBox n) c)
+    (mFourierCoeff_galerkin_sqgBox_zero_any n c)
+
 set_option maxHeartbeats 800000 in
-/-- **Route B `l2Conservation` from Aubin–Lions.**
-
-From the strong-`L²` Aubin–Lions extraction (§10.139) and the
-per-level Galerkin energy conservation (§10.97 input, lifted through
-`galerkinToLp` by `hsSeminormSq_zero_galerkinToLp` since
-`0 ∉ sqgBox n`), produce the `l2Conservation` hypothesis consumed by
-§10.144.
-
-The proof reduces `hsSeminormSq 0` to `∫ ‖·‖²` via the zero-mode split
-(justified by §10.142 for the limit and `0 ∉ sqgBox n` for each level),
-then passes to the limit using
-`tendsto_integral_norm_sq_of_tendsto_L2sub`. -/
+/-- **Route B `l2Conservation` from Aubin–Lions.** From the strong-`L²`
+Aubin–Lions extraction (§10.139) and per-level Galerkin energy
+conservation (§10.97), produce the `l2Conservation` hypothesis
+consumed by §10.144. -/
 theorem l2Conservation_of_aubinLions
     [DecidableEq (Fin 2 → ℤ)]
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
@@ -19229,56 +19232,41 @@ theorem l2Conservation_of_aubinLions
     ∀ t, 0 ≤ t →
       hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0) := by
   intro t ht
-  -- Step 1: reduce the target to `∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖²`.
-  have h_zero_lim_t : mFourierCoeff (ext.θ_lim t) (0 : Fin 2 → ℤ) = 0 :=
+  -- Zero-mode vanishes on the limit at both 0 and t.
+  have h_zero_t : mFourierCoeff (ext.θ_lim t) (0 : Fin 2 → ℤ) = 0 :=
     mFourierCoeff_aubinLionsLimit_zero ext
       (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) ht
-  have h_zero_lim_0 : mFourierCoeff (ext.θ_lim 0) (0 : Fin 2 → ℤ) = 0 :=
+  have h_zero_0 : mFourierCoeff (ext.θ_lim 0) (0 : Fin 2 → ℤ) = 0 :=
     mFourierCoeff_aubinLionsLimit_zero ext
       (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) le_rfl
-  have h_split_t :
-      (∫ x, ‖ext.θ_lim t x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim t) :=
-    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
-      (ext.θ_lim t) h_zero_lim_t
-  have h_split_0 :
-      (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim 0) :=
-    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
-      (ext.θ_lim 0) h_zero_lim_0
-  rw [← h_split_t, ← h_split_0]
-  -- Step 2: For each level, reduce the Galerkin `hsSeminormSq 0` to `∫ ‖·‖²`.
-  have h_galerkin_split : ∀ n (c : ↥(sqgBox n) → ℂ),
-      (∫ x, ‖galerkinToLp (sqgBox n) c x‖ ^ 2)
-        = hsSeminormSq 0 (galerkinToLp (sqgBox n) c) := fun n c =>
-    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
-      (galerkinToLp (sqgBox n) c)
-      (mFourierCoeff_galerkin_sqgBox_zero_any n c)
-  -- Step 3: pass `hLevel` to the subsequence and through strong-L² limit.
+  -- Strong-L² limits: ∫ ‖f_k τ‖² → ∫ ‖θ_lim τ‖² for τ ∈ {t, 0}.
+  have h_lim_t := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
+  have h_lim_0 := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
+  -- Per-level constant-in-time energy: ∫ ‖f_k t‖² = ∫ ‖f_k 0‖².
   have h_const_k : ∀ k : ℕ,
       (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
         = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) := by
     intro k
-    rw [h_galerkin_split, h_galerkin_split]
+    rw [integral_norm_sq_galerkinToLp_sqgBox,
+        integral_norm_sq_galerkinToLp_sqgBox]
     exact hLevel (ext.nsub k) t ht
-  -- Step 4: pass to the limit on both sides using strong-L² convergence.
-  have h_tendsto_t :
-      Filter.Tendsto (fun k : ℕ =>
-          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
-        Filter.atTop (nhds (∫ x, ‖ext.θ_lim t x‖ ^ 2)) :=
-    tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
-  have h_tendsto_0 :
-      Filter.Tendsto (fun k : ℕ =>
-          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2)
-        Filter.atTop (nhds (∫ x, ‖ext.θ_lim 0 x‖ ^ 2)) :=
-    tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
-  -- The two sequences are equal term-by-term, so limits match.
-  have h_same :
-      (fun k : ℕ =>
-          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
-        = (fun k : ℕ =>
-            ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
-    funext h_const_k
-  rw [h_same] at h_tendsto_t
-  exact tendsto_nhds_unique h_tendsto_t h_tendsto_0
+  -- Align the two sequences.
+  have h_lim_t' := by
+    have : (fun k : ℕ =>
+        ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+        = fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2 :=
+      funext h_const_k
+    exact this ▸ h_lim_t
+  -- ∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖² by limit uniqueness.
+  have h_int_eq : (∫ x, ‖ext.θ_lim t x‖ ^ 2) = (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) :=
+    tendsto_nhds_unique h_lim_t' h_lim_0
+  -- Lift via zero-mode split to `hsSeminormSq 0` on both sides.
+  have h_split_t :=
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (ext.θ_lim t) h_zero_t
+  have h_split_0 :=
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (ext.θ_lim 0) h_zero_0
+  rw [← h_split_t, ← h_split_0, h_int_eq]
 
 /-! ### §10.148 Route B capstone without the `hL2` hypothesis
 
