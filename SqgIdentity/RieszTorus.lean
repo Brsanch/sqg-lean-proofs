@@ -19086,7 +19086,7 @@ theorem Lp_two_norm_sq_eq_integral_norm_sq
     (f : Lp ℂ 2 μ) :
     ‖f‖ ^ 2 = ∫ x, ‖f x‖ ^ 2 ∂μ := by
   -- `‖f‖² = re ⟪f, f⟫` at the Lp level.
-  have h1 : ‖f‖ ^ 2 = RCLike.re (𝕜 := ℂ) (@inner ℂ _ _ f f) :=
+  have h1 : ‖f‖ ^ 2 = (@RCLike.re ℂ _) (@inner ℂ _ _ f f) :=
     @norm_sq_eq_re_inner ℂ (Lp ℂ 2 μ) _ _ _ f
   -- `⟪f, f⟫_{L²} = ∫ ⟪f x, f x⟫` — definition of the L² inner product.
   have h2 : (@inner ℂ _ _ f f : ℂ) = ∫ x, (@inner ℂ _ _ (f x) (f x) : ℂ) ∂μ :=
@@ -19193,6 +19193,18 @@ lemma mFourierCoeff_galerkin_sqgBox_zero_any
     mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
   mFourierCoeff_galerkinToLp_sqgBox_zero n c
 
+/-- **When the zero mode vanishes, `∫ ‖f‖² = hsSeminormSq 0 f`.**
+Localized helper so the capstone avoids heavy `rw` against
+`l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero`. -/
+set_option maxHeartbeats 400000 in
+theorem integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (h : mFourierCoeff f (0 : Fin 2 → ℤ) = 0) :
+    (∫ x, ‖f x‖ ^ 2) = hsSeminormSq 0 f := by
+  have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero f
+  rw [h, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0), zero_add] at hEq
+  exact hEq
+
 /-- **Route B `l2Conservation` from Aubin–Lions.**
 
 From the strong-`L²` Aubin–Lions extraction (§10.139) and the
@@ -19224,33 +19236,21 @@ theorem l2Conservation_of_aubinLions
     mFourierCoeff_aubinLionsLimit_zero ext
       (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) le_rfl
   have h_split_t :
-      (∫ x, ‖ext.θ_lim t x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim t) := by
-    have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim t)
-    rw [h_zero_lim_t, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0),
-      zero_add] at hEq
-    exact hEq
+      (∫ x, ‖ext.θ_lim t x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim t) :=
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
+      (ext.θ_lim t) h_zero_lim_t
   have h_split_0 :
-      (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim 0) := by
-    have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim 0)
-    rw [h_zero_lim_0, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0),
-      zero_add] at hEq
-    exact hEq
+      (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim 0) :=
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
+      (ext.θ_lim 0) h_zero_lim_0
   rw [← h_split_t, ← h_split_0]
-  -- Step 2: For each level, reduce the Galerkin `hsSeminormSq 0` to
-  -- `∫ ‖·‖²` (via `hsSeminormSq_zero_galerkinToLp` + sum-norm bridge).
-  -- We actually don't need this: we use `hLevel` verbatim, passing it
-  -- through the identity `∫ ‖f‖² = hsSeminormSq 0 f` at each level.
+  -- Step 2: For each level, reduce the Galerkin `hsSeminormSq 0` to `∫ ‖·‖²`.
   have h_galerkin_split : ∀ n (c : ↥(sqgBox n) → ℂ),
       (∫ x, ‖galerkinToLp (sqgBox n) c x‖ ^ 2)
-        = hsSeminormSq 0 (galerkinToLp (sqgBox n) c) := by
-    intro n c
-    have h_zero : mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
-      mFourierCoeff_galerkin_sqgBox_zero_any n c
-    have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) c) := fun n c =>
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
       (galerkinToLp (sqgBox n) c)
-    rw [h_zero, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0),
-      zero_add] at hEq
-    exact hEq
+      (mFourierCoeff_galerkin_sqgBox_zero_any n c)
   -- Step 3: pass `hLevel` to the subsequence and through strong-L² limit.
   have h_const_k : ∀ k : ℕ,
       (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
