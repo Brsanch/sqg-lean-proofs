@@ -19329,17 +19329,24 @@ theorem l2Conservation_of_aubinLions_raw
         (0 : Fin 2 → ℤ) = 0 :=
     fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
   -- Strong-L² → hsSeminormSq Tendsto at both t and 0.
+  -- Pass `f :=` and `g :=` explicitly to sidestep higher-order
+  -- unification (the primitive's `{f : ι → Lp ℂ 2 μ}` is otherwise
+  -- inferred by abstracting `k` out of a complex concrete expression).
   have h_lim_t : Filter.Tendsto
       (fun k : ℕ =>
         hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t)))
       Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) :=
     tendsto_hsSeminormSq_of_tendsto_L2sub_torus
+      (f := fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) t))
+      (g := θ_lim t)
       (tendsto_L2_proof t ht) h_zero_galerkin (hZero t ht)
   have h_lim_0 : Filter.Tendsto
       (fun k : ℕ =>
         hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)))
       Filter.atTop (nhds (hsSeminormSq 0 (θ_lim 0))) :=
     tendsto_hsSeminormSq_of_tendsto_L2sub_torus
+      (f := fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0))
+      (g := θ_lim 0)
       (tendsto_L2_proof 0 le_rfl) h_zero_galerkin_0 (hZero 0 le_rfl)
   -- Transport h_lim_t's sequence via hLevel: at time t the sequence equals
   -- the time-0 sequence level-wise.
