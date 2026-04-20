@@ -19331,14 +19331,20 @@ theorem l2Conservation_of_aubinLions_raw
   -- Name the Galerkin sequences at times t and 0 so Lean treats them
   -- as atomic terms (avoids repeated HOU / instance resolution on the
   -- full `galerkinToLp (sqgBox (nsub k)) (α (nsub k) _)` expression).
-  set Ft : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
-    fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) with hFt
-  set F0 : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
-    fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) with hF0
-  have h_zero_Ft : ∀ k : ℕ, mFourierCoeff (Ft k) (0 : Fin 2 → ℤ) = 0 :=
-    fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) t)
-  have h_zero_F0 : ∀ k : ℕ, mFourierCoeff (F0 k) (0 : Fin 2 → ℤ) = 0 :=
-    fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
+  let Ft : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+    fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) t)
+  let F0 : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+    fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)
+  have h_zero_Ft : ∀ k : ℕ, mFourierCoeff (Ft k) (0 : Fin 2 → ℤ) = 0 := by
+    intro k
+    show mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t))
+        (0 : Fin 2 → ℤ) = 0
+    exact mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) t)
+  have h_zero_F0 : ∀ k : ℕ, mFourierCoeff (F0 k) (0 : Fin 2 → ℤ) = 0 := by
+    intro k
+    show mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0))
+        (0 : Fin 2 → ℤ) = 0
+    exact mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
   have h_L2_t : Filter.Tendsto
       (fun k : ℕ => ∫ x, ‖Ft k x - θ_lim t x‖ ^ 2)
       Filter.atTop (nhds 0) := tendsto_L2_proof t ht
@@ -19376,10 +19382,15 @@ theorem l2Conservation_of_aubinLions
       hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
         = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0))) :
     ∀ t, 0 ≤ t →
-      hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0) :=
-  l2Conservation_of_aubinLions_raw ext.nsub α ext.θ_lim ext.tendsto_L2 hLevel
-    (fun t ht => mFourierCoeff_aubinLionsLimit_zero ext
-      (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) ht)
+      hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0) := by
+  refine l2Conservation_of_aubinLions_raw ext.nsub α ext.θ_lim ?_ hLevel ?_
+  · -- `ext.tendsto_L2` may have a different `DecidableEq` instance than
+    -- what the raw expects under `attribute [local irreducible] sqgBox`;
+    -- `convert` bridges via subsingleton on the instance.
+    convert ext.tendsto_L2
+  · intro t ht
+    exact mFourierCoeff_aubinLionsLimit_zero ext
+      (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) ht
 
 /-! ### §10.148 Route B capstone without the `hL2` hypothesis
 
