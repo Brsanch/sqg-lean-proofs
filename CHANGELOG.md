@@ -4,6 +4,47 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.13 — 2026-04-20
+
+Real-symmetry ODE propagation: closes `hRealC` in the Phase-3 capstone
+from per-τ to τ=0-only. 15,219 lines (`RieszTorus`) + 709 (`Basic`),
+zero `sorry`, zero new axioms.
+
+**§10.100** consumes the universal `galerkinRHS_starSwap_identity` from
+v0.4.12 plus mathlib's `ODE_solution_unique_univ` to propagate
+real-coefficient symmetry from the initial time to all times under the
+Galerkin ODE. The variant capstone
+`SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_from_initial_realC`
+takes `hRealC` at `τ=0` only, plus a uniform L∞ bound on all `τ : ℝ`
+(strengthened from `τ ≥ 0` in v0.4.11's capstone so the starSwapped
+trajectory stays in the same Lipschitz ball globally in time).
+
+- **`negSubtype`** / **`starSwap`** / **`starSwap_starSwap`**: subtype
+  plumbing for the order-2 involution `c ↦ fun n ↦ star (c (-n))` on
+  `↥S → ℂ`, with `norm_starSwap_apply` giving sup-norm invariance.
+- **`galerkinExtend_starSwap`**: the zero-extension of `starSwap hS c` is
+  `fun m ↦ star (galerkinExtend S c (-m))` at the full lattice level
+  (case split on `m ∈ S`; off-support uses `star_zero` + `hSym`).
+- **`galerkinVectorField_starSwap`**: `galerkinVectorField` commutes
+  with `starSwap`. Direct corollary of the universal
+  `galerkinRHS_starSwap_identity` (§10.99) after pushing `starSwap` into
+  `galerkinExtend` via the lemma above.
+- **`starSwap_hasDerivAt`**: if `α` solves the Galerkin ODE, so does
+  `β := fun τ ↦ starSwap hS (α τ)`. Via `hasDerivAt_pi` per coordinate +
+  `HasDerivAt.star` (complex conjugation is ℝ-linear continuous).
+- **`hRealC_of_initial_and_bound`**: the propagation theorem. Sets
+  `β := starSwap ∘ α`; shows both `α τ, β τ ∈ closedBall 0 M` via
+  `pi_norm_le_iff_of_nonneg`; extracts `K`-Lipschitz on that ball via
+  `ContDiffOn.exists_lipschitzOnWith` (compact + convex + C¹); applies
+  `ODE_solution_unique_univ` with the hRealC₀ initial equality to force
+  `α = β`; unpacks to `hRealC` at every τ.
+- **Capstone** `…_from_initial_realC`: wraps the propagation and feeds
+  v0.4.11's §10.98 capstone.
+
++228 lines. One-shot CI green.
+
+Archive: [TBD — Zenodo DOI pending].
+
 ## v0.4.12 — 2026-04-19
 
 Real-coefficient symmetry algebraic preservation (building blocks for
