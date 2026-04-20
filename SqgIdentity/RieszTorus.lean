@@ -15407,15 +15407,13 @@ theorem galerkin_uniform_ε_picard
   set a : NNReal := ⟨R / 2, hR2_pos.le⟩ with ha_def
   have ha_coe : (a : ℝ) = R / 2 := rfl
   have hTime : (L : ℝ) * ε ≤ (a : ℝ) := by
-    rw [ha_coe, hε_def]
-    rw [hL_coe]
-    rw [show (L_real) * (R / 2 / (L_real + 1)) = L_real * (R/2) / (L_real + 1) from by ring]
-    rw [div_le_iff₀ hLp1_pos]
-    have : L_real * (R/2) ≤ (L_real + 1) * (R/2) := by
-      apply mul_le_mul_of_nonneg_right _ hR2_pos.le
-      linarith
-    calc L_real * (R/2) ≤ (L_real + 1) * (R/2) := this
-      _ = R / 2 * (L_real + 1) := by ring
+    have h1 : (L : ℝ) * ε ≤ ((L : ℝ) + 1) * ε :=
+      mul_le_mul_of_nonneg_right (by linarith) hε_pos.le
+    have h2 : ((L : ℝ) + 1) * ε = R / 2 := by
+      rw [hε_def]
+      field_simp
+    rw [ha_coe]
+    linarith
   -- Rewrite Lipschitz/bound in terms of ↑a.
   have hLip_small' : LipschitzOnWith K (galerkinVectorField S)
       (Metric.closedBall c₀ (a : ℝ)) := by
