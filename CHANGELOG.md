@@ -4,6 +4,50 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.17 — 2026-04-20
+
+Time-global existence steps 7-8 of 8 — program complete (conditional on
+ball-invariance). Extends v0.4.16 by ~250 lines.
+
+- **§10.107 `galerkin_global_hasDerivWithinAt_conditional`** —
+  strengthens §10.106 with the derivative claim on `Set.Ici 0`. The
+  piecewise `α t = β ⌊t/ε⌋₊ (t − ⌊t/ε⌋₊ · ε)` is shown to have
+  `HasDerivWithinAt α (galerkinVectorField S (α t)) (Ici 0) t` at each
+  `t ≥ 0`. Three cases:
+  - **Strict step interior** `k·ε < t < (k+1)·ε`: use
+    `hasDerivWithinAt_inter` with the open neighborhood
+    `Ioo (k·ε) ((k+1)·ε)` and `.mono` onto
+    `Icc (k·ε) ((k+1)·ε)`.
+  - **Junction** `t = k·ε ≥ 1`: combine the previous step's
+    `HasDerivWithinAt` on `Icc ((k−1)·ε) (k·ε)` (values agree via
+    `β n ε = η(n+1) = β(n+1) 0`) with the current step's on
+    `Icc (k·ε) ((k+1)·ε)` by `.union` + `Set.Icc_union_Icc_eq_Icc`,
+    then extend to `Ici 0` via `hasDerivWithinAt_inter` with
+    `Ioo ((k−1)·ε) ((k+1)·ε)`.
+  - **Origin** `t = 0`: one-sided, `hasDerivWithinAt_inter` with
+    `Iio ε` reduces to `Ico 0 ε ⊆ Icc 0 ε`.
+
+  Translated β-derivative on step interval via `HasDerivWithinAt.scomp`
+  with `(· − k·ε)` (scalar derivative `1`).
+- **§10.108 `galerkin_global_existence_from_invariance`** — final
+  capstone that hides the intermediate `hStep` hypothesis. Takes
+  `R > 0`, `‖c₀‖ ≤ R/2`, and an `ε`-parameterized ball-invariance
+  hypothesis; invokes `galerkin_forward_step` (§10.103) internally to
+  discharge the step existence, then applies §10.107.
+
+The only remaining premise for unconditional time-global existence is
+discharging the ball-invariance `hInv` from L² conservation (§10.97),
+which is independent of this chain and deferred.
+
+16,693 lines, zero `sorry`, zero new axioms.
+
+CI pitfalls caught (v0.4.17): `subst hk'_def` with `hk'_def : k = k' + 1`
+fails when `k` is a `set`-variable — use a fresh local `kp := k - 1`
+plus an explicit `Nat.succ_pred_eq_of_pos` and cast via
+`congrArg (Nat.cast (R := ℝ))`. `ne_of_gt ht_pos : t ≠ 0` consumes
+a hypothesis of the shape `t = 0`, not `0 = t` — drop the `.symm`
+when reaching contradictions.
+
 ## v0.4.16 — 2026-04-20
 
 Time-global existence steps 5-6 of 8: chain sequence `(η, β)` and

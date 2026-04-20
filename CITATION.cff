@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.16
+version: 0.4.17
 date-released: "2026-04-20"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 repository-code: "https://github.com/SolomonB14D3/sqg-lean-proofs"
@@ -65,7 +65,7 @@ abstract: >
   argument, so that regularity on the Sobolev range s in [0, 2] is
   unconditional on this class.
 
-  The release comprises 16,441 lines of Lean 4 source, with zero `sorry`
+  The release comprises 16,693 lines of Lean 4 source, with zero `sorry`
   occurrences and no axioms beyond mathlib. A machine-readable build of
   the formalization is provided via a standard `lake build` invocation
   against mathlib v4.29.0.
