@@ -16246,4 +16246,49 @@ theorem galerkin_supNorm_le_sqrt_card_on_Ici
   have ht_in : t ∈ Set.Icc (0 : ℝ) ε := ⟨ht, by linarith⟩
   exact galerkin_supNorm_bound_on_Icc hS ε α hα_Icc hRealC t ht_in
 
+/-! ### §10.113 Unified time-global capstone — real-symmetric class
+
+Packages §10.108 + §10.112 into a single existence statement that delivers
+`‖α t‖ ≤ √|S| · ‖c₀‖` (the sharp `ℓ²`-derived bound) for `t ≥ 0`, in
+addition to the `HasDerivWithinAt` Galerkin-ODE witness.
+
+The theorem still takes two hypotheses the caller must supply:
+
+* `hInv` — §10.108's universal ball-invariance (reshape of `galerkin_hInv_discharged`
+  under the subclass `‖c‖ ≤ R/(2·√|S|)` suffices to supply it for a chain
+  started from real-symmetric `c₀`; see the CHANGELOG v0.4.19 note).
+* `hRealSymPropagates` — real-symmetry propagation along the constructed `α`.
+  This is the obstacle to a fully unconditional capstone: a within-interval
+  adaptation of §10.100's `hRealC_of_initial_and_bound` (currently stated
+  for `HasDerivAt` on ℝ) would discharge this internally. -/
+
+theorem galerkin_time_global_real_symmetric
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S) (hS_card : 0 < S.card)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2)
+    (hInv : ∀ ε > 0, ∀ c : ↥S → ℂ, ‖c‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2)
+    (hRealSymPropagates : ∀ α : ℝ → (↥S → ℂ), α 0 = c₀ →
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) →
+      ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖c₀‖) := by
+  obtain ⟨α, hα0, hα_norm, hα_deriv⟩ :=
+    galerkin_global_existence_from_invariance hR c₀ hc₀ hInv
+  refine ⟨α, hα0, hα_norm, hα_deriv, ?_⟩
+  intros t ht
+  have hRealC := hRealSymPropagates α hα0 hα_deriv
+  have h_bound := galerkin_supNorm_le_sqrt_card_on_Ici hS α hα_deriv hRealC t ht
+  rw [hα0] at h_bound
+  exact h_bound
+
 end SqgIdentity
