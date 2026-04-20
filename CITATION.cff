@@ -65,6 +65,19 @@ abstract: >
   argument, so that regularity on the Sobolev range s in [0, 2] is
   unconditional on this class.
 
+  §10.116 delivers unconditional time-global existence of the Galerkin
+  ODE trajectory on every symmetric Fourier support, starting from any
+  real-symmetric coefficient vector whose ℓ²-sum is bounded by (R/2)².
+  The construction extracts Picard ball-containment from the internal
+  FunSpace.compProj_mem_closedBall lemma, propagates real-symmetry
+  within each step via an ODE-uniqueness argument on Icc 0 ε,
+  carries the ℓ²-sum invariant through a Nat.rec chain, and glues the
+  per-step Picard solutions into a single derivative-on-Ici-0
+  trajectory by a Nat-floor piecewise construction. All previously
+  open hypotheses (hInv for universal ball-invariance, real-symmetry
+  propagation, auxiliary L-infinity slack bounds) are discharged
+  internally.
+
   The release comprises 18,114 lines of Lean 4 source, with zero `sorry`
   occurrences and no axioms beyond mathlib. A machine-readable build of
   the formalization is provided via a standard `lake build` invocation
