@@ -17517,4 +17517,301 @@ theorem exists_sqgSolution_of_galerkin_realSym
     exact hL2_const t ht
   · exact congrArg (galerkinToLp S) hα0
 
+/-! ### §10.118 `sqgBox n` — nested symmetric Fourier boxes on `ℤ²`
+
+Canonical exhausting sequence of finite, symmetric, zero-excluding
+supports used to truncate arbitrary `L²(𝕋²)` Fourier data onto the
+§10.116 / §10.117 Galerkin class. `sqgBox n` is the integer `ℓ∞`-ball
+of radius `n + 1` minus the origin; the `+ 1` guarantees every mode
+eventually enters the sequence.
+
+Properties:
+* `zero_not_mem_sqgBox` — `0 ∉ sqgBox n`.
+* `sqgBox_symmetric` — `IsSymmetricSupport (sqgBox n)`.
+* `sqgBox_mono` — `sqgBox n ⊆ sqgBox (n + 1)`.
+* `mem_sqgBox_of_linftyNorm_le` — membership criterion from the
+  per-coordinate bound.
+* `exists_mem_sqgBox` — exhaustion: every nonzero `m` eventually
+  enters `sqgBox n`.
+-/
+
+open Finset in
+/-- **Canonical nested symmetric Fourier box on `ℤ²`.** The integer
+`ℓ∞`-ball of radius `n + 1` minus the origin, realized as a
+`Finset (Fin 2 → ℤ)`. Inherits: symmetry under negation, zero-exclusion,
+monotonicity in `n`, and eventual exhaustion of `ℤ² ∖ {0}`. -/
+noncomputable def sqgBox (n : ℕ) : Finset (Fin 2 → ℤ) :=
+  ((Fintype.piFinset fun _ : Fin 2 =>
+      Finset.Icc (-((n : ℤ) + 1)) ((n : ℤ) + 1)) : Finset (Fin 2 → ℤ)).erase 0
+
+/-- Membership in `sqgBox n` via the per-coordinate `ℓ∞` bound. -/
+theorem mem_sqgBox_iff {n : ℕ} {m : Fin 2 → ℤ} :
+    m ∈ sqgBox n ↔ m ≠ 0 ∧ ∀ i : Fin 2, |m i| ≤ (n : ℤ) + 1 := by
+  unfold sqgBox
+  simp only [Finset.mem_erase, Fintype.mem_piFinset, Finset.mem_Icc]
+  constructor
+  · rintro ⟨hne, hpi⟩
+    refine ⟨hne, fun i => ?_⟩
+    have := hpi i
+    rcases this with ⟨h1, h2⟩
+    exact abs_le.mpr ⟨h1, h2⟩
+  · rintro ⟨hne, hpi⟩
+    refine ⟨hne, fun i => ?_⟩
+    have := hpi i
+    exact ⟨(abs_le.mp this).1, (abs_le.mp this).2⟩
+
+/-- `0 ∉ sqgBox n`. -/
+theorem zero_not_mem_sqgBox (n : ℕ) : (0 : Fin 2 → ℤ) ∉ sqgBox n := by
+  unfold sqgBox
+  simp
+
+/-- `sqgBox n` is symmetric under negation. -/
+theorem sqgBox_symmetric (n : ℕ) : IsSymmetricSupport (sqgBox n) := by
+  intro m hm
+  rw [mem_sqgBox_iff] at hm ⊢
+  refine ⟨?_, ?_⟩
+  · intro h
+    apply hm.1
+    have := congrArg (Neg.neg) h
+    simpa [neg_zero, neg_neg] using this
+  · intro i
+    rw [show (-m) i = -(m i) from rfl, abs_neg]
+    exact hm.2 i
+
+/-- `sqgBox` is monotone in `n`. -/
+theorem sqgBox_mono (n : ℕ) : sqgBox n ⊆ sqgBox (n + 1) := by
+  intro m hm
+  rw [mem_sqgBox_iff] at hm ⊢
+  refine ⟨hm.1, fun i => ?_⟩
+  calc |m i| ≤ (n : ℤ) + 1 := hm.2 i
+    _ ≤ ((n + 1 : ℕ) : ℤ) + 1 := by push_cast; linarith
+
+/-- Every nonzero mode eventually enters `sqgBox n`. -/
+theorem exists_mem_sqgBox {m : Fin 2 → ℤ} (hm : m ≠ 0) :
+    ∃ N : ℕ, ∀ n ≥ N, m ∈ sqgBox n := by
+  refine ⟨(|m 0|.toNat) ⊔ (|m 1|.toNat), fun n hn => ?_⟩
+  rw [mem_sqgBox_iff]
+  refine ⟨hm, fun i => ?_⟩
+  have hN1 : (|m 0|.toNat : ℤ) ≤ (n : ℤ) := by exact_mod_cast le_of_max_le_left hn
+  have hN2 : (|m 1|.toNat : ℤ) ≤ (n : ℤ) := by exact_mod_cast le_of_max_le_right hn
+  have h0 : |m 0| ≤ (n : ℤ) := by
+    have heq : (|m 0|.toNat : ℤ) = |m 0| := Int.toNat_of_nonneg (abs_nonneg _)
+    linarith
+  have h1 : |m 1| ≤ (n : ℤ) := by
+    have heq : (|m 1|.toNat : ℤ) = |m 1| := Int.toNat_of_nonneg (abs_nonneg _)
+    linarith
+  fin_cases i
+  · show |m 0| ≤ (n : ℤ) + 1; linarith
+  · show |m 1| ≤ (n : ℤ) + 1; linarith
+
+/-! ### §10.119 Fourier-coefficient restriction onto `sqgBox n`
+
+The restriction operator `fourierRestrict n θ : ↥(sqgBox n) → ℂ`
+sends an `L²(𝕋²)` element `θ` to its Fourier coefficients on modes in
+`sqgBox n`. This is the truncation that feeds the §10.116 Galerkin
+capstone, with uniform ℓ² bound from Parseval. -/
+
+/-- **Fourier-coefficient restriction to `sqgBox n`.** -/
+noncomputable def fourierRestrict
+    (n : ℕ) (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    ↥(sqgBox n) → ℂ :=
+  fun m => mFourierCoeff θ m.val
+
+@[simp] theorem fourierRestrict_apply
+    (n : ℕ) (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : ↥(sqgBox n)) :
+    fourierRestrict n θ m = mFourierCoeff θ m.val := rfl
+
+/-- `galerkinExtend` of a restricted vector reproduces the Fourier
+coefficients of `θ` on modes in `sqgBox n`, and `0` elsewhere. -/
+theorem galerkinExtend_fourierRestrict_apply
+    [DecidableEq (Fin 2 → ℤ)]
+    (n : ℕ) (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : Fin 2 → ℤ) :
+    galerkinExtend (sqgBox n) (fourierRestrict n θ) m
+      = if m ∈ sqgBox n then mFourierCoeff θ m else 0 := by
+  by_cases hm : m ∈ sqgBox n
+  · rw [galerkinExtend_apply_of_mem _ _ hm, if_pos hm]; rfl
+  · rw [galerkinExtend_apply_of_not_mem _ _ hm, if_neg hm]
+
+/-- **Uniform ℓ² bound for `fourierRestrict`.** The finite L²-sum of
+restricted Fourier coefficients is bounded by the full Parseval sum,
+hence by the L² norm squared of `θ`. Uniform in `n`. -/
+theorem sum_sq_fourierRestrict_le_L2Sq
+    (n : ℕ) (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    (∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2) ≤ ∫ x, ‖θ x‖ ^ 2 := by
+  have hP : HasSum (fun k : Fin 2 → ℤ => ‖mFourierCoeff θ k‖ ^ 2)
+      (∫ x, ‖θ x‖ ^ 2) := hasSum_sq_mFourierCoeff θ
+  have hSumm : Summable (fun k : Fin 2 → ℤ => ‖mFourierCoeff θ k‖ ^ 2) :=
+    hP.summable
+  have hSubset : (∑ m ∈ sqgBox n, ‖mFourierCoeff θ m‖ ^ 2) ≤
+      ∑' k : Fin 2 → ℤ, ‖mFourierCoeff θ k‖ ^ 2 :=
+    hSumm.sum_le_tsum (sqgBox n) (fun _ _ => sq_nonneg _)
+  rw [hP.tsum_eq] at hSubset
+  calc (∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2)
+      = ∑ m : ↥(sqgBox n), ‖mFourierCoeff θ m.val‖ ^ 2 := by
+        apply Finset.sum_congr rfl
+        intros m _; rfl
+    _ = ∑ m ∈ (sqgBox n).attach, ‖mFourierCoeff θ m.val‖ ^ 2 := by
+        rw [show ((Finset.univ : Finset ↥(sqgBox n))) = (sqgBox n).attach from
+          Finset.univ_eq_attach (sqgBox n)]
+    _ = ∑ m ∈ sqgBox n, ‖mFourierCoeff θ m‖ ^ 2 :=
+        Finset.sum_attach (sqgBox n)
+          (fun m => ‖mFourierCoeff θ m‖ ^ 2)
+    _ ≤ ∫ x, ‖θ x‖ ^ 2 := hSubset
+
+/-! ### §10.120 Real-symmetry of the restricted Fourier data
+
+If `θ : Lp ℂ 2 (𝕋²)` has real-symmetric Fourier coefficients (i.e.
+`mFourierCoeff θ (-m) = star (mFourierCoeff θ m)` for every `m`), then
+the restricted vector `fourierRestrict n θ` satisfies the
+`IsRealCoeff`-style hypothesis required by §10.116. -/
+
+/-- **Real-symmetric-Fourier predicate on `Lp ℂ 2`.** Encodes the
+condition that `θ` corresponds to a real-valued function on `𝕋²`. -/
+def IsFourierRealSym
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  ∀ m : Fin 2 → ℤ, mFourierCoeff θ (-m) = star (mFourierCoeff θ m)
+
+/-- **Real-symmetry of the restricted vector.** Given `IsFourierRealSym θ`,
+`galerkinExtend (sqgBox n) (fourierRestrict n θ)` satisfies the
+`hRealC₀`-hypothesis of §10.116. -/
+theorem galerkinExtend_fourierRestrict_realSym
+    [DecidableEq (Fin 2 → ℤ)]
+    {n : ℕ} {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hθ : IsFourierRealSym θ) :
+    ∀ m ∈ sqgBox n,
+      galerkinExtend (sqgBox n) (fourierRestrict n θ) (-m) =
+        star (galerkinExtend (sqgBox n) (fourierRestrict n θ) m) := by
+  intro m hm
+  have hnegm : -m ∈ sqgBox n := sqgBox_symmetric n m hm
+  rw [galerkinExtend_fourierRestrict_apply, galerkinExtend_fourierRestrict_apply,
+      if_pos hnegm, if_pos hm]
+  exact hθ m
+
+/-! ### §10.121 Per-level time-global Galerkin trajectory from `L²` data
+
+For an `L²` initial datum `θ₀` with real-symmetric Fourier coefficients,
+§10.116 produces a time-global Galerkin trajectory `αₙ` on each
+`sqgBox n` with initial data `fourierRestrict n θ₀`. The radius `R` is
+picked uniform in `n` via the Parseval bound: any `R` with
+`(R/2)² ≥ ∫ ‖θ₀‖²` works for every `n`. -/
+
+/-- **Per-level Galerkin trajectory.** Given `θ₀` with real-symmetric
+Fourier coefficients, for each `n` there is a Galerkin trajectory `αₙ`
+on `sqgBox n` starting from the restricted data, with the full
+5-way conjunction of §10.116.H.3: derivative, ℓ²-sum conservation,
+real-symmetry propagation, and uniform π-norm bound. The π-norm bound
+constant `R/2` is UNIFORM in `n`. -/
+theorem exists_galerkin_trajectory_of_L2
+    [DecidableEq (Fin 2 → ℤ)]
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : IsFourierRealSym θ)
+    {R : ℝ} (hR : 0 < R)
+    (hR2 : (R / 2) ^ 2 ≥ ∫ x, ‖θ x‖ ^ 2)
+    (n : ℕ) :
+    ∃ α : ℝ → (↥(sqgBox n) → ℂ), α 0 = fourierRestrict n θ ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField (sqgBox n) (α t))
+          (Set.Ici (0 : ℝ)) t) ∧
+      (∀ t, 0 ≤ t →
+        (∑ m : ↥(sqgBox n), ‖α t m‖ ^ 2)
+          = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2) ∧
+      (∀ t, 0 ≤ t → ∀ k ∈ sqgBox n,
+        galerkinExtend (sqgBox n) (α t) (-k)
+          = star (galerkinExtend (sqgBox n) (α t) k)) ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) := by
+  have hBound : (∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2) ≤ (R / 2) ^ 2 :=
+    le_trans (sum_sq_fourierRestrict_le_L2Sq n θ) hR2
+  exact galerkin_time_global_unconditional_realSym (sqgBox n) (sqgBox_symmetric n)
+    hR (fourierRestrict n θ) hBound
+    (galerkinExtend_fourierRestrict_realSym hθ)
+
+/-! ### §10.122 Uniform L² bound on the lifted Galerkin trajectory
+
+For each level `n`, define `θₙ(t) := galerkinToLp (sqgBox n) (αₙ t)`.
+Combining §10.117.A with the ℓ²-sum conservation of §10.116 and the
+Parseval bound of §10.119 produces
+`hsSeminormSq 0 (θₙ t) ≤ ∫ ‖θ₀‖²`, **uniformly in `n` and `t`**. -/
+
+/-- **Uniform L² bound for the lifted trajectory.** `hsSeminormSq 0`
+of `galerkinToLp (sqgBox n) (αₙ t)` is bounded by the L² norm squared
+of the original data `θ`, uniformly in `n` and `t ≥ 0`. -/
+theorem hsSeminormSq_galerkinToLp_le_L2Sq
+    [DecidableEq (Fin 2 → ℤ)]
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (n : ℕ)
+    (α : ℝ → (↥(sqgBox n) → ℂ))
+    (hEnergy : ∀ t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2)
+    {t : ℝ} (ht : 0 ≤ t) :
+    hsSeminormSq 0 (galerkinToLp (sqgBox n) (α t)) ≤ ∫ x, ‖θ x‖ ^ 2 := by
+  rw [hsSeminormSq_zero_galerkinToLp (zero_not_mem_sqgBox n)]
+  calc (∑ m : ↥(sqgBox n), ‖α t m‖ ^ 2)
+      = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2 := hEnergy t ht
+    _ ≤ ∫ x, ‖θ x‖ ^ 2 := sum_sq_fourierRestrict_le_L2Sq n θ
+
+/-! ### §10.123 Per-mode uniform bound on the Galerkin coefficients
+
+For every fixed mode `m : Fin 2 → ℤ`, the scalar time-dependent
+Fourier coefficient `galerkinExtend (sqgBox n) (αₙ t) m` is bounded,
+uniformly in `n` and `t ≥ 0`, by `√(∫ ‖θ₀‖²)`. This is the per-mode
+L∞ control that feeds the diagonal subsequence argument for the
+weak-* limit. -/
+
+/-- **Per-mode uniform bound.** `‖galerkinExtend (sqgBox n) (αₙ t) m‖²`
+is bounded by `∫ ‖θ₀‖²`, uniformly in `n`, `t ≥ 0`, and `m`. -/
+theorem sq_galerkinExtend_le_L2Sq
+    [DecidableEq (Fin 2 → ℤ)]
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (n : ℕ)
+    (α : ℝ → (↥(sqgBox n) → ℂ))
+    (hEnergy : ∀ t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ m‖ ^ 2)
+    {t : ℝ} (ht : 0 ≤ t) (m : Fin 2 → ℤ) :
+    ‖galerkinExtend (sqgBox n) (α t) m‖ ^ 2 ≤ ∫ x, ‖θ x‖ ^ 2 := by
+  by_cases hm : m ∈ sqgBox n
+  · rw [galerkinExtend_apply_of_mem _ _ hm]
+    have hSumLe : (∑ k : ↥(sqgBox n), ‖α t k‖ ^ 2) ≤ ∫ x, ‖θ x‖ ^ 2 := by
+      calc (∑ k : ↥(sqgBox n), ‖α t k‖ ^ 2)
+          = ∑ k : ↥(sqgBox n), ‖fourierRestrict n θ k‖ ^ 2 := hEnergy t ht
+        _ ≤ ∫ x, ‖θ x‖ ^ 2 := sum_sq_fourierRestrict_le_L2Sq n θ
+    have hMember : ‖α t ⟨m, hm⟩‖ ^ 2 ≤ ∑ k : ↥(sqgBox n), ‖α t k‖ ^ 2 := by
+      have hNn : ∀ k ∈ (Finset.univ : Finset ↥(sqgBox n)),
+          0 ≤ ‖α t k‖ ^ 2 := fun _ _ => sq_nonneg _
+      exact Finset.single_le_sum (f := fun k : ↥(sqgBox n) => ‖α t k‖ ^ 2)
+        hNn (Finset.mem_univ _)
+    linarith
+  · rw [galerkinExtend_apply_of_not_mem _ _ hm, norm_zero, pow_two, mul_zero]
+    exact integral_nonneg (fun x => sq_nonneg _)
+
+/-! ### §10.124 Galerkin → full-SQG weak-limit program status
+
+The Sₙ ↗ truncation infrastructure of §10.118–§10.123 supplies the
+uniform estimates classically used to extract a weak-* L²(𝕋²) limit
+of the Galerkin approximants:
+
+* §10.118 — nested symmetric, zero-excluding supports exhausting ℤ² ∖ {0}.
+* §10.119 — `fourierRestrict` + Parseval-derived uniform ℓ² bound.
+* §10.120 — real-symmetry of restricted Fourier data inherited from
+  `IsFourierRealSym θ`.
+* §10.121 — per-level time-global Galerkin trajectory from §10.116
+  with a uniform-in-`n` π-norm bound `R/2`.
+* §10.122 — `hsSeminormSq 0 (θₙ t) ≤ ∫ ‖θ‖²` uniformly in `n, t`.
+* §10.123 — per-mode pointwise bound `‖θₙ̂(m, t)‖² ≤ ∫ ‖θ‖²`.
+
+What remains to close the weak-* limit formally: a diagonal-subsequence
+Arzelà–Ascoli argument producing per-mode time-uniform convergence
+`αₙₖ(·, m) → β(·, m)` on compact intervals, followed by Fourier
+synthesis of `β` into an `L²` trajectory `θ` and a verification that
+`θ` satisfies `SqgEvolutionAxioms`. That step needs a per-mode
+time-modulus of continuity derived from a uniform bound on
+`‖galerkinVectorField (sqgBox n) (αₙ t) m‖`, which in turn uses the
+explicit structure of `galerkinRHS` and the kernel magnitude. The
+infrastructure of §10.118–§10.123 is the prerequisite: it establishes
+the uniform-in-`n` norm and per-mode bounds that any such compactness
+argument needs to consume. -/
+
 end SqgIdentity

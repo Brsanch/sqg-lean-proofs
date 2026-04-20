@@ -100,6 +100,17 @@ class, regularity is unconditional:
   `SqgEvolutionAxioms` is discharged directly from the ℓ²-sum
   invariant (§10.117.B) and `smoothInitialData` from
   `hsSeminormSq_summable_of_finite_support` at `s := 3`.
+- **Sₙ ↗ truncation infrastructure (§10.118–§10.123).** The nested
+  symmetric Fourier boxes `sqgBox n`, the Fourier-coefficient
+  restriction `fourierRestrict n θ`, and the uniform estimates that
+  any weak-`L²` compactness argument needs. Starts from arbitrary
+  `L²(𝕋²)` initial data with real-symmetric Fourier coefficients,
+  builds the Galerkin family on `sqgBox n` from §10.116 at every
+  level with a radius uniform in `n` (via Parseval), and establishes:
+  uniform L² bound
+  `hsSeminormSq 0 (galerkinToLp (sqgBox n) (αₙ t)) ≤ ∫ ‖θ‖²`, and
+  per-mode pointwise bound
+  `‖galerkinExtend (sqgBox n) (αₙ t) m‖² ≤ ∫ ‖θ‖²`.
 
 ## What is *not* proven
 
@@ -116,6 +127,13 @@ class, regularity is unconditional:
   unconditionally; the strong form would require either a full-ℝ
   `HasDerivAt` extension of the §10.116 trajectory or an Ici-0 variant
   of §10.94's Duhamel composition.
+- The final passage-to-the-limit step of the Sₙ ↗ weak-`L²`
+  argument. The uniform-estimate layer (§10.118–§10.123) is in place;
+  the remaining chain — per-mode time-modulus of continuity from a
+  uniform `galerkinVectorField` bound, diagonal subsequence
+  extraction, Fourier synthesis of the limit into an `L²` trajectory,
+  and transfer of `SqgEvolutionAxioms` through the limit — is not
+  yet formalized.
 
 ## Building
 
