@@ -15445,4 +15445,167 @@ theorem galerkin_forward_step
   have ht_big : t ∈ Set.Icc (-ε) ε := ⟨le_trans (neg_nonpos_of_nonneg hε_pos.le) ht.1, ht.2⟩
   exact (hα_deriv t ht_big).mono (Set.Icc_subset_Icc (by linarith) le_rfl)
 
+/-! ### §10.104 Nat-indexed chain of local Picard solutions
+
+Given a forward-step existence hypothesis (`hStep`, matching the shape of
+`galerkin_forward_step`) and a ball-invariance hypothesis (`hInv` — every
+solution starting in the `R/2`-ball stays in the `R/2`-ball throughout
+`[0, ε]`), iterate forward by `ℕ`-induction to obtain, for each `n : ℕ`, a
+solution on the interval `[0, n·ε]` that stays inside the ball.
+
+The ball-invariance hypothesis is separated from the existence hypothesis
+so that it may be discharged later from `L²`-conservation (§10.97) without
+re-proving the local Picard-Lindelöf step. -/
+
+theorem galerkin_chain_n_step
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R ε : ℝ} (hε : 0 < ε)
+    (hStep : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+        ∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hInv : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c₀ →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2) (n : ℕ) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t ∈ Set.Icc (0 : ℝ) ((n : ℝ) * ε),
+        HasDerivWithinAt α (galerkinVectorField S (α t))
+          (Set.Icc (0 : ℝ) ((n : ℝ) * ε)) t) ∧
+      (∀ t ∈ Set.Icc (0 : ℝ) ((n : ℝ) * ε), ‖α t‖ ≤ R / 2) := by
+  induction n with
+  | zero =>
+    -- Base case: interval is {0}. Use the forward-step solution restricted to {0}.
+    obtain ⟨α₀, hα₀0, hα₀D⟩ := hStep c₀ hc₀
+    refine ⟨α₀, hα₀0, ?_, ?_⟩
+    · intros t ht
+      have h_zero : ((0 : ℕ) : ℝ) * ε = 0 := by simp
+      rw [h_zero] at ht
+      have h0 : t = 0 := le_antisymm ht.2 ht.1
+      subst h0
+      rw [h_zero]
+      have h_sub : Set.Icc (0 : ℝ) 0 ⊆ Set.Icc (0 : ℝ) ε :=
+        Set.Icc_subset_Icc le_rfl hε.le
+      exact (hα₀D 0 ⟨le_rfl, hε.le⟩).mono h_sub
+    · intros t ht
+      have h_zero : ((0 : ℕ) : ℝ) * ε = 0 := by simp
+      rw [h_zero] at ht
+      have h0 : t = 0 := le_antisymm ht.2 ht.1
+      subst h0
+      rw [hα₀0]; exact hc₀
+  | succ n ih =>
+    obtain ⟨α_n, hα_n0, hα_nD, hα_nB⟩ := ih
+    set Tn : ℝ := (n : ℝ) * ε with hTn_def
+    set Tn1 : ℝ := ((n + 1 : ℕ) : ℝ) * ε with hTn1_def
+    have hTn_nn : 0 ≤ Tn := mul_nonneg (Nat.cast_nonneg _) hε.le
+    have hTn_succ : Tn1 = Tn + ε := by
+      show ((n + 1 : ℕ) : ℝ) * ε = (n : ℝ) * ε + ε
+      push_cast; ring
+    have hTn_le : Tn ≤ Tn1 := by rw [hTn_succ]; linarith
+    have h_αTn_bound : ‖α_n Tn‖ ≤ R / 2 := hα_nB Tn ⟨hTn_nn, le_rfl⟩
+    obtain ⟨β, hβ0, hβD⟩ := hStep (α_n Tn) h_αTn_bound
+    have hβB : ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖β t‖ ≤ R / 2 :=
+      hInv _ h_αTn_bound β hβ0 hβD
+    -- Concatenation γ(t) = if t ≤ Tn then α_n t else β (t - Tn).
+    set γ : ℝ → (↥S → ℂ) := fun t => if t ≤ Tn then α_n t else β (t - Tn)
+      with hγ_def
+    -- Pointwise agreements.
+    have hγ_left : ∀ t, t ≤ Tn → γ t = α_n t := fun t ht => by
+      show (if t ≤ Tn then α_n t else β (t - Tn)) = α_n t
+      rw [if_pos ht]
+    have hγ_right : ∀ t, Tn ≤ t → γ t = β (t - Tn) := fun t ht => by
+      show (if t ≤ Tn then α_n t else β (t - Tn)) = β (t - Tn)
+      by_cases heq : t = Tn
+      · subst heq; rw [if_pos le_rfl, sub_self, hβ0]
+      · have hlt : Tn < t := lt_of_le_of_ne ht (Ne.symm heq)
+        rw [if_neg (not_le.mpr hlt)]
+    have hγ0 : γ 0 = c₀ := by
+      rw [hγ_left 0 hTn_nn, hα_n0]
+    -- Translated β has HasDerivWithinAt on [Tn, Tn1].
+    have hβ_transD : ∀ t ∈ Set.Icc Tn Tn1,
+        HasDerivWithinAt (fun y => β (y - Tn))
+          (galerkinVectorField S (β (t - Tn)))
+          (Set.Icc Tn Tn1) t := by
+      intros t ht
+      have hmem : t - Tn ∈ Set.Icc (0 : ℝ) ε := by
+        refine ⟨sub_nonneg.mpr ht.1, ?_⟩
+        have := ht.2; rw [hTn_succ] at this; linarith
+      have hg : HasDerivWithinAt β (galerkinVectorField S (β (t - Tn)))
+          (Set.Icc (0 : ℝ) ε) (t - Tn) := hβD _ hmem
+      have hh : HasDerivWithinAt (fun y : ℝ => y - Tn) 1 (Set.Icc Tn Tn1) t :=
+        (hasDerivWithinAt_id t _).sub_const _
+      have hst : Set.MapsTo (fun y : ℝ => y - Tn) (Set.Icc Tn Tn1)
+          (Set.Icc (0 : ℝ) ε) := by
+        intros y hy
+        refine ⟨sub_nonneg.mpr hy.1, ?_⟩
+        have := hy.2; rw [hTn_succ] at this; linarith
+      have key := hg.scomp t hh hst
+      simpa using key
+    refine ⟨γ, hγ0, ?_, ?_⟩
+    · -- HasDerivWithinAt γ ... (Icc 0 Tn1) at each t ∈ Icc 0 Tn1.
+      intros t ht
+      have ht1_eq : ((n + 1 : ℕ) : ℝ) * ε = Tn1 := rfl
+      rw [show (↑(n + 1) : ℝ) * ε = Tn1 from rfl] at ht ⊢
+      by_cases ht_le : t ≤ Tn
+      · -- Left piece.
+        have ht_left : t ∈ Set.Icc (0 : ℝ) Tn := ⟨ht.1, ht_le⟩
+        have hγt : γ t = α_n t := hγ_left t ht_le
+        have hγ_on_left : HasDerivWithinAt γ (galerkinVectorField S (γ t))
+            (Set.Icc (0 : ℝ) Tn) t := by
+          rw [hγt]
+          refine (hα_nD t ht_left).congr ?_ ?_
+          · intros y hy; exact hγ_left y hy.2
+          · exact hγ_left t ht_le
+        by_cases ht_eq : t = Tn
+        · subst ht_eq
+          have h_β_right_deriv : HasDerivWithinAt γ (galerkinVectorField S (γ t))
+              (Set.Icc t Tn1) t := by
+            have hγt' : γ t = β (t - t) := hγ_right t le_rfl
+            rw [hγt']
+            refine (hβ_transD t ⟨le_rfl, hTn_le⟩).congr ?_ ?_
+            · intros y hy; exact hγ_right y hy.1
+            · exact hγ_right t le_rfl
+          have h_union : HasDerivWithinAt γ (galerkinVectorField S (γ t))
+              (Set.Icc (0 : ℝ) t ∪ Set.Icc t Tn1) t :=
+            hγ_on_left.union h_β_right_deriv
+          rwa [Set.Icc_union_Icc_eq_Icc ht.1 hTn_le] at h_union
+        · -- t < Tn strictly.
+          have ht_lt : t < Tn := lt_of_le_of_ne ht_le ht_eq
+          have hU_nhds : Set.Iio Tn ∈ nhds t := Iio_mem_nhds ht_lt
+          rw [← hasDerivWithinAt_inter hU_nhds]
+          have hsub : Set.Icc (0 : ℝ) Tn1 ∩ Set.Iio Tn ⊆ Set.Icc (0 : ℝ) Tn := by
+            intros x hx
+            exact ⟨hx.1.1, le_of_lt hx.2⟩
+          exact hγ_on_left.mono hsub
+      · -- Right piece: t > Tn.
+        push_neg at ht_le
+        have ht_right : t ∈ Set.Icc Tn Tn1 := ⟨le_of_lt ht_le, ht.2⟩
+        have hγt : γ t = β (t - Tn) := hγ_right t (le_of_lt ht_le)
+        have hγ_on_right : HasDerivWithinAt γ (galerkinVectorField S (γ t))
+            (Set.Icc Tn Tn1) t := by
+          rw [hγt]
+          refine (hβ_transD t ht_right).congr ?_ ?_
+          · intros y hy; exact hγ_right y hy.1
+          · exact hγ_right t (le_of_lt ht_le)
+        have hU_nhds : Set.Ioi Tn ∈ nhds t := Ioi_mem_nhds ht_le
+        rw [← hasDerivWithinAt_inter hU_nhds]
+        have hsub : Set.Icc (0 : ℝ) Tn1 ∩ Set.Ioi Tn ⊆ Set.Icc Tn Tn1 := by
+          intros x hx
+          exact ⟨le_of_lt hx.2, hx.1.2⟩
+        exact hγ_on_right.mono hsub
+    · -- Norm bound on [0, Tn1].
+      intros t ht
+      rw [show (↑(n + 1) : ℝ) * ε = Tn1 from rfl] at ht
+      by_cases ht_le : t ≤ Tn
+      · rw [hγ_left t ht_le]
+        exact hα_nB t ⟨ht.1, ht_le⟩
+      · push_neg at ht_le
+        rw [hγ_right t (le_of_lt ht_le)]
+        have hmem : t - Tn ∈ Set.Icc (0 : ℝ) ε := by
+          refine ⟨sub_nonneg.mpr (le_of_lt ht_le), ?_⟩
+          have := ht.2; rw [hTn_succ] at this; linarith
+        exact hβB (t - Tn) hmem
+
 end SqgIdentity
