@@ -15186,10 +15186,11 @@ theorem hRealC_of_initial_and_bound
   have hβapp : β τ ⟨-n, hnn_in⟩ = star (α τ ⟨n, hn⟩) := by
     rw [hβ_def]
     show star (α τ (negSubtype hS ⟨-n, hnn_in⟩)) = star (α τ ⟨n, hn⟩)
-    congr 1
-    apply Subtype.ext
-    show -(-n) = n
-    ring
+    have hsub : negSubtype hS ⟨-n, hnn_in⟩ = ⟨n, hn⟩ := by
+      apply Subtype.ext
+      show -(-n) = n
+      ring
+    rw [hsub]
   calc α τ ⟨-n, hnn_in⟩
       = β τ ⟨-n, hnn_in⟩ := by rw [hfun]
     _ = star (α τ ⟨n, hn⟩) := hβapp
