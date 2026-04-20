@@ -19476,12 +19476,14 @@ structure HasModeLipschitzFamily
   modeCoeff_off : ∀ (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ),
     m ∉ sqgBox n → modeCoeff n t m = 0
   /-- Per-mode uniform bound: `|modeCoeff n t m| ≤ modeBound t` for every
-  `(n, t, m)` — a weak (mode-independent) bound.  In the SQG application
-  this is the uniform `L²` bound from §10.123 combined with Parseval. -/
+  `(n, m)` at forward time `t ≥ 0`.  Weak (mode-independent) bound —
+  in the SQG application, the uniform `L²` bound from §10.123 combined
+  with Parseval.  Restricted to `t ≥ 0` because the Galerkin ODE only
+  runs forward. -/
   modeBound : ℝ → ℝ
   modeBound_nonneg : ∀ t : ℝ, 0 ≤ modeBound t
   modeBound_holds : ∀ (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ),
-    ‖modeCoeff n t m‖ ≤ modeBound t
+    0 ≤ t → ‖modeCoeff n t m‖ ≤ modeBound t
   /-- Per-mode Lipschitz constant in time.  For SQG this comes from the
   `H⁻²` time-derivative bound (§10.138) tested against `e^{-im·x}`. -/
   modeLipschitz : (Fin 2 → ℤ) → ℝ
@@ -19621,5 +19623,69 @@ noncomputable def HasAubinLionsExtraction.ofPerModeLimit
   θ_lim := syn.θ_lim
   init_eq := syn.init_eq
   tendsto_L2 := syn.tendsto_L2
+
+/-! ### §10.152 Discharge `HasModeLipschitzFamily` for the SQG Galerkin family
+
+Constructs `HasModeLipschitzFamily α` from the uniform-`L²` per-mode
+bound (§10.123's `sq_galerkinExtend_le_L2Sq`) + a per-mode Lipschitz
+witness (classically from the uniform `H⁻²` bound §10.138 integrated
+against the ODE `dα/dt = galerkinRHS` via `∫_s^t`, producing
+`modeLipschitz m ∼ √K · (|m|²)`).
+
+The Lipschitz witness is taken as a named hypothesis here — its
+discharge from §10.138 + §10.116's Galerkin ODE existence is the
+final execution step.  The structural chain through §10.149–§10.152
+reduces Item 1's analytical closure to exactly this single explicit
+per-mode integration. -/
+
+/-- **SQG Galerkin `HasModeLipschitzFamily` discharge.**  Takes the
+per-mode uniform `L²` bound (via §10.123's energy-preservation
+hypothesis) + a per-mode Lipschitz bound (from integrating the
+`H⁻²`-controlled time-derivative against `e^{-im·x}`), produces a
+`HasModeLipschitzFamily` witness for `α`. -/
+noncomputable def HasModeLipschitzFamily.ofSqgGalerkinBounds
+    [DecidableEq (Fin 2 → ℤ)]
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hEnergy : ∀ n t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ₀ m‖ ^ 2)
+    (L : (Fin 2 → ℤ) → ℝ)
+    (hL_nonneg : ∀ m : Fin 2 → ℤ, 0 ≤ L m)
+    (hL_holds : ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → 0 ≤ t →
+      ‖galerkinExtend (sqgBox n) (α n t) m
+          - galerkinExtend (sqgBox n) (α n s) m‖ ≤ L m * |t - s|) :
+    HasModeLipschitzFamily α where
+  modeCoeff := galerkinModeCoeff α
+  modeCoeff_eq := galerkinModeCoeff_eq_of_mem α
+  modeCoeff_off := galerkinModeCoeff_eq_zero_of_not_mem α
+  modeBound := fun _ => Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2)
+  modeBound_nonneg := fun _ => Real.sqrt_nonneg _
+  modeBound_holds := by
+    intro n t m ht
+    -- `galerkinModeCoeff α n t m = galerkinExtend (sqgBox n) (α n t) m`
+    -- and `‖·‖² ≤ ∫ ‖θ₀‖²` by §10.123, so `‖·‖ ≤ √(∫ ‖θ₀‖²)`.
+    have h_sq :=
+      sq_galerkinExtend_le_L2Sq θ₀ n (α n) (hEnergy n) ht m
+    have h_norm_nn : (0 : ℝ) ≤ ‖galerkinExtend (sqgBox n) (α n t) m‖ :=
+      norm_nonneg _
+    have h_int_nn : (0 : ℝ) ≤ ∫ x, ‖θ₀ x‖ ^ 2 :=
+      integral_nonneg (fun _ => sq_nonneg _)
+    -- `x² ≤ y` + `0 ≤ x` + `0 ≤ y` → `x ≤ √y`.
+    have h_sqrt_sq : ‖galerkinExtend (sqgBox n) (α n t) m‖
+        = Real.sqrt (‖galerkinExtend (sqgBox n) (α n t) m‖ ^ 2) := by
+      rw [Real.sqrt_sq h_norm_nn]
+    show ‖galerkinModeCoeff α n t m‖ ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2)
+    unfold galerkinModeCoeff
+    rw [h_sqrt_sq]
+    exact Real.sqrt_le_sqrt h_sq
+  modeLipschitz := L
+  modeLipschitz_nonneg := hL_nonneg
+  modeLipschitz_holds := by
+    intro n m s t hs ht
+    show ‖galerkinModeCoeff α n t m - galerkinModeCoeff α n s m‖
+      ≤ L m * |t - s|
+    unfold galerkinModeCoeff
+    exact hL_holds n m s t hs ht
 
 end SqgIdentity
