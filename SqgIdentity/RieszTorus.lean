@@ -19205,7 +19205,7 @@ theorem integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
   rw [h, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0), zero_add] at hEq
   exact hEq
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 800000 in
 /-- **Route B `l2Conservation` from Aubin–Lions.**
 
 From the strong-`L²` Aubin–Lions extraction (§10.139) and the
