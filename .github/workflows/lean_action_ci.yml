@@ -14,9 +14,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Opt in to Node 24 for JavaScript actions ahead of the June 2026
+      # Node 20 removal deadline. `actions/checkout@v6` is natively Node
+      # 24. `leanprover/lean-action@v1` (v1.4.0 at time of writing) still
+      # pulls in `actions/cache@v4` as an internal dep, which is on Node
+      # 20; this env var forces those transitive JS actions to run on
+      # Node 24. Remove this override once `leanprover/lean-action`
+      # bumps its `actions/cache` dependency. See
+      # https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: leanprover/lean-action@v1
       # docgen is known to hang on this repo; give it a short timeout and
       # mark it non-blocking so the job finishes and dedupe-caches runs.

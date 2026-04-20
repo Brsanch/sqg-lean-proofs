@@ -9303,14 +9303,14 @@ theorem sqgConcreteMollifier_integral_eq_buffered
   intro τ hτ
   refine ⟨?_, ?_⟩
   · by_contra h
-    push_neg at h
+    push Not at h
     apply hτ
     have hτ_le : τ ≤ s - ε := by linarith
     show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
     rw [sqgConcreteMollifier_deriv_complex_zero_off_collars hε hst (Or.inl hτ_le)]
     ring
   · by_contra h
-    push_neg at h
+    push Not at h
     apply hτ
     have hτ_ge : t + ε ≤ τ := by linarith
     show deriv (fun x => (sqgConcreteMollifier ε s t x : ℂ)) τ * F τ = 0
@@ -10629,7 +10629,7 @@ lemma antipodal_inner_sum_zero
     rw [sqgVelocitySymbol_mul_derivSymbol_sum_zero_antipodal_pair m₀ ℓ (m - ℓ) hℓ hmℓ]
     ring
   · -- θ̂(m - ℓ) = 0.
-    push_neg at hmℓ
+    push Not at hmℓ
     rw [mFourierCoeff_antipodalMode_eq_zero_of_not_mem hm₀ a₁ a₂ hmℓ.1 hmℓ.2]
     ring
 
@@ -12809,7 +12809,7 @@ theorem BKMCriterionS2.of_galerkinEnergyGronwall
             ≤ Real.sqrt (E₀ * Real.exp (K * T)) :=
               uniform_fourier_bound_of_galerkinEnergyGronwall hGW hSupport n hn τ hτ_mem
           _ ≤ M := le_max_right _ _
-    · push_neg at hτT
+    · push Not at hτT
       rw [hExtend τ hτT n, norm_zero]
       exact hM_nn
   exact BKMCriterionS2.of_finite_support_uniform θ S hSupport M hBound
@@ -15578,7 +15578,7 @@ theorem galerkin_chain_n_step
             exact ⟨hx.1.1, le_of_lt hx.2⟩
           exact hγ_on_left.mono hsub
       · -- Right piece: t > Tn.
-        push_neg at ht_le
+        push Not at ht_le
         have ht_right : t ∈ Set.Icc Tn Tn1 := ⟨le_of_lt ht_le, ht.2⟩
         have hγt : γ t = β (t - Tn) := hγ_right t (le_of_lt ht_le)
         have hγ_on_right : HasDerivWithinAt γ (galerkinVectorField S (γ t))
@@ -15598,7 +15598,7 @@ theorem galerkin_chain_n_step
       by_cases ht_le : t ≤ Tn
       · rw [hγ_left t ht_le]
         exact hα_nB t ⟨ht.1, ht_le⟩
-      · push_neg at ht_le
+      · push Not at ht_le
         rw [hγ_right t (le_of_lt ht_le)]
         have hmem : t - Tn ∈ Set.Icc (0 : ℝ) ε := by
           refine ⟨sub_nonneg.mpr (le_of_lt ht_le), ?_⟩
@@ -15937,7 +15937,7 @@ theorem galerkin_global_hasDerivWithinAt_conditional
           exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
         exact h_Ik_deriv.mono hsub
     · -- t = 0 case.
-      push_neg at ht_pos
+      push Not at ht_pos
       have ht0 : t = 0 := le_antisymm ht_pos ht
       subst ht0
       -- k = 0.
@@ -16944,7 +16944,7 @@ theorem galerkin_realSym_chain_n_step
           have hsub : Set.Icc (0 : ℝ) Tn1 ∩ Set.Iio Tn ⊆ Set.Icc (0 : ℝ) Tn :=
             fun x hx => ⟨hx.1.1, le_of_lt hx.2⟩
           exact hγ_on_left.mono hsub
-      · push_neg at ht_le
+      · push Not at ht_le
         have ht_right : t ∈ Set.Icc Tn Tn1 := ⟨le_of_lt ht_le, ht.2⟩
         have hγt : γ t = β (t - Tn) := hγ_right t (le_of_lt ht_le)
         have hγ_on_right : HasDerivWithinAt γ (galerkinVectorField S (γ t))
@@ -16963,7 +16963,7 @@ theorem galerkin_realSym_chain_n_step
       by_cases ht_le : t ≤ Tn
       · rw [hγ_left t ht_le]
         exact hα_nR t ⟨ht.1, ht_le⟩ m hm
-      · push_neg at ht_le
+      · push Not at ht_le
         rw [hγ_right t (le_of_lt ht_le)]
         have hmem : t - Tn ∈ Set.Icc (0 : ℝ) ε := by
           refine ⟨sub_nonneg.mpr (le_of_lt ht_le), ?_⟩
@@ -16974,7 +16974,7 @@ theorem galerkin_realSym_chain_n_step
       by_cases ht_le : t ≤ Tn
       · rw [hγ_left t ht_le]
         exact hα_nE t ⟨ht.1, ht_le⟩
-      · push_neg at ht_le
+      · push Not at ht_le
         rw [hγ_right t (le_of_lt ht_le)]
         have hmem : t - Tn ∈ Set.Icc (0 : ℝ) ε := by
           refine ⟨sub_nonneg.mpr (le_of_lt ht_le), ?_⟩
@@ -17318,7 +17318,7 @@ theorem galerkin_realSym_global_on_Ici
             Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
           intros x hx; exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
         exact h_Ik_deriv.mono hsub
-    · push_neg at ht_pos
+    · push Not at ht_pos
       have ht0 : t = 0 := le_antisymm ht_pos ht
       subst ht0
       have hk0 : k = 0 := by simp [hk_def, Nat.floor_eq_zero, hε]
