@@ -4,6 +4,38 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.34 — 2026-04-20
+
+**§10.135–§10.136 — time-test weak form → Duhamel identity bridge
+(item 6 structural).** Formalizes step (B) of §10.16's reduction:
+given the Fourier-specialized test-function weak form
+`IsSqgWeakSolutionTimeTest θ u` plus a bump-to-indicator
+convergence witness (packaged as `HasBumpToIndicatorSequence`), the
+mode-wise Duhamel identity `IsSqgWeakSolution θ u` follows by
+`tendsto_nhds_unique` on the two convergent sequences. Closes
+item 6 at the structural level.
+
+- **`HasBumpToIndicatorSequence θ u m s t`** — explicit packaging of
+  the bump sequence + the two `Tendsto` convergences (LHS to
+  `θ̂(s) − θ̂(t)`, RHS to `∫_{[s,t]} flux`). Downstream callers
+  supply this from `ContDiffBump` or other mollifier constructions.
+- **§10.135** `IsSqgWeakSolution.of_timeTest_of_bumpSeq` — main
+  bridge theorem. Proof is a one-line `tendsto_nhds_unique` on the
+  two pointwise-equal sequences of integrals.
+- **§10.136** `SqgEvolutionAxioms_strong.of_timeTest_via_MMP` —
+  composes §10.135 with §10.14's
+  `SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP` to
+  discharge the strong axioms from the time-test form + MMP + bump
+  witness.
+
++119 lines; zero `sorry`, zero new axioms beyond mathlib; CI green.
+
+Scope: the structural bridge is unconditional. Concrete construction
+of `HasBumpToIndicatorSequence` from mathlib's `ContDiffBump`
+infrastructure is a separate analytical question (dominated
+convergence + mollifier standard results); providing it would close
+item 6 analytically as well. Left for future sessions.
+
 ## v0.4.33 — 2026-04-20
 
 **§10.133–§10.134 — `SqgEvolutionAxioms_strong` for the §10.117 /
