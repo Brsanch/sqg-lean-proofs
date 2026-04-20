@@ -5,25 +5,36 @@ Each item is linked to the tagged release that will close it.
 
 ## SQG mathematics
 
-### 1. Generic-`L²` Galerkin → full-SQG extraction (Route B; structural chain done v0.4.35)
-**Status:** Structural chain complete via §10.137–§10.145 (Route B).
-`exists_sqgSolution_via_RouteB` produces an `SqgSolution` from a
-`HasAubinLionsExtraction` witness + `l2Conservation` hypothesis +
-`HasGalerkinLimitVelocity` witness + `smoothInitialData` summability.
+### 1. Generic-`L²` Galerkin → full-SQG extraction (Route B; chain extended v0.4.38)
+**Status:** Chain extended through §10.147–§10.152. `l2Conservation`
+(hypothesis #2 below) is now **internally discharged** from strong-`L²`
+convergence + §10.97 per-level energy conservation + §10.142 zero-mode
+preservation.  Route B capstone
+`exists_sqgSolution_via_RouteB_from_galerkin_energy` (§10.148)
+produces an `SqgSolution` without the `hL2` hypothesis.
 
-**Remaining to close end-to-end:** discharge two concrete analytical
-hypotheses:
-1. Construction of `HasAubinLionsExtraction θ α` — classical
-   Aubin–Lions compactness from the uniform `L²` bound (§10.122) +
-   `H⁻²` time-derivative bound (§10.138). Requires mathlib-scale
-   Bochner / dual-space infrastructure.
-2. `l2Conservation` hypothesis fed to §10.144 — `Lp` norm continuity
-   under strong-`L²` convergence composed with `galerkinEnergyH0_const`
-   (§10.97) and Parseval on the Fourier truncation (§10.119).
+Additional structural reduction (§10.149–§10.152) factors
+`HasAubinLionsExtraction` existence into three precisely-typed Lean
+construction targets:
 
-Both are classical results; each requires a focused session with
-appropriate mathlib infrastructure. Route B infrastructure (v0.4.35)
-makes the reduction explicit and exposes the exact analytical inputs.
+1. **`HasPerModeLimit.ofModeLipschitzFamily`** — classical
+   Arzelà–Ascoli (mode-wise on `[0, T]`) + Cantor diagonal across
+   `ℤ² \ {0}`.  Mathlib has `BoundedContinuousFunction.arzelaAscoli`
+   and `Denumerable (Fin 2 → ℤ)`; assembly is ~300-line Lean work.
+2. **`HasFourierSynthesis.ofPerModeLimit`** — Parseval + Fatou +
+   dominated convergence on `ℓ²(ℤ²)` producing the Lp-valued limit
+   and strong-`L²` convergence.  Moderate, ~100–200 lines.
+3. **Finish `§10.152`** — derive per-mode Lipschitz `L m` from
+   §10.138's `H⁻²` bound + §10.116's Galerkin ODE via FTC.  Currently
+   taken as a hypothesis input to `HasModeLipschitzFamily.ofSqgGalerkinBounds`.
+   Tractable, ~50–100 lines.
+
+Route B infrastructure (v0.4.38) now provides the complete chain
+`SQG Galerkin data → HasModeLipschitzFamily → HasPerModeLimit →
+HasFourierSynthesis → HasAubinLionsExtraction → SqgSolution`, each
+arrow a named Lean theorem.  The three remaining targets above are the
+ONLY analytical gaps — no more "mathlib-scale Bochner infrastructure"
+vagueness; every gap is a specific named-theorem signature.
 
 ### ~~2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132~~ ✓ Closed in v0.4.33
 Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →
@@ -60,8 +71,8 @@ required by the chain.
 ## Infrastructure
 
 ### 9. Zenodo webhook
-Broken since v0.4.3. 23 releases have landed without Zenodo archives
-(v0.4.15 through v0.4.37). Fix: re-authorize the webhook at
+Broken since v0.4.3. 24 releases have landed without Zenodo archives
+(v0.4.15 through v0.4.38). Fix: re-authorize the webhook at
 `github.com/SolomonB14D3/sqg-lean-proofs/settings/integrations`, then
 confirm a fresh DOI mints on the next tag.
 
