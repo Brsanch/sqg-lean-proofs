@@ -4,6 +4,38 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.23 — 2026-04-20
+
+Time-global capstone with real-symmetric initial data. Extends v0.4.22
+by ~58 lines.
+
+- **§10.115 `galerkin_time_global_real_symmetric_initial`** — wires
+  §10.114 into §10.113 to discharge the `hRealSymPropagates`
+  hypothesis internally. Takes only real-symmetry of the initial
+  coefficient vector `c₀` (one Finset-indexed `∀ n ∈ S` statement)
+  plus the universal ball-invariance `hInv` (the one remaining open
+  hypothesis). Produces the full four-way conjunction: `α(0) = c₀`,
+  `‖α t‖ ≤ R/2` for `t ≥ 0`, `HasDerivWithinAt α (vf α(t)) (Ici 0) t`
+  for `t ≥ 0`, and the sharp `‖α t‖ ≤ √|S|·‖c₀‖` ℓ²-derived bound.
+
+  Proof strategy: re-derive the L∞ bound `‖α τ‖ ≤ R/2` at each
+  `τ ≥ 0` directly from `hInv` (invoked on `[0, τ + 1]`), feed it as
+  the `M := R/2` constant to `hRealC_of_initial_and_bound_on_Ici`,
+  and thread real-symmetry at `τ = 0` through `α 0 = c₀`. Breaks
+  the apparent circularity between §10.112 (needs real-symmetry)
+  and §10.114 (needs L∞ bound) — the bound comes from `hInv`, not
+  from §10.112.
+
+- **Refactor §10.110-§10.113 + `galerkin_hInv_discharged`** to accept
+  the weaker hypothesis `hRealC : ∀ τ, 0 ≤ τ → ∀ n ∈ S, …` in place
+  of `∀ τ : ℝ, ∀ n ∈ S, …`. The proof of
+  `galerkinEnergyH0_const_on_Icc` only applies the real-symmetry
+  hypothesis at `τ ∈ [0, ε)`, so this weakening is free. Required
+  so that §10.115 can feed §10.114's conclusion (which carries
+  `0 ≤ τ` as a precondition) through §10.113 and §10.112 verbatim.
+
+17,172 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.22 — 2026-04-20
 
 Within-interval real-symmetry propagation. Extends v0.4.21 by ~111 lines.
