@@ -4,6 +4,36 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.21 — 2026-04-20
+
+Unified time-global capstone. Extends v0.4.20 by ~45 lines.
+
+- **§10.113 `galerkin_time_global_real_symmetric`** — a single
+  existence statement combining §10.108 + §10.112, delivering a
+  four-way conjunction:
+  1. `α 0 = c₀` (initial data),
+  2. `‖α t‖ ≤ R/2` for `t ≥ 0` (from §10.108, via `hInv`),
+  3. `HasDerivWithinAt α (galerkinVectorField S (α t)) (Ici 0) t`
+     at every `t ≥ 0`,
+  4. `‖α t‖ ≤ √|S|·‖c₀‖` (from §10.112, via `hRealSymPropagates`).
+
+  Two hypotheses still exposed:
+  - `hInv` — §10.108's universal ball-invariance.
+  - `hRealSymPropagates` — real-symmetry along the constructed `α`.
+
+  Full unconditionalization requires a within-interval
+  `HasDerivWithinAt`-flavoured adaptation of §10.100's
+  `hRealC_of_initial_and_bound` (currently stated for `HasDerivAt`
+  on all of `ℝ`). Estimated ~150 additional lines.
+
+This closes the v0.4.14-v0.4.21 time-global existence program as a
+conditional result (real-symmetric class, finite Fourier support).
+17,003 lines, zero `sorry`, zero new axioms.
+
+CI pitfalls caught (v0.4.21): `galerkin_global_existence_from_invariance`
+takes `S` as an explicit argument (not inferred) — implicit `R` vs
+explicit `S` had confused the argument-binding in my invocation.
+
 ## v0.4.20 — 2026-04-20
 
 Unified global sup-norm bound. Extends v0.4.19 by ~35 lines.
