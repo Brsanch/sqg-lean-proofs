@@ -15664,13 +15664,18 @@ theorem galerkin_chain_sequence
   · -- ∀ n, ‖η n‖ ≤ R/2
     intro n; exact (chainEndpt n).property
   · -- β n 0 = η n
-    intro n; exact (stepSpec _ _).1
+    intro n
+    exact (stepSpec (chainEndpt n).val (chainEndpt n).property).1
   · -- β n ε = η (n+1)
     intro n; rfl
   · -- HasDerivWithinAt
-    intro n t ht; exact (stepSpec _ _).2 t ht
+    intro n t ht
+    exact (stepSpec (chainEndpt n).val (chainEndpt n).property).2 t ht
   · -- Norm bound on β n
     intro n t ht
-    exact hInv _ _ _ (stepSpec _ _).1 (stepSpec _ _).2 t ht
+    exact hInv (chainEndpt n).val (chainEndpt n).property
+      (stepFn (chainEndpt n).val (chainEndpt n).property)
+      (stepSpec (chainEndpt n).val (chainEndpt n).property).1
+      (stepSpec (chainEndpt n).val (chainEndpt n).property).2 t ht
 
 end SqgIdentity
