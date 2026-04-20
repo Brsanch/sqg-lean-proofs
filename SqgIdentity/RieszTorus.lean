@@ -19691,4 +19691,82 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinBounds
     -- `Fintype.decidablePiFintype` at this call site.
     convert hL_holds n m s t hs ht
 
+/-! ### §10.153 Per-mode Lipschitz from `H⁻²` bound + Galerkin ODE (FTC)
+
+Derives the per-mode Lipschitz constant `L m = √K · Λ²(m)` for
+`HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152), via:
+
+* **§10.153.A** Per-mode upper bound on `galerkinRHS` at non-zero
+  modes from the summable `H⁻²` tsum.
+* **§10.153.B** Mean-Value Theorem (via `norm_image_sub_le_of_norm_deriv_right_le_segment`)
+  on the per-mode trajectory `τ ↦ galerkinExtend S (α τ) m`, turning
+  the upper bound on the derivative into a Lipschitz bound on the
+  trajectory.
+-/
+
+/-- **§10.153.A** Per-mode upper bound on `galerkinRHS` at non-zero
+modes.  If `∑' m, (Λ⁻² m)² · ‖galerkinRHS m‖² ≤ K` then
+`‖galerkinRHS m‖ ≤ √K · Λ²(m)` for every `m ≠ 0`.  (For `m = 0` the
+bound holds trivially when `0 ∉ S` but is not asserted here.) -/
+theorem galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (K : ℝ) (hK : 0 ≤ K)
+    (hBound : GalerkinRHSHsNegSqBound S c 2 K)
+    {m : Fin 2 → ℤ} (hm : m ≠ 0) :
+    ‖galerkinRHS S (galerkinExtend S c) m‖
+      ≤ Real.sqrt K * fracDerivSymbol 2 m := by
+  obtain ⟨hSumm, hTsum⟩ := hBound
+  have hTerm : (fracDerivSymbol (-2) m) ^ 2
+      * ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2 ≤ K := by
+    have hLe := hSumm.le_tsum m
+      (fun _ _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+    exact le_trans hLe hTsum
+  have hFDS2_pos : 0 < fracDerivSymbol 2 m := fracDerivSymbol_pos 2 hm
+  have hFDS2_nn : 0 ≤ fracDerivSymbol 2 m := le_of_lt hFDS2_pos
+  have hSqInv : (fracDerivSymbol (-2) m) ^ 2 * (fracDerivSymbol 2 m) ^ 2 = 1 :=
+    fracDerivSymbol_sq_neg_inv hm
+  have hNormSq : ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2
+      ≤ K * (fracDerivSymbol 2 m) ^ 2 := by
+    calc ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2
+        = ((fracDerivSymbol (-2) m) ^ 2 * (fracDerivSymbol 2 m) ^ 2)
+            * ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2 := by rw [hSqInv]; ring
+      _ = (fracDerivSymbol (-2) m) ^ 2
+            * ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2
+            * (fracDerivSymbol 2 m) ^ 2 := by ring
+      _ ≤ K * (fracDerivSymbol 2 m) ^ 2 :=
+          mul_le_mul_of_nonneg_right hTerm (sq_nonneg _)
+  -- Take square roots.
+  have hNn : 0 ≤ ‖galerkinRHS S (galerkinExtend S c) m‖ := norm_nonneg _
+  have hSqrtMul : Real.sqrt (K * (fracDerivSymbol 2 m) ^ 2)
+      = Real.sqrt K * fracDerivSymbol 2 m := by
+    rw [Real.sqrt_mul hK, Real.sqrt_sq hFDS2_nn]
+  have hAbsSq : Real.sqrt (‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2)
+      = ‖galerkinRHS S (galerkinExtend S c) m‖ := Real.sqrt_sq hNn
+  calc ‖galerkinRHS S (galerkinExtend S c) m‖
+      = Real.sqrt (‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2) := hAbsSq.symm
+    _ ≤ Real.sqrt (K * (fracDerivSymbol 2 m) ^ 2) := Real.sqrt_le_sqrt hNormSq
+    _ = Real.sqrt K * fracDerivSymbol 2 m := hSqrtMul
+
+/-- **§10.153.B** Mean-Value Theorem on the per-mode Galerkin
+trajectory: given a uniform upper bound on the mode's time-derivative
+over `[s, t]`, the coefficient value changes by at most bound × time
+interval. -/
+theorem galerkinExtend_mode_lipschitz_of_ODE_bound
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (m : Fin 2 → ℤ) (M : ℝ)
+    {s t : ℝ} (hst : s ≤ t)
+    (hDeriv : ∀ τ ∈ Set.Ico s t,
+      HasDerivWithinAt (fun σ => galerkinExtend S (α σ) m)
+        (galerkinRHS S (galerkinExtend S (α τ)) m) (Set.Ici τ) τ)
+    (hCont : ContinuousOn (fun σ => galerkinExtend S (α σ) m) (Set.Icc s t))
+    (hBound : ∀ τ ∈ Set.Ico s t,
+      ‖galerkinRHS S (galerkinExtend S (α τ)) m‖ ≤ M) :
+    ‖galerkinExtend S (α t) m - galerkinExtend S (α s) m‖ ≤ M * (t - s) := by
+  have h := norm_image_sub_le_of_norm_deriv_right_le_segment
+    (f := fun σ => galerkinExtend S (α σ) m)
+    (f' := fun τ => galerkinRHS S (galerkinExtend S (α τ)) m)
+    (C := M) hCont hDeriv hBound t ⟨hst, le_refl t⟩
+  exact h
+
 end SqgIdentity
