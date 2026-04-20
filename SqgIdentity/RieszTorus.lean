@@ -19079,37 +19079,34 @@ construction from `Fréchet–Kolmogorov` compactness, not yet available
 upstream. -/
 
 /-- **`Lp ℂ 2` norm squared equals the pointwise integral of the squared
-norm.** Via the `L²` inner-product structure. -/
+norm.** Via the `L²` inner-product structure: `‖f‖² = re ⟪f, f⟫` and
+`⟪f, f⟫_{L²} = ∫ ⟪f x, f x⟫ = ∫ ‖f x‖²`. -/
 theorem Lp_two_norm_sq_eq_integral_norm_sq
     {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
     (f : Lp ℂ 2 μ) :
     ‖f‖ ^ 2 = ∫ x, ‖f x‖ ^ 2 ∂μ := by
-  -- Step 1: `⟪f, f⟫ = (‖f‖ : ℂ)^2` at the Lp level.
-  have h_inner_self : (@inner ℂ _ _ f f) = ((‖f‖ : ℂ)) ^ 2 :=
-    inner_self_eq_norm_sq_to_K
-  -- Step 2: `⟪f, f⟫_{L²} = ∫ ⟪f x, f x⟫_ℂ`.
-  have h_inner_def : (@inner ℂ _ _ f f)
-      = ∫ x, (@inner ℂ _ _ (f x) (f x)) ∂μ :=
+  -- `‖f‖² = re ⟪f, f⟫` at the Lp level.
+  have h1 : ‖f‖ ^ 2 = RCLike.re (𝕜 := ℂ) (@inner ℂ _ _ f f) :=
+    @norm_sq_eq_re_inner ℂ (Lp ℂ 2 μ) _ _ _ f
+  -- `⟪f, f⟫_{L²} = ∫ ⟪f x, f x⟫` — definition of the L² inner product.
+  have h2 : (@inner ℂ _ _ f f : ℂ) = ∫ x, (@inner ℂ _ _ (f x) (f x) : ℂ) ∂μ :=
     MeasureTheory.L2.inner_def f f
-  -- Step 3: pointwise, `⟪f x, f x⟫_ℂ = ((‖f x‖^2 : ℝ) : ℂ)`.
-  have h_pt : ∀ x, (@inner ℂ _ _ (f x) (f x)) = ((‖f x‖ ^ 2 : ℝ) : ℂ) := by
+  -- Pointwise `⟪f x, f x⟫_ℂ = ((‖f x‖ ^ 2 : ℝ) : ℂ)`.
+  have h3 : ∀ x, (@inner ℂ _ _ (f x) (f x) : ℂ) = ((‖f x‖ ^ 2 : ℝ) : ℂ) := by
     intro x
-    have hz : (@inner ℂ _ _ (f x) (f x)) = ((‖f x‖ : ℂ)) ^ 2 :=
-      inner_self_eq_norm_sq_to_K
+    have hz : (@inner ℂ _ _ (f x) (f x) : ℂ) = ((‖f x‖ : ℂ)) ^ 2 :=
+      @inner_self_eq_norm_sq_to_K ℂ ℂ _ _ _ (f x)
     rw [hz]; push_cast; ring
-  -- Step 4: ∫ ⟪f x, f x⟫ = ((∫ ‖f x‖²) : ℂ).
-  have h_integral : (∫ x, (@inner ℂ _ _ (f x) (f x)) ∂μ)
+  -- Convert the integrand and apply `integral_ofReal`.
+  have h4 : (∫ x, (@inner ℂ _ _ (f x) (f x) : ℂ) ∂μ)
       = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := by
-    rw [show (fun x => (@inner ℂ _ _ (f x) (f x)))
-          = fun x => ((‖f x‖ ^ 2 : ℝ) : ℂ) from funext h_pt]
-    exact integral_ofReal
-  -- Assemble: ((‖f‖ : ℂ))^2 = ((∫ ‖f x‖² : ℝ) : ℂ), hence ‖f‖^2 = ∫ ‖f x‖².
-  have h_complex : ((‖f‖ : ℂ)) ^ 2 = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := by
-    rw [← h_inner_self, h_inner_def, h_integral]
-  have h_cast : (((‖f‖ ^ 2 : ℝ)) : ℂ) = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := by
-    have : ((‖f‖ : ℂ)) ^ 2 = (((‖f‖ ^ 2 : ℝ)) : ℂ) := by push_cast; ring
-    rw [← this]; exact h_complex
-  exact_mod_cast h_cast
+    calc (∫ x, (@inner ℂ _ _ (f x) (f x) : ℂ) ∂μ)
+        = ∫ x, ((‖f x‖ ^ 2 : ℝ) : ℂ) ∂μ :=
+          MeasureTheory.integral_congr_ae (ae_of_all _ h3)
+      _ = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := integral_ofReal
+  -- Assemble: ‖f‖² = re (∫ ⟪f x, f x⟫) = re ((∫ ‖f x‖² : ℝ) : ℂ) = ∫ ‖f x‖².
+  rw [h1, h2, h4]
+  exact RCLike.ofReal_re _
 
 /-- **`∫ ‖(f - g) x‖² = ∫ ‖f x - g x‖²` on `Lp`.** -/
 theorem integral_norm_sub_sq_eq_coeFn_sub
@@ -19228,16 +19225,16 @@ theorem l2Conservation_of_aubinLions
       (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) le_rfl
   have h_split_t :
       (∫ x, ‖ext.θ_lim t x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim t) := by
-    have := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim t)
-    rw [h_zero_lim_t] at this
-    simp at this
-    exact this
+    have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim t)
+    rw [h_zero_lim_t, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0),
+      zero_add] at hEq
+    exact hEq
   have h_split_0 :
       (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim 0) := by
-    have := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim 0)
-    rw [h_zero_lim_0] at this
-    simp at this
-    exact this
+    have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim 0)
+    rw [h_zero_lim_0, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0),
+      zero_add] at hEq
+    exact hEq
   rw [← h_split_t, ← h_split_0]
   -- Step 2: For each level, reduce the Galerkin `hsSeminormSq 0` to
   -- `∫ ‖·‖²` (via `hsSeminormSq_zero_galerkinToLp` + sum-norm bridge).
@@ -19249,11 +19246,11 @@ theorem l2Conservation_of_aubinLions
     intro n c
     have h_zero : mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
       mFourierCoeff_galerkin_sqgBox_zero_any n c
-    have := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero
+    have hEq := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero
       (galerkinToLp (sqgBox n) c)
-    rw [h_zero] at this
-    simp at this
-    exact this
+    rw [h_zero, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0),
+      zero_add] at hEq
+    exact hEq
   -- Step 3: pass `hLevel` to the subsequence and through strong-L² limit.
   have h_const_k : ∀ k : ℕ,
       (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
