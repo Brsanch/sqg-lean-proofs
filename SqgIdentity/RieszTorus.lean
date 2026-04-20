@@ -16748,4 +16748,36 @@ theorem galerkin_realSym_forward_step
     intros n hn; rw [hα0]; exact hRealC₀ n hn
   exact hRealC_of_initial_and_bound_on_Icc hS ε α hα_deriv hRealC₀_α hR_nn hBound
 
+/-! ### §10.116.E Sharp ℓ²→pi sup-norm bound on an interval
+
+For a real-symmetric Galerkin trajectory on `[0, ε]`, ℓ² conservation
+(§10.110) gives `‖α t‖_π ≤ √(∑ ‖α 0 m‖²)`. This is sharper than
+§10.111's `‖α t‖_π ≤ √|S|·‖α 0‖_π` and is the invariant that
+propagates across Picard chain steps: if `c_k := α_{k-1}(ε)`, then
+`∑ ‖c_k m‖² = ∑ ‖c_{k-1} m‖²` by ℓ² conservation, so the bound
+is preserved exactly. -/
+
+theorem galerkin_piNorm_le_ℓ2_on_Icc
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S) (ε : ℝ)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
+      HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hRealC : ∀ τ, 0 ≤ τ → ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
+    ‖α t‖ ≤ Real.sqrt (∑ m : ↥S, ‖α 0 m‖ ^ 2) := by
+  have hE : (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖α 0 m‖ ^ 2 :=
+    galerkinEnergyH0_const_on_Icc hS ε α hα hRealC t ht
+  have hRHS_nn : 0 ≤ Real.sqrt (∑ m : ↥S, ‖α 0 m‖ ^ 2) := Real.sqrt_nonneg _
+  rw [pi_norm_le_iff_of_nonneg hRHS_nn]
+  intro m
+  have hSq : ‖α t m‖ ^ 2 ≤ ∑ m' : ↥S, ‖α 0 m'‖ ^ 2 := by
+    calc ‖α t m‖ ^ 2 ≤ ∑ m' : ↥S, ‖α t m'‖ ^ 2 := pi_term_sq_le_sum_sq (α t) m
+      _ = ∑ m' : ↥S, ‖α 0 m'‖ ^ 2 := hE
+  have h_nn : (0 : ℝ) ≤ ‖α t m‖ := norm_nonneg _
+  have h_sqrt := Real.sqrt_le_sqrt hSq
+  rw [Real.sqrt_sq h_nn] at h_sqrt
+  exact h_sqrt
+
 end SqgIdentity
