@@ -18066,4 +18066,175 @@ theorem exists_sqgSolution_ofZero :
     = (fun _ : Fin 2 → ℤ => (0 : ℝ)) from funext this]
   exact summable_zero
 
+/-! ### §10.131 Concrete construction of `IsGalerkinLimitData` +
+`GalerkinLimitTrajectory` for finite Fourier-support initial data
+
+Closes the v0.4.30 conditional chain on the finite-Fourier-support
+class by instantiating the packaged hypotheses directly from
+§10.116.H.3's time-global Galerkin trajectory.
+
+Given a symmetric, zero-excluding support `S₀`, an `R > 0`, and a
+real-symmetric initial coefficient vector `c₀ : ↥S₀ → ℂ` with
+`∑ ‖c₀ m‖² ≤ (R/2)²`, the §10.116 capstone produces a trajectory
+`α : ℝ → (↥S₀ → ℂ)`. Define:
+
+* `b m t := galerkinExtend S₀ (α t) m` — the zero-extended Fourier
+  coefficients at time `t` and mode `m`.
+* `θ_lim t := galerkinToLp S₀ (α t)` — the lifted `L²` trajectory.
+
+We check all five clauses of `IsGalerkinLimitData` and the three
+fields of `GalerkinLimitTrajectory` directly. Feeds §10.129 to yield
+an honest `SqgSolution` through the new v0.4.30 pipeline (a parallel
+construction of the §10.117 result, now routed through §10.125–§10.130). -/
+
+/-- **Galerkin-limit data from a finite-support time-global
+trajectory.** Bundles the five invariants of `IsGalerkinLimitData`
+for the zero-extended Fourier coefficients of `α`. -/
+theorem isGalerkinLimitData_of_galerkin_realSym
+    {S₀ : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S₀)
+    (hS : IsSymmetricSupport S₀)
+    (c₀ : ↥S₀ → ℂ)
+    (α : ℝ → (↥S₀ → ℂ))
+    (hα0 : α 0 = c₀)
+    (hConserve : ∀ t, 0 ≤ t →
+      (∑ m : ↥S₀, ‖α t m‖ ^ 2) = ∑ m : ↥S₀, ‖c₀ m‖ ^ 2)
+    (hRealSym : ∀ t, 0 ≤ t → ∀ n ∈ S₀,
+      galerkinExtend S₀ (α t) (-n) = star (galerkinExtend S₀ (α t) n)) :
+    IsGalerkinLimitData (galerkinToLp S₀ c₀)
+      (fun m t => galerkinExtend S₀ (α t) m) where
+  zeroMode := fun _ _ => galerkinExtend_apply_of_not_mem _ _ h0
+  initial := fun m => by
+    simp only
+    rw [mFourierCoeff_galerkinToLp, hα0]
+  summable := fun t _ => by
+    apply summable_of_ne_finset_zero (s := S₀)
+    intros n hn
+    rw [galerkinExtend_apply_of_not_mem _ _ hn, norm_zero]
+    simp
+  conservation := fun t ht => by
+    have hLHS : (∑' m : Fin 2 → ℤ, ‖galerkinExtend S₀ (α t) m‖ ^ 2)
+          = ∑ m ∈ S₀, ‖galerkinExtend S₀ (α t) m‖ ^ 2 := by
+      apply tsum_eq_sum
+      intros n hn
+      rw [galerkinExtend_apply_of_not_mem _ _ hn, norm_zero]; simp
+    have hRHS : (∑' m : Fin 2 → ℤ, ‖galerkinExtend S₀ (α 0) m‖ ^ 2)
+          = ∑ m ∈ S₀, ‖galerkinExtend S₀ (α 0) m‖ ^ 2 := by
+      apply tsum_eq_sum
+      intros n hn
+      rw [galerkinExtend_apply_of_not_mem _ _ hn, norm_zero]; simp
+    rw [hLHS, hRHS]
+    have hSum_t : (∑ m ∈ S₀, ‖galerkinExtend S₀ (α t) m‖ ^ 2)
+        = ∑ m : ↥S₀, ‖α t m‖ ^ 2 := by
+      rw [show ((Finset.univ : Finset ↥S₀)) = S₀.attach from
+        Finset.univ_eq_attach S₀,
+        ← Finset.sum_attach S₀ (fun m => ‖galerkinExtend S₀ (α t) m‖ ^ 2)]
+      apply Finset.sum_congr rfl
+      intros m _
+      rw [galerkinExtend_apply_of_mem _ _ m.property]
+    have hSum_0 : (∑ m ∈ S₀, ‖galerkinExtend S₀ (α 0) m‖ ^ 2)
+        = ∑ m : ↥S₀, ‖α 0 m‖ ^ 2 := by
+      rw [show ((Finset.univ : Finset ↥S₀)) = S₀.attach from
+        Finset.univ_eq_attach S₀,
+        ← Finset.sum_attach S₀ (fun m => ‖galerkinExtend S₀ (α 0) m‖ ^ 2)]
+      apply Finset.sum_congr rfl
+      intros m _
+      rw [galerkinExtend_apply_of_mem _ _ m.property]
+    rw [hSum_t, hSum_0, hα0]
+    exact hConserve t ht
+  realSym := fun t ht m => by
+    by_cases hm : m ∈ S₀
+    · exact hRealSym t ht m hm
+    · have hnegm : -m ∉ S₀ := by
+        intro hneg
+        apply hm
+        have : -(-m) ∈ S₀ := hS _ hneg
+        simpa using this
+      rw [galerkinExtend_apply_of_not_mem _ _ hm,
+          galerkinExtend_apply_of_not_mem _ _ hnegm, star_zero]
+
+/-- **Synthesized `L²` trajectory from a finite-support time-global
+Galerkin trajectory.** The trajectory is `t ↦ galerkinToLp S₀ (α t)`;
+Fourier coefficients match `galerkinExtend S₀ (α t) m` on every mode. -/
+noncomputable def galerkinLimitTrajectory_of_galerkin
+    {S₀ : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c₀ : ↥S₀ → ℂ)
+    (α : ℝ → (↥S₀ → ℂ))
+    (hα0 : α 0 = c₀) :
+    GalerkinLimitTrajectory (galerkinToLp S₀ c₀)
+      (fun m t => galerkinExtend S₀ (α t) m) where
+  θ_lim := fun τ => galerkinToLp S₀ (α τ)
+  coeff := fun _ _ m => mFourierCoeff_galerkinToLp _ _ m
+  init_eq := by
+    show galerkinToLp S₀ (α 0) = galerkinToLp S₀ c₀
+    rw [hα0]
+
+/-- **Velocity witness for the finite-support Galerkin limit.**
+`u j τ := shellVelocity S₀ (galerkinExtend S₀ (α τ)) j` — identical
+to §10.98 / §10.117's choice. -/
+theorem hasGalerkinLimitVelocity_of_galerkin
+    {S₀ : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c₀ : ↥S₀ → ℂ)
+    (α : ℝ → (↥S₀ → ℂ))
+    (hα0 : α 0 = c₀) :
+    HasGalerkinLimitVelocity
+      (galerkinLimitTrajectory_of_galerkin c₀ α hα0).θ_lim
+      (fun j τ => shellVelocity S₀ (galerkinExtend S₀ (α τ)) j) := by
+  intros j τ
+  show IsSqgVelocityComponent
+      (galerkinToLp S₀ (α τ))
+      (shellVelocity S₀ (galerkinExtend S₀ (α τ)) j) j
+  exact isSqgVelocityComponent_shellMode S₀ (galerkinExtend S₀ (α τ)) j
+
+/-! ### §10.132 Capstone: `SqgSolution` on the finite-support class
+through the v0.4.30 conditional chain
+
+Combines §10.131 with §10.116.H.3 and §10.129 to produce, from a
+real-symmetric ℓ²-bounded `c₀ : ↥S₀ → ℂ`, an honest `SqgSolution`
+routed through the v0.4.30 pipeline. Parallel construction of the
+v0.4.28 `exists_sqgSolution_of_galerkin_realSym` result (which uses
+the direct §10.117 packaging). -/
+
+/-- **`SqgSolution` from finite-support initial data via the
+v0.4.30 conditional chain.** For any symmetric support `S₀ ⊆ ℤ²`
+with `0 ∉ S₀`, any `R > 0`, and any real-symmetric `c₀ : ↥S₀ → ℂ`
+with `∑ ‖c₀ m‖² ≤ (R/2)²`, there exists an `SqgSolution` whose
+time-zero slice is `galerkinToLp S₀ c₀`. Closes the v0.4.30
+conditional chain on the finite-Fourier-support class. -/
+theorem exists_sqgSolution_via_galerkinLimit_of_finite_support
+    (S₀ : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S₀)
+    (hS : IsSymmetricSupport S₀)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S₀ → ℂ)
+    (hc₀_l2 : (∑ m : ↥S₀, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S₀,
+      galerkinExtend S₀ c₀ (-n) = star (galerkinExtend S₀ c₀ n)) :
+    ∃ sol : SqgSolution, sol.θ 0 = galerkinToLp S₀ c₀ := by
+  obtain ⟨α, hα0, _hderiv, hL2_const, hRealSym, _hpinorm⟩ :=
+    galerkin_time_global_unconditional_realSym S₀ hS hR c₀ hc₀_l2 hRealC₀
+  have hData : IsGalerkinLimitData (galerkinToLp S₀ c₀)
+      (fun m t => galerkinExtend S₀ (α t) m) :=
+    isGalerkinLimitData_of_galerkin_realSym h0 hS c₀ α hα0 hL2_const hRealSym
+  set traj : GalerkinLimitTrajectory (galerkinToLp S₀ c₀)
+      (fun m t => galerkinExtend S₀ (α t) m) :=
+    galerkinLimitTrajectory_of_galerkin c₀ α hα0 with htraj
+  have hVel : HasGalerkinLimitVelocity traj.θ_lim
+      (fun j τ => shellVelocity S₀ (galerkinExtend S₀ (α τ)) j) :=
+    hasGalerkinLimitVelocity_of_galerkin c₀ α hα0
+  have hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (traj.θ_lim 0) n‖ ^ 2) := by
+    refine ⟨3, by norm_num, ?_⟩
+    apply hsSeminormSq_summable_of_finite_support 3 (traj.θ_lim 0) S₀
+    intros n hn
+    show mFourierCoeff (galerkinToLp S₀ (α 0)) n = 0
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn]
+  obtain ⟨sol, hsol⟩ :=
+    exists_sqgSolution_of_galerkinLimit hData traj hVel hSmooth
+  refine ⟨sol, ?_⟩
+  show sol.θ 0 = galerkinToLp S₀ c₀
+  rw [hsol]
+  exact traj.init_eq
+
 end SqgIdentity
