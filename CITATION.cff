@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.30
+version: 0.4.31
 date-released: "2026-04-20"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 repository-code: "https://github.com/SolomonB14D3/sqg-lean-proofs"

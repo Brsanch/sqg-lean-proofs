@@ -122,6 +122,13 @@ class, regularity is unconditional:
   completes the chain to `SqgSolution` given a `smoothInitialData`
   summability on the limit. Exercised unconditionally on the zero
   datum via `exists_sqgSolution_ofZero`.
+- **Concrete finite-support closure (§10.131–§10.132).** Instantiates
+  the packaged hypotheses directly from §10.116's time-global
+  Galerkin trajectory, giving
+  `exists_sqgSolution_via_galerkinLimit_of_finite_support` — a
+  parallel construction of the §10.117 `SqgSolution` now routed
+  through §10.125–§10.130. Demonstrates the conditional chain is
+  instantiable on non-zero inputs.
 
 ## What is *not* proven
 
