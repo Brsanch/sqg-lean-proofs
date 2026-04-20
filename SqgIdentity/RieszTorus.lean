@@ -19296,7 +19296,7 @@ theorem tendsto_integral_norm_sq_galerkinToLp_raw
       Filter.atTop (nhds (∫ x, ‖θ_lim t x‖ ^ 2)) :=
   tendsto_integral_norm_sq_of_tendsto_L2sub (tendsto_L2_proof t ht)
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 1600000 in
 /-- **Raw Route B `l2Conservation`.**  Uses
 `tendsto_hsSeminormSq_of_tendsto_L2sub_torus` to get
 `Tendsto (hsSeminormSq 0 ∘ f_k) → hsSeminormSq 0 g` at both t and 0,
@@ -19355,7 +19355,7 @@ theorem l2Conservation_of_aubinLions_raw
   -- Limit uniqueness.
   exact tendsto_nhds_unique h_lim_t' h_lim_0
 
-set_option maxHeartbeats 800000 in
+set_option maxHeartbeats 1600000 in
 /-- **Route B `l2Conservation` from Aubin–Lions (bundled wrapper).**
 Thin wrapper around `l2Conservation_of_aubinLions_raw` — projects
 `HasAubinLionsExtraction` at the single call site below. -/
