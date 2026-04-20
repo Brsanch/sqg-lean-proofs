@@ -19513,4 +19513,113 @@ theorem galerkinModeCoeff_eq_zero_of_not_mem
     galerkinModeCoeff α n t m = 0 :=
   galerkinExtend_apply_of_not_mem _ _ hm
 
+/-! ### §10.150 `HasPerModeLimit`: output of Arzelà–Ascoli + Cantor diagonal
+
+Packages the OUTPUT of classical Arzelà–Ascoli (mode-wise on `[0, T]`
+for each `T > 0`) + Cantor diagonal across modes `m ∈ ℤ² \ {0}`:
+a single subsequence `nsub` and a per-mode limit function
+`b : (Fin 2 → ℤ) → ℝ → ℂ` such that for every mode `m` and every
+forward time `t ≥ 0`,
+
+  `galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m → b m t`  as `k → ∞`.
+
+The structural reduction: given `HasModeLipschitzFamily α` (§10.149),
+classical Arzelà–Ascoli produces `HasPerModeLimit α`.  This predicate
+isolates the compactness-extraction step as a named hypothesis. -/
+
+/-- **Per-mode limit along an extracted subsequence.** -/
+structure HasPerModeLimit
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
+  /-- Extracted subsequence indices. -/
+  nsub : ℕ → ℕ
+  /-- Subsequence is strictly increasing. -/
+  strictMono : StrictMono nsub
+  /-- Per-mode limit function. -/
+  b : (Fin 2 → ℤ) → ℝ → ℂ
+  /-- Per-mode pointwise-in-t convergence along the subsequence. -/
+  tendsto_modeCoeff : ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+    Filter.Tendsto
+      (fun k : ℕ => galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m)
+      Filter.atTop (nhds (b m t))
+
+/-- **Zero-mode triviality for per-mode limits.**  Since `0 ∉ sqgBox n`
+for every `n`, the per-mode limit at the zero mode is automatically
+`0`. -/
+theorem HasPerModeLimit.b_zero_mode
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    {t : ℝ} (ht : 0 ≤ t) :
+    per.b (0 : Fin 2 → ℤ) t = 0 := by
+  have h := per.tendsto_modeCoeff (0 : Fin 2 → ℤ) t ht
+  -- Sequence is constantly zero since 0 ∉ sqgBox (nsub k).
+  have h_const : ∀ k : ℕ,
+      galerkinExtend (sqgBox (per.nsub k)) (α (per.nsub k) t)
+        (0 : Fin 2 → ℤ) = 0 :=
+    fun k => galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox _)
+  have h_eq : (fun k : ℕ =>
+      galerkinExtend (sqgBox (per.nsub k)) (α (per.nsub k) t)
+        (0 : Fin 2 → ℤ)) = fun _ => (0 : ℂ) :=
+    funext h_const
+  rw [h_eq] at h
+  exact tendsto_nhds_unique h tendsto_const_nhds
+
+/-! ### §10.151 Parseval synthesis: `HasPerModeLimit` → `HasAubinLionsExtraction`
+
+Given per-mode pointwise convergence (`HasPerModeLimit`) + uniform ℓ²
+bound (Fatou gives ℓ²-summability of the limit modes) + strong-L²
+convergence of the Fourier-truncation to the initial data, Parseval
++ dominated convergence lifts the per-mode limit to strong L²
+convergence of the full Galerkin trajectory.
+
+This step requires two extra analytical inputs beyond `HasPerModeLimit`:
+
+1. A Fourier-synthesis witness: the per-mode limit function `b · t`
+   yields an honest `Lp ℂ 2` element `θ_lim t` for every `t ≥ 0`.
+2. Strong-L² convergence of the extracted sequence to that `θ_lim`,
+   discharged from per-mode convergence + uniform ℓ² control.
+
+Package both as `HasFourierSynthesis`; the capstone then builds
+`HasAubinLionsExtraction` from the combined hypotheses. -/
+
+/-- **Fourier synthesis of the per-mode limit.**  Given
+`HasPerModeLimit α`, a synthesis witness provides the `Lp`-valued
+limit trajectory + strong-L² convergence to it.  In the non-zero
+case this requires classical dominated-convergence-on-ℓ² input;
+we package it as a named hypothesis. -/
+structure HasFourierSynthesis
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
+  /-- The `Lp`-valued limit trajectory. -/
+  θ_lim : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))
+  /-- Initial-data match: at `t = 0` the limit is the provided `θ`. -/
+  init_eq : θ_lim 0 = θ
+  /-- Fourier-coefficient match: the `Lp` element's coefficients coincide
+  with the per-mode limit. -/
+  mFourierCoeff_eq : ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+    mFourierCoeff (θ_lim t) m = per.b m t
+  /-- Strong-L² pointwise-in-t convergence of the extracted Galerkin
+  sequence to `θ_lim`. -/
+  tendsto_L2 : ∀ (t : ℝ), 0 ≤ t →
+    Filter.Tendsto
+      (fun k : ℕ =>
+        ∫ x, ‖galerkinToLp (sqgBox (per.nsub k)) (α (per.nsub k) t) x
+              - θ_lim t x‖ ^ 2)
+      Filter.atTop (nhds 0)
+
+/-- **Route B Aubin–Lions extraction from per-mode limit + Fourier
+synthesis witness.**  Assembles `HasAubinLionsExtraction θ α` from
+a `HasPerModeLimit` witness + a `HasFourierSynthesis` witness. -/
+noncomputable def HasAubinLionsExtraction.ofPerModeLimit
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (per : HasPerModeLimit α)
+    (syn : HasFourierSynthesis per θ) :
+    HasAubinLionsExtraction θ α where
+  nsub := per.nsub
+  strictMono := per.strictMono
+  θ_lim := syn.θ_lim
+  init_eq := syn.init_eq
+  tendsto_L2 := syn.tendsto_L2
+
 end SqgIdentity
