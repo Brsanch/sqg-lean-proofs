@@ -14988,4 +14988,232 @@ theorem galerkinRHS_starSwap_identity
     rw [star_mul', star_mul', star_K_eq_K]
     rw [show (-(n - ℓ) : Fin 2 → ℤ) = -n + ℓ from by ring]
 
+/-! ### §10.100 Real-symmetry ODE propagation — closing `hRealC` to τ=0
+
+Using the universal `galerkinRHS_starSwap_identity` (§10.99) plus
+mathlib's `ODE_solution_unique_univ` on the Galerkin ODE with a fixed
+Lipschitz region (`closedBall 0 M`), real-coefficient symmetry
+propagates from `τ = 0` to all `τ`. Requires the uniform L∞ coefficient
+bound on **all** `τ : ℝ` (not just `τ ≥ 0`) so that the starSwapped
+trajectory and the original trajectory both stay in the same Lipschitz
+ball globally in time.
+
+**Device.** Let `starSwap hS : (↥S → ℂ) → (↥S → ℂ)` send `c` to the
+star-conjugated, index-negated coefficient vector. Define
+`β τ := starSwap hS (α τ)`. Then:
+* `β` satisfies the Galerkin ODE (via §10.99's universal starSwap id).
+* `β 0 = α 0` iff `hRealC` holds at `τ = 0`.
+* Both `α τ`, `β τ` live in `closedBall 0 M` (by `hBound`).
+* `galerkinVectorField_contDiff` (§10.41) gives Lipschitz on the compact
+  convex `closedBall 0 M`.
+* `ODE_solution_unique_univ` forces `α = β`, yielding `hRealC` for all τ. -/
+
+/-- **Subtype negation on `↥S` under `IsSymmetricSupport`.** -/
+noncomputable def negSubtype
+    {S : Finset (Fin 2 → ℤ)} (hS : IsSymmetricSupport S) (n : ↥S) : ↥S :=
+  ⟨-n.val, hS n.val n.property⟩
+
+@[simp] lemma negSubtype_val
+    {S : Finset (Fin 2 → ℤ)} (hS : IsSymmetricSupport S) (n : ↥S) :
+    (negSubtype hS n).val = -n.val := rfl
+
+lemma negSubtype_negSubtype
+    {S : Finset (Fin 2 → ℤ)} (hS : IsSymmetricSupport S) (n : ↥S) :
+    negSubtype hS (negSubtype hS n) = n := by
+  apply Subtype.ext
+  show -(-n.val) = n.val
+  ring
+
+/-- **StarSwap on the Galerkin state space.** -/
+noncomputable def starSwap
+    {S : Finset (Fin 2 → ℤ)} (hS : IsSymmetricSupport S)
+    (c : ↥S → ℂ) : ↥S → ℂ :=
+  fun n => star (c (negSubtype hS n))
+
+/-- **StarSwap is involutive.** -/
+lemma starSwap_starSwap
+    {S : Finset (Fin 2 → ℤ)} (hS : IsSymmetricSupport S)
+    (c : ↥S → ℂ) :
+    starSwap hS (starSwap hS c) = c := by
+  funext n
+  show star (star (c (negSubtype hS (negSubtype hS n)))) = c n
+  rw [star_star, negSubtype_negSubtype]
+
+/-- **StarSwap preserves the sup-norm.** -/
+lemma norm_starSwap_apply
+    {S : Finset (Fin 2 → ℤ)} (hS : IsSymmetricSupport S)
+    (c : ↥S → ℂ) (n : ↥S) :
+    ‖starSwap hS c n‖ = ‖c (negSubtype hS n)‖ := by
+  show ‖star (c (negSubtype hS n))‖ = ‖c (negSubtype hS n)‖
+  exact norm_star _
+
+/-- **`galerkinExtend` commutes with `starSwap`.** At the full lattice
+level, the zero-extension of `starSwap hS c` is
+`fun m => star (galerkinExtend S c (-m))`. -/
+lemma galerkinExtend_starSwap
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (c : ↥S → ℂ) (m : Fin 2 → ℤ) :
+    galerkinExtend S (starSwap hS c) m = star (galerkinExtend S c (-m)) := by
+  by_cases hm : m ∈ S
+  · have hmneg : -m ∈ S := hS m hm
+    rw [galerkinExtend_apply_of_mem S _ hm,
+        galerkinExtend_apply_of_mem S _ hmneg]
+    rfl
+  · have hmneg : -m ∉ S := by
+      intro hmem
+      have hnn : -(-m) ∈ S := hS (-m) hmem
+      rw [neg_neg] at hnn
+      exact hm hnn
+    rw [galerkinExtend_apply_of_not_mem S _ hm,
+        galerkinExtend_apply_of_not_mem S _ hmneg, star_zero]
+
+/-- **`galerkinVectorField` commutes with `starSwap`.** Consumes the
+universal `galerkinRHS_starSwap_identity` from §10.99. -/
+theorem galerkinVectorField_starSwap
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (c : ↥S → ℂ) :
+    galerkinVectorField S (starSwap hS c)
+      = starSwap hS (galerkinVectorField S c) := by
+  funext n
+  show galerkinRHS S (galerkinExtend S (starSwap hS c)) ↑n
+      = star (galerkinRHS S (galerkinExtend S c) ↑(negSubtype hS n))
+  have hExtend : galerkinExtend S (starSwap hS c)
+               = fun m => star (galerkinExtend S c (-m)) := by
+    funext m
+    exact galerkinExtend_starSwap hS c m
+  rw [hExtend, galerkinRHS_starSwap_identity hS (galerkinExtend S c) ↑n]
+  show star (galerkinRHS S (galerkinExtend S c) (-(n.val)))
+      = star (galerkinRHS S (galerkinExtend S c) (negSubtype hS n).val)
+  rfl
+
+/-- **`HasDerivAt` transports through `starSwap`.** If `α` solves the
+Galerkin ODE, so does `β := fun τ => starSwap hS (α τ)`. -/
+theorem starSwap_hasDerivAt
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (τ : ℝ) :
+    HasDerivAt (fun t => starSwap hS (α t))
+               (galerkinVectorField S (starSwap hS (α τ))) τ := by
+  rw [galerkinVectorField_starSwap hS (α τ)]
+  rw [hasDerivAt_pi]
+  intro n
+  show HasDerivAt (fun t => star (α t (negSubtype hS n)))
+                  (star (galerkinVectorField S (α τ) (negSubtype hS n))) τ
+  exact ((hasDerivAt_pi.mp (hα τ)) (negSubtype hS n)).star
+
+/-- **Real-symmetry ODE propagation.** Given the Galerkin ODE, real-
+coefficient symmetry at `τ = 0`, and a uniform L∞ coefficient bound on
+**all** `τ : ℝ`, real-coefficient symmetry holds for every `τ`. -/
+theorem hRealC_of_initial_and_bound
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC₀ : ∀ n ∈ S,
+        galerkinExtend S (α 0) (-n) = star (galerkinExtend S (α 0) n))
+    {M : ℝ} (hM : 0 ≤ M)
+    (hBound : ∀ τ : ℝ, ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M) :
+    ∀ τ : ℝ, ∀ n ∈ S,
+      galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n) := by
+  classical
+  set β : ℝ → (↥S → ℂ) := fun τ => starSwap hS (α τ) with hβ_def
+  have hβ : ∀ t, HasDerivAt β (galerkinVectorField S (β t)) t :=
+    fun t => starSwap_hasDerivAt hS α hα t
+  -- α 0 = β 0 from hRealC₀
+  have hαβ_zero : α 0 = β 0 := by
+    funext n
+    show α 0 n = star (α 0 (negSubtype hS n))
+    have hn_in : n.val ∈ S := n.property
+    have hnn_in : -n.val ∈ S := hS n.val hn_in
+    have hRC := hRealC₀ n.val hn_in
+    rw [galerkinExtend_apply_of_mem S _ hnn_in,
+        galerkinExtend_apply_of_mem S _ hn_in] at hRC
+    -- hRC : α 0 ⟨-n.val, hnn_in⟩ = star (α 0 ⟨n.val, hn_in⟩)
+    have hn_eq : (n : ↥S) = ⟨n.val, hn_in⟩ := by
+      apply Subtype.ext; rfl
+    -- Apply star_star symmetry
+    have : α 0 ⟨n.val, hn_in⟩ = star (α 0 ⟨-n.val, hnn_in⟩) := by
+      rw [hRC, star_star]
+    rw [hn_eq, this]
+    rfl
+  -- Norm bounds: both α and β live in closedBall 0 M.
+  have hα_ball : ∀ t, α t ∈ Metric.closedBall (0 : ↥S → ℂ) M := by
+    intro t
+    rw [Metric.mem_closedBall, dist_zero_right]
+    rw [pi_norm_le_iff_of_nonneg hM]
+    intro n
+    have hn_in : n.val ∈ S := n.property
+    have := hBound t n.val
+    rw [galerkinExtend_apply_of_mem S _ hn_in] at this
+    exact this
+  have hβ_ball : ∀ t, β t ∈ Metric.closedBall (0 : ↥S → ℂ) M := by
+    intro t
+    rw [Metric.mem_closedBall, dist_zero_right]
+    rw [pi_norm_le_iff_of_nonneg hM]
+    intro n
+    rw [hβ_def]
+    rw [norm_starSwap_apply]
+    have hnn_in : (negSubtype hS n).val ∈ S := (negSubtype hS n).property
+    have := hBound t (negSubtype hS n).val
+    rw [galerkinExtend_apply_of_mem S _ hnn_in] at this
+    exact this
+  -- Lipschitz on closedBall 0 M via C¹ on compact convex set.
+  obtain ⟨K, hK⟩ : ∃ K, LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall (0 : ↥S → ℂ) M) := by
+    refine (galerkinVectorField_contDiff S (n := 1)).contDiffOn.exists_lipschitzOnWith
+      ?_ (convex_closedBall 0 M) (isCompact_closedBall 0 M)
+    decide
+  -- Apply ODE_solution_unique_univ.
+  have heq : α = β :=
+    ODE_solution_unique_univ (v := fun _ => galerkinVectorField S)
+      (s := fun _ => Metric.closedBall (0 : ↥S → ℂ) M)
+      (t₀ := 0)
+      (fun _ => hK)
+      (fun t => ⟨hα t, hα_ball t⟩)
+      (fun t => ⟨hβ t, hβ_ball t⟩)
+      hαβ_zero
+  -- Unpack: α τ = β τ = starSwap (α τ), i.e. α τ ⟨-n, ...⟩ = star (α τ ⟨n, ...⟩).
+  intro τ n hn
+  have hnn_in : -n ∈ S := hS n hn
+  rw [galerkinExtend_apply_of_mem S _ hnn_in,
+      galerkinExtend_apply_of_mem S _ hn]
+  have hfun : α τ = β τ := by rw [heq]
+  -- β τ ⟨-n, hnn_in⟩ = star (α τ ⟨-(-n), hS (-n) hnn_in⟩)
+  have hβapp : β τ ⟨-n, hnn_in⟩ = star (α τ ⟨n, hn⟩) := by
+    rw [hβ_def]
+    show star (α τ (negSubtype hS ⟨-n, hnn_in⟩)) = star (α τ ⟨n, hn⟩)
+    congr 1
+    apply Subtype.ext
+    show -(-n) = n
+    ring
+  calc α τ ⟨-n, hnn_in⟩
+      = β τ ⟨-n, hnn_in⟩ := by rw [hfun]
+    _ = star (α τ ⟨n, hn⟩) := hβapp
+
+/-- **Phase-3 final capstone (τ=0 hRealC variant).** Same conclusion as
+`SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound` but
+with `hRealC` replaced by `hRealC₀` (at `τ = 0` only) and the uniform
+L∞ bound strengthened from `τ ≥ 0` to all `τ : ℝ`. Internally propagates
+`hRealC` via ODE uniqueness (`hRealC_of_initial_and_bound`). -/
+theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_from_initial_realC
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (hRealC₀ : ∀ n ∈ S,
+        galerkinExtend S (α 0) (-n) = star (galerkinExtend S (α 0) n))
+    {M : ℝ} (hM : 0 ≤ M)
+    (hBound_all : ∀ τ : ℝ, ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M) :
+    SqgEvolutionAxioms_strong (fun τ => galerkinToLp S (α τ)) := by
+  have hRealC := hRealC_of_initial_and_bound hS α hα hRealC₀ hM hBound_all
+  have hBound_fwd : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M :=
+    fun τ _ => hBound_all τ
+  exact SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound
+    h0 hS α hα hRealC hBound_fwd
+
 end SqgIdentity
