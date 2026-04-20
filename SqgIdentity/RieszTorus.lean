@@ -19193,10 +19193,10 @@ lemma mFourierCoeff_galerkin_sqgBox_zero_any
     mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
   mFourierCoeff_galerkinToLp_sqgBox_zero n c
 
+set_option maxHeartbeats 400000 in
 /-- **When the zero mode vanishes, `∫ ‖f‖² = hsSeminormSq 0 f`.**
 Localized helper so the capstone avoids heavy `rw` against
 `l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero`. -/
-set_option maxHeartbeats 400000 in
 theorem integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
     (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (h : mFourierCoeff f (0 : Fin 2 → ℤ) = 0) :
@@ -19205,6 +19205,7 @@ theorem integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
   rw [h, norm_zero, zero_pow (by norm_num : (2 : ℕ) ≠ 0), zero_add] at hEq
   exact hEq
 
+set_option maxHeartbeats 400000 in
 /-- **Route B `l2Conservation` from Aubin–Lions.**
 
 From the strong-`L²` Aubin–Lions extraction (§10.139) and the
