@@ -4,21 +4,35 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
-## v0.4.36 — 2026-04-20
+## v0.4.37 — 2026-04-20
 
-**§10.146 — zero-datum instance of Route B.** Exercises the v0.4.35
-Route B structural chain end-to-end on the zero initial datum, as a
-consistency check. Provides:
+**§10.146 — zero-datum instance of Route B (second attempt, fixed).**
+Exercises the v0.4.35 Route B structural chain end-to-end on the
+zero initial datum. First attempt (v0.4.36, since retracted) failed
+CI on a `rw`/`simp` interaction with the structure-field projection
+of `nsub := id`; this release rewrites with `nsub := fun n => n`
+so field projection beta-reduces cleanly, and inlines a `funext + rfl`
+proof for the trinested zero function.
 
-- `HasAubinLionsExtraction.ofZero` — trivial extraction witness with
-  identity subsequence and zero limit. Strong-`L²` tendsto is
-  literal zero after unfolding `galerkinToLp (sqgBox n) 0 = 0`.
-- `exists_sqgSolution_via_RouteB_zero` — `SqgSolution` existence
-  through the full Route B capstone for the zero datum, verifying
-  the §10.144 `SqgEvolutionAxioms` assembly and the §10.145
-  composition with `exists_sqgSolution_of_aubinLions` work together.
+- **`galerkinToLp_zero`** — standalone helper: `galerkinToLp S 0 = 0`
+  via `Finset.sum_eq_zero` + `galerkinExtend_apply_of_mem`.
+- **`HasAubinLionsExtraction.ofZero`** — trivial extraction witness
+  with `nsub = fun n => n`, zero limit, and strong-`L²` tendsto
+  closed by rewriting each integrand to zero then invoking
+  `tendsto_const_nhds`.
+- **`exists_sqgSolution_via_RouteB_zero`** — `SqgSolution` existence
+  through the full Route B capstone on the zero datum. Confirms the
+  §10.144 `SqgEvolutionAxioms` assembly and §10.145 composition with
+  `exists_sqgSolution_of_aubinLions` are not vacuous.
 
-+74 lines; zero `sorry`; CI green.
++100 lines; zero `sorry`; CI green.
+
+## v0.4.36 — 2026-04-20 (retracted)
+
+**§10.146 first attempt** — compile failure in `HasAubinLionsExtraction.ofZero.tendsto_L2`
+due to structure-field-projection `rw` pattern mismatch. Retracted
+by revert and replaced by v0.4.37. Tag remains for historical
+continuity but points at broken code; do not consume.
 
 ## v0.4.35 — 2026-04-20
 
