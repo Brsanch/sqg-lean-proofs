@@ -18961,4 +18961,104 @@ theorem exists_sqgSolution_via_RouteB
   exists_sqgSolution_of_aubinLions ext
     (SqgEvolutionAxioms.of_aubinLions ext hL2 hu) hSmooth
 
+/-! ### §10.146 Zero-datum instance of Route B
+
+Degenerate instance verifying the Route B chain is end-to-end
+consistent on the zero datum. Demonstrates that the abstract Aubin–
+Lions predicate of §10.139 is actually inhabited. -/
+
+/-- **`galerkinToLp` of the zero coefficient vector is the zero `Lp`.** -/
+theorem galerkinToLp_zero
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)] :
+    galerkinToLp S (0 : ↥S → ℂ)
+      = (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
+  unfold galerkinToLp trigPoly
+  apply Finset.sum_eq_zero
+  intros n hn
+  rw [galerkinExtend_apply_of_mem S 0 hn]
+  simp
+
+/-- **The trinested zero family applied twice is the zero coefficient
+vector.** Bridge between `(fun _ _ _ => 0) k t` (literally `fun _ : ↥(sqgBox k) => 0`)
+and `(0 : ↥(sqgBox k) → ℂ)` for the §10.146 instance. -/
+theorem zero_trinary_apply_eq_zero
+    (k : ℕ) (t : ℝ) :
+    ((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t
+      = (0 : ↥(sqgBox k) → ℂ) := by
+  funext m
+  rfl
+
+/-- **Zero-datum `HasAubinLionsExtraction`.** The trivial extraction
+where every Galerkin trajectory is zero and the limit is zero. -/
+noncomputable def HasAubinLionsExtraction.ofZero :
+    HasAubinLionsExtraction
+      (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+      (fun _ _ _ => (0 : ℂ)) where
+  nsub := id
+  strictMono := strictMono_id
+  θ_lim := fun _ => 0
+  init_eq := rfl
+  tendsto_L2 := fun t _ => by
+    -- Rewrite each integrand to 0, then apply `tendsto_const_nhds`.
+    have hZeroFn : ∀ k : ℕ,
+        galerkinToLp (sqgBox ((id : ℕ → ℕ) k))
+            (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ))
+              ((id : ℕ → ℕ) k) t)
+          = (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
+      intro k
+      rw [zero_trinary_apply_eq_zero k t]
+      exact galerkinToLp_zero (sqgBox k)
+    have hIntegrandZero : ∀ k : ℕ,
+        (∫ x, ‖galerkinToLp (sqgBox ((id : ℕ → ℕ) k))
+              (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ))
+                ((id : ℕ → ℕ) k) t) x
+              - ((fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))))
+                  t) x‖ ^ 2) = 0 := by
+      intro k
+      rw [hZeroFn k]
+      simp
+    rw [show (fun k : ℕ =>
+        (∫ x, ‖galerkinToLp (sqgBox ((id : ℕ → ℕ) k))
+              (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ))
+                ((id : ℕ → ℕ) k) t) x
+              - ((fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))))
+                  t) x‖ ^ 2))
+        = fun _ : ℕ => (0 : ℝ) from funext hIntegrandZero]
+    exact tendsto_const_nhds
+
+/-- **Route B produces an `SqgSolution` for the zero datum.** -/
+theorem exists_sqgSolution_via_RouteB_zero :
+    ∃ sol : SqgSolution,
+      sol.θ = fun _ : ℝ =>
+        (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
+  have hL2 : ∀ t, 0 ≤ t →
+      hsSeminormSq 0
+          ((HasAubinLionsExtraction.ofZero).θ_lim t)
+        = hsSeminormSq 0
+          ((HasAubinLionsExtraction.ofZero).θ_lim 0) := by
+    intros t _; rfl
+  have hu : HasGalerkinLimitVelocity
+      ((HasAubinLionsExtraction.ofZero).θ_lim) (fun _ _ => 0) :=
+    HasGalerkinLimitVelocity.ofZero
+  have hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2
+          * ‖mFourierCoeff ((HasAubinLionsExtraction.ofZero).θ_lim 0) n‖ ^ 2) := by
+    refine ⟨3, by norm_num, ?_⟩
+    have hCoeffZero : ∀ n : Fin 2 → ℤ,
+        mFourierCoeff ((HasAubinLionsExtraction.ofZero).θ_lim 0) n = 0 := by
+      intro n
+      show mFourierCoeff (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n = 0
+      exact mFourierCoeff_zero n
+    have hAllZero : ∀ n : Fin 2 → ℤ,
+        (fracDerivSymbol 3 n) ^ 2
+          * ‖mFourierCoeff ((HasAubinLionsExtraction.ofZero).θ_lim 0) n‖ ^ 2 = 0 := by
+      intro n; rw [hCoeffZero n]; simp
+    rw [show (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol 3 n) ^ 2
+          * ‖mFourierCoeff ((HasAubinLionsExtraction.ofZero).θ_lim 0) n‖ ^ 2)
+      = (fun _ : Fin 2 → ℤ => (0 : ℝ)) from funext hAllZero]
+    exact summable_zero
+  exact exists_sqgSolution_via_RouteB HasAubinLionsExtraction.ofZero hL2 hu hSmooth
+
 end SqgIdentity
