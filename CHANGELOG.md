@@ -4,6 +4,36 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.15 — 2026-04-20
+
+Time-global existence step 4 of 8: Nat-indexed chain of local Picard
+solutions. Ships §10.104, extending v0.4.14 by ~160 lines.
+
+- **§10.104 `galerkin_chain_n_step`** — Under a ball-invariance
+  hypothesis (`hInv`), iterate `galerkin_forward_step` by
+  `ℕ`-induction: for each `n : ℕ`, produce `α : ℝ → ↥S → ℂ` with
+  `α 0 = c₀`, `HasDerivWithinAt` on `[0, n·ε]`, and norm bounded by
+  `R/2` throughout. Inductive step concatenates via
+  `if t ≤ n·ε then α_n t else β (t − n·ε)`, glues the derivative at
+  the step boundary via `HasDerivWithinAt.union` +
+  `Set.Icc_union_Icc_eq_Icc`, and extends through interior points
+  using `hasDerivWithinAt_inter` with one-sided open neighborhoods.
+  Translated β-derivative on `[n·ε, (n+1)·ε]` obtained via
+  `HasDerivWithinAt.scomp` with `(· − n·ε)`.
+
+Remaining for full time-global existence (deferred):
+§10.105 piecewise gluing into a single `α : ℝ → ↥S → ℂ`
+(requires ODE uniqueness or direct Nat.rec construction),
+§10.106 global HasDerivAt assembly, §10.107 L² conservation →
+forward-invariance, §10.108 final capstone.
+
+16,317 lines, zero `sorry`, zero new axioms.
+
+CI pitfalls caught (v0.4.15): `set` auto-rewrites hypothesis display,
+making subsequent `rw [show ... from rfl]` fail; `subst ht_eq` with
+`ht_eq : t = Tn` substitutes `t` with `Tn` (not the reverse) — all
+references to `t` in the substituted branch must be renamed.
+
 ## v0.4.14 — 2026-04-20
 
 Time-global existence scaffolding: quadratic growth bound + uniform-ε
