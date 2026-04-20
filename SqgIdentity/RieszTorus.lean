@@ -18746,4 +18746,86 @@ theorem exists_sqgSolution_of_aubinLions
      smoothInitialData := hSmooth
      solvesSqgEvolution := hE }, rfl⟩
 
+/-! ### §10.141 Per-mode Fourier-coefficient convergence from strong `L²`
+
+Strong `L²` convergence of a sequence `fₙ → f` in `Lp ℂ 2 (𝕋²)`
+immediately gives per-mode convergence of Fourier coefficients,
+because each `mFourierCoeff (· ) m` is a 1-Lipschitz functional on
+`Lp ℂ 2` (Parseval + single-term bound).
+
+This is the bridge that Route B uses to transfer Galerkin per-mode
+invariants (zero-mode, `ℓ²`-conservation, real-symmetry) to the
+Aubin–Lions limit. -/
+
+/-- **Per-mode Fourier coefficient is 1-Lipschitz in `L²`.**
+`|mFourierCoeff f m − mFourierCoeff g m|² ≤ ∫ ‖f − g‖²` for every
+mode `m`. Direct Parseval consequence. -/
+theorem sq_sub_mFourierCoeff_le_L2Sq
+    {d : Type*} [Fintype d]
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus d)))
+    (m : d → ℤ) :
+    ‖mFourierCoeff f m - mFourierCoeff g m‖ ^ 2 ≤ ∫ x, ‖f x - g x‖ ^ 2 := by
+  -- Rewrite the difference via linearity of the Fourier coefficient.
+  have hLM : mFourierCoeff f m - mFourierCoeff g m
+      = mFourierCoeffLM m (f - g) := by
+    rw [LinearMap.map_sub]; rfl
+  rw [hLM]
+  -- Parseval on `f - g` places the single-term bound inside the tsum.
+  have hP : HasSum (fun k : d → ℤ => ‖mFourierCoeff (f - g) k‖ ^ 2)
+      (∫ x, ‖(f - g) x‖ ^ 2) := hasSum_sq_mFourierCoeff (f - g)
+  have hSumm : Summable (fun k : d → ℤ => ‖mFourierCoeff (f - g) k‖ ^ 2) :=
+    hP.summable
+  have hSingle : ‖mFourierCoeff (f - g) m‖ ^ 2
+      ≤ ∑' k : d → ℤ, ‖mFourierCoeff (f - g) k‖ ^ 2 :=
+    le_tsum hSumm m (fun _ _ => sq_nonneg _)
+  rw [hP.tsum_eq] at hSingle
+  have hIntEq : (∫ x, ‖(f - g) x‖ ^ 2) = ∫ x, ‖f x - g x‖ ^ 2 := by
+    apply MeasureTheory.integral_congr_ae
+    filter_upwards [Lp.coeFn_sub f g] with x hx
+    have hx' : (f - g) x = f x - g x := by
+      have : ((⇑f - ⇑g) : _ → ℂ) x = f x - g x := rfl
+      rw [hx, this]
+    rw [hx']
+  rw [hIntEq] at hSingle
+  show ‖mFourierCoeffLM m (f - g)‖ ^ 2 ≤ ∫ x, ‖f x - g x‖ ^ 2
+  rw [mFourierCoeffLM_apply]
+  exact hSingle
+
+/-- **Strong-L² → per-mode Fourier convergence.** If `fₙ → f` strongly
+in `L²(𝕋²)` (i.e. `∫ ‖fₙ − f‖² → 0`), then
+`mFourierCoeff fₙ m → mFourierCoeff f m` in `ℂ` for every mode `m`. -/
+theorem tendsto_mFourierCoeff_of_tendsto_L2Sq
+    {d : Type*} [Fintype d]
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus d))}
+    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus d))}
+    (hL2 : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2) l (nhds 0))
+    (m : d → ℤ) :
+    Filter.Tendsto (fun i => mFourierCoeff (f i) m) l
+      (nhds (mFourierCoeff g m)) := by
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  have hε2 : 0 < ε ^ 2 := pow_pos hε 2
+  have hEps_nn : 0 ≤ ε := le_of_lt hε
+  have := hL2.eventually (Metric.ball_mem_nhds 0 hε2)
+  filter_upwards [this] with i hi
+  simp only [Metric.mem_ball, dist_zero_right, Real.norm_eq_abs] at hi
+  have hSq := sq_sub_mFourierCoeff_le_L2Sq (f i) g m
+  have hNn : 0 ≤ ∫ x, ‖f i x - g x‖ ^ 2 :=
+    MeasureTheory.integral_nonneg (fun _ => sq_nonneg _)
+  have habs : |∫ x, ‖f i x - g x‖ ^ 2| = ∫ x, ‖f i x - g x‖ ^ 2 :=
+    abs_of_nonneg hNn
+  rw [habs] at hi
+  have hNorm_sq_lt :
+      ‖mFourierCoeff (f i) m - mFourierCoeff g m‖ ^ 2 < ε ^ 2 :=
+    lt_of_le_of_lt hSq hi
+  show dist (mFourierCoeff (f i) m) (mFourierCoeff g m) < ε
+  rw [dist_eq_norm]
+  -- From ‖x‖² < ε² and 0 ≤ ‖x‖, 0 ≤ ε, conclude ‖x‖ < ε.
+  by_contra hContra
+  push Not at hContra
+  have hge : ε ^ 2 ≤ ‖mFourierCoeff (f i) m - mFourierCoeff g m‖ ^ 2 :=
+    pow_le_pow_left₀ hEps_nn hContra 2
+  linarith
+
 end SqgIdentity
