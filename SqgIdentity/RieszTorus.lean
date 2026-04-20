@@ -16211,4 +16211,39 @@ theorem galerkin_hInv_discharged
     field_simp
   linarith [h_mul, h_simp ▸ h_mul, h_bound]
 
+/-! ### §10.112 Unified global sup-norm bound on `Ici 0`
+
+Extends §10.111 from the bounded interval `Icc 0 ε` to the unbounded
+`Ici 0`: for any Galerkin trajectory with real-symmetric data that is
+`HasDerivWithinAt` on `Ici 0` at every `t ≥ 0`, the sup norm is
+bounded uniformly in time by `√|S| · ‖α 0‖`.
+
+This is the time-global counterpart of §10.111. In particular, paired
+with §10.108's conditional time-global existence it gives
+**unconditional uniform boundedness** of any real-symmetric
+trajectory produced by the construction. -/
+
+theorem galerkin_supNorm_le_sqrt_card_on_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, 0 ≤ t →
+      HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (t : ℝ) (ht : 0 ≤ t) :
+    ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ := by
+  -- Apply galerkin_supNorm_bound_on_Icc with ε := t + 1.
+  set ε : ℝ := t + 1 with hε_def
+  have hε_pos : 0 < ε := by linarith
+  -- Convert `HasDerivWithinAt α ... (Ici 0) τ` to `... (Icc 0 ε) τ` for τ ∈ Icc 0 ε.
+  have hα_Icc : ∀ τ ∈ Set.Icc (0 : ℝ) ε,
+      HasDerivWithinAt α (galerkinVectorField S (α τ)) (Set.Icc (0 : ℝ) ε) τ := by
+    intros τ hτ
+    have hτ_ge : 0 ≤ τ := hτ.1
+    have hsub : Set.Icc (0 : ℝ) ε ⊆ Set.Ici (0 : ℝ) := fun x hx => hx.1
+    exact (hα τ hτ_ge).mono hsub
+  have ht_in : t ∈ Set.Icc (0 : ℝ) ε := ⟨ht, by linarith⟩
+  exact galerkin_supNorm_bound_on_Icc hS ε α hα_Icc hRealC t ht_in
+
 end SqgIdentity
