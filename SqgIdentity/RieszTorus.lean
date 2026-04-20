@@ -19320,41 +19320,38 @@ theorem l2Conservation_of_aubinLions_raw
     ∀ t, 0 ≤ t →
       hsSeminormSq 0 (θ_lim t) = hsSeminormSq 0 (θ_lim 0) := by
   intro t ht
-  have h_zero_galerkin : ∀ k : ℕ,
-      mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t))
-        (0 : Fin 2 → ℤ) = 0 :=
+  -- Name the Galerkin sequences at times t and 0 so Lean treats them
+  -- as atomic terms (avoids repeated HOU / instance resolution on the
+  -- full `galerkinToLp (sqgBox (nsub k)) (α (nsub k) _)` expression).
+  set Ft : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+    fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) with hFt
+  set F0 : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+    fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) with hF0
+  have h_zero_Ft : ∀ k : ℕ, mFourierCoeff (Ft k) (0 : Fin 2 → ℤ) = 0 :=
     fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) t)
-  have h_zero_galerkin_0 : ∀ k : ℕ,
-      mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0))
-        (0 : Fin 2 → ℤ) = 0 :=
+  have h_zero_F0 : ∀ k : ℕ, mFourierCoeff (F0 k) (0 : Fin 2 → ℤ) = 0 :=
     fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
+  have h_L2_t : Filter.Tendsto
+      (fun k : ℕ => ∫ x, ‖Ft k x - θ_lim t x‖ ^ 2)
+      Filter.atTop (nhds 0) := tendsto_L2_proof t ht
+  have h_L2_0 : Filter.Tendsto
+      (fun k : ℕ => ∫ x, ‖F0 k x - θ_lim 0 x‖ ^ 2)
+      Filter.atTop (nhds 0) := tendsto_L2_proof 0 le_rfl
   -- Strong-L² → hsSeminormSq Tendsto at both t and 0.
-  -- Pass `f :=` and `g :=` explicitly to sidestep higher-order
-  -- unification (the primitive's `{f : ι → Lp ℂ 2 μ}` is otherwise
-  -- inferred by abstracting `k` out of a complex concrete expression).
-  have h_lim_t : Filter.Tendsto
-      (fun k : ℕ =>
-        hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t)))
+  have h_lim_t : Filter.Tendsto (fun k : ℕ => hsSeminormSq 0 (Ft k))
       Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) :=
-    tendsto_hsSeminormSq_of_tendsto_L2sub_torus
-      (f := fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) t))
-      (g := θ_lim t)
-      (tendsto_L2_proof t ht) h_zero_galerkin (hZero t ht)
-  have h_lim_0 : Filter.Tendsto
-      (fun k : ℕ =>
-        hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)))
+    tendsto_hsSeminormSq_of_tendsto_L2sub_torus h_L2_t h_zero_Ft (hZero t ht)
+  have h_lim_0 : Filter.Tendsto (fun k : ℕ => hsSeminormSq 0 (F0 k))
       Filter.atTop (nhds (hsSeminormSq 0 (θ_lim 0))) :=
-    tendsto_hsSeminormSq_of_tendsto_L2sub_torus
-      (f := fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0))
-      (g := θ_lim 0)
-      (tendsto_L2_proof 0 le_rfl) h_zero_galerkin_0 (hZero 0 le_rfl)
-  -- Transport h_lim_t's sequence via hLevel: at time t the sequence equals
-  -- the time-0 sequence level-wise.
-  have h_lim_t' : Filter.Tendsto
-      (fun k : ℕ =>
-        hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)))
+    tendsto_hsSeminormSq_of_tendsto_L2sub_torus h_L2_0 h_zero_F0 (hZero 0 le_rfl)
+  -- Per-k equality `hsSeminormSq 0 (Ft k) = hsSeminormSq 0 (F0 k)` from hLevel.
+  have h_pointwise : ∀ k : ℕ,
+      hsSeminormSq 0 (Ft k) = hsSeminormSq 0 (F0 k) :=
+    fun k => hLevel (nsub k) t ht
+  -- Transport h_lim_t's sequence via hLevel.
+  have h_lim_t' : Filter.Tendsto (fun k : ℕ => hsSeminormSq 0 (F0 k))
       Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) :=
-    h_lim_t.congr (fun k => hLevel (nsub k) t ht)
+    h_lim_t.congr h_pointwise
   -- Limit uniqueness.
   exact tendsto_nhds_unique h_lim_t' h_lim_0
 
