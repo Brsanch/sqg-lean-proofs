@@ -4,6 +4,57 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.25 — 2026-04-20
+
+Real-symmetric forward step + ℓ²→pi chain invariant. Extends v0.4.24
+by ~270 lines (§10.116.B through §10.116.E).
+
+- **§10.116.B `hRealC_of_initial_and_bound_on_Icc`** — port of §10.114
+  from `Ici 0` to `Icc 0 ε`. Same strategy: `ODE_solution_unique_of_mem_Icc_right`
+  on `Icc 0 ε` with the `starSwap`-image solution. Conversion from
+  the Icc-form `HasDerivWithinAt` to the `Ici t` right-sided form
+  (required by the mathlib uniqueness lemma) uses
+  `hasDerivWithinAt_inter` with `Iio ε` as the open witness (mirror
+  of §10.110's pattern).
+
+- **§10.116.C `galerkin_forward_step_with_ball`** — parallel to §10.103
+  but delivers the `α t ∈ closedBall c₀ (R/2)` containment from
+  §10.116.A. Picard setup identical to §10.102, but with
+  `galerkin_local_exists_with_ball_containment` in place of
+  `galerkin_local_exists_given_bounds`.
+
+- **§10.116.D `galerkin_realSym_forward_step`** — combines §10.116.B
+  and §10.116.C. For real-symmetric `c₀` in the `R/2`-ball, produces
+  `α` on `[0, ε]` with `α(τ)` real-symmetric at every `τ ∈ [0, ε]`.
+  L∞ bound `M := R` feeding §10.116.B follows from the ball-containment
+  `‖α τ - c₀‖ ≤ R/2` + triangle inequality with `‖c₀‖ ≤ R/2`, so
+  `‖α τ‖ ≤ R`. No circularity: `R` is a slack bound, the tight `R/2`
+  bound is recovered by ℓ² conservation.
+
+- **§10.116.E `galerkin_piNorm_le_ℓ2_on_Icc`** — sharper replacement
+  for §10.111: pointwise `‖α t‖_π ≤ √(∑ ‖α 0 m‖²)` for a
+  real-symmetric Galerkin trajectory on `[0, ε]`. Via §10.110's
+  ℓ² conservation plus the elementary `‖c m‖² ≤ ∑ ‖c m'‖²`.
+  This is the invariant that propagates across chain steps: if
+  `c_k := α_{k-1}(ε)` then `∑ ‖c_k m‖² = ∑ ‖c_{k-1} m‖²` exactly,
+  so the chain cannot drift in ℓ² norm.
+
+The §10.116 program now has all building blocks in place. What
+remains (§10.116.F-G, future session):
+
+1. A `galerkin_realSym_chain_n_step` mirroring §10.104 but using
+   §10.116.D at each step and §10.116.E to carry the ℓ² invariant.
+2. `galerkin_realSym_chain_sequence` + `galerkin_realSym_global`
+   mirroring §10.105-§10.108, producing time-global `α` on
+   `Ici 0` without a `hInv` hypothesis — discharged internally from
+   the per-step real-symmetry and ℓ² conservation.
+3. Final unconditional capstone on the real-symmetric
+   ℓ²-ball-constrained class.
+
+Estimated ~250-300 lines remain for full closure.
+
+17,492 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.24 — 2026-04-20
 
 Picard-Lindelöf wrapper with ball-containment. Extends v0.4.23 by ~50 lines.
