@@ -16291,4 +16291,115 @@ theorem galerkin_time_global_real_symmetric
   rw [hα0] at h_bound
   exact h_bound
 
+/-! ### §10.114 Within-interval real-symmetry propagation
+
+Ports §10.100's `hRealC_of_initial_and_bound` from the global
+`∀ t, HasDerivAt α ... t` hypothesis to the within-interval
+`∀ t ≥ 0, HasDerivWithinAt α ... (Ici 0) t`, using
+`ODE_solution_unique_of_mem_Icc_right` in place of
+`ODE_solution_unique_univ`. Combined with §10.113, this closes the
+remaining `hRealSymPropagates` hypothesis for time-global existence
+on the real-symmetric class — provided an L∞ coefficient bound is
+supplied (which §10.112 produces from real-symmetry itself, but
+the circularity is broken by supplying a slack bound, e.g.
+`M := √|S|·‖c₀‖ + 1`). -/
+
+theorem starSwap_hasDerivWithinAt
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ)) (s : Set ℝ) (τ : ℝ)
+    (hα : HasDerivWithinAt α (galerkinVectorField S (α τ)) s τ) :
+    HasDerivWithinAt (fun t => starSwap hS (α t))
+                     (galerkinVectorField S (starSwap hS (α τ))) s τ := by
+  rw [galerkinVectorField_starSwap hS (α τ)]
+  rw [hasDerivWithinAt_pi]
+  intro n
+  show HasDerivWithinAt (fun t => star (α t (negSubtype hS n)))
+                        (star (galerkinVectorField S (α τ) (negSubtype hS n))) s τ
+  exact ((hasDerivWithinAt_pi.mp hα) (negSubtype hS n)).star
+
+theorem hRealC_of_initial_and_bound_on_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, 0 ≤ t →
+      HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t)
+    (hRealC₀ : ∀ n ∈ S,
+        galerkinExtend S (α 0) (-n) = star (galerkinExtend S (α 0) n))
+    {M : ℝ} (hM : 0 ≤ M)
+    (hBound : ∀ τ, 0 ≤ τ → ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M) :
+    ∀ τ, 0 ≤ τ → ∀ n ∈ S,
+      galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n) := by
+  classical
+  set β : ℝ → (↥S → ℂ) := fun τ => starSwap hS (α τ) with hβ_def
+  have hβ : ∀ t, 0 ≤ t →
+      HasDerivWithinAt β (galerkinVectorField S (β t)) (Set.Ici (0 : ℝ)) t :=
+    fun t ht => starSwap_hasDerivWithinAt hS α (Set.Ici 0) t (hα t ht)
+  have hαβ_zero : α 0 = β 0 := by
+    funext n
+    show α 0 n = star (α 0 (negSubtype hS n))
+    have hn_in : n.val ∈ S := n.property
+    have hnn_in : -n.val ∈ S := hS n.val hn_in
+    have hRC := hRealC₀ n.val hn_in
+    rw [galerkinExtend_apply_of_mem S _ hnn_in,
+        galerkinExtend_apply_of_mem S _ hn_in] at hRC
+    have hn_eq : (n : ↥S) = ⟨n.val, hn_in⟩ := by apply Subtype.ext; rfl
+    have : α 0 ⟨n.val, hn_in⟩ = star (α 0 ⟨-n.val, hnn_in⟩) := by
+      rw [hRC, star_star]
+    rw [hn_eq, this]; rfl
+  have hα_ball : ∀ t, 0 ≤ t → α t ∈ Metric.closedBall (0 : ↥S → ℂ) M := by
+    intros t ht
+    rw [Metric.mem_closedBall, dist_zero_right, pi_norm_le_iff_of_nonneg hM]
+    intro n
+    have hn_in := n.property
+    have := hBound t ht n.val
+    rw [galerkinExtend_apply_of_mem S _ hn_in] at this
+    exact this
+  have hβ_ball : ∀ t, 0 ≤ t → β t ∈ Metric.closedBall (0 : ↥S → ℂ) M := by
+    intros t ht
+    rw [Metric.mem_closedBall, dist_zero_right, pi_norm_le_iff_of_nonneg hM]
+    intro n
+    rw [hβ_def, norm_starSwap_apply]
+    have hnn_in := (negSubtype hS n).property
+    have := hBound t ht (negSubtype hS n).val
+    rw [galerkinExtend_apply_of_mem S _ hnn_in] at this
+    exact this
+  obtain ⟨K, hK⟩ : ∃ K, LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall (0 : ↥S → ℂ) M) := by
+    refine (galerkinVectorField_contDiff S (n := 1)).contDiffOn.exists_lipschitzOnWith
+      ?_ (convex_closedBall 0 M) (isCompact_closedBall 0 M)
+    decide
+  have hα_cont : ∀ T, ContinuousOn α (Set.Icc (0 : ℝ) T) := fun T x hx =>
+    (hα x hx.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
+  have hβ_cont : ∀ T, ContinuousOn β (Set.Icc (0 : ℝ) T) := fun T x hx =>
+    (hβ x hx.1).continuousWithinAt.mono Set.Icc_subset_Ici_self
+  have h_eq_on : ∀ T, 0 ≤ T → Set.EqOn α β (Set.Icc (0 : ℝ) T) := by
+    intros T _hT
+    apply ODE_solution_unique_of_mem_Icc_right
+      (v := fun _ c => galerkinVectorField S c)
+      (s := fun _ => Metric.closedBall (0 : ↥S → ℂ) M)
+      (K := K)
+    · intros _ _; exact hK
+    · exact hα_cont T
+    · intros t ht; exact (hα t ht.1).mono (Set.Ici_subset_Ici.mpr ht.1)
+    · intros t ht; exact hα_ball t ht.1
+    · exact hβ_cont T
+    · intros t ht; exact (hβ t ht.1).mono (Set.Ici_subset_Ici.mpr ht.1)
+    · intros t ht; exact hβ_ball t ht.1
+    · exact hαβ_zero
+  intros τ hτ n hn
+  have heq : α τ = β τ := h_eq_on (τ + 1) (by linarith) ⟨hτ, by linarith⟩
+  have hnn_in : -n ∈ S := hS n hn
+  rw [galerkinExtend_apply_of_mem S _ hnn_in,
+      galerkinExtend_apply_of_mem S _ hn]
+  have hβapp : β τ ⟨-n, hnn_in⟩ = star (α τ ⟨n, hn⟩) := by
+    rw [hβ_def]
+    show star (α τ (negSubtype hS ⟨-n, hnn_in⟩)) = star (α τ ⟨n, hn⟩)
+    have hsub : negSubtype hS ⟨-n, hnn_in⟩ = ⟨n, hn⟩ := by
+      apply Subtype.ext; show -(-n) = n; ring
+    rw [hsub]
+  calc α τ ⟨-n, hnn_in⟩
+      = β τ ⟨-n, hnn_in⟩ := by rw [heq]
+    _ = star (α τ ⟨n, hn⟩) := hβapp
+
 end SqgIdentity
