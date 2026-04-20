@@ -15954,4 +15954,31 @@ theorem galerkin_global_hasDerivWithinAt_conditional
         · rw [zero_add, one_mul]; exact le_of_lt hx.2
       exact h_Ik_deriv.mono hsub
 
+/-! ### §10.108 Time-global existence capstone
+
+Pulls §10.107 together with `galerkin_forward_step` (§10.103) so that the
+caller only needs to supply a ball-invariance hypothesis (parameterised in
+the step size `ε`) and the initial data. The forward-step existence is
+then discharged internally from the uniform-`ε` Picard construction
+(§10.102). The remaining open premise is `hInv` — forward-invariance of
+the `R/2`-ball in the phase space `↥S → ℂ`, which is expected to be
+discharged unconditionally in a later section via the L²-conservation
+identity (§10.97). -/
+
+theorem galerkin_global_existence_from_invariance
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2)
+    (hInv : ∀ ε > 0, ∀ c : ↥S → ℂ, ‖c‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) := by
+  obtain ⟨ε, hε, hStep⟩ := galerkin_forward_step S hR
+  exact galerkin_global_hasDerivWithinAt_conditional S hε hStep (hInv ε hε) c₀ hc₀
+
 end SqgIdentity
