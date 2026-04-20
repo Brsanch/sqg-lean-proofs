@@ -18479,4 +18479,123 @@ theorem exists_sqgSolution_strong_of_galerkin_realSym
     rw [hsol]
     exact traj.init_eq
 
+/-! ### §10.135 Test-function weak form → Duhamel identity bridge
+
+Structural closure of the §10.16 "step (B)" gap. `IsSqgWeakSolutionTimeTest`
+is the Fourier-specialized test-function weak form; `IsSqgWeakSolution`
+is the per-mode Duhamel identity. The classical bridge uses a
+bump-to-indicator limit: for each `(m, s, t)` with `0 ≤ s ≤ t`, pick
+a sequence of bumps `ψₙ` approximating `𝟙_{[s,t]}`, apply the
+time-test form with `ψ = ψₙ`, and take limits using a mollifier-style
+convergence.
+
+§10.135 packages the two convergence statements into an explicit
+hypothesis `HasBumpToIndicatorSequence` and proves the bridge via a
+single `Tendsto`-equality lift. Downstream users supply the bump
+sequence from mathlib's `ContDiffBump` infrastructure or from a
+specific application's mollifier; the structural content of step (B)
+— that "the two limits of the time-test identity ARE the Duhamel
+identity" — is the content of this section.
+
+Key theorem: `IsSqgWeakSolution.of_timeTest_of_bumpSeq`. Closes item 6
+of the open-items list at the structural level. -/
+
+/-- **Bump-to-indicator convergence packaging.** Witness for the
+two-integral convergence used in step (B) of the time-test →
+Duhamel bridge. Supplied by the caller (typically from a mollifier
+sequence built on mathlib's `ContDiffBump`). -/
+structure HasBumpToIndicatorSequence
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : Fin 2 → ℤ) (s t : ℝ) where
+  /-- Sequence of time test functions. -/
+  ψ : ℕ → ℝ → ℂ
+  /-- Each member of the sequence is a valid time test function. -/
+  isTest : ∀ n, IsSqgTimeTestFunction (ψ n)
+  /-- LHS convergence: `∫ ψₙ' · θ̂(m, ·) → θ̂(m, s) − θ̂(m, t)`.
+  Classical content: `ψₙ' → δ_s − δ_t` against a continuous Fourier
+  coefficient trajectory. -/
+  derivLimit :
+    Filter.Tendsto
+      (fun n => ∫ τ, deriv (ψ n) τ * mFourierCoeff (θ τ) m)
+      Filter.atTop
+      (nhds (mFourierCoeff (θ s) m - mFourierCoeff (θ t) m))
+  /-- RHS convergence: `∫ ψₙ · flux(m, ·) → ∫_{[s,t]} flux(m, ·)`.
+  Classical content: `ψₙ → 𝟙_{[s,t]}` against a bounded flux via DCT. -/
+  indicatorLimit :
+    Filter.Tendsto
+      (fun n => ∫ τ, ψ n τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m)
+      Filter.atTop
+      (nhds (∫ τ in Set.Icc s t,
+        sqgNonlinearFlux (θ τ) (fun j => u j τ) m))
+
+/-- **§10.135 Main bridge: time-test weak form → Duhamel identity.**
+Assuming `IsSqgWeakSolutionTimeTest θ u` plus a
+`HasBumpToIndicatorSequence` witness at every `(m, s, t)` with
+`0 ≤ s ≤ t`, derives `IsSqgWeakSolution θ u`. Closes item 6 at the
+structural level: any mollifier construction providing the packaged
+bump-convergence hypothesis lifts the time-test form to the Duhamel
+form, which then feeds §10.14's
+`SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP`. -/
+theorem IsSqgWeakSolution.of_timeTest_of_bumpSeq
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hTimeTest : IsSqgWeakSolutionTimeTest θ u)
+    (hBumpSeq : ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      HasBumpToIndicatorSequence θ u m s t) :
+    IsSqgWeakSolution θ u := by
+  refine { duhamel := ?_ }
+  intro m s t hs hst
+  obtain ⟨ψ, hTest, hDerivLim, hIndLim⟩ := hBumpSeq m s t hs hst
+  -- Equality of sequences from the time-test form.
+  have hEq : ∀ n : ℕ,
+      (∫ τ, deriv (ψ n) τ * mFourierCoeff (θ τ) m)
+        = ∫ τ, ψ n τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m :=
+    fun n => hTimeTest (ψ n) (hTest n) m
+  -- Propagate equality through the two limits.
+  have hLimEq :
+      (mFourierCoeff (θ s) m - mFourierCoeff (θ t) m)
+        = ∫ τ in Set.Icc s t,
+            sqgNonlinearFlux (θ τ) (fun j => u j τ) m := by
+    -- The two sequences are pointwise equal, so their limits agree.
+    have hSeqEq :
+        (fun n => ∫ τ, deriv (ψ n) τ * mFourierCoeff (θ τ) m)
+          = fun n => ∫ τ, ψ n τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m :=
+      funext hEq
+    have hDerivLim' :
+        Filter.Tendsto
+          (fun n => ∫ τ, ψ n τ * sqgNonlinearFlux (θ τ) (fun j => u j τ) m)
+          Filter.atTop
+          (nhds (mFourierCoeff (θ s) m - mFourierCoeff (θ t) m)) := by
+      rw [← hSeqEq]; exact hDerivLim
+    exact tendsto_nhds_unique hDerivLim' hIndLim
+  -- Rearrange to the Duhamel identity shape.
+  linear_combination -hLimEq
+
+/-! ### §10.136 Downstream corollary: `SqgEvolutionAxioms_strong` via
+time-test weak form + bump sequence
+
+Composes §10.135 with §10.14's `SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP`
+to discharge the strong axioms from the weaker time-test weak form,
+given the bump-convergence witness. This is the payoff of item 6:
+generic SQG weak solutions (not just finite-support Galerkin
+trajectories) satisfying the classical test-function weak form can be
+upgraded to `SqgEvolutionAxioms_strong` through the structural chain. -/
+
+/-- **Strong axioms from time-test weak form + MMP + bump sequence.** -/
+theorem SqgEvolutionAxioms_strong.of_timeTest_via_MMP
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    (hMMP : MaterialMaxPrinciple θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hu_velocity : ∀ (j : Fin 2) (τ : ℝ), IsSqgVelocityComponent (θ τ) (u j τ) j)
+    (hTimeTest : IsSqgWeakSolutionTimeTest θ u)
+    (hBumpSeq : ∀ (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      HasBumpToIndicatorSequence θ u m s t) :
+    SqgEvolutionAxioms_strong θ := by
+  have hWeak : IsSqgWeakSolution θ u :=
+    IsSqgWeakSolution.of_timeTest_of_bumpSeq hTimeTest hBumpSeq
+  exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    hE hMMP u hu_velocity hWeak
+
 end SqgIdentity
