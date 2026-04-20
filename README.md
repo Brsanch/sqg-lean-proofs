@@ -19,7 +19,7 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 18,000 lines of Lean 4 source, with
+The formalization comprises over 20,000 lines of Lean 4 source, with
 **zero `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally

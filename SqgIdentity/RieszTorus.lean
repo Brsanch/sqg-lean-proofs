@@ -19297,6 +19297,8 @@ theorem tendsto_integral_norm_sq_galerkinToLp_raw
   tendsto_integral_norm_sq_of_tendsto_L2sub (tendsto_L2_proof t ht)
 
 set_option maxHeartbeats 1600000 in
+set_option diagnostics true in
+set_option diagnostics.threshold 100 in
 /-- **Raw Route B `l2Conservation`.**  Uses
 `tendsto_hsSeminormSq_of_tendsto_L2sub_torus` to get
 `Tendsto (hsSeminormSq 0 ∘ f_k) → hsSeminormSq 0 g` at both t and 0,

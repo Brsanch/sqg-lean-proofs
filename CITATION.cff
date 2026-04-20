@@ -93,7 +93,8 @@ abstract: >
   This discharges the Galerkin-to-full-SQG-limit item on L-squared of
   the torus.
 
-  The release comprises 17,520 lines of Lean 4 source in the
-  RieszTorus module, with zero `sorry` occurrences and no axioms beyond
-  mathlib. A machine-readable build of the formalization is provided
-  via a standard `lake build` invocation against mathlib v4.29.0.
+  The release comprises 19,428 lines of Lean 4 source in the
+  RieszTorus module (20,137 lines project-wide), with zero `sorry`
+  occurrences and no axioms beyond mathlib. A machine-readable build
+  of the formalization is provided via a standard `lake build`
+  invocation against mathlib v4.29.0.
