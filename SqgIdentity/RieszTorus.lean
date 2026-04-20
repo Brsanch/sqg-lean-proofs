@@ -16012,7 +16012,7 @@ lemma pi_sum_sq_le_card_mul_sup_sq
 lemma pi_term_sq_le_sum_sq
     {ι : Type*} [Fintype ι] {β : Type*} [SeminormedAddCommGroup β]
     (c : ι → β) (m : ι) :
-    ‖c m‖ ^ 2 ≤ ∑ m' : ι, ‖c m' ‖ ^ 2 := by
+    ‖c m‖ ^ 2 ≤ ∑ m' : ι, ‖c m'‖ ^ 2 := by
   refine Finset.single_le_sum (f := fun m' => ‖c m'‖ ^ 2) ?_ (Finset.mem_univ m)
   intros i _; positivity
 
