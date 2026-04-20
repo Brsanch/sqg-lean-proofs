@@ -14975,8 +14975,8 @@ theorem galerkinRHS_starSwap_identity
   · intros ℓ hℓ
     rw [Finset.mem_filter] at hℓ
     obtain ⟨hℓS, _⟩ := hℓ
-    -- Goal: star (d (-ℓ)) * star (d (-(n - ℓ))) * K(ℓ, n - ℓ)
-    --     = star (d (-ℓ) * d (-n - -ℓ) * K(-ℓ, -n - -ℓ))
+    -- Beta-reduce the (fun m => ...) lambdas from the LHS summand.
+    dsimp only
     rw [show (-n - -ℓ : Fin 2 → ℤ) = -n + ℓ from by ring]
     rw [show (∑ j : Fin 2, sqgVelocitySymbol j (-ℓ) * derivSymbol j (-n + ℓ))
           = ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (n - ℓ) from by
