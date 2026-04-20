@@ -15217,4 +15217,129 @@ theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_from_ini
   exact SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound
     h0 hS α hα hRealC hBound_fwd
 
+/-! ### §10.101 Quadratic growth bound for `galerkinVectorField`
+
+The Galerkin vector field `galerkinVectorField S c` is a bilinear
+polynomial in `c`, so it has *quadratic* growth: there exists a
+constant `C = C(S)` with `‖galerkinVectorField S c‖ ≤ C · ‖c‖²` for
+every `c`. First step toward uniform-ε Picard-Lindelöf and global
+extension under an a priori L² bound.
+
+**Formula.** `C := S.card · K_S`, where
+`K_S := ∑_{(ℓ, k) ∈ S × S} ‖∑_j σ_j(ℓ) · ι·k_j‖` majorises the
+K-kernel on `S × S`. (Overcount — bounds the filtered sum by the full
+bilinear pairing sum.) -/
+
+/-- **The K-kernel factor** `∑_j sqgVelocitySymbol j ℓ · derivSymbol j k`.
+Abstracted for reuse in bounds. -/
+noncomputable def galerkinKKernel
+    (ℓ k : Fin 2 → ℤ) : ℂ :=
+  ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k
+
+/-- **Per-mode pointwise norm bound.** For any `c : ↥S → ℂ` and any
+`m : Fin 2 → ℤ`, `‖galerkinExtend S c m‖ ≤ ‖c‖`. -/
+lemma norm_galerkinExtend_le
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (m : Fin 2 → ℤ) :
+    ‖galerkinExtend S c m‖ ≤ ‖c‖ := by
+  by_cases hm : m ∈ S
+  · rw [galerkinExtend_apply_of_mem S _ hm]
+    exact norm_le_pi_norm c ⟨m, hm⟩
+  · rw [galerkinExtend_apply_of_not_mem S _ hm, norm_zero]
+    exact norm_nonneg _
+
+/-- **Per-mode quadratic bound on `galerkinRHS`, filtered form.** For any
+`c : ↥S → ℂ` and any `m : Fin 2 → ℤ`,
+`‖galerkinRHS S (galerkinExtend S c) m‖ ≤
+    (∑_{ℓ ∈ filter} ‖galerkinKKernel ℓ (m-ℓ)‖) · ‖c‖²`, where the filter
+restricts to ℓ with both `ℓ` and `m - ℓ` in `S`. -/
+lemma norm_galerkinRHS_le_filter_kernel_sq
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (m : Fin 2 → ℤ) :
+    ‖galerkinRHS S (galerkinExtend S c) m‖
+      ≤ (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+            ‖galerkinKKernel ℓ (m - ℓ)‖) * ‖c‖ ^ 2 := by
+  unfold galerkinRHS
+  rw [norm_neg]
+  calc ‖∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))‖
+      ≤ ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ)
+            * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))‖ :=
+        norm_sum_le _ _
+    _ ≤ ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖galerkinKKernel ℓ (m - ℓ)‖ * ‖c‖ ^ 2 := by
+          apply Finset.sum_le_sum
+          intros ℓ _
+          rw [norm_mul, norm_mul]
+          show ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖
+                * ‖galerkinKKernel ℓ (m - ℓ)‖
+              ≤ ‖galerkinKKernel ℓ (m - ℓ)‖ * ‖c‖ ^ 2
+          have h1 : ‖galerkinExtend S c ℓ‖ ≤ ‖c‖ := norm_galerkinExtend_le c ℓ
+          have h2 : ‖galerkinExtend S c (m - ℓ)‖ ≤ ‖c‖ := norm_galerkinExtend_le c (m - ℓ)
+          have hc : 0 ≤ ‖c‖ := norm_nonneg _
+          have hK : 0 ≤ ‖galerkinKKernel ℓ (m - ℓ)‖ := norm_nonneg _
+          have hprod : ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖
+                      ≤ ‖c‖ * ‖c‖ :=
+            mul_le_mul h1 h2 (norm_nonneg _) hc
+          calc ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖
+                  * ‖galerkinKKernel ℓ (m - ℓ)‖
+              ≤ (‖c‖ * ‖c‖) * ‖galerkinKKernel ℓ (m - ℓ)‖ :=
+                mul_le_mul_of_nonneg_right hprod hK
+            _ = ‖galerkinKKernel ℓ (m - ℓ)‖ * ‖c‖ ^ 2 := by ring
+    _ = (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+            ‖galerkinKKernel ℓ (m - ℓ)‖) * ‖c‖ ^ 2 := by
+          rw [← Finset.sum_mul]
+
+/-- **Quadratic growth bound for the Galerkin vector field.** There
+exists `C ≥ 0` (depending only on `S`) with
+`‖galerkinVectorField S c‖ ≤ C · ‖c‖²` for every `c : ↥S → ℂ`.
+
+Formula: `C := ∑_{ℓ ∈ S} ∑_{k ∈ S} ‖galerkinKKernel ℓ k‖`. Per mode, the
+filtered `galerkinRHS` sum is indexed by pairs `(ℓ, m - ℓ) ∈ S × S`,
+which is a subset of all `(ℓ, k) ∈ S × S` under the bijection
+`ℓ ↦ (ℓ, m - ℓ)`. -/
+theorem galerkinVectorField_quadratic_bound
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)] :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ c : ↥S → ℂ,
+      ‖galerkinVectorField S c‖ ≤ C * ‖c‖ ^ 2 := by
+  classical
+  refine ⟨∑ ℓ ∈ S, ∑ k ∈ S, ‖galerkinKKernel ℓ k‖, ?_, ?_⟩
+  · exact Finset.sum_nonneg (fun _ _ => Finset.sum_nonneg (fun _ _ => norm_nonneg _))
+  intro c
+  rw [pi_norm_le_iff_of_nonneg (by positivity)]
+  intro m
+  show ‖galerkinRHS S (galerkinExtend S c) ↑m‖
+      ≤ (∑ ℓ ∈ S, ∑ k ∈ S, ‖galerkinKKernel ℓ k‖) * ‖c‖ ^ 2
+  refine (norm_galerkinRHS_le_filter_kernel_sq c ↑m).trans ?_
+  apply mul_le_mul_of_nonneg_right _ (sq_nonneg _)
+  -- Reindex ℓ ↦ (ℓ, m-ℓ) sends the filter injectively into S ×ˢ S; bound by the full double sum.
+  have hInj : ∀ ℓ ∈ S.filter (fun ℓ => (↑m : Fin 2 → ℤ) - ℓ ∈ S),
+      ∀ ℓ' ∈ S.filter (fun ℓ => (↑m : Fin 2 → ℤ) - ℓ ∈ S),
+      (ℓ, (↑m : Fin 2 → ℤ) - ℓ) = (ℓ', (↑m : Fin 2 → ℤ) - ℓ') → ℓ = ℓ' := by
+    intros ℓ _ ℓ' _ heq
+    exact (Prod.ext_iff.mp heq).1
+  -- Reindex: ∑_{ℓ ∈ filter} ‖K(ℓ, m-ℓ)‖ = ∑_{p ∈ image (ℓ ↦ (ℓ, m-ℓ))} ‖K(p.1, p.2)‖
+  -- And image ⊆ S ×ˢ S.
+  have hSubset : (S.filter (fun ℓ => (↑m : Fin 2 → ℤ) - ℓ ∈ S)).image
+      (fun ℓ => (ℓ, (↑m : Fin 2 → ℤ) - ℓ)) ⊆ S ×ˢ S := by
+    intros p hp
+    rw [Finset.mem_image] at hp
+    obtain ⟨ℓ, hℓ, rfl⟩ := hp
+    rw [Finset.mem_filter] at hℓ
+    rw [Finset.mem_product]
+    exact ⟨hℓ.1, hℓ.2⟩
+  calc ∑ ℓ ∈ S.filter (fun ℓ => (↑m : Fin 2 → ℤ) - ℓ ∈ S),
+          ‖galerkinKKernel ℓ (↑m - ℓ)‖
+      = ∑ p ∈ (S.filter (fun ℓ => (↑m : Fin 2 → ℤ) - ℓ ∈ S)).image
+              (fun ℓ => (ℓ, (↑m : Fin 2 → ℤ) - ℓ)),
+          ‖galerkinKKernel p.1 p.2‖ := by
+            rw [Finset.sum_image (fun ℓ hℓ ℓ' hℓ' h => hInj ℓ hℓ ℓ' hℓ' h)]
+    _ ≤ ∑ p ∈ S ×ˢ S, ‖galerkinKKernel p.1 p.2‖ :=
+          Finset.sum_le_sum_of_subset_of_nonneg hSubset
+            (fun _ _ _ => norm_nonneg _)
+    _ = ∑ ℓ ∈ S, ∑ k ∈ S, ‖galerkinKKernel ℓ k‖ := by
+          rw [Finset.sum_product]
+
 end SqgIdentity
