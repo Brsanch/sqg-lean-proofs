@@ -18870,4 +18870,33 @@ theorem mFourierCoeff_galerkinToLp_sqgBox_zero
   rw [mFourierCoeff_galerkinToLp,
       galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox n)]
 
+/-! ### §10.143 Per-mode convergence at the coefficient level
+
+Consequence of §10.141's strong-`L²` → per-mode Fourier convergence
+applied to the Aubin–Lions extraction's specific sequence
+`galerkinToLp (sqgBox (nsub k)) (α (nsub k) t)`. Every Fourier mode
+of the extracted sequence converges to the corresponding mode of
+`ext.θ_lim t`. Gives the "per-mode limit function" `b(m, t)` used by
+downstream axiom-transfer arguments. -/
+
+/-- **Per-mode convergence for an Aubin–Lions extraction.** -/
+theorem tendsto_mFourierCoeff_of_aubinLions
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    {t : ℝ} (ht : 0 ≤ t) (m : Fin 2 → ℤ) :
+    Filter.Tendsto
+      (fun k : ℕ =>
+        mFourierCoeff (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t)) m)
+      Filter.atTop (nhds (mFourierCoeff (ext.θ_lim t) m)) :=
+  tendsto_mFourierCoeff_of_tendsto_L2Sq (ext.tendsto_L2 t ht) m
+
+/-- **Initial-data match at the Fourier-coefficient level.** -/
+theorem mFourierCoeff_aubinLions_init
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α) (m : Fin 2 → ℤ) :
+    mFourierCoeff (ext.θ_lim 0) m = mFourierCoeff θ m := by
+  rw [ext.init_eq]
+
 end SqgIdentity
