@@ -4,6 +4,42 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.24 — 2026-04-20
+
+Picard-Lindelöf wrapper with ball-containment. Extends v0.4.23 by ~50 lines.
+
+- **§10.116.A `galerkin_local_exists_with_ball_containment`** — variant
+  of `galerkin_local_exists_given_bounds` that additionally returns
+  `α t ∈ closedBall c₀ a` for all `t : ℝ`. Replays mathlib's
+  `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` proof
+  in the Galerkin setting to expose `ODE.FunSpace.compProj_mem_closedBall`,
+  which the standard mathlib wrapper proves internally but hides in
+  the existential form.
+
+This is the foundation for the §10.116 program (universal `hInv`
+discharge on the real-symmetric class). The remaining steps involve:
+
+1. Within-`Icc` variant of `hRealC_of_initial_and_bound_on_Ici`
+   (§10.114) — needed to propagate real-symmetry over a single
+   `galerkin_forward_step` interval `[0, ε]` rather than `Ici 0`.
+2. `galerkin_realSym_forward_step` wiring §10.116.A + the within-Icc
+   §10.114 variant + `galerkin_hInv_discharged` to produce a single
+   real-symmetric Picard step.
+3. Refactoring `galerkin_chain_sequence` (§10.105) to track
+   real-symmetry through `Classical.choose`, producing a time-global
+   `α` whose per-step `hInv` is discharged internally.
+4. The final unconditional capstone combining 1–3 with §10.115.
+
+The mathematical obstacle noted when scoping the program — that
+pi-norm `‖c‖ ≤ R/(2·√|S|)` is not preserved by ℓ² conservation —
+is resolved by working with ℓ²-norm as the chain invariant: ℓ²-norm
+is preserved exactly by `galerkinEnergyH0_const_on_Icc`, so
+`‖c_k‖_2 ≤ R/2` holds at every `k`, and
+`‖α t‖_π ≤ ‖α t‖_2 = ‖c_k‖_2 ≤ R/2` gives the pi-norm bound on the
+next step (tighter than §10.111's bound).
+
+17,222 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.23 — 2026-04-20
 
 Time-global capstone with real-symmetric initial data. Extends v0.4.22
