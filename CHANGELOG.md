@@ -4,6 +4,40 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.16 — 2026-04-20
+
+Time-global existence steps 5-6 of 8: chain sequence `(η, β)` and
+global function definition with pointwise norm bound. Extends v0.4.15
+by ~123 lines.
+
+- **§10.105 `galerkin_chain_sequence`** — via `Nat.rec` +
+  `Classical.choose` on `hStep`, produce two sequences:
+  `η : ℕ → ↥S → ℂ` (endpoint values with `η 0 = c₀`, `‖η n‖ ≤ R/2`)
+  and `β : ℕ → ℝ → ↥S → ℂ` (step solutions with `β n 0 = η n`,
+  `β n ε = η (n+1)`, `HasDerivWithinAt` on `[0, ε]`, and norm
+  `≤ R/2` throughout). `chainEndpt` is built as a `ℕ`-indexed
+  family in `{c // ‖c‖ ≤ R/2}`, with the bound at `n+1` discharged
+  by `hInv` applied at step `n`.
+- **§10.106 `galerkin_global_alpha_exists`** — define the global
+  function `α : ℝ → ↥S → ℂ` piecewise:
+  `α t = β ⌊t/ε⌋₊ (t − ⌊t/ε⌋₊ · ε)`. Establishes `α 0 = c₀`
+  (using `Nat.floor_eq_zero` at `t=0`) and `‖α t‖ ≤ R/2` for all
+  `t ≥ 0` (using `le_div_iff₀` + `div_lt_iff₀` on the Nat.floor
+  bracketing `⌊t/ε⌋₊ · ε ≤ t < (⌊t/ε⌋₊ + 1) · ε`, then applying
+  `hβB`).
+
+Remaining for full time-global existence (deferred):
+§10.107 global `HasDerivAt`/`HasDerivWithinAt` assembly (junction
+handling at each `k·ε`, strict interior via `HasDerivWithinAt.hasDerivAt`
++ translation), §10.108 final capstone combining all pieces.
+
+16,441 lines, zero `sorry`, zero new axioms.
+
+CI pitfalls caught (v0.4.16): `_` placeholders in `stepSpec _ _`
+cannot be inferred (chainEndpt value is ambiguous) — must pass
+explicit `chainEndpt n`; `div_le_iff₀` orients as `a/c ≤ b`, so
+`↑k ≤ t/ε` requires `le_div_iff₀` instead.
+
 ## v0.4.15 — 2026-04-20
 
 Time-global existence step 4 of 8: Nat-indexed chain of local Picard
