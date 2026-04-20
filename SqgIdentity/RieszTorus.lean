@@ -15546,8 +15546,6 @@ theorem galerkin_chain_n_step
     refine ⟨γ, hγ0, ?_, ?_⟩
     · -- HasDerivWithinAt γ ... (Icc 0 Tn1) at each t ∈ Icc 0 Tn1.
       intros t ht
-      have ht1_eq : ((n + 1 : ℕ) : ℝ) * ε = Tn1 := rfl
-      rw [show (↑(n + 1) : ℝ) * ε = Tn1 from rfl] at ht ⊢
       by_cases ht_le : t ≤ Tn
       · -- Left piece.
         have ht_left : t ∈ Set.Icc (0 : ℝ) Tn := ⟨ht.1, ht_le⟩
@@ -15597,7 +15595,6 @@ theorem galerkin_chain_n_step
         exact hγ_on_right.mono hsub
     · -- Norm bound on [0, Tn1].
       intros t ht
-      rw [show (↑(n + 1) : ℝ) * ε = Tn1 from rfl] at ht
       by_cases ht_le : t ≤ Tn
       · rw [hγ_left t ht_le]
         exact hα_nB t ⟨ht.1, ht_le⟩
