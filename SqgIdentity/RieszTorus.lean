@@ -15729,4 +15729,228 @@ theorem galerkin_global_alpha_exists
       nlinarith
     exact hβB k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩
 
+/-! ### §10.107 Global `HasDerivWithinAt` assembly
+
+Strengthens §10.106 with `HasDerivWithinAt` on `Set.Ici 0` at each `t ≥ 0`.
+The construction of `α` is the same Nat-floor piecewise formula; the new
+content is the derivative argument:
+
+* On each step `[k·ε, (k+1)·ε]`, `α` equals the translated β-piece
+  `β k (· − k·ε)` (endpoints included via `β n ε = η (n+1) = β (n+1) 0`).
+* Translated β has `HasDerivWithinAt` on `[k·ε, (k+1)·ε]` via
+  `HasDerivWithinAt.scomp` with the translation `(· − k·ε)`.
+* Case analysis `t > k·ε` (strict interior), `t = k·ε ≥ 1·ε` (junction),
+  or `t = 0` uses `hasDerivWithinAt_inter` with an appropriate open
+  neighborhood + `HasDerivWithinAt.union` at junctions. -/
+
+theorem galerkin_global_hasDerivWithinAt_conditional
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R ε : ℝ} (hε : 0 < ε)
+    (hStep : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+        ∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hInv : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c₀ →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) := by
+  classical
+  obtain ⟨η, β, hη0, hηB, hβ0, hβε, hβD, hβB⟩ :=
+    galerkin_chain_sequence S hε hStep hInv c₀ hc₀
+  set α : ℝ → (↥S → ℂ) :=
+    fun t => β (⌊t / ε⌋₊) (t - (⌊t / ε⌋₊ : ℝ) * ε) with hα_def
+  -- Helper: α equals β k (· − k·ε) on [k·ε, (k+1)·ε].
+  have hα_step_eq : ∀ (k : ℕ) (t' : ℝ),
+      (k : ℝ) * ε ≤ t' → t' ≤ ((k : ℝ) + 1) * ε →
+      α t' = β k (t' - (k : ℝ) * ε) := by
+    intros k t' ht_lo ht_hi
+    by_cases heq : t' = ((k : ℝ) + 1) * ε
+    · -- Right endpoint: floor jumps to k+1.
+      have hfl : ⌊t' / ε⌋₊ = k + 1 := by
+        rw [heq]
+        have h1 : ((k : ℝ) + 1) * ε / ε = ((k + 1 : ℕ) : ℝ) := by
+          push_cast; field_simp
+        rw [h1]
+        exact Nat.floor_natCast _
+      show β (⌊t' / ε⌋₊) (t' - (⌊t' / ε⌋₊ : ℝ) * ε) = β k (t' - (k : ℝ) * ε)
+      rw [hfl]
+      -- β (k+1) (t' - (k+1)·ε) where t' = (k+1)·ε → β (k+1) 0 = η (k+1).
+      -- β k (t' - k·ε) where t' = (k+1)·ε → β k ε = η (k+1).
+      rw [heq]
+      have h_lhs : (((k : ℝ) + 1) * ε - ((k + 1 : ℕ) : ℝ) * ε) = 0 := by
+        push_cast; ring
+      have h_rhs : (((k : ℝ) + 1) * ε - (k : ℝ) * ε) = ε := by ring
+      rw [h_lhs, h_rhs, hβ0 (k + 1), hβε k]
+    · -- Strict interior.
+      have ht_lt : t' < ((k : ℝ) + 1) * ε := lt_of_le_of_ne ht_hi heq
+      have ht_nn : 0 ≤ t' := le_trans (mul_nonneg (Nat.cast_nonneg _) hε.le) ht_lo
+      have hfl : ⌊t' / ε⌋₊ = k := by
+        rw [Nat.floor_eq_iff (by positivity)]
+        refine ⟨?_, ?_⟩
+        · exact (le_div_iff₀ hε).mpr ht_lo
+        · rw [div_lt_iff₀ hε]
+          linarith
+      show β (⌊t' / ε⌋₊) (t' - (⌊t' / ε⌋₊ : ℝ) * ε) = β k (t' - (k : ℝ) * ε)
+      rw [hfl]
+  -- Helper: translated β has HasDerivWithinAt on [k·ε, (k+1)·ε].
+  have hβ_step_transD : ∀ (k : ℕ) (t' : ℝ),
+      t' ∈ Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) →
+      HasDerivWithinAt (fun y => β k (y - (k : ℝ) * ε))
+        (galerkinVectorField S (β k (t' - (k : ℝ) * ε)))
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t' := by
+    intros k t' ht'
+    have hmem : t' - (k : ℝ) * ε ∈ Set.Icc (0 : ℝ) ε := by
+      refine ⟨sub_nonneg.mpr ht'.1, ?_⟩
+      have := ht'.2; nlinarith
+    have hg : HasDerivWithinAt (β k) (galerkinVectorField S (β k (t' - (k : ℝ) * ε)))
+        (Set.Icc (0 : ℝ) ε) (t' - (k : ℝ) * ε) := hβD k _ hmem
+    have hh : HasDerivWithinAt (fun y : ℝ => y - (k : ℝ) * ε) 1
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t' :=
+      (hasDerivWithinAt_id t' _).sub_const _
+    have hst : Set.MapsTo (fun y : ℝ => y - (k : ℝ) * ε)
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) (Set.Icc (0 : ℝ) ε) := by
+      intros y hy
+      refine ⟨sub_nonneg.mpr hy.1, ?_⟩
+      have := hy.2; nlinarith
+    have key := hg.scomp t' hh hst
+    simpa using key
+  -- Helper: HasDerivWithinAt α on step interval.
+  have hα_step_D : ∀ (k : ℕ) (t' : ℝ),
+      t' ∈ Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) →
+      HasDerivWithinAt α (galerkinVectorField S (α t'))
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t' := by
+    intros k t' ht'
+    have hα_t' : α t' = β k (t' - (k : ℝ) * ε) := hα_step_eq k t' ht'.1 ht'.2
+    rw [hα_t']
+    refine (hβ_step_transD k t' ht').congr ?_ ?_
+    · intros y hy; exact hα_step_eq k y hy.1 hy.2
+    · exact hα_step_eq k t' ht'.1 ht'.2
+  refine ⟨α, ?_, ?_, ?_⟩
+  · -- α 0 = c₀
+    show β (⌊(0 : ℝ) / ε⌋₊) (0 - (⌊(0 : ℝ) / ε⌋₊ : ℝ) * ε) = c₀
+    have h0 : ⌊(0 : ℝ) / ε⌋₊ = 0 := by simp [Nat.floor_eq_zero, hε]
+    rw [h0]; simp [hβ0, hη0]
+  · -- Norm bound.
+    intros t ht
+    set k : ℕ := ⌊t / ε⌋₊ with hk_def
+    have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+    have hk_lo : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+    have hk_hi : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+    have h_shift_nn : 0 ≤ t - (k : ℝ) * ε := by
+      have h : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo
+      linarith
+    have h_shift_lt : t - (k : ℝ) * ε < ε := by
+      have h1 : t < ((k : ℝ) + 1) * ε := (div_lt_iff₀ hε).mp hk_hi
+      nlinarith
+    exact hβB k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩
+  · -- HasDerivWithinAt α on Ici 0.
+    intros t ht
+    set k : ℕ := ⌊t / ε⌋₊ with hk_def
+    have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+    have hk_lo_div : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+    have hk_hi_div : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+    have hk_lo : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo_div
+    have hk_hi : t ≤ ((k : ℝ) + 1) * ε :=
+      le_of_lt ((div_lt_iff₀ hε).mp hk_hi_div)
+    have h_kε_nn : 0 ≤ (k : ℝ) * ε := mul_nonneg (Nat.cast_nonneg _) hε.le
+    have h_kε1_nn : 0 ≤ ((k : ℝ) + 1) * ε := by positivity
+    have h_Ik_deriv : HasDerivWithinAt α (galerkinVectorField S (α t))
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t :=
+      hα_step_D k t ⟨hk_lo, hk_hi⟩
+    by_cases ht_pos : 0 < t
+    · -- t > 0 case. Split on t = k*ε junction or strict interior.
+      by_cases ht_eq_kε : t = (k : ℝ) * ε
+      · -- Junction: if k ≥ 1, combine with previous step.
+        -- (If k = 0 then t = 0, but we're in t > 0 case, so k ≥ 1.)
+        have hk_pos : 0 < k := by
+          rcases Nat.eq_zero_or_pos k with hk0 | hkp
+          · exfalso
+            simp [hk0] at ht_eq_kε
+            exact ne_of_gt ht_pos ht_eq_kε.symm
+          · exact hkp
+        -- Previous step's derivative at right endpoint.
+        obtain ⟨k', hk'_def⟩ : ∃ k', k = k' + 1 := Nat.exists_eq_succ_of_ne_zero hk_pos.ne'
+        subst hk'_def
+        have h_kε_eq : ((k' + 1 : ℕ) : ℝ) * ε = ((k' : ℝ) + 1) * ε := by push_cast; ring
+        have h_t_eq_prev_top : t = ((k' : ℝ) + 1) * ε := by
+          rw [ht_eq_kε]; push_cast; ring
+        -- Previous step interval: Icc (k'·ε) ((k'+1)·ε), t is its right endpoint.
+        have h_prev_mem : t ∈ Set.Icc ((k' : ℝ) * ε) (((k' : ℝ) + 1) * ε) := by
+          refine ⟨?_, h_t_eq_prev_top.le⟩
+          rw [h_t_eq_prev_top]; nlinarith
+        have h_prev_deriv : HasDerivWithinAt α (galerkinVectorField S (α t))
+            (Set.Icc ((k' : ℝ) * ε) (((k' : ℝ) + 1) * ε)) t :=
+          hα_step_D k' t h_prev_mem
+        -- Union.
+        have h_join : ((k' : ℝ) + 1) * ε = ((k' + 1 : ℕ) : ℝ) * ε := by push_cast; ring
+        have h_prev_le_cur : ((k' : ℝ) + 1) * ε = ((k' + 1 : ℕ) : ℝ) * ε := h_join
+        have h_curr_hi : ((k' + 1 : ℕ) : ℝ) + 1 = (k' : ℝ) + 2 := by push_cast; ring
+        -- We want to union Icc (k'·ε) ((k'+1)·ε) and Icc ((k'+1)·ε) ((k'+2)·ε)
+        -- into Icc (k'·ε) ((k'+2)·ε).
+        have h_kε_le : ((k' : ℝ) * ε) ≤ ((k' + 1 : ℕ) : ℝ) * ε := by
+          rw [h_prev_le_cur.symm]; nlinarith
+        have h_kε_le' : ((k' + 1 : ℕ) : ℝ) * ε ≤ (((k' + 1 : ℕ) : ℝ) + 1) * ε := by
+          nlinarith
+        have h_union := h_prev_deriv.union h_Ik_deriv
+        -- Rewrite the union to a single Icc.
+        have h_icc_union :
+            Set.Icc ((k' : ℝ) * ε) (((k' : ℝ) + 1) * ε) ∪
+              Set.Icc (((k' + 1 : ℕ) : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε)
+            = Set.Icc ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) := by
+          rw [← h_prev_le_cur]
+          exact Set.Icc_union_Icc_eq_Icc h_kε_le (by nlinarith)
+        rw [h_icc_union] at h_union
+        -- Now extend to Ici 0 via hasDerivWithinAt_inter with open nbhd of t.
+        have hU_nhds :
+            Set.Ioo ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) ∈ nhds t := by
+          apply Ioo_mem_nhds
+          · rw [h_t_eq_prev_top, ← h_prev_le_cur]
+            nlinarith
+          · rw [h_t_eq_prev_top, ← h_prev_le_cur]; nlinarith
+        rw [← hasDerivWithinAt_inter hU_nhds]
+        have h_kε'_nn : 0 ≤ (k' : ℝ) * ε := mul_nonneg (Nat.cast_nonneg _) hε.le
+        have hsub : Set.Ici (0 : ℝ) ∩
+            Set.Ioo ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) ⊆
+            Set.Icc ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) := by
+          intros x hx
+          exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
+        exact h_union.mono hsub
+      · -- Strict interior of step: k·ε < t < (k+1)·ε.
+        have hk_lt : (k : ℝ) * ε < t := lt_of_le_of_ne hk_lo (Ne.symm ht_eq_kε)
+        have hk_hi_strict : t < ((k : ℝ) + 1) * ε :=
+          (div_lt_iff₀ hε).mp hk_hi_div
+        have hU_nhds :
+            Set.Ioo ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) ∈ nhds t :=
+          Ioo_mem_nhds hk_lt hk_hi_strict
+        rw [← hasDerivWithinAt_inter hU_nhds]
+        have hsub : Set.Ici (0 : ℝ) ∩
+            Set.Ioo ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) ⊆
+            Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
+          intros x hx
+          exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
+        exact h_Ik_deriv.mono hsub
+    · -- t = 0 case.
+      push_neg at ht_pos
+      have ht0 : t = 0 := le_antisymm ht_pos ht
+      subst ht0
+      -- k = 0.
+      have hk0 : k = 0 := by simp [hk_def, Nat.floor_eq_zero, hε]
+      -- h_Ik_deriv: HasDerivWithinAt α ... (Icc (0·ε) ((0+1)·ε)) 0 = Icc 0 ε at 0.
+      have h_Iε_nhd : Set.Iio ε ∈ nhds (0 : ℝ) := Iio_mem_nhds hε
+      rw [← hasDerivWithinAt_inter h_Iε_nhd]
+      have hsub : Set.Ici (0 : ℝ) ∩ Set.Iio ε ⊆
+          Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
+        intros x hx
+        rw [hk0]
+        refine ⟨?_, ?_⟩
+        · simp; exact hx.1
+        · simp; linarith [hx.2]
+      exact h_Ik_deriv.mono hsub
+
 end SqgIdentity
