@@ -4,6 +4,42 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.18 — 2026-04-20
+
+Pure norm bound bridging `ℓ²`-sum conservation (§10.97) and the
+Pi sup-norm on `↥S → ℂ` that §10.108's ball-invariance hypothesis
+references. Extends v0.4.17 by ~64 lines.
+
+- **§10.109 three lemmas**:
+  - `pi_sum_sq_le_card_mul_sup_sq` — `∑_m ‖c m‖² ≤ |S|·‖c‖²` on any
+    finite-index Pi with seminormed codomain.
+  - `pi_term_sq_le_sum_sq` — `‖c m‖² ≤ ∑_m' ‖c m'‖²` (single term
+    bounded by sum of squares).
+  - `galerkin_supNorm_le_sqrt_card_of_sum_sq_const` — if
+    `∑_m ‖α t m‖² = ∑_m ‖α 0 m‖²` for all `t`, then
+    `‖α t‖ ≤ √|S|·‖α 0‖`. Used to convert §10.97's sum-conservation
+    into a sup-norm bound with a `√|S|` factor.
+
+The `√|S|` factor is intrinsic to the Pi sup-norm ↔ `ℓ²` relation;
+it means §10.108's `hInv` cannot be discharged to preserve the
+`R/2` sup-ball exactly — rather, the discharged bound is
+`‖α t‖ ≤ R/2` given `‖c₀‖ ≤ R/(2·√|S|)`. Capstone wrapper TBD.
+
+Remaining toward unconditional time-global existence:
+- §10.110: within-interval L²-sum conservation (`HasDerivWithinAt`
+  version of §10.97's `galerkinEnergyH0_const`). Needs
+  `HasDerivWithinAt.fun_sum` + `.norm_sq` (both present in mathlib)
+  and `constant_of_has_deriv_right_zero` for the interval constancy.
+  Estimated ~150-200 lines.
+- §10.111 (or revised §10.108): wire §10.109 + §10.110 to discharge
+  `hInv` unconditionally, with the `R/(2·√|S|)` hypothesis reshape.
+
+16,757 lines, zero `sorry`, zero new axioms.
+
+CI pitfalls caught (v0.4.18): a stray space before the closing
+norm bar — `‖c m' ‖` — breaks the parser (the `‖` parser expects
+the previous token to abut). Keep norms tight: `‖c m'‖`.
+
 ## v0.4.17 — 2026-04-20
 
 Time-global existence steps 7-8 of 8 — program complete (conditional on
