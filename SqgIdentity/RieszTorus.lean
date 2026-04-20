@@ -14922,4 +14922,22 @@ theorem galerkinRHS_neg_eq_star_of_realSymmetric
     rw [show (-n - ℓ : Fin 2 → ℤ) = -(n + ℓ) from by ring,
         hRealC (n + ℓ) h_n_plus_ℓ_S]
 
+/-- **Subtype-level lift of §10.99.** For a Galerkin coefficient vector
+`c : ↥S → ℂ` whose zero-extension satisfies real-coefficient symmetry on
+`S`, the `galerkinVectorField` satisfies
+`galerkinVectorField S c ⟨-n, hS n hn⟩ = star (galerkinVectorField S c ⟨n, hn⟩)`
+for every `n ∈ S`. Direct corollary of
+`galerkinRHS_neg_eq_star_of_realSymmetric` unfolded at the subtype level. -/
+theorem galerkinVectorField_neg_eq_star_of_realSymmetric
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (c : ↥S → ℂ)
+    (hRealC : ∀ n ∈ S, galerkinExtend S c (-n) = star (galerkinExtend S c n))
+    {n : Fin 2 → ℤ} (hn : n ∈ S) :
+    galerkinVectorField S c ⟨-n, hS n hn⟩
+      = star (galerkinVectorField S c ⟨n, hn⟩) := by
+  show galerkinRHS S (galerkinExtend S c) (-n)
+      = star (galerkinRHS S (galerkinExtend S c) n)
+  exact galerkinRHS_neg_eq_star_of_realSymmetric hS _ hRealC
+
 end SqgIdentity
