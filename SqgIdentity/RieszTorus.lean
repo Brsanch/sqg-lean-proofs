@@ -18716,7 +18716,7 @@ every mode `m`, because the Fourier-coefficient functional is
 continuous on `Lp ℂ 2`. This packages the per-mode limit function
 `b(m, t) := mFourierCoeff (θ_lim t) m` consumed by
 `IsGalerkinLimitData`. -/
-def aubinLionsLimitCoeff
+noncomputable def aubinLionsLimitCoeff
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (ext : HasAubinLionsExtraction θ α) :
