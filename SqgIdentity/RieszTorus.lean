@@ -15342,4 +15342,87 @@ theorem galerkinVectorField_quadratic_bound
     _ = ∑ ℓ ∈ S, ∑ k ∈ S, ‖galerkinKKernel ℓ k‖ := by
           rw [Finset.sum_product]
 
+/-! ### §10.102 Uniform-ε Picard on a fixed outer ball
+
+Given radius `R > 0`, extract Lipschitz constant and uniform bound on
+`closedBall 0 R` (via `ContDiffOn.exists_lipschitzOnWith` and the
+quadratic growth bound §10.101), then pick a step size `ε > 0`
+depending only on `R` and `S`. For any `c₀ ∈ closedBall 0 (R/2)`,
+Picard-Lindelöf on `closedBall c₀ (R/2) ⊆ closedBall 0 R` produces a
+local solution on `[-ε, ε]`. -/
+
+theorem galerkin_uniform_ε_picard
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R : ℝ} (hR : 0 < R) :
+    ∃ ε : ℝ, 0 < ε ∧
+      ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+        ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+          ∀ t ∈ Set.Icc (-ε) ε,
+            HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (-ε) ε) t := by
+  classical
+  -- Step 1: Lipschitz on closedBall 0 R.
+  obtain ⟨K, hK⟩ : ∃ K, LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall (0 : ↥S → ℂ) R) := by
+    refine (galerkinVectorField_contDiff S (n := 1)).contDiffOn.exists_lipschitzOnWith
+      ?_ (convex_closedBall 0 R) (isCompact_closedBall 0 R)
+    decide
+  -- Step 2: uniform bound L := C · R² on closedBall 0 R.
+  obtain ⟨C, hC_nn, hC_bound⟩ := galerkinVectorField_quadratic_bound S
+  set L_real : ℝ := C * R ^ 2 with hL_def
+  have hL_nn : 0 ≤ L_real := by positivity
+  have hL_nn' : (0 : ℝ) ≤ L_real + 1 := by linarith
+  set L : NNReal := ⟨L_real, hL_nn⟩ with hL_NN
+  have hL_coe : (L : ℝ) = L_real := rfl
+  have hBound_ball : ∀ c ∈ Metric.closedBall (0 : ↥S → ℂ) R,
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) := by
+    intros c hc
+    rw [Metric.mem_closedBall, dist_zero_right] at hc
+    calc ‖galerkinVectorField S c‖
+        ≤ C * ‖c‖ ^ 2 := hC_bound c
+      _ ≤ C * R ^ 2 := by
+          apply mul_le_mul_of_nonneg_left (pow_le_pow_left (norm_nonneg _) hc 2) hC_nn
+      _ = L_real := rfl
+  -- Step 3: pick ε = (R/2) / (L + 1), so L · ε ≤ R/2.
+  set ε : ℝ := (R / 2) / ((L : ℝ) + 1) with hε_def
+  have hLp1_pos : 0 < (L : ℝ) + 1 := by rw [hL_coe]; linarith
+  have hR2_pos : 0 < R / 2 := by linarith
+  have hε_pos : 0 < ε := div_pos hR2_pos hLp1_pos
+  refine ⟨ε, hε_pos, ?_⟩
+  -- Step 4: for any c₀ with ‖c₀‖ ≤ R/2, apply galerkin_local_exists_given_bounds.
+  intro c₀ hc₀_norm
+  have h_ball_sub : Metric.closedBall c₀ (R / 2) ⊆ Metric.closedBall (0 : ↥S → ℂ) R := by
+    intros x hx
+    rw [Metric.mem_closedBall, dist_zero_right]
+    rw [Metric.mem_closedBall] at hx
+    calc ‖x‖ = ‖(x - c₀) + c₀‖ := by rw [sub_add_cancel]
+      _ ≤ ‖x - c₀‖ + ‖c₀‖ := norm_add_le _ _
+      _ = dist x c₀ + ‖c₀‖ := by rw [dist_eq_norm]
+      _ ≤ R / 2 + R / 2 := add_le_add hx hc₀_norm
+      _ = R := by ring
+  have hLip_small : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (R / 2)) := hK.mono h_ball_sub
+  have hBound_small : ∀ c ∈ Metric.closedBall c₀ (R / 2),
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) :=
+    fun c hc => hBound_ball c (h_ball_sub hc)
+  set a : NNReal := ⟨R / 2, hR2_pos.le⟩ with ha_def
+  have ha_coe : (a : ℝ) = R / 2 := rfl
+  have hTime : (L : ℝ) * ε ≤ (a : ℝ) := by
+    rw [ha_coe, hε_def]
+    rw [hL_coe]
+    rw [show (L_real) * (R / 2 / (L_real + 1)) = L_real * (R/2) / (L_real + 1) from by ring]
+    rw [div_le_iff hLp1_pos]
+    have : L_real * (R/2) ≤ (L_real + 1) * (R/2) := by
+      apply mul_le_mul_of_nonneg_right _ hR2_pos.le
+      linarith
+    calc L_real * (R/2) ≤ (L_real + 1) * (R/2) := this
+      _ = R / 2 * (L_real + 1) := by ring
+  -- Rewrite Lipschitz/bound in terms of ↑a.
+  have hLip_small' : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (a : ℝ)) := by
+    rw [ha_coe]; exact hLip_small
+  have hBound_small' : ∀ c ∈ Metric.closedBall c₀ (a : ℝ),
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) := by
+    rw [ha_coe]; exact hBound_small
+  exact galerkin_local_exists_given_bounds S c₀ hε_pos hLip_small' hBound_small' hTime
+
 end SqgIdentity
