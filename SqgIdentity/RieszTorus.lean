@@ -15866,58 +15866,59 @@ theorem galerkin_global_hasDerivWithinAt_conditional
     by_cases ht_pos : 0 < t
     · -- t > 0 case. Split on t = k*ε junction or strict interior.
       by_cases ht_eq_kε : t = (k : ℝ) * ε
-      · -- Junction: if k ≥ 1, combine with previous step.
-        -- (If k = 0 then t = 0, but we're in t > 0 case, so k ≥ 1.)
+      · -- Junction: k ≥ 1. Combine with previous step [k-1)·ε, k·ε].
         have hk_pos : 0 < k := by
           rcases Nat.eq_zero_or_pos k with hk0 | hkp
           · exfalso
-            simp [hk0] at ht_eq_kε
-            exact ne_of_gt ht_pos ht_eq_kε.symm
+            rw [hk0, Nat.cast_zero, zero_mul] at ht_eq_kε
+            exact ne_of_gt ht_pos ht_eq_kε
           · exact hkp
-        -- Previous step's derivative at right endpoint.
-        obtain ⟨k', hk'_def⟩ : ∃ k', k = k' + 1 := Nat.exists_eq_succ_of_ne_zero hk_pos.ne'
-        subst hk'_def
-        have h_kε_eq : ((k' + 1 : ℕ) : ℝ) * ε = ((k' : ℝ) + 1) * ε := by push_cast; ring
-        have h_t_eq_prev_top : t = ((k' : ℝ) + 1) * ε := by
-          rw [ht_eq_kε]; push_cast; ring
-        -- Previous step interval: Icc (k'·ε) ((k'+1)·ε), t is its right endpoint.
-        have h_prev_mem : t ∈ Set.Icc ((k' : ℝ) * ε) (((k' : ℝ) + 1) * ε) := by
-          refine ⟨?_, h_t_eq_prev_top.le⟩
-          rw [h_t_eq_prev_top]; nlinarith
-        have h_prev_deriv : HasDerivWithinAt α (galerkinVectorField S (α t))
-            (Set.Icc ((k' : ℝ) * ε) (((k' : ℝ) + 1) * ε)) t :=
-          hα_step_D k' t h_prev_mem
-        -- Union.
-        have h_join : ((k' : ℝ) + 1) * ε = ((k' + 1 : ℕ) : ℝ) * ε := by push_cast; ring
-        have h_prev_le_cur : ((k' : ℝ) + 1) * ε = ((k' + 1 : ℕ) : ℝ) * ε := h_join
-        have h_curr_hi : ((k' + 1 : ℕ) : ℝ) + 1 = (k' : ℝ) + 2 := by push_cast; ring
-        -- We want to union Icc (k'·ε) ((k'+1)·ε) and Icc ((k'+1)·ε) ((k'+2)·ε)
-        -- into Icc (k'·ε) ((k'+2)·ε).
-        have h_kε_le : ((k' : ℝ) * ε) ≤ ((k' + 1 : ℕ) : ℝ) * ε := by
-          rw [h_prev_le_cur.symm]; nlinarith
-        have h_kε_le' : ((k' + 1 : ℕ) : ℝ) * ε ≤ (((k' + 1 : ℕ) : ℝ) + 1) * ε := by
+        set kp : ℕ := k - 1 with hkp_def
+        have hkp_succ : kp + 1 = k := Nat.succ_pred_eq_of_pos hk_pos
+        have hkp_cast : (kp : ℝ) + 1 = (k : ℝ) := by
+          have := congrArg (Nat.cast (R := ℝ)) hkp_succ
+          push_cast at this; linarith
+        -- Previous step interval: Icc ((kp:ℝ)·ε) (((kp:ℝ)+1)·ε) = Icc ((kp:ℝ)·ε) ((k:ℝ)·ε).
+        have h_prev_top_eq : ((kp : ℝ) + 1) * ε = (k : ℝ) * ε := by rw [hkp_cast]
+        have h_prev_mem : t ∈ Set.Icc ((kp : ℝ) * ε) (((kp : ℝ) + 1) * ε) := by
+          rw [h_prev_top_eq]
+          refine ⟨?_, ht_eq_kε.le⟩
+          rw [ht_eq_kε]
+          have : (kp : ℝ) ≤ (k : ℝ) := by exact_mod_cast Nat.sub_le k 1
           nlinarith
+        have h_prev_deriv : HasDerivWithinAt α (galerkinVectorField S (α t))
+            (Set.Icc ((kp : ℝ) * ε) (((kp : ℝ) + 1) * ε)) t :=
+          hα_step_D kp t h_prev_mem
+        -- Rewrite h_prev_deriv on Icc ((kp:ℝ)·ε) ((k:ℝ)·ε).
+        rw [h_prev_top_eq] at h_prev_deriv
+        -- Union h_prev_deriv and h_Ik_deriv to get on Icc ((kp:ℝ)·ε) (((k:ℝ)+1)·ε).
         have h_union := h_prev_deriv.union h_Ik_deriv
-        -- Rewrite the union to a single Icc.
+        have h_kp_le_k : (kp : ℝ) * ε ≤ (k : ℝ) * ε := by
+          have : (kp : ℝ) ≤ (k : ℝ) := by exact_mod_cast Nat.sub_le k 1
+          nlinarith
+        have h_k_le_succ : (k : ℝ) * ε ≤ ((k : ℝ) + 1) * ε := by nlinarith
         have h_icc_union :
-            Set.Icc ((k' : ℝ) * ε) (((k' : ℝ) + 1) * ε) ∪
-              Set.Icc (((k' + 1 : ℕ) : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε)
-            = Set.Icc ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) := by
-          rw [← h_prev_le_cur]
-          exact Set.Icc_union_Icc_eq_Icc h_kε_le (by nlinarith)
+            Set.Icc ((kp : ℝ) * ε) ((k : ℝ) * ε) ∪
+              Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)
+            = Set.Icc ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) :=
+          Set.Icc_union_Icc_eq_Icc h_kp_le_k h_k_le_succ
         rw [h_icc_union] at h_union
-        -- Now extend to Ici 0 via hasDerivWithinAt_inter with open nbhd of t.
+        -- Extend to Ici 0 via hasDerivWithinAt_inter with Ioo nbhd.
+        have h_kp_lt_t : (kp : ℝ) * ε < t := by
+          rw [ht_eq_kε]
+          have h_kp_lt_k : (kp : ℝ) < (k : ℝ) := by
+            have : kp < k := by omega
+            exact_mod_cast this
+          nlinarith
+        have h_t_lt_succ : t < ((k : ℝ) + 1) * ε := by
+          rw [ht_eq_kε]; nlinarith
         have hU_nhds :
-            Set.Ioo ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) ∈ nhds t := by
-          apply Ioo_mem_nhds
-          · rw [h_t_eq_prev_top, ← h_prev_le_cur]
-            nlinarith
-          · rw [h_t_eq_prev_top, ← h_prev_le_cur]; nlinarith
+            Set.Ioo ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) ∈ nhds t :=
+          Ioo_mem_nhds h_kp_lt_t h_t_lt_succ
         rw [← hasDerivWithinAt_inter hU_nhds]
-        have h_kε'_nn : 0 ≤ (k' : ℝ) * ε := mul_nonneg (Nat.cast_nonneg _) hε.le
         have hsub : Set.Ici (0 : ℝ) ∩
-            Set.Ioo ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) ⊆
-            Set.Icc ((k' : ℝ) * ε) ((((k' + 1 : ℕ) : ℝ) + 1) * ε) := by
+            Set.Ioo ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) ⊆
+            Set.Icc ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
           intros x hx
           exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
         exact h_union.mono hsub
@@ -15947,10 +15948,10 @@ theorem galerkin_global_hasDerivWithinAt_conditional
       have hsub : Set.Ici (0 : ℝ) ∩ Set.Iio ε ⊆
           Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
         intros x hx
-        rw [hk0]
+        rw [hk0, Nat.cast_zero]
         refine ⟨?_, ?_⟩
-        · simp; exact hx.1
-        · simp; linarith [hx.2]
+        · rw [zero_mul]; exact hx.1
+        · rw [zero_add, one_mul]; exact le_of_lt hx.2
       exact h_Ik_deriv.mono hsub
 
 end SqgIdentity
