@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: SolomonB14D3
-version: 0.4.27
+version: 0.4.28
 date-released: "2026-04-20"
 url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
 repository-code: "https://github.com/SolomonB14D3/sqg-lean-proofs"
@@ -78,7 +78,22 @@ abstract: >
   propagation, auxiliary L-infinity slack bounds) are discharged
   internally.
 
-  The release comprises 18,114 lines of Lean 4 source, with zero `sorry`
-  occurrences and no axioms beyond mathlib. A machine-readable build of
-  the formalization is provided via a standard `lake build` invocation
-  against mathlib v4.29.0.
+  §10.117 packages the §10.116 time-global Galerkin trajectory as an
+  honest SqgSolution on L-squared of the two-dimensional torus. Under
+  the standing hypotheses of a symmetric Fourier support with the zero
+  mode excluded and a real-symmetric ℓ²-bounded initial coefficient
+  vector, an SqgSolution exists whose time-zero slice is the
+  trigonometric-polynomial realization of the initial data.
+  SqgEvolutionAxioms is discharged directly from the ℓ²-sum
+  conservation invariant produced by §10.116, with the velocity witness
+  realized by shellVelocity via isSqgVelocityComponent_shellMode and
+  the mean-conservation clause by the zero-mode triviality induced by
+  excluding the origin from the support; the smoothInitialData clause
+  is discharged at s = 3 via hsSeminormSq_summable_of_finite_support.
+  This discharges the Galerkin-to-full-SQG-limit item on L-squared of
+  the torus.
+
+  The release comprises 17,520 lines of Lean 4 source in the
+  RieszTorus module, with zero `sorry` occurrences and no axioms beyond
+  mathlib. A machine-readable build of the formalization is provided
+  via a standard `lake build` invocation against mathlib v4.29.0.

@@ -4,6 +4,58 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.28 — 2026-04-20
+
+**§10.117 — Galerkin → full-SQG limit on `L²(𝕋²)`.** Packages the
+time-global Galerkin trajectory of §10.116 as an honest `SqgSolution`
+on the L²(𝕋²) torus. Discharges the README "Galerkin → full-SQG limit"
+open item. ~115 lines on top of v0.4.27 (18,114 → 17,520 shipped
+line of source; headline capstone at §10.117.C).
+
+- **§10.117.A `hsSeminormSq_zero_galerkinToLp`** — standalone
+  identification `hsSeminormSq 0 (galerkinToLp S c) = ∑_{m ∈ S} ‖c m‖²`
+  for any support `S` with `0 ∉ S`. Pulls the `hExp` step out of
+  §10.97's internal computation so it can be consumed without an
+  ODE-dynamics hypothesis. Independent of time, pure Fourier-side.
+
+- **§10.117.B `SqgEvolutionAxioms.of_galerkin_realSym_Ici`** —
+  parallel to §10.98's `SqgEvolutionAxioms.of_galerkin_dynamics`, but
+  consumes only the ℓ²-sum conservation invariant (no `HasDerivAt`,
+  no `hRealC`). Matches the output shape of §10.116's time-global
+  capstone directly. Velocity witness identical to §10.98:
+  `u_j τ := shellVelocity S (galerkinExtend S (α τ)) j` through
+  `isSqgVelocityComponent_shellMode`. `meanConservation` is the
+  `0 ∉ S` triviality.
+
+- **§10.117.C `exists_sqgSolution_of_galerkin_realSym`** — headline
+  existence theorem: for any symmetric support `S ⊆ ℤ²` with
+  `0 ∉ S`, any radius `R > 0`, and any real-symmetric `c₀ : ↥S → ℂ`
+  with `∑ ‖c₀ m‖² ≤ (R/2)²`, there exists an `SqgSolution` whose
+  time-zero slice is `galerkinToLp S c₀`. Composes
+  §10.116 (time-global Galerkin) with §10.117.B
+  (`SqgEvolutionAxioms`) and discharges `smoothInitialData` with
+  `s := 3` via `hsSeminormSq_summable_of_finite_support` (the finite
+  Fourier support makes the Ḣ³ Parseval sum trivially summable).
+
+The lifted trajectory is `t ↦ galerkinToLp S (α t)` where `α` is the
+§10.116.H.3 capstone. `SqgSolution` consumes the weak-form
+`SqgEvolutionAxioms` (not `_strong`), which is what §10.117.B
+produces directly. The `_strong` / Duhamel-level promotion through
+§10.94 would require `HasDerivAt` on all of `ℝ`, one notch stronger
+than the `HasDerivWithinAt ... (Ici 0)` delivered by §10.116; that
+upgrade is not pursued here (separately open).
+
+### Open items after v0.4.28
+
+- `SqgEvolutionAxioms_strong` for the Galerkin trajectory on `Ici 0`
+  (needs either an ℝ-wide HasDerivAt extension or an Ici-0 variant
+  of §10.94).
+- `MaterialMaxPrinciple.hOnePropagation` /
+  `BKMCriterionS2.hsPropagationS2` outside the finite-support class.
+- Ḣˢ bootstrap for `s > 2` (Kato–Ponce-type estimates on `𝕋²`).
+- Mode-wise weak-form PDE identity against `sqgNonlinearFlux` for
+  real SQG weak solutions.
+
 ## v0.4.27 — 2026-04-20
 
 **§10.116 complete.** Unconditional time-global Galerkin existence

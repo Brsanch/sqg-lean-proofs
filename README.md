@@ -90,6 +90,16 @@ class, regularity is unconditional:
   ball-containment guarantee is extracted from
   `ODE.FunSpace.compProj_mem_closedBall` and whose ℓ²-sum invariant
   is preserved exactly by §10.110.
+- **`exists_sqgSolution_of_galerkin_realSym` (§10.117).** Packages the
+  §10.116 time-global Galerkin trajectory as an honest `SqgSolution`
+  on `L²(𝕋²)`. For every symmetric support `S ⊆ ℤ²` with `0 ∉ S`,
+  every `R > 0`, and every real-symmetric `c₀ : ↥S → ℂ` with
+  `∑ ‖c₀(m)‖² ≤ (R/2)²`, there exists an `SqgSolution` whose
+  time-zero slice is `galerkinToLp S c₀`. The underlying trajectory
+  is `t ↦ galerkinToLp S (α t)` with `α` the §10.116 capstone;
+  `SqgEvolutionAxioms` is discharged directly from the ℓ²-sum
+  invariant (§10.117.B) and `smoothInitialData` from
+  `hsSeminormSq_summable_of_finite_support` at `s := 3`.
 
 ## What is *not* proven
 
@@ -100,9 +110,12 @@ class, regularity is unconditional:
 - A mode-wise weak-form PDE identity against the concrete
   `sqgNonlinearFlux`. Supplying this identity for a real SQG solution
   would discharge the remaining SQG-specific input.
-- The Galerkin → full-SQG limit (existence of the finite-support
-  approximation is §10.116's content; passage to a genuine SQG solution
-  on `L²(𝕋²)` is not formalized).
+- The `SqgEvolutionAxioms_strong` / Duhamel-level upgrade of the
+  Galerkin-derived `SqgSolution` of §10.117. `SqgEvolutionAxioms`
+  (the weak form consumed by `SqgSolution`) is discharged
+  unconditionally; the strong form would require either a full-ℝ
+  `HasDerivAt` extension of the §10.116 trajectory or an Ici-0 variant
+  of §10.94's Duhamel composition.
 
 ## Building
 

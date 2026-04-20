@@ -17402,4 +17402,119 @@ theorem galerkin_time_global_unconditional_realSym
   obtain ⟨ε, hε_pos, hStep⟩ := galerkin_realSym_forward_step S hS hR
   exact galerkin_realSym_global_on_Ici S hS hε_pos (le_of_lt hR) hStep c₀ hc₀_l2 hRealC₀
 
+/-! ### §10.117 Galerkin → full-SQG limit on `L²(𝕋²)`
+
+Packages the time-global Galerkin trajectory produced by §10.116 as a
+genuine `SqgSolution`. The input is a real-symmetric, ℓ²-bounded
+initial coefficient vector `c₀ : ↥S → ℂ` on a symmetric Fourier support
+`S ⊆ ℤ²` with `0 ∉ S`; the output is an honest
+`SqgSolution` whose underlying `L²(𝕋²)` trajectory is
+`t ↦ galerkinToLp S (α t)`, where `α` is the §10.116 capstone.
+
+Bridge to the structured-form Theorem 3 of §10.2:
+
+* **Initial data** — `θ 0 = galerkinToLp S c₀` is a finite-support
+  trigonometric polynomial on `𝕋²`. `smoothInitialData` is discharged
+  with `s := 3 > 2` via `hsSeminormSq_summable_of_finite_support`.
+* **`SqgEvolutionAxioms`** — `l2Conservation` comes from the
+  ℓ²-sum invariant of §10.116 bridged to `hsSeminormSq 0` through
+  §10.117.A; `meanConservation` is the `0 ∉ S` triviality; the
+  velocity witness is `shellVelocity S (galerkinExtend S (α τ)) j`
+  with `isSqgVelocityComponent_shellMode`.
+
+The resulting `SqgSolution` discharges the README's "Galerkin →
+full-SQG limit" open item: every time-global Galerkin trajectory on a
+symmetric, zero-excluding support with real-symmetric ℓ²-bounded
+initial data is realized as an honest `L²(𝕋²)`-valued SQG solution
+satisfying the evolution axioms.
+
+The structured (Duhamel-level) `SqgEvolutionAxioms_strong` promotion
+via §10.94 requires `HasDerivAt` on all of `ℝ`, one notch stronger
+than the `HasDerivWithinAt ... (Ici 0)` delivered by §10.116; that
+upgrade is not pursued here. `SqgEvolutionAxioms` alone is the
+structure consumed by `SqgSolution`, which is what the README open
+item asked to produce. -/
+
+/-- **§10.117.A — Ḣ⁰ seminorm of `galerkinToLp` as a finite sum.**
+Standalone form of the `hExp` step inside
+`galerkinToLp_hsSeminormSq_zero_const`. For any Galerkin state `c` on
+a support `S` with `0 ∉ S`, the Ḣ⁰ seminorm squared of the lifted
+trigonometric polynomial coincides with the finite L² coordinate sum
+`∑_{m ∈ S} ‖c m‖²`. Independent of any ODE dynamics. -/
+theorem hsSeminormSq_zero_galerkinToLp
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S) (c : ↥S → ℂ) :
+    hsSeminormSq 0 (galerkinToLp S c) = ∑ m : ↥S, ‖c m‖ ^ 2 := by
+  unfold hsSeminormSq
+  have hZeroOff : ∀ n ∉ S,
+      (fracDerivSymbol 0 n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2 = 0 := by
+    intros n hn
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn,
+        norm_zero]; ring
+  rw [tsum_eq_sum (s := S) (fun n hn => hZeroOff n hn)]
+  rw [show ((Finset.univ : Finset ↥S)) = S.attach from Finset.univ_eq_attach S]
+  rw [← Finset.sum_attach S (fun n =>
+      (fracDerivSymbol 0 n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2)]
+  apply Finset.sum_congr rfl
+  intros m _
+  rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_mem _ _ m.property]
+  have hm_ne : m.val ≠ 0 := fun hv => h0 (hv ▸ m.property)
+  rw [fracDerivSymbol_of_ne_zero 0 hm_ne, Real.rpow_zero]; ring
+
+/-- **§10.117.B — `SqgEvolutionAxioms` from pure ℓ² conservation.**
+Parallel to §10.98's `SqgEvolutionAxioms.of_galerkin_dynamics`, but
+consumes only the ℓ²-sum invariant (no `HasDerivAt`, no `hRealC`),
+matching the output shape of §10.116's time-global capstone. The
+velocity witness is identical to §10.98. -/
+theorem SqgEvolutionAxioms.of_galerkin_realSym_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (α : ℝ → (↥S → ℂ))
+    (hL2 : ∀ t, 0 ≤ t →
+      (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖α 0 m‖ ^ 2) :
+    SqgEvolutionAxioms (fun τ => galerkinToLp S (α τ)) where
+  l2Conservation := fun t ht => by
+    rw [hsSeminormSq_zero_galerkinToLp h0, hsSeminormSq_zero_galerkinToLp h0, hL2 t ht]
+  meanConservation := fun _ _ => by
+    rw [mFourierCoeff_galerkinToLp, mFourierCoeff_galerkinToLp,
+        galerkinExtend_apply_of_not_mem _ _ h0,
+        galerkinExtend_apply_of_not_mem _ _ h0]
+  velocityIsRieszTransform := fun j =>
+    ⟨fun τ => shellVelocity S (galerkinExtend S (α τ)) j,
+      fun τ => isSqgVelocityComponent_shellMode S (galerkinExtend S (α τ)) j⟩
+
+/-- **§10.117.C — Galerkin → full-SQG `SqgSolution` existence.**
+For any symmetric Fourier support `S ⊆ ℤ²` with `0 ∉ S`, any radius
+`R > 0`, and any real-symmetric `c₀ : ↥S → ℂ` with `∑ ‖c₀ m‖² ≤ (R/2)²`,
+there exists an `SqgSolution` whose time-zero slice is
+`galerkinToLp S c₀`. The underlying trajectory is
+`t ↦ galerkinToLp S (α t)`, where `α` is the §10.116 time-global
+Galerkin capstone. Discharges the README "Galerkin → full-SQG limit"
+open item. -/
+theorem exists_sqgSolution_of_galerkin_realSym
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S)
+    (hS : IsSymmetricSupport S)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S → ℂ)
+    (hc₀_l2 : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S,
+      galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n)) :
+    ∃ θ : SqgSolution, θ.θ 0 = galerkinToLp S c₀ := by
+  obtain ⟨α, hα0, _hderiv, hL2_const, _hRealSym, _hpinorm⟩ :=
+    galerkin_time_global_unconditional_realSym S hS hR c₀ hc₀_l2 hRealC₀
+  refine ⟨{
+    θ := fun τ => galerkinToLp S (α τ)
+    smoothInitialData := ?_
+    solvesSqgEvolution := ?_ }, ?_⟩
+  · refine ⟨3, by norm_num, ?_⟩
+    apply hsSeminormSq_summable_of_finite_support 3 (galerkinToLp S (α 0)) S
+    intros n hn
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn]
+  · apply SqgEvolutionAxioms.of_galerkin_realSym_Ici h0
+    intros t ht
+    rw [hα0]
+    exact hL2_const t ht
+  · exact congrArg (galerkinToLp S) hα0
+
 end SqgIdentity
