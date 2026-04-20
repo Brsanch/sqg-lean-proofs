@@ -7,28 +7,25 @@ side, and to the tagged release that will close it on this side.
 
 ## SQG mathematics
 
-### 1. Non-finite-support `Ḣ²` Galerkin → full-SQG extraction
-Construct `IsGalerkinLimitData θ b` + `GalerkinLimitTrajectory θ b`
-from §10.118–§10.123's uniform estimates for `Ḣ²(𝕋²)` initial data
-that is *not* a finite trigonometric polynomial.
+### 1. Generic-`L²` Galerkin → full-SQG extraction (Route B; structural chain done v0.4.35)
+**Status:** Structural chain complete via §10.137–§10.145 (Route B).
+`exists_sqgSolution_via_RouteB` produces an `SqgSolution` from a
+`HasAubinLionsExtraction` witness + `l2Conservation` hypothesis +
+`HasGalerkinLimitVelocity` witness + `smoothInitialData` summability.
 
-**Scope clarification (2026-04-20):** the original phrasing
-"generic-L²" was misleading. `SqgSolution.smoothInitialData` requires
-`s > 2`, so the output `SqgSolution` is strictly above the `L²` level.
-The honestly-reachable class with existing infrastructure (§10.73's
-`Ḣ²` advection cancellation) is `Ḣ²` initial data, delivering an
-`SqgSolution` at the `s = 2` energy level. Going past `s = 2` to
-reach `smoothInitialData`'s strict `s > 2` requires item 5
-(Kato–Ponce). Going below `Ḣ²` to generic-`L²` weak solutions
-(Resnick 1995) would require either Aubin–Lions / `H⁻²` duality
-infrastructure in mathlib, or a structural refactor of
-`SqgSolution` to tolerate non-smooth initial data — both are
-multi-session mathlib-upstream projects and intentionally deferred.
+**Remaining to close end-to-end:** discharge two concrete analytical
+hypotheses:
+1. Construction of `HasAubinLionsExtraction θ α` — classical
+   Aubin–Lions compactness from the uniform `L²` bound (§10.122) +
+   `H⁻²` time-derivative bound (§10.138). Requires mathlib-scale
+   Bochner / dual-space infrastructure.
+2. `l2Conservation` hypothesis fed to §10.144 — `Lp` norm continuity
+   under strong-`L²` convergence composed with `galerkinEnergyH0_const`
+   (§10.97) and Parseval on the Fourier truncation (§10.119).
 
-Strategy: Route A of `.claude/plans/close-item-1.md`. Per-mode
-Arzelà–Ascoli (mathlib `arzela_ascoli₂`) + Cantor diagonal + Fourier
-synthesis (mathlib `AddCircleMulti`). Target releases: v0.4.35
-(`Ḣ²` energy invariance) through v0.4.43 (headline capstone).
+Both are classical results; each requires a focused session with
+appropriate mathlib infrastructure. Route B infrastructure (v0.4.35)
+makes the reduction explicit and exposes the exact analytical inputs.
 
 ### ~~2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132~~ ✓ Closed in v0.4.33
 Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →

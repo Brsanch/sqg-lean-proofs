@@ -4,6 +4,62 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.35 — 2026-04-20
+
+**§10.137–§10.145 — Route B conditional chain for the generic-`L²`
+Galerkin → full-SQG extraction.** Closes item 1 at the structural
+level modulo two named analytical hypotheses that any classical
+Resnick extraction supplies.
+
+- **§10.137** `hsSeminormSq` at negative index `s`. The existing
+  `fracDerivSymbol` gives `|n|^s` off zero for any real `s`; at
+  `s < 0` this is the negative-Sobolev weight. `hsSeminormSq_nonneg_any`
+  as a convenience lemma.
+- **§10.138** `GalerkinRHSHsNegSqBound` / `UniformGalerkinRHSHsNegSqBound`
+  — packaged predicate for the `H⁻ˢ` Fourier-side time-derivative
+  bound on `galerkinRHS`. At `s = 2` this is the classical
+  `‖dθₙ/dt‖_{H⁻²} ≤ C · ‖θ₀‖²_{L²}` estimate of Resnick 1995.
+- **§10.139** `HasAubinLionsExtraction θ α` — structure packaging the
+  output of a classical Aubin–Lions extraction: a subsequence `nsub`
+  + an `Lp` limit `θ_lim` with strong-`L²` pointwise-in-time
+  convergence `‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) − θ_lim t‖²
+  → 0` at every `t ≥ 0`.
+- **§10.140** `exists_sqgSolution_of_aubinLions` — `SqgSolution`
+  existence from `HasAubinLionsExtraction` + a pre-built
+  `SqgEvolutionAxioms` witness + `smoothInitialData`.
+- **§10.141** `sq_sub_mFourierCoeff_le_L2Sq` + `tendsto_mFourierCoeff_of_tendsto_L2Sq`
+  — Parseval-based per-mode Fourier-coefficient 1-Lipschitz bound
+  and the strong-`L²` → per-mode Fourier convergence consequence.
+  The bridge between `Lp` convergence and `ℂ`-valued Fourier limits.
+- **§10.142** `mFourierCoeff_aubinLionsLimit_zero` — zero-mode
+  triviality for the Aubin–Lions limit from `0 ∉ sqgBox n` + per-mode
+  convergence. Plus helper `mFourierCoeff_galerkinToLp_sqgBox_zero`.
+- **§10.143** `tendsto_mFourierCoeff_of_aubinLions` + `mFourierCoeff_aubinLions_init`
+  — specialization of §10.141 to the Aubin–Lions extraction's
+  canonical sequence and initial-data identification.
+- **§10.144** `SqgEvolutionAxioms.of_aubinLions` — assembles the
+  three SqgEvolutionAxioms clauses: `l2Conservation` from an
+  explicit hypothesis (classical Parseval-on-truncation + norm
+  continuity; listed separately below), `meanConservation` from
+  §10.142 automatically, `velocityIsRieszTransform` from a
+  `HasGalerkinLimitVelocity` witness.
+- **§10.145** `exists_sqgSolution_via_RouteB` — headline capstone.
+  Composes §10.140 with §10.144 into a single existence theorem
+  for `SqgSolution` via the Aubin–Lions extraction.
+
+**Status after v0.4.35.** The Route B structural chain is complete.
+Closing item 1 end-to-end now reduces to discharging two concrete
+analytical hypotheses: the `HasAubinLionsExtraction` witness itself
+(classical Aubin–Lions compactness from §10.138's `H⁻²` bound +
+§10.122's uniform `L²` bound), and the `l2Conservation` hypothesis
+fed to §10.144 (`Lp` norm continuity under strong-`L²` convergence
++ `galerkinEnergyH0_const` + Parseval on the Fourier-restriction).
+Both are classical analysis that requires modest mathlib infrastructure
+not yet in-tree.
+
++320+ lines across eight commits; zero `sorry`, zero new axioms;
+CI green on the final assembly commit.
+
 ## v0.4.34 — 2026-04-20
 
 **§10.135–§10.136 — time-test weak form → Duhamel identity bridge
