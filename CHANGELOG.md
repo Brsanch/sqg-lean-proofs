@@ -4,6 +4,89 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.29 — 2026-04-20
+
+**§10.118–§10.123 — Sₙ ↗ weak-* limit infrastructure from generic
+`L²(𝕋²)` initial data.** The v0.4.28 release discharged the
+"Galerkin → full-SQG limit" README item via direct packaging (a
+lifted Galerkin trajectory is already an L²(𝕋²) element). v0.4.29
+addresses the stronger reading: **start from an arbitrary
+`L²(𝕋²)` initial datum (not just a finite trig polynomial) and build
+the Sₙ ↗ truncation apparatus with uniform estimates.** Nearly
++300 lines across six sections. Zero `sorry`, zero new axioms.
+
+- **§10.118** `sqgBox n` — canonical nested symmetric Fourier box on
+  ℤ² (integer `ℓ∞`-ball of radius `n + 1` minus origin). Proves
+  `zero_not_mem`, `IsSymmetricSupport`, `sqgBox_mono`,
+  `mem_sqgBox_iff` (coordinate characterization), and exhaustion
+  `exists_mem_sqgBox` (every nonzero `m` eventually enters).
+- **§10.119** `fourierRestrict n θ : ↥(sqgBox n) → ℂ` — restriction
+  of the Fourier coefficients of any `L²` element to `sqgBox n`.
+  Key identity `galerkinExtend_fourierRestrict_apply` and uniform
+  ℓ² bound `sum_sq_fourierRestrict_le_L2Sq`: the finite ℓ²-sum of
+  restricted coefficients is bounded by `∫ ‖θ‖²` via Parseval
+  (`hasSum_sq_mFourierCoeff`) + `Summable.sum_le_tsum`. **Bound
+  uniform in `n`.**
+- **§10.120** `IsFourierRealSym θ` — predicate asserting that `θ`'s
+  Fourier coefficients satisfy `θ̂(-m) = star θ̂(m)` (i.e. `θ`
+  corresponds to a real-valued function on 𝕋²). Pass-through theorem
+  `galerkinExtend_fourierRestrict_realSym` supplies the `hRealC₀`
+  hypothesis of §10.116 for the restricted vector.
+- **§10.121** `exists_galerkin_trajectory_of_L2` — per-level
+  time-global Galerkin trajectory on `sqgBox n` starting from
+  `fourierRestrict n θ`. Applies §10.116 with a **uniform-in-`n`**
+  radius `R` chosen so that `(R/2)² ≥ ∫ ‖θ‖²`; the restricted data
+  automatically fits inside the ball thanks to §10.119's Parseval
+  bound. Delivers the full 5-way conjunction of §10.116.H.3 for
+  every `n`.
+- **§10.122** `hsSeminormSq_galerkinToLp_le_L2Sq` — uniform L² bound:
+  `hsSeminormSq 0 (galerkinToLp (sqgBox n) (αₙ t)) ≤ ∫ ‖θ‖²` for
+  every `n ∈ ℕ` and `t ≥ 0`. Derived from §10.117.A + the
+  ℓ²-sum conservation of §10.116 + §10.119's Parseval bound.
+- **§10.123** `sq_galerkinExtend_le_L2Sq` — per-mode pointwise bound:
+  `‖galerkinExtend (sqgBox n) (αₙ t) m‖² ≤ ∫ ‖θ‖²` for every fixed
+  mode `m`, `n ∈ ℕ`, `t ≥ 0`. Uses `Finset.single_le_sum` on the
+  ℓ²-sum conservation invariant; trivially zero for `m ∉ sqgBox n`.
+  This is the per-mode L∞ control that feeds any diagonal-subsequence
+  argument for a weak-* limit.
+- **§10.124** — program status note. What §10.118–§10.123 supplies:
+  all the uniform-in-`n` estimates classically consumed by a
+  weak-* L²(𝕋²) compactness argument. What remains: a
+  diagonal-subsequence Arzelà–Ascoli extraction giving per-mode
+  time-uniform convergence on compacts, then Fourier synthesis of
+  the limit into an `L²` trajectory, then passage of
+  `SqgEvolutionAxioms` through the limit. That chain needs a
+  per-mode time-modulus of continuity derived from a uniform
+  `‖galerkinVectorField (sqgBox n) (αₙ t) m‖` bound (via Cauchy–Schwarz
+  on the bilinear `galerkinRHS` against the ℓ² bound), plus
+  subsequence-extraction machinery from mathlib's weak-topology
+  infrastructure. **The prerequisite estimates are now in place.**
+
+### Scope disclosure
+
+This release does not close the full Galerkin-to-weak-L²-limit chain;
+it builds the uniform-estimate layer (§10.118–§10.123) that any
+formal extraction of the limit must consume. The remaining passage-
+to-the-limit argument (Arzelà–Ascoli → diagonal subsequence →
+Fourier synthesis → axiom transfer) is substantial formal work that
+is genuinely open.
+
+### Open items after v0.4.29
+
+1. Per-mode time-modulus of continuity for `αₙ(·, m)` from a uniform
+   `galerkinVectorField` bound.
+2. Diagonal subsequence extraction across modes (Arzelà–Ascoli on
+   each mode + Cantor diagonal).
+3. Fourier synthesis of the per-mode limit into an `L²(𝕋²)` trajectory.
+4. Transfer of `SqgEvolutionAxioms` (`l2Conservation`,
+   `meanConservation`, `velocityIsRieszTransform`) through the limit.
+5. `SqgEvolutionAxioms_strong` upgrade of the §10.117 finite-support
+   `SqgSolution` (see v0.4.28 notes).
+6. `MaterialMaxPrinciple.hOnePropagation` /
+   `BKMCriterionS2.hsPropagationS2` outside the finite-support class.
+7. Ḣˢ bootstrap for `s > 2` (blocked on mathlib Kato–Ponce on 𝕋²).
+8. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`.
+
 ## v0.4.28 — 2026-04-20
 
 **§10.117 — Galerkin → full-SQG limit on `L²(𝕋²)`.** Packages the
