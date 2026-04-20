@@ -111,6 +111,17 @@ class, regularity is unconditional:
   `hsSeminormSq 0 (galerkinToLp (sqgBox n) (αₙ t)) ≤ ∫ ‖θ‖²`, and
   per-mode pointwise bound
   `‖galerkinExtend (sqgBox n) (αₙ t) m‖² ≤ ∫ ‖θ‖²`.
+- **Conditional Galerkin-limit → `SqgSolution` chain (§10.125–§10.130).**
+  Hypothesis-keyed closure of the passage-to-the-limit half.
+  `IsGalerkinLimitData θ b` packages the invariants any classical
+  extraction yields (zero-mode, initial-data match, ℓ²-summability,
+  ℓ²-sum conservation, real-symmetry); `GalerkinLimitTrajectory θ b`
+  packages the synthesized `L²` trajectory with a Fourier-coefficient
+  match. `SqgEvolutionAxioms.of_galerkinLimit` derives
+  `SqgEvolutionAxioms` and `exists_sqgSolution_of_galerkinLimit`
+  completes the chain to `SqgSolution` given a `smoothInitialData`
+  summability on the limit. Exercised unconditionally on the zero
+  datum via `exists_sqgSolution_ofZero`.
 
 ## What is *not* proven
 
@@ -127,13 +138,15 @@ class, regularity is unconditional:
   unconditionally; the strong form would require either a full-ℝ
   `HasDerivAt` extension of the §10.116 trajectory or an Ici-0 variant
   of §10.94's Duhamel composition.
-- The final passage-to-the-limit step of the Sₙ ↗ weak-`L²`
-  argument. The uniform-estimate layer (§10.118–§10.123) is in place;
-  the remaining chain — per-mode time-modulus of continuity from a
-  uniform `galerkinVectorField` bound, diagonal subsequence
-  extraction, Fourier synthesis of the limit into an `L²` trajectory,
-  and transfer of `SqgEvolutionAxioms` through the limit — is not
-  yet formalized.
+- Construction of `IsGalerkinLimitData` + `GalerkinLimitTrajectory`
+  from §10.118–§10.123's per-level uniform estimates for non-zero
+  `L²` initial data. v0.4.30 formalizes the conditional half:
+  given the packaged hypotheses, the `SqgSolution` follows
+  algebraically (§10.125–§10.130). What remains is the *existence*
+  of those hypotheses for generic `L²` data — classically a
+  per-mode Arzelà–Ascoli + diagonal argument closed via an `Ḣ¹` or
+  `H⁻²` test-function bound (Resnick 1995). Requires mathlib-weight
+  weak-compactness machinery not yet wired in.
 
 ## Building
 
