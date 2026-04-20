@@ -4,6 +4,58 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.31 — 2026-04-20
+
+**§10.131–§10.132 — concrete closure of the v0.4.30 chain on the
+finite-Fourier-support class.** v0.4.30 gave the conditional
+chain `packaged limit hypotheses → SqgSolution`. v0.4.31
+instantiates those packaged hypotheses directly from
+§10.116.H.3's time-global Galerkin trajectory for finite-support
+initial data, producing a parallel construction of v0.4.28's
+`exists_sqgSolution_of_galerkin_realSym` routed through the new
+§10.125–§10.130 pipeline. +171 lines; zero `sorry`, zero new axioms.
+
+- **§10.131** `isGalerkinLimitData_of_galerkin_realSym` — all five
+  clauses of `IsGalerkinLimitData` discharged directly from the
+  §10.116 invariants: `zeroMode` from `0 ∉ S₀`, `initial` from
+  `mFourierCoeff_galerkinToLp` + `α 0 = c₀`, `summable` from finite
+  support, `conservation` by reducing both the time-`t` and time-0
+  tsums to finite `S₀`-sums via `tsum_eq_sum` and applying
+  §10.116's ℓ²-sum invariant, `realSym` by case split on
+  `m ∈ S₀`.
+- **§10.131** `galerkinLimitTrajectory_of_galerkin` — θ_lim =
+  `t ↦ galerkinToLp S₀ (α t)` with `coeff` direct from
+  `mFourierCoeff_galerkinToLp` and `init_eq` from `α 0 = c₀`.
+- **§10.131** `hasGalerkinLimitVelocity_of_galerkin` — velocity
+  witness `shellVelocity S₀ (galerkinExtend S₀ (α τ)) j` via
+  `isSqgVelocityComponent_shellMode`.
+- **§10.132** `exists_sqgSolution_via_galerkinLimit_of_finite_support`
+  — capstone. Real-symmetric ℓ²-bounded `c₀ : ↥S₀ → ℂ` on symmetric
+  zero-excluding `S₀` ↦ `SqgSolution` through
+  §10.116 → §10.131 → §10.129. Parallels v0.4.28's `exists_sqgSolution_of_galerkin_realSym`.
+
+### Full chain status after v0.4.31
+
+The three layers are now mutually consistent and joined:
+
+* v0.4.28 `exists_sqgSolution_of_galerkin_realSym` — direct
+  §10.117 packaging for finite-support data.
+* v0.4.29 §10.118–§10.123 — Sₙ ↗ uniform estimates for generic `L²`
+  data.
+* v0.4.30 §10.125–§10.130 — conditional packaged-limit →
+  `SqgSolution` chain.
+* v0.4.31 §10.131–§10.132 — concrete instantiation of v0.4.30's
+  hypotheses from v0.4.28's data. Demonstrates the v0.4.30 chain is
+  actually instantiable on non-zero inputs.
+
+The remaining mathematical gap is unchanged: constructing
+`IsGalerkinLimitData` + `GalerkinLimitTrajectory` from v0.4.29's
+estimates for generic (non-finite-support) `L²` data. That step is
+the classical Resnick extraction (per-mode equicontinuity from
+`Ḣ¹`-bounds or `H⁻²` test-function duality, diagonal subsequence,
+Fourier synthesis), which requires mathlib weak-compactness
+infrastructure not yet wired in.
+
 ## v0.4.30 — 2026-04-20
 
 **§10.125–§10.130 — conditional Galerkin-limit → `SqgSolution` chain.**
