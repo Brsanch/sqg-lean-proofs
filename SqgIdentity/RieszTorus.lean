@@ -19058,4 +19058,280 @@ theorem exists_sqgSolution_via_RouteB_zero :
     exact summable_zero
   exact exists_sqgSolution_via_RouteB HasAubinLionsExtraction.ofZero hL2 hu hSmooth
 
+/-! ### §10.147 Analytical closure of Route B: `l2Conservation` from strong-`L²`
+
+The Aubin–Lions extraction (§10.139) supplies strong-`L²` convergence
+`galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) → ext.θ_lim t` at every
+`t ≥ 0`. Combined with Galerkin-level energy conservation (§10.97) and
+the zero-mode vanishing of §10.142, this produces the `hL2` hypothesis
+consumed by §10.144 / §10.145 **without any further external input**.
+
+The bridge is L² norm continuity: strong `L²` convergence of a sequence
+carries over to convergence of squared `L²` norms. Combined with
+level-wise energy conservation and the zero-mode fact
+`∫ ‖f‖² = ‖f̂(0)‖² + hsSeminormSq 0 f`, the Galerkin constant-in-time
+`hsSeminormSq 0` bound transfers to the Aubin–Lions limit.
+
+This discharges the norm-continuity half of item 1 (Route B analytical
+closure) entirely from mathlib's inner-product-space machinery; the
+remaining piece for full non-zero closure is a `HasAubinLionsExtraction`
+construction from `Fréchet–Kolmogorov` compactness, not yet available
+upstream. -/
+
+/-- **`Lp ℂ 2` norm squared equals the pointwise integral of the squared
+norm.** Via the `L²` inner-product structure. -/
+theorem Lp_two_norm_sq_eq_integral_norm_sq
+    {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
+    (f : Lp ℂ 2 μ) :
+    ‖f‖ ^ 2 = ∫ x, ‖f x‖ ^ 2 ∂μ := by
+  -- Step 1: `⟪f, f⟫ = (‖f‖ : ℂ)^2` at the Lp level.
+  have h_inner_self : (@inner ℂ _ _ f f) = ((‖f‖ : ℂ)) ^ 2 :=
+    inner_self_eq_norm_sq_to_K
+  -- Step 2: `⟪f, f⟫_{L²} = ∫ ⟪f x, f x⟫_ℂ`.
+  have h_inner_def : (@inner ℂ _ _ f f)
+      = ∫ x, (@inner ℂ _ _ (f x) (f x)) ∂μ :=
+    MeasureTheory.L2.inner_def f f
+  -- Step 3: pointwise, `⟪f x, f x⟫_ℂ = ((‖f x‖^2 : ℝ) : ℂ)`.
+  have h_pt : ∀ x, (@inner ℂ _ _ (f x) (f x)) = ((‖f x‖ ^ 2 : ℝ) : ℂ) := by
+    intro x
+    have hz : (@inner ℂ _ _ (f x) (f x)) = ((‖f x‖ : ℂ)) ^ 2 :=
+      inner_self_eq_norm_sq_to_K
+    rw [hz]; push_cast; ring
+  -- Step 4: ∫ ⟪f x, f x⟫ = ((∫ ‖f x‖²) : ℂ).
+  have h_integral : (∫ x, (@inner ℂ _ _ (f x) (f x)) ∂μ)
+      = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := by
+    rw [show (fun x => (@inner ℂ _ _ (f x) (f x)))
+          = fun x => ((‖f x‖ ^ 2 : ℝ) : ℂ) from funext h_pt]
+    exact integral_ofReal
+  -- Assemble: ((‖f‖ : ℂ))^2 = ((∫ ‖f x‖² : ℝ) : ℂ), hence ‖f‖^2 = ∫ ‖f x‖².
+  have h_complex : ((‖f‖ : ℂ)) ^ 2 = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := by
+    rw [← h_inner_self, h_inner_def, h_integral]
+  have h_cast : (((‖f‖ ^ 2 : ℝ)) : ℂ) = ((∫ x, ‖f x‖ ^ 2 ∂μ : ℝ) : ℂ) := by
+    have : ((‖f‖ : ℂ)) ^ 2 = (((‖f‖ ^ 2 : ℝ)) : ℂ) := by push_cast; ring
+    rw [← this]; exact h_complex
+  exact_mod_cast h_cast
+
+/-- **`∫ ‖(f - g) x‖² = ∫ ‖f x - g x‖²` on `Lp`.** -/
+theorem integral_norm_sub_sq_eq_coeFn_sub
+    {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
+    (f g : Lp ℂ 2 μ) :
+    (∫ x, ‖(f - g) x‖ ^ 2 ∂μ) = ∫ x, ‖f x - g x‖ ^ 2 ∂μ := by
+  apply MeasureTheory.integral_congr_ae
+  filter_upwards [Lp.coeFn_sub f g] with x hx
+  have hx' : (f - g) x = f x - g x := by
+    have : ((⇑f - ⇑g) : _ → ℂ) x = f x - g x := rfl
+    rw [hx, this]
+  rw [hx']
+
+/-- **Strong-`L²` convergence of `f_k x - g x` lifts to `Lp` norm
+convergence of `f_k - g`.** If `∫ ‖f_k x - g x‖² → 0` then `‖f_k - g‖ → 0`
+in `Lp ℂ 2 μ`. -/
+theorem tendsto_Lp_two_norm_sub_of_tendsto_integral_sq
+    {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 μ} {g : Lp ℂ 2 μ}
+    (h : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2 ∂μ) l (nhds 0)) :
+    Filter.Tendsto (fun i => ‖f i - g‖) l (nhds 0) := by
+  -- Reduce to `‖f i - g‖² → 0`.
+  have h1 : Filter.Tendsto (fun i => ‖f i - g‖ ^ 2) l (nhds 0) := by
+    have hEq : ∀ i, ‖f i - g‖ ^ 2 = ∫ x, ‖f i x - g x‖ ^ 2 ∂μ := by
+      intro i
+      rw [Lp_two_norm_sq_eq_integral_norm_sq (f i - g),
+        integral_norm_sub_sq_eq_coeFn_sub]
+    rw [show (fun i => ‖f i - g‖ ^ 2) = fun i => ∫ x, ‖f i x - g x‖ ^ 2 ∂μ
+        from funext hEq]
+    exact h
+  -- `a² → 0 ⟹ a → 0` for non-negative `a`.
+  rw [Metric.tendsto_nhds] at h1 ⊢
+  intro ε hε
+  have hε2 : 0 < ε ^ 2 := pow_pos hε 2
+  filter_upwards [h1 (ε ^ 2) hε2] with i hi
+  simp only [Real.dist_eq, sub_zero] at hi ⊢
+  have habs : |‖f i - g‖ ^ 2| = ‖f i - g‖ ^ 2 := abs_of_nonneg (sq_nonneg _)
+  rw [habs] at hi
+  have hnn : 0 ≤ ‖f i - g‖ := norm_nonneg _
+  rw [abs_of_nonneg hnn]
+  -- From ‖x‖² < ε² + x ≥ 0 + ε > 0 → ‖x‖ < ε.
+  by_contra hContra
+  push Not at hContra
+  have hge : ε ^ 2 ≤ ‖f i - g‖ ^ 2 :=
+    pow_le_pow_left₀ hε.le hContra 2
+  linarith
+
+/-- **Continuity of squared `L²` norm under strong-`L²` convergence.**
+If `∫ ‖f_k x - g x‖² → 0` then `∫ ‖f_k x‖² → ∫ ‖g x‖²`. -/
+theorem tendsto_integral_norm_sq_of_tendsto_L2sub
+    {α : Type*} [MeasurableSpace α] {μ : MeasureTheory.Measure α}
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 μ} {g : Lp ℂ 2 μ}
+    (h : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2 ∂μ) l (nhds 0)) :
+    Filter.Tendsto (fun i => ∫ x, ‖f i x‖ ^ 2 ∂μ) l
+      (nhds (∫ x, ‖g x‖ ^ 2 ∂μ)) := by
+  -- Rewrite both integrals via the Lp-norm identity.
+  have h_fg : ∀ i, (∫ x, ‖f i x‖ ^ 2 ∂μ) = ‖f i‖ ^ 2 := fun i =>
+    (Lp_two_norm_sq_eq_integral_norm_sq (f i)).symm
+  have h_g : (∫ x, ‖g x‖ ^ 2 ∂μ) = ‖g‖ ^ 2 :=
+    (Lp_two_norm_sq_eq_integral_norm_sq g).symm
+  rw [show (fun i => ∫ x, ‖f i x‖ ^ 2 ∂μ) = fun i => ‖f i‖ ^ 2 from funext h_fg,
+      h_g]
+  -- `‖f_k - g‖ → 0 ⟹ f_k → g in Lp ⟹ ‖f_k‖ → ‖g‖ ⟹ ‖f_k‖² → ‖g‖²`.
+  have h_sub : Filter.Tendsto (fun i => ‖f i - g‖) l (nhds 0) :=
+    tendsto_Lp_two_norm_sub_of_tendsto_integral_sq h
+  -- Upgrade to convergence of `f_k` to `g` in Lp.
+  have h_toLp : Filter.Tendsto f l (nhds g) := by
+    rw [Metric.tendsto_nhds] at h_sub ⊢
+    intro ε hε
+    filter_upwards [h_sub ε hε] with i hi
+    simpa [dist_eq_norm] using hi
+  -- Continuity of the norm and squaring.
+  have h_norm : Filter.Tendsto (fun i => ‖f i‖) l (nhds ‖g‖) :=
+    (continuous_norm.tendsto g).comp h_toLp
+  exact h_norm.pow 2
+
+/-- **Zero-mode vanishes on Aubin–Lions-limit trajectories (Galerkin
+per-level).** Convenience wrapper bundling `0 ∉ sqgBox n` with
+`mFourierCoeff_galerkinToLp_sqgBox_zero`. -/
+lemma mFourierCoeff_galerkin_sqgBox_zero_any
+    (n : ℕ) (c : ↥(sqgBox n) → ℂ) :
+    mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
+  mFourierCoeff_galerkinToLp_sqgBox_zero n c
+
+/-- **Route B `l2Conservation` from Aubin–Lions.**
+
+From the strong-`L²` Aubin–Lions extraction (§10.139) and the
+per-level Galerkin energy conservation (§10.97 input, lifted through
+`galerkinToLp` by `hsSeminormSq_zero_galerkinToLp` since
+`0 ∉ sqgBox n`), produce the `l2Conservation` hypothesis consumed by
+§10.144.
+
+The proof reduces `hsSeminormSq 0` to `∫ ‖·‖²` via the zero-mode split
+(justified by §10.142 for the limit and `0 ∉ sqgBox n` for each level),
+then passes to the limit using
+`tendsto_integral_norm_sq_of_tendsto_L2sub`. -/
+theorem l2Conservation_of_aubinLions
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0))) :
+    ∀ t, 0 ≤ t →
+      hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0) := by
+  intro t ht
+  -- Step 1: reduce the target to `∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖²`.
+  have h_zero_lim_t : mFourierCoeff (ext.θ_lim t) (0 : Fin 2 → ℤ) = 0 :=
+    mFourierCoeff_aubinLionsLimit_zero ext
+      (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) ht
+  have h_zero_lim_0 : mFourierCoeff (ext.θ_lim 0) (0 : Fin 2 → ℤ) = 0 :=
+    mFourierCoeff_aubinLionsLimit_zero ext
+      (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) le_rfl
+  have h_split_t :
+      (∫ x, ‖ext.θ_lim t x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim t) := by
+    have := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim t)
+    rw [h_zero_lim_t] at this
+    simp at this
+    exact this
+  have h_split_0 :
+      (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) = hsSeminormSq 0 (ext.θ_lim 0) := by
+    have := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero (ext.θ_lim 0)
+    rw [h_zero_lim_0] at this
+    simp at this
+    exact this
+  rw [← h_split_t, ← h_split_0]
+  -- Step 2: For each level, reduce the Galerkin `hsSeminormSq 0` to
+  -- `∫ ‖·‖²` (via `hsSeminormSq_zero_galerkinToLp` + sum-norm bridge).
+  -- We actually don't need this: we use `hLevel` verbatim, passing it
+  -- through the identity `∫ ‖f‖² = hsSeminormSq 0 f` at each level.
+  have h_galerkin_split : ∀ n (c : ↥(sqgBox n) → ℂ),
+      (∫ x, ‖galerkinToLp (sqgBox n) c x‖ ^ 2)
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) c) := by
+    intro n c
+    have h_zero : mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
+      mFourierCoeff_galerkin_sqgBox_zero_any n c
+    have := l2_integral_eq_fourier_zero_sq_plus_hsSeminormSq_zero
+      (galerkinToLp (sqgBox n) c)
+    rw [h_zero] at this
+    simp at this
+    exact this
+  -- Step 3: pass `hLevel` to the subsequence and through strong-L² limit.
+  have h_const_k : ∀ k : ℕ,
+      (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+        = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) := by
+    intro k
+    rw [h_galerkin_split, h_galerkin_split]
+    exact hLevel (ext.nsub k) t ht
+  -- Step 4: pass to the limit on both sides using strong-L² convergence.
+  have h_tendsto_t :
+      Filter.Tendsto (fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+        Filter.atTop (nhds (∫ x, ‖ext.θ_lim t x‖ ^ 2)) :=
+    tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
+  have h_tendsto_0 :
+      Filter.Tendsto (fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2)
+        Filter.atTop (nhds (∫ x, ‖ext.θ_lim 0 x‖ ^ 2)) :=
+    tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
+  -- The two sequences are equal term-by-term, so limits match.
+  have h_same :
+      (fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+        = (fun k : ℕ =>
+            ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
+    funext h_const_k
+  rw [h_same] at h_tendsto_t
+  exact tendsto_nhds_unique h_tendsto_t h_tendsto_0
+
+/-! ### §10.148 Route B capstone without the `hL2` hypothesis
+
+Compose §10.147's `l2Conservation_of_aubinLions` with §10.144's
+`SqgEvolutionAxioms.of_aubinLions` and §10.145's Route B headline
+to produce an `SqgSolution` from only:
+
+* the Aubin–Lions extraction witness,
+* per-level Galerkin energy conservation (§10.97),
+* a velocity witness,
+* `smoothInitialData` summability.
+
+The `l2Conservation` hypothesis of §10.145 is now discharged internally.
+This is the clean form of Route B: Item 1's analytical closure reduces
+exactly to constructing a `HasAubinLionsExtraction` witness (the second
+multi-session piece). -/
+
+/-- **Route B `SqgEvolutionAxioms` without the `hL2` hypothesis.** -/
+theorem SqgEvolutionAxioms.of_aubinLions_and_galerkin_energy
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u) :
+    SqgEvolutionAxioms ext.θ_lim :=
+  SqgEvolutionAxioms.of_aubinLions ext
+    (l2Conservation_of_aubinLions ext hLevel) hu
+
+/-- **Route B headline: `SqgSolution` from Aubin–Lions + Galerkin
+energy conservation + velocity witness + smooth initial data.** The
+`hL2` hypothesis of §10.145 is now internally discharged from the
+per-level Galerkin energy conservation (§10.97). -/
+theorem exists_sqgSolution_via_RouteB_from_galerkin_energy
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (ext.θ_lim 0) n‖ ^ 2)) :
+    ∃ sol : SqgSolution, sol.θ = ext.θ_lim :=
+  exists_sqgSolution_via_RouteB ext
+    (l2Conservation_of_aubinLions ext hLevel) hu hSmooth
+
 end SqgIdentity
