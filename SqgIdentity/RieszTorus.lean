@@ -19443,4 +19443,74 @@ theorem exists_sqgSolution_via_RouteB_from_galerkin_energy
   exists_sqgSolution_via_RouteB ext
     (l2Conservation_of_aubinLions ext hLevel) hu hSmooth
 
+/-! ### §10.149 Per-mode compactness ingredients for `HasAubinLionsExtraction`
+
+Classical Aubin–Lions extraction from uniformly bounded Galerkin
+trajectories on 𝕋² admits a Fourier-specific simplification: at each
+mode `m ∈ ℤ²`, the time-dependent Fourier coefficient
+`α n t m` (extended by zero for `m ∉ sqgBox n`) is uniformly bounded
+(from the uniform `L²` bound, §10.122–§10.123) and uniformly
+Lipschitz-in-time (from the uniform `H⁻²` bound on the time-derivative,
+§10.138, tested against individual Fourier modes).
+
+Package these two inputs as `HasModeLipschitzFamily`.  Classical
+Arzelà–Ascoli applied mode-wise + Cantor diagonal across `ℤ² \ {0}`
+(§10.150) lifts this to a single subsequence converging pointwise-in-t
+at every mode.  Parseval + dominated convergence on `ℓ²(ℤ²)` (§10.151)
+then lifts per-mode pointwise convergence to strong `L²` convergence,
+producing `HasAubinLionsExtraction`. -/
+
+/-- **Per-mode uniform bound + per-mode Lipschitz witness.**
+Packages the Fourier-side ingredients of classical compactness for
+Aubin–Lions extraction on 𝕋². -/
+structure HasModeLipschitzFamily
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
+  /-- Universal mode-value function extending `α` to every mode.  Extended
+  by zero outside `sqgBox n`.  Use `galerkinExtend (sqgBox n) (α n t)` as
+  the canonical choice. -/
+  modeCoeff : ℕ → ℝ → (Fin 2 → ℤ) → ℂ
+  /-- Consistency with `α` on `sqgBox n`. -/
+  modeCoeff_eq : ∀ (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ) (hm : m ∈ sqgBox n),
+    modeCoeff n t m = α n t ⟨m, hm⟩
+  /-- Modes outside `sqgBox n` give `0`. -/
+  modeCoeff_off : ∀ (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ),
+    m ∉ sqgBox n → modeCoeff n t m = 0
+  /-- Per-mode uniform bound: `|modeCoeff n t m| ≤ modeBound t` for every
+  `(n, t, m)` — a weak (mode-independent) bound.  In the SQG application
+  this is the uniform `L²` bound from §10.123 combined with Parseval. -/
+  modeBound : ℝ → ℝ
+  modeBound_nonneg : ∀ t : ℝ, 0 ≤ modeBound t
+  modeBound_holds : ∀ (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ),
+    ‖modeCoeff n t m‖ ≤ modeBound t
+  /-- Per-mode Lipschitz constant in time.  For SQG this comes from the
+  `H⁻²` time-derivative bound (§10.138) tested against `e^{-im·x}`. -/
+  modeLipschitz : (Fin 2 → ℤ) → ℝ
+  modeLipschitz_nonneg : ∀ m : Fin 2 → ℤ, 0 ≤ modeLipschitz m
+  /-- Per-mode Lipschitz-in-time estimate.  The bound is uniform in `n`
+  but the constant depends on `m` (typically `∼ |m|²` for an `H⁻²`
+  time-derivative input). -/
+  modeLipschitz_holds : ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ),
+    0 ≤ s → 0 ≤ t →
+    ‖modeCoeff n t m - modeCoeff n s m‖ ≤ modeLipschitz m * |t - s|
+
+/-- **Canonical `modeCoeff` for a Galerkin family: `galerkinExtend`.** -/
+noncomputable def galerkinModeCoeff
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) :
+    ℕ → ℝ → (Fin 2 → ℤ) → ℂ :=
+  fun n t m => galerkinExtend (sqgBox n) (α n t) m
+
+/-- **`galerkinModeCoeff` agrees with `α` on `sqgBox n`.** -/
+theorem galerkinModeCoeff_eq_of_mem
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ) (hm : m ∈ sqgBox n) :
+    galerkinModeCoeff α n t m = α n t ⟨m, hm⟩ :=
+  galerkinExtend_apply_of_mem _ _ hm
+
+/-- **`galerkinModeCoeff` is zero off `sqgBox n`.** -/
+theorem galerkinModeCoeff_eq_zero_of_not_mem
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ) (hm : m ∉ sqgBox n) :
+    galerkinModeCoeff α n t m = 0 :=
+  galerkinExtend_apply_of_not_mem _ _ hm
+
 end SqgIdentity
