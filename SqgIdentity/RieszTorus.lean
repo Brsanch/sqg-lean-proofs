@@ -18899,4 +18899,66 @@ theorem mFourierCoeff_aubinLions_init
     mFourierCoeff (ext.θ_lim 0) m = mFourierCoeff θ m := by
   rw [ext.init_eq]
 
+/-! ### §10.144 Route B `SqgEvolutionAxioms` assembly
+
+From strong-`L²` convergence (§10.141), zero-mode preservation
+(§10.142), and an explicit `l2Conservation` witness (an external
+hypothesis; classical analytical arguments supply this via
+strong-`L²` norm continuity), assemble `SqgEvolutionAxioms` for the
+Aubin–Lions limit trajectory. The velocity witness is also taken as
+an explicit hypothesis since constructing it requires Fourier
+synthesis of the Riesz-transformed limit. -/
+
+/-- **Route B `SqgEvolutionAxioms` assembly.** Consumes the strong-`L²`
+Aubin–Lions extraction + per-level zero-mode invariant (automatic
+since `0 ∉ sqgBox n`) + an external `l2Conservation` hypothesis +
+a velocity witness, and produces `SqgEvolutionAxioms` for
+`ext.θ_lim`. -/
+theorem SqgEvolutionAxioms.of_aubinLions
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hL2 : ∀ t, 0 ≤ t →
+      hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u) :
+    SqgEvolutionAxioms ext.θ_lim where
+  l2Conservation := hL2
+  meanConservation := fun t ht => by
+    have h_t : mFourierCoeff (ext.θ_lim t) (0 : Fin 2 → ℤ) = 0 :=
+      mFourierCoeff_aubinLionsLimit_zero ext
+        (fun n τ _ => mFourierCoeff_galerkinToLp_sqgBox_zero n (α n τ)) ht
+    have h_0 : mFourierCoeff (ext.θ_lim 0) (0 : Fin 2 → ℤ) = 0 :=
+      mFourierCoeff_aubinLionsLimit_zero ext
+        (fun n τ _ => mFourierCoeff_galerkinToLp_sqgBox_zero n (α n τ)) le_rfl
+    rw [h_t, h_0]
+  velocityIsRieszTransform := fun j => ⟨u j, fun t => hu j t⟩
+
+/-! ### §10.145 Route B headline capstone
+
+Composes §10.144 (SqgEvolutionAxioms assembly) with §10.140
+(`exists_sqgSolution_of_aubinLions`) into a single existence theorem
+for `SqgSolution` from generic-`L²` initial data via the Aubin–Lions
+extraction. -/
+
+/-- **Route B headline: `SqgSolution` existence via Aubin–Lions.**
+For initial data `θ : Lp ℂ 2 (𝕋²)`, a per-level Galerkin family,
+an Aubin–Lions extraction witness, an external `l2Conservation`
+hypothesis, a velocity witness, and `smoothInitialData` summability,
+produces an `SqgSolution` with `sol.θ = ext.θ_lim`. -/
+theorem exists_sqgSolution_via_RouteB
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hL2 : ∀ t, 0 ≤ t →
+      hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (ext.θ_lim 0) n‖ ^ 2)) :
+    ∃ sol : SqgSolution, sol.θ = ext.θ_lim :=
+  exists_sqgSolution_of_aubinLions ext
+    (SqgEvolutionAxioms.of_aubinLions ext hL2 hu) hSmooth
+
 end SqgIdentity
