@@ -19665,20 +19665,15 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinBounds
     intro n t m ht
     -- `galerkinModeCoeff α n t m = galerkinExtend (sqgBox n) (α n t) m`
     -- and `‖·‖² ≤ ∫ ‖θ₀‖²` by §10.123, so `‖·‖ ≤ √(∫ ‖θ₀‖²)`.
-    have h_sq :=
-      sq_galerkinExtend_le_L2Sq θ₀ n (α n) (hEnergy n) ht m
+    have h_sq := sq_galerkinExtend_le_L2Sq θ₀ n (α n) (hEnergy n) ht m
     have h_norm_nn : (0 : ℝ) ≤ ‖galerkinExtend (sqgBox n) (α n t) m‖ :=
       norm_nonneg _
-    have h_int_nn : (0 : ℝ) ≤ ∫ x, ‖θ₀ x‖ ^ 2 :=
-      integral_nonneg (fun _ => sq_nonneg _)
-    -- `x² ≤ y` + `0 ≤ x` + `0 ≤ y` → `x ≤ √y`.
-    have h_sqrt_sq : ‖galerkinExtend (sqgBox n) (α n t) m‖
-        = Real.sqrt (‖galerkinExtend (sqgBox n) (α n t) m‖ ^ 2) := by
-      rw [Real.sqrt_sq h_norm_nn]
     show ‖galerkinModeCoeff α n t m‖ ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2)
     unfold galerkinModeCoeff
-    rw [h_sqrt_sq]
-    exact Real.sqrt_le_sqrt h_sq
+    calc ‖galerkinExtend (sqgBox n) (α n t) m‖
+        = Real.sqrt (‖galerkinExtend (sqgBox n) (α n t) m‖ ^ 2) :=
+          (Real.sqrt_sq h_norm_nn).symm
+      _ ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2) := Real.sqrt_le_sqrt h_sq
   modeLipschitz := L
   modeLipschitz_nonneg := hL_nonneg
   modeLipschitz_holds := by
@@ -19686,6 +19681,9 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinBounds
     show ‖galerkinModeCoeff α n t m - galerkinModeCoeff α n s m‖
       ≤ L m * |t - s|
     unfold galerkinModeCoeff
-    exact hL_holds n m s t hs ht
+    -- `convert` bridges DecidableEq instance mismatch between
+    -- `hL_holds`'s explicit instance and the auto-synthesized
+    -- `Fintype.decidablePiFintype` at this call site.
+    convert hL_holds n m s t hs ht
 
 end SqgIdentity
