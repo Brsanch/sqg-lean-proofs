@@ -16045,4 +16045,170 @@ theorem galerkin_supNorm_le_sqrt_card_of_sum_sq_const
     rw [hSq0]; exact hSq
   exact abs_le_of_sq_le_sq' h_target hRHS_nn |>.2
 
+/-! ### §10.110 Within-interval `L²`-sum conservation
+
+Adapts §10.97 (`galerkinEnergyH0_const`) from the global
+`∀ t, HasDerivAt α ...` hypothesis to the within-interval
+`∀ t ∈ [0, ε], HasDerivWithinAt α ...`, using `HasDerivWithinAt.fun_sum`
++ `.norm_sq` and `constant_of_has_deriv_right_zero`. -/
+
+theorem galerkinEnergyH0_hasDerivWithinAt
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ)) (s : Set ℝ) (τ : ℝ)
+    (hα : HasDerivWithinAt α (galerkinVectorField S (α τ)) s τ) :
+    HasDerivWithinAt (fun t => ∑ m : ↥S, ‖α t m‖ ^ 2)
+      (∑ m : ↥S, 2 *
+        (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m))) s τ := by
+  apply HasDerivWithinAt.fun_sum
+  intros m _
+  have hαm : HasDerivWithinAt (fun t => α t m)
+      (galerkinVectorField S (α τ) m) s τ :=
+    (hasDerivWithinAt_pi.mp hα) m
+  exact hαm.norm_sq
+
+theorem galerkinEnergyH0_hasDerivWithinAt_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (α : ℝ → (↥S → ℂ)) (s : Set ℝ) (τ : ℝ)
+    (hα : HasDerivWithinAt α (galerkinVectorField S (α τ)) s τ)
+    (hRealC : ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)) :
+    HasDerivWithinAt (fun t => ∑ m : ↥S, ‖α t m‖ ^ 2) 0 s τ := by
+  have h := galerkinEnergyH0_hasDerivWithinAt α s τ hα
+  have h0 : (∑ m : ↥S,
+      2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m))) = 0 := by
+    have hTerm : ∀ m : ↥S,
+        2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m))
+          = 2 * (star (galerkinExtend S (α τ) m.val)
+                  * galerkinRHS S (galerkinExtend S (α τ)) m.val).re := by
+      intro m
+      rw [inner_real_complex_eq_re_star_mul]
+      rw [show α τ m = galerkinExtend S (α τ) m.val from
+            (galerkinExtend_apply_of_mem _ _ m.property).symm]
+      rfl
+    rw [Finset.sum_congr rfl (fun m _ => hTerm m)]
+    rw [← Finset.mul_sum]
+    rw [show (∑ m : ↥S, (star (galerkinExtend S (α τ) m.val)
+                          * galerkinRHS S (galerkinExtend S (α τ)) m.val).re)
+             = (∑ m : ↥S, star (galerkinExtend S (α τ) m.val)
+                           * galerkinRHS S (galerkinExtend S (α τ)) m.val).re from
+         (Complex.re_sum _ _).symm]
+    rw [show (∑ m : ↥S, star (galerkinExtend S (α τ) m.val)
+                          * galerkinRHS S (galerkinExtend S (α τ)) m.val)
+             = ∑ n ∈ S, star (galerkinExtend S (α τ) n)
+                         * galerkinRHS S (galerkinExtend S (α τ)) n from by
+         rw [show ((Finset.univ : Finset ↥S)) = S.attach from Finset.univ_eq_attach S]
+         exact Finset.sum_attach S
+           (fun n => star (galerkinExtend S (α τ) n)
+                      * galerkinRHS S (galerkinExtend S (α τ)) n)]
+    rw [galerkinRHS_inner_sum_re_eq_zero hS (galerkinExtend S (α τ))
+        (fun n hn => hRealC n hn)
+        (fun n hn => galerkinExtend_apply_of_not_mem _ _ hn)]
+    ring
+  rw [h0] at h; exact h
+
+theorem galerkinEnergyH0_const_on_Icc
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S) (ε : ℝ)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
+      HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
+    (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖α 0 m‖ ^ 2 := by
+  set E : ℝ → ℝ := fun t => ∑ m : ↥S, ‖α t m‖ ^ 2 with hE_def
+  have hE_cont : ContinuousOn E (Set.Icc (0 : ℝ) ε) := fun x hx =>
+    (galerkinEnergyH0_hasDerivWithinAt α _ x (hα x hx)).continuousWithinAt
+  have hE_right_deriv : ∀ x ∈ Set.Ico (0 : ℝ) ε,
+      HasDerivWithinAt E 0 (Set.Ici x) x := by
+    intros x hx
+    have hx_in : x ∈ Set.Icc (0 : ℝ) ε := ⟨hx.1, le_of_lt hx.2⟩
+    have hE_Icc : HasDerivWithinAt E 0 (Set.Icc (0 : ℝ) ε) x :=
+      galerkinEnergyH0_hasDerivWithinAt_zero hS α (Set.Icc 0 ε) x (hα x hx_in) (hRealC x)
+    have h_ico : HasDerivWithinAt E 0 (Set.Ico x ε) x := by
+      apply hE_Icc.mono
+      intros y hy; exact ⟨le_trans hx.1 hy.1, le_of_lt hy.2⟩
+    have h_inter : Set.Ici x ∩ Set.Iio ε = Set.Ico x ε := by
+      ext y; constructor
+      · intro ⟨hy1, hy2⟩; exact ⟨hy1, hy2⟩
+      · intro ⟨hy1, hy2⟩; exact ⟨hy1, hy2⟩
+    rw [← hasDerivWithinAt_inter (Iio_mem_nhds hx.2 : Set.Iio ε ∈ nhds x), h_inter]
+    exact h_ico
+  have h_const : ∀ x ∈ Set.Icc (0 : ℝ) ε, E x = E 0 :=
+    constant_of_has_deriv_right_zero hE_cont hE_right_deriv
+  exact h_const t ht
+
+/-! ### §10.111 Sup-norm bound on an interval + unconditional `hInv` discharge
+
+Combines §10.109 (sup-`ℓ²` bridge) with §10.110 (within-interval L²-sum
+conservation). The main result
+`galerkin_supNorm_bound_on_Icc` gives `‖α t‖ ≤ √|S| · ‖α 0‖` for any
+within-interval Galerkin solution with real-symmetric data. The
+convenience wrapper `galerkin_hInv_discharged` repackages this into
+the shape consumed by §10.108's `hInv` hypothesis (with the
+`R / (2·√|S|)` initial-data hypothesis rescaling). -/
+
+theorem galerkin_supNorm_bound_on_Icc
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S) (ε : ℝ)
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
+      HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
+    ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ := by
+  have hE : (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖α 0 m‖ ^ 2 :=
+    galerkinEnergyH0_const_on_Icc hS ε α hα hRealC t ht
+  have hCard : (Fintype.card (↥S) : ℝ) = (S.card : ℝ) := by rw [Fintype.card_coe]
+  have hRHS_nn : 0 ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ :=
+    mul_nonneg (Real.sqrt_nonneg _) (norm_nonneg _)
+  rw [pi_norm_le_iff_of_nonneg hRHS_nn]
+  intro m
+  have hSq : ‖α t m‖ ^ 2 ≤ (S.card : ℝ) * ‖α 0‖ ^ 2 := by
+    calc ‖α t m‖ ^ 2
+        ≤ ∑ m' : ↥S, ‖α t m'‖ ^ 2 := pi_term_sq_le_sum_sq (α t) m
+      _ = ∑ m' : ↥S, ‖α 0 m'‖ ^ 2 := hE
+      _ ≤ (Fintype.card ↥S : ℝ) * ‖α 0‖ ^ 2 := pi_sum_sq_le_card_mul_sup_sq (α 0)
+      _ = (S.card : ℝ) * ‖α 0‖ ^ 2 := by rw [hCard]
+  have hCd_nn : (0 : ℝ) ≤ (S.card : ℝ) := Nat.cast_nonneg _
+  have hSq0 : (Real.sqrt ((S.card : ℝ)) * ‖α 0‖) ^ 2
+      = (S.card : ℝ) * ‖α 0‖ ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt hCd_nn]
+  have h_target : (‖α t m‖) ^ 2 ≤ (Real.sqrt ((S.card : ℝ)) * ‖α 0‖) ^ 2 := by
+    rw [hSq0]; exact hSq
+  exact abs_le_of_sq_le_sq' h_target hRHS_nn |>.2
+
+/-- **Unconditional `hInv` discharge (from L² conservation).** Provided
+`S` is nonempty, an initial sup-norm bound `‖c‖ ≤ R / (2 · √|S|)` is
+enough to guarantee `‖α t‖ ≤ R / 2` throughout any within-interval
+real-symmetric Galerkin solution. Matches the shape consumed by
+§10.108's `hInv` hypothesis, modulo the `√|S|` hypothesis-rescaling. -/
+theorem galerkin_hInv_discharged
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S) (hS_card : 0 < S.card)
+    {R ε : ℝ}
+    (c : ↥S → ℂ) (hc : ‖c‖ ≤ R / (2 * Real.sqrt ((S.card : ℝ))))
+    (α : ℝ → (↥S → ℂ)) (hα0 : α 0 = c)
+    (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
+      HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+        galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
+    (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
+    ‖α t‖ ≤ R / 2 := by
+  have h_bound := galerkin_supNorm_bound_on_Icc hS ε α hα hRealC t ht
+  rw [hα0] at h_bound
+  have h_sqrt_pos : 0 < Real.sqrt ((S.card : ℝ)) := by
+    apply Real.sqrt_pos.mpr
+    exact_mod_cast hS_card
+  have h_denom_pos : 0 < 2 * Real.sqrt ((S.card : ℝ)) := by positivity
+  have h_mul : Real.sqrt ((S.card : ℝ)) * ‖c‖
+      ≤ Real.sqrt ((S.card : ℝ)) * (R / (2 * Real.sqrt ((S.card : ℝ)))) :=
+    mul_le_mul_of_nonneg_left hc (Real.sqrt_nonneg _)
+  have h_simp : Real.sqrt ((S.card : ℝ)) * (R / (2 * Real.sqrt ((S.card : ℝ))))
+      = R / 2 := by
+    field_simp
+  linarith [h_mul, h_simp ▸ h_mul, h_bound]
+
 end SqgIdentity
