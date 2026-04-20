@@ -15722,14 +15722,10 @@ theorem galerkin_global_alpha_exists
     have hk_hi : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
     -- Reduce to β k (t - k·ε) with (t - k·ε) ∈ [0, ε].
     have h_shift_nn : 0 ≤ t - (k : ℝ) * ε := by
-      have : (k : ℝ) * ε ≤ t := by
-        have := (div_le_iff₀ hε).mp hk_lo
-        linarith
+      have h : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo
       linarith
     have h_shift_lt : t - (k : ℝ) * ε < ε := by
-      have h1 : t < ((k : ℝ) + 1) * ε := by
-        have := (div_lt_iff₀ hε).mp hk_hi
-        linarith
+      have h1 : t < ((k : ℝ) + 1) * ε := (div_lt_iff₀ hε).mp hk_hi
       nlinarith
     exact hβB k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩
 
