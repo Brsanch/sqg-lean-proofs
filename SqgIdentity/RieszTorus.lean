@@ -16981,4 +16981,54 @@ theorem galerkin_realSym_chain_n_step
           have := ht.2; rw [hTn_succ] at this; linarith
         exact hβE_c₀ (t - Tn) hmem
 
+/-! ### §10.116.G Arbitrarily large horizon from real-symmetric initial data
+
+Direct corollary of §10.116.D + §10.116.F: for any time horizon `T > 0`,
+there is a real-symmetric Galerkin trajectory on `[0, T]` starting
+from a real-symmetric `c₀` with `∑ ‖c₀ m‖² ≤ (R/2)²`, satisfying
+all three invariants (HasDerivWithinAt + real-symmetry + ℓ²-sum
+conservation), with no `hInv` hypothesis.
+
+The full globalization onto `Ici 0` (a single `α : ℝ → (↥S → ℂ)` with
+HasDerivWithinAt on `Ici 0` at every `t ≥ 0`) requires the
+Nat-floor piecewise gluing of §10.105-§10.107; this interval-wise
+form already captures the key unconditional content. -/
+
+theorem galerkin_realSym_existence_on_horizon
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S → ℂ) (hc₀_l2 : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S,
+      galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n))
+    (T : ℝ) (hT : 0 ≤ T) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t ∈ Set.Icc (0 : ℝ) T,
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) T) t) ∧
+      (∀ τ ∈ Set.Icc (0 : ℝ) T, ∀ m ∈ S,
+        galerkinExtend S (α τ) (-m) = star (galerkinExtend S (α τ) m)) ∧
+      (∀ τ ∈ Set.Icc (0 : ℝ) T,
+        (∑ m : ↥S, ‖α τ m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2) := by
+  obtain ⟨ε, hε_pos, hStep⟩ := galerkin_realSym_forward_step S hS hR
+  -- Pick n so that n·ε ≥ T.
+  set n : ℕ := ⌈T / ε⌉₊ with hn_def
+  have h_T_ε_nn : 0 ≤ T / ε := div_nonneg hT hε_pos.le
+  have hn_bound : T ≤ (n : ℝ) * ε := by
+    have h_ceil : T / ε ≤ (n : ℝ) := Nat.le_ceil _
+    have := mul_le_mul_of_nonneg_right h_ceil hε_pos.le
+    rw [div_mul_cancel₀ T (ne_of_gt hε_pos)] at this
+    exact this
+  obtain ⟨α, hα0, hα_D, hα_R, hα_E⟩ :=
+    galerkin_realSym_chain_n_step S hS (le_of_lt hR) hε_pos hStep c₀ hc₀_l2 hRealC₀ n
+  have h_sub : Set.Icc (0 : ℝ) T ⊆ Set.Icc (0 : ℝ) ((n : ℝ) * ε) := fun x hx =>
+    ⟨hx.1, le_trans hx.2 hn_bound⟩
+  refine ⟨α, hα0, ?_, ?_, ?_⟩
+  · intros t ht
+    have ht_big : t ∈ Set.Icc (0 : ℝ) ((n : ℝ) * ε) := h_sub ht
+    exact (hα_D t ht_big).mono h_sub
+  · intros τ hτ m hm
+    exact hα_R τ (h_sub hτ) m hm
+  · intros τ hτ
+    exact hα_E τ (h_sub hτ)
+
 end SqgIdentity
