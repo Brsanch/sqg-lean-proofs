@@ -19337,14 +19337,13 @@ theorem l2Conservation_of_aubinLions_raw
     fun k => galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)
   have h_zero_Ft : ∀ k : ℕ, mFourierCoeff (Ft k) (0 : Fin 2 → ℤ) = 0 := by
     intro k
-    show mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t))
-        (0 : Fin 2 → ℤ) = 0
-    exact mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) t)
+    -- `convert` bridges DecidableEq instance mismatch (helper auto-synthesizes
+    -- `Fintype.decidablePiFintype`, raw's `[DecidableEq]` is `inst✝`; both are
+    -- subsingleton-equal but not defeq under irreducible sqgBox).
+    convert mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) t)
   have h_zero_F0 : ∀ k : ℕ, mFourierCoeff (F0 k) (0 : Fin 2 → ℤ) = 0 := by
     intro k
-    show mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0))
-        (0 : Fin 2 → ℤ) = 0
-    exact mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
+    convert mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
   have h_L2_t : Filter.Tendsto
       (fun k : ℕ => ∫ x, ‖Ft k x - θ_lim t x‖ ^ 2)
       Filter.atTop (nhds 0) := tendsto_L2_proof t ht
