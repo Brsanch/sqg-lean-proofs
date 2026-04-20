@@ -17031,4 +17031,375 @@ theorem galerkin_realSym_existence_on_horizon
   · intros τ hτ
     exact hα_E τ (h_sub hτ)
 
+/-! ### §10.116.H.1 Chain sequence for the real-symmetric class
+
+Mirror of §10.105 with real-symmetry + ℓ²-sum invariants carried
+through the `Nat.rec` construction. The subtype
+`{c : ↥S → ℂ // ℓ²-sum = c₀ ∧ real-sym}` holds both invariants,
+from which `‖c‖ ≤ R/2` follows via `piNorm_le_of_sum_sq_le_sq`. -/
+
+theorem galerkin_realSym_chain_sequence
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {R ε : ℝ} (hε : 0 < ε) (hR : 0 ≤ R)
+    (hStep : ∀ c : ↥S → ℂ, ‖c‖ ≤ R / 2 →
+      (∀ n ∈ S, galerkinExtend S c (-n) = star (galerkinExtend S c n)) →
+      ∃ α : ℝ → (↥S → ℂ), α 0 = c ∧
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) ∧
+        (∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n ∈ S,
+          galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)))
+    (c₀ : ↥S → ℂ)
+    (hc₀_l2 : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S,
+      galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n)) :
+    ∃ η : ℕ → (↥S → ℂ), ∃ β : ℕ → ℝ → (↥S → ℂ),
+      η 0 = c₀ ∧
+      (∀ k, (∑ m : ↥S, ‖η k m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2) ∧
+      (∀ k, ∀ n ∈ S,
+          galerkinExtend S (η k) (-n) = star (galerkinExtend S (η k) n)) ∧
+      (∀ k, β k 0 = η k) ∧
+      (∀ k, β k ε = η (k + 1)) ∧
+      (∀ k, ∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt (β k) (galerkinVectorField S (β k t))
+            (Set.Icc (0 : ℝ) ε) t) ∧
+      (∀ k, ∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n ∈ S,
+          galerkinExtend S (β k τ) (-n) = star (galerkinExtend S (β k τ) n)) ∧
+      (∀ k, ∀ τ ∈ Set.Icc (0 : ℝ) ε,
+          (∑ m : ↥S, ‖β k τ m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2) := by
+  classical
+  have hR2_nn : (0 : ℝ) ≤ R / 2 := by linarith
+  -- Invariant bundle carried through the chain.
+  let Inv : (↥S → ℂ) → Prop := fun c =>
+    (∑ m : ↥S, ‖c m‖ ^ 2) = (∑ m : ↥S, ‖c₀ m‖ ^ 2) ∧
+    (∀ n ∈ S, galerkinExtend S c (-n) = star (galerkinExtend S c n))
+  -- Helper: Inv c ⇒ ‖c‖ ≤ R/2.
+  have inv_bound : ∀ c : ↥S → ℂ, Inv c → ‖c‖ ≤ R / 2 := by
+    intros c hinv
+    have hsum_le : (∑ m : ↥S, ‖c m‖ ^ 2) ≤ (R / 2) ^ 2 := by
+      rw [hinv.1]; exact hc₀_l2
+    exact piNorm_le_of_sum_sq_le_sq c hR2_nn hsum_le
+  -- Step function via Classical.choose.
+  let stepFn : (c : ↥S → ℂ) → Inv c → ℝ → (↥S → ℂ) :=
+    fun c hinv => Classical.choose (hStep c (inv_bound c hinv) hinv.2)
+  have stepSpec : ∀ (c : ↥S → ℂ) (hinv : Inv c),
+      (stepFn c hinv) 0 = c ∧
+      (∀ t ∈ Set.Icc (0 : ℝ) ε,
+        HasDerivWithinAt (stepFn c hinv)
+          (galerkinVectorField S ((stepFn c hinv) t))
+          (Set.Icc (0 : ℝ) ε) t) ∧
+      (∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n ∈ S,
+        galerkinExtend S ((stepFn c hinv) τ) (-n) =
+          star (galerkinExtend S ((stepFn c hinv) τ) n)) :=
+    fun c hinv => Classical.choose_spec (hStep c (inv_bound c hinv) hinv.2)
+  -- Step preserves the invariant: endpoint value of stepFn has Inv.
+  have step_preserves_inv : ∀ (c : ↥S → ℂ) (hinv : Inv c),
+      Inv ((stepFn c hinv) ε) := by
+    intros c hinv
+    have hsp := stepSpec c hinv
+    have hβE : (∑ m : ↥S, ‖(stepFn c hinv) ε m‖ ^ 2) =
+        ∑ m : ↥S, ‖(stepFn c hinv) 0 m‖ ^ 2 :=
+      galerkinEnergyH0_const_on_Icc hS ε (stepFn c hinv) hsp.2.1
+        hsp.2.2 ε ⟨hε.le, le_rfl⟩
+    rw [hsp.1] at hβE
+    refine ⟨?_, ?_⟩
+    · rw [hβE]; exact hinv.1
+    · -- Real-symmetry at ε from hsp.2.2 at τ = ε.
+      have := hsp.2.2 ε ⟨hε.le, le_rfl⟩
+      exact this
+  -- Chain endpoint sequence via Nat.rec.
+  let chainEndpt : ℕ → {c : ↥S → ℂ // Inv c} := fun n =>
+    Nat.rec (motive := fun _ => {c : ↥S → ℂ // Inv c})
+      ⟨c₀, ⟨rfl, hRealC₀⟩⟩
+      (fun _ prev =>
+        ⟨stepFn prev.val prev.property ε,
+         step_preserves_inv prev.val prev.property⟩)
+      n
+  refine ⟨fun n => (chainEndpt n).val,
+          fun n => stepFn (chainEndpt n).val (chainEndpt n).property,
+          ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- η 0 = c₀
+    rfl
+  · -- ℓ²-sum preserved at each η k
+    intro k; exact (chainEndpt k).property.1
+  · -- real-symmetry at each η k
+    intro k; exact (chainEndpt k).property.2
+  · -- β k 0 = η k
+    intro k
+    exact (stepSpec (chainEndpt k).val (chainEndpt k).property).1
+  · -- β k ε = η (k+1)
+    intro k; rfl
+  · -- HasDerivWithinAt β k on [0, ε]
+    intro k t ht
+    exact (stepSpec (chainEndpt k).val (chainEndpt k).property).2.1 t ht
+  · -- real-symmetry along β k on [0, ε]
+    intro k τ hτ n hn
+    exact (stepSpec (chainEndpt k).val (chainEndpt k).property).2.2 τ hτ n hn
+  · -- ℓ²-sum conservation along β k
+    intro k τ hτ
+    have hsp := stepSpec (chainEndpt k).val (chainEndpt k).property
+    have hβE : (∑ m : ↥S, ‖(stepFn (chainEndpt k).val (chainEndpt k).property) τ m‖ ^ 2) =
+        ∑ m : ↥S, ‖(stepFn (chainEndpt k).val (chainEndpt k).property) 0 m‖ ^ 2 :=
+      galerkinEnergyH0_const_on_Icc hS ε _ hsp.2.1 hsp.2.2 τ hτ
+    rw [hβE, hsp.1]
+    exact (chainEndpt k).property.1
+
+/-! ### §10.116.H.2 Global HasDerivWithinAt on `Ici 0`
+
+Mirror of §10.107 with real-symmetry + ℓ²-sum invariants. Same
+Nat-floor piecewise construction of `α t := β ⌊t/ε⌋₊ (t - ⌊t/ε⌋₊·ε)`,
+same case-splits (strict interior / junction / origin). -/
+
+theorem galerkin_realSym_global_on_Ici
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {R ε : ℝ} (hε : 0 < ε) (hR : 0 ≤ R)
+    (hStep : ∀ c : ↥S → ℂ, ‖c‖ ≤ R / 2 →
+      (∀ n ∈ S, galerkinExtend S c (-n) = star (galerkinExtend S c n)) →
+      ∃ α : ℝ → (↥S → ℂ), α 0 = c ∧
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) ∧
+        (∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n ∈ S,
+          galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)))
+    (c₀ : ↥S → ℂ)
+    (hc₀_l2 : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S,
+      galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n)) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) ∧
+      (∀ t, 0 ≤ t →
+        (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2) ∧
+      (∀ t, 0 ≤ t → ∀ n ∈ S,
+        galerkinExtend S (α t) (-n) = star (galerkinExtend S (α t) n)) ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) := by
+  classical
+  obtain ⟨η, β, hη0, hηE, hηR, hβ0, hβε, hβD, hβR, hβE⟩ :=
+    galerkin_realSym_chain_sequence S hS hε hR hStep c₀ hc₀_l2 hRealC₀
+  set α : ℝ → (↥S → ℂ) :=
+    fun t => β (⌊t / ε⌋₊) (t - (⌊t / ε⌋₊ : ℝ) * ε) with hα_def
+  have hR2_nn : (0 : ℝ) ≤ R / 2 := by linarith
+  -- α equals β k (· − k·ε) on [k·ε, (k+1)·ε].
+  have hα_step_eq : ∀ (k : ℕ) (t' : ℝ),
+      (k : ℝ) * ε ≤ t' → t' ≤ ((k : ℝ) + 1) * ε →
+      α t' = β k (t' - (k : ℝ) * ε) := by
+    intros k t' ht_lo ht_hi
+    by_cases heq : t' = ((k : ℝ) + 1) * ε
+    · have hfl : ⌊t' / ε⌋₊ = k + 1 := by
+        rw [heq]
+        have h1 : ((k : ℝ) + 1) * ε / ε = ((k + 1 : ℕ) : ℝ) := by
+          push_cast; field_simp
+        rw [h1]; exact Nat.floor_natCast _
+      show β (⌊t' / ε⌋₊) (t' - (⌊t' / ε⌋₊ : ℝ) * ε) = β k (t' - (k : ℝ) * ε)
+      rw [hfl, heq]
+      have h_lhs : (((k : ℝ) + 1) * ε - ((k + 1 : ℕ) : ℝ) * ε) = 0 := by
+        push_cast; ring
+      have h_rhs : (((k : ℝ) + 1) * ε - (k : ℝ) * ε) = ε := by ring
+      rw [h_lhs, h_rhs, hβ0 (k + 1), hβε k]
+    · have ht_lt : t' < ((k : ℝ) + 1) * ε := lt_of_le_of_ne ht_hi heq
+      have ht_nn : 0 ≤ t' := le_trans (mul_nonneg (Nat.cast_nonneg _) hε.le) ht_lo
+      have hfl : ⌊t' / ε⌋₊ = k := by
+        rw [Nat.floor_eq_iff (by positivity)]
+        refine ⟨?_, ?_⟩
+        · exact (le_div_iff₀ hε).mpr ht_lo
+        · rw [div_lt_iff₀ hε]; linarith
+      show β (⌊t' / ε⌋₊) (t' - (⌊t' / ε⌋₊ : ℝ) * ε) = β k (t' - (k : ℝ) * ε)
+      rw [hfl]
+  -- Translated β k has HasDerivWithinAt on [k·ε, (k+1)·ε].
+  have hβ_step_transD : ∀ (k : ℕ) (t' : ℝ),
+      t' ∈ Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) →
+      HasDerivWithinAt (fun y => β k (y - (k : ℝ) * ε))
+        (galerkinVectorField S (β k (t' - (k : ℝ) * ε)))
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t' := by
+    intros k t' ht'
+    have hmem : t' - (k : ℝ) * ε ∈ Set.Icc (0 : ℝ) ε := by
+      refine ⟨sub_nonneg.mpr ht'.1, ?_⟩
+      have := ht'.2; nlinarith
+    have hg : HasDerivWithinAt (β k) (galerkinVectorField S (β k (t' - (k : ℝ) * ε)))
+        (Set.Icc (0 : ℝ) ε) (t' - (k : ℝ) * ε) := hβD k _ hmem
+    have hh : HasDerivWithinAt (fun y : ℝ => y - (k : ℝ) * ε) 1
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t' :=
+      (hasDerivWithinAt_id t' _).sub_const _
+    have hst : Set.MapsTo (fun y : ℝ => y - (k : ℝ) * ε)
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) (Set.Icc (0 : ℝ) ε) := by
+      intros y hy
+      refine ⟨sub_nonneg.mpr hy.1, ?_⟩
+      have := hy.2; nlinarith
+    have key := hg.scomp t' hh hst
+    simpa using key
+  -- HasDerivWithinAt α on step interval.
+  have hα_step_D : ∀ (k : ℕ) (t' : ℝ),
+      t' ∈ Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) →
+      HasDerivWithinAt α (galerkinVectorField S (α t'))
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t' := by
+    intros k t' ht'
+    have hα_t' : α t' = β k (t' - (k : ℝ) * ε) := hα_step_eq k t' ht'.1 ht'.2
+    rw [hα_t']
+    refine (hβ_step_transD k t' ht').congr ?_ ?_
+    · intros y hy; exact hα_step_eq k y hy.1 hy.2
+    · exact hα_step_eq k t' ht'.1 ht'.2
+  refine ⟨α, ?_, ?_, ?_, ?_, ?_⟩
+  · show β (⌊(0 : ℝ) / ε⌋₊) (0 - (⌊(0 : ℝ) / ε⌋₊ : ℝ) * ε) = c₀
+    have h0 : ⌊(0 : ℝ) / ε⌋₊ = 0 := by simp [Nat.floor_eq_zero, hε]
+    rw [h0]; simp [hβ0, hη0]
+  · -- HasDerivWithinAt α on Ici 0 at each t ≥ 0.
+    intros t ht
+    set k : ℕ := ⌊t / ε⌋₊ with hk_def
+    have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+    have hk_lo_div : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+    have hk_hi_div : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+    have hk_lo : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo_div
+    have hk_hi : t ≤ ((k : ℝ) + 1) * ε :=
+      le_of_lt ((div_lt_iff₀ hε).mp hk_hi_div)
+    have h_Ik_deriv : HasDerivWithinAt α (galerkinVectorField S (α t))
+        (Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)) t :=
+      hα_step_D k t ⟨hk_lo, hk_hi⟩
+    by_cases ht_pos : 0 < t
+    · by_cases ht_eq_kε : t = (k : ℝ) * ε
+      · have hk_pos : 0 < k := by
+          rcases Nat.eq_zero_or_pos k with hk0 | hkp
+          · exfalso
+            rw [hk0, Nat.cast_zero, zero_mul] at ht_eq_kε
+            exact ne_of_gt ht_pos ht_eq_kε
+          · exact hkp
+        set kp : ℕ := k - 1 with hkp_def
+        have hkp_succ : kp + 1 = k := Nat.succ_pred_eq_of_pos hk_pos
+        have hkp_cast : (kp : ℝ) + 1 = (k : ℝ) := by
+          have := congrArg (Nat.cast (R := ℝ)) hkp_succ
+          push_cast at this; linarith
+        have h_prev_top_eq : ((kp : ℝ) + 1) * ε = (k : ℝ) * ε := by rw [hkp_cast]
+        have h_prev_mem : t ∈ Set.Icc ((kp : ℝ) * ε) (((kp : ℝ) + 1) * ε) := by
+          rw [h_prev_top_eq]
+          refine ⟨?_, ht_eq_kε.le⟩
+          rw [ht_eq_kε]
+          have : (kp : ℝ) ≤ (k : ℝ) := by exact_mod_cast Nat.sub_le k 1
+          nlinarith
+        have h_prev_deriv : HasDerivWithinAt α (galerkinVectorField S (α t))
+            (Set.Icc ((kp : ℝ) * ε) (((kp : ℝ) + 1) * ε)) t :=
+          hα_step_D kp t h_prev_mem
+        rw [h_prev_top_eq] at h_prev_deriv
+        have h_union := h_prev_deriv.union h_Ik_deriv
+        have h_kp_le_k : (kp : ℝ) * ε ≤ (k : ℝ) * ε := by
+          have : (kp : ℝ) ≤ (k : ℝ) := by exact_mod_cast Nat.sub_le k 1
+          nlinarith
+        have h_k_le_succ : (k : ℝ) * ε ≤ ((k : ℝ) + 1) * ε := by nlinarith
+        have h_icc_union :
+            Set.Icc ((kp : ℝ) * ε) ((k : ℝ) * ε) ∪
+              Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε)
+            = Set.Icc ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) :=
+          Set.Icc_union_Icc_eq_Icc h_kp_le_k h_k_le_succ
+        rw [h_icc_union] at h_union
+        have h_kp_lt_t : (kp : ℝ) * ε < t := by
+          rw [ht_eq_kε]
+          have h_kp_lt_k : (kp : ℝ) < (k : ℝ) := by
+            have : kp < k := by omega
+            exact_mod_cast this
+          nlinarith
+        have h_t_lt_succ : t < ((k : ℝ) + 1) * ε := by
+          rw [ht_eq_kε]; nlinarith
+        have hU_nhds :
+            Set.Ioo ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) ∈ nhds t :=
+          Ioo_mem_nhds h_kp_lt_t h_t_lt_succ
+        rw [← hasDerivWithinAt_inter hU_nhds]
+        have hsub : Set.Ici (0 : ℝ) ∩
+            Set.Ioo ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) ⊆
+            Set.Icc ((kp : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
+          intros x hx; exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
+        exact h_union.mono hsub
+      · have hk_lt : (k : ℝ) * ε < t := lt_of_le_of_ne hk_lo (Ne.symm ht_eq_kε)
+        have hk_hi_strict : t < ((k : ℝ) + 1) * ε :=
+          (div_lt_iff₀ hε).mp hk_hi_div
+        have hU_nhds :
+            Set.Ioo ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) ∈ nhds t :=
+          Ioo_mem_nhds hk_lt hk_hi_strict
+        rw [← hasDerivWithinAt_inter hU_nhds]
+        have hsub : Set.Ici (0 : ℝ) ∩
+            Set.Ioo ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) ⊆
+            Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
+          intros x hx; exact ⟨le_of_lt hx.2.1, le_of_lt hx.2.2⟩
+        exact h_Ik_deriv.mono hsub
+    · push_neg at ht_pos
+      have ht0 : t = 0 := le_antisymm ht_pos ht
+      subst ht0
+      have hk0 : k = 0 := by simp [hk_def, Nat.floor_eq_zero, hε]
+      have h_Iε_nhd : Set.Iio ε ∈ nhds (0 : ℝ) := Iio_mem_nhds hε
+      rw [← hasDerivWithinAt_inter h_Iε_nhd]
+      have hsub : Set.Ici (0 : ℝ) ∩ Set.Iio ε ⊆
+          Set.Icc ((k : ℝ) * ε) (((k : ℝ) + 1) * ε) := by
+        intros x hx
+        rw [hk0, Nat.cast_zero]
+        refine ⟨?_, ?_⟩
+        · rw [zero_mul]; exact hx.1
+        · rw [zero_add, one_mul]; exact le_of_lt hx.2
+      exact h_Ik_deriv.mono hsub
+  · -- ℓ²-sum conservation.
+    intros t ht
+    set k : ℕ := ⌊t / ε⌋₊ with hk_def
+    have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+    have hk_lo_div : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+    have hk_hi_div : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+    have h_shift_nn : 0 ≤ t - (k : ℝ) * ε := by
+      have h : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo_div
+      linarith
+    have h_shift_lt : t - (k : ℝ) * ε < ε := by
+      have h1 : t < ((k : ℝ) + 1) * ε := (div_lt_iff₀ hε).mp hk_hi_div
+      nlinarith
+    exact hβE k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩
+  · -- Real-symmetry.
+    intros t ht n hn
+    set k : ℕ := ⌊t / ε⌋₊ with hk_def
+    have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+    have hk_lo_div : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+    have hk_hi_div : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+    have h_shift_nn : 0 ≤ t - (k : ℝ) * ε := by
+      have h : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo_div
+      linarith
+    have h_shift_lt : t - (k : ℝ) * ε < ε := by
+      have h1 : t < ((k : ℝ) + 1) * ε := (div_lt_iff₀ hε).mp hk_hi_div
+      nlinarith
+    exact hβR k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩ n hn
+  · -- Pi-norm bound from ℓ²-sum conservation.
+    intros t ht
+    have hE_t : (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2 := by
+      set k : ℕ := ⌊t / ε⌋₊ with hk_def
+      have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+      have hk_lo_div : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+      have hk_hi_div : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+      have h_shift_nn : 0 ≤ t - (k : ℝ) * ε := by
+        have h : (k : ℝ) * ε ≤ t := (le_div_iff₀ hε).mp hk_lo_div
+        linarith
+      have h_shift_lt : t - (k : ℝ) * ε < ε := by
+        have h1 : t < ((k : ℝ) + 1) * ε := (div_lt_iff₀ hε).mp hk_hi_div
+        nlinarith
+      exact hβE k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩
+    have hsum_le : (∑ m : ↥S, ‖α t m‖ ^ 2) ≤ (R / 2) ^ 2 := by
+      rw [hE_t]; exact hc₀_l2
+    exact piNorm_le_of_sum_sq_le_sq (α t) hR2_nn hsum_le
+
+/-! ### §10.116.H.3 Final unconditional capstone
+
+Combines §10.116.H.2 with §10.116.D (`galerkin_realSym_forward_step`)
+to produce a time-global Galerkin trajectory from real-symmetric
+initial data, with NO external `hInv` hypothesis. The only
+remaining assumption is the ℓ²-sum bound on `c₀`. -/
+
+theorem galerkin_time_global_unconditional_realSym
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S → ℂ)
+    (hc₀_l2 : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S,
+      galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n)) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) ∧
+      (∀ t, 0 ≤ t →
+        (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2) ∧
+      (∀ t, 0 ≤ t → ∀ n ∈ S,
+        galerkinExtend S (α t) (-n) = star (galerkinExtend S (α t) n)) ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) := by
+  obtain ⟨ε, hε_pos, hStep⟩ := galerkin_realSym_forward_step S hS hR
+  exact galerkin_realSym_global_on_Ici S hS hε_pos (le_of_lt hR) hStep c₀ hc₀_l2 hRealC₀
+
 end SqgIdentity
