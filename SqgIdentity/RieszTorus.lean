@@ -14901,8 +14901,9 @@ theorem galerkinRHS_neg_eq_star_of_realSymmetric
   rw [star_neg, star_sum]
   congr 1
   -- Reindex via ℓ ↔ -ℓ.
-  refine Finset.sum_nbij' (fun (ℓ : Fin 2 → ℤ) _ => -ℓ)
-      (fun (ℓ : Fin 2 → ℤ) _ => -ℓ) ?_ ?_ ?_ ?_ ?_
+  apply Finset.sum_nbij'
+      (fun ℓ _ => (-ℓ : Fin 2 → ℤ))
+      (fun ℓ _ => (-ℓ : Fin 2 → ℤ))
   -- Forward membership.
   · intros ℓ hℓ
     rw [Finset.mem_filter] at hℓ ⊢
