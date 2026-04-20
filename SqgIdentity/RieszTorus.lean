@@ -16498,7 +16498,8 @@ theorem galerkin_local_exists_with_ball_containment
   }
   obtain ⟨α, hα⟩ := FunSpace.exists_isFixedPt_next hPL (Metric.mem_closedBall_self le_rfl)
   refine ⟨α.compProj, ?_, ?_, ?_⟩
-  · rw [FunSpace.compProj_val, ← hα, FunSpace.next_apply₀]
+  · show α.compProj (t₀ : ℝ) = c₀
+    rw [FunSpace.compProj_val, ← hα, FunSpace.next_apply₀]
   · intros t ht
     apply hasDerivWithinAt_picard_Icc t₀.2 hPL.continuousOn_uncurry
       α.continuous_compProj.continuousOn
