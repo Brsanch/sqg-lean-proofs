@@ -18828,4 +18828,46 @@ theorem tendsto_mFourierCoeff_of_tendsto_L2Sq
     pow_le_pow_left₀ hEps_nn hContra 2
   linarith
 
+/-! ### §10.142 `meanConservation` for the Aubin–Lions limit
+
+Since `0 ∉ sqgBox n` for every `n`, every Galerkin trajectory has
+`mFourierCoeff (galerkinToLp (sqgBox n) (α n t)) 0 = 0`. The strong
+`L²` convergence of §10.141 then lifts this to
+`mFourierCoeff (ext.θ_lim t) 0 = 0` for every `t ≥ 0`. -/
+
+/-- **Aubin–Lions limit has vanishing zero mode at every forward
+time.** Consequence of strong-`L²` convergence + per-level Galerkin
+zero-mode triviality (`0 ∉ sqgBox n`). -/
+theorem mFourierCoeff_aubinLionsLimit_zero
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hGalerkin : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      mFourierCoeff (galerkinToLp (sqgBox n) (α n t)) 0 = 0)
+    {t : ℝ} (ht : 0 ≤ t) :
+    mFourierCoeff (ext.θ_lim t) 0 = 0 := by
+  have hTendsto :=
+    tendsto_mFourierCoeff_of_tendsto_L2Sq (ext.tendsto_L2 t ht) (0 : Fin 2 → ℤ)
+  -- LHS sequence is eventually (always) zero.
+  have hZero : ∀ k : ℕ,
+      mFourierCoeff (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+        (0 : Fin 2 → ℤ) = 0 :=
+    fun k => hGalerkin (ext.nsub k) t ht
+  have hSeqEq :
+      (fun k : ℕ => mFourierCoeff
+          (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+          (0 : Fin 2 → ℤ)) = fun _ => (0 : ℂ) :=
+    funext hZero
+  rw [hSeqEq] at hTendsto
+  exact tendsto_nhds_unique hTendsto tendsto_const_nhds
+
+/-- **Automatic zero-mode triviality for Galerkin trajectories.** For
+any `α n : ↥(sqgBox n) → ℂ`, `mFourierCoeff (galerkinToLp (sqgBox n) (α n t)) 0 = 0`
+because `0 ∉ sqgBox n`. -/
+theorem mFourierCoeff_galerkinToLp_sqgBox_zero
+    (n : ℕ) (c : ↥(sqgBox n) → ℂ) :
+    mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 := by
+  rw [mFourierCoeff_galerkinToLp,
+      galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox n)]
+
 end SqgIdentity
