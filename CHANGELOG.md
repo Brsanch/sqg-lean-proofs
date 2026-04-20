@@ -4,6 +4,66 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.38 — 2026-04-20
+
+**§10.147–§10.152 — Route B analytical chain extended.**  First of two
+Route B analytical hypotheses (`l2Conservation`) now internally
+discharged; the second (`HasAubinLionsExtraction` existence) reduced
+to three precisely-typed Lean construction targets.
+
+- **§10.147 `l2Conservation_of_aubinLions`** — strong-`L²` convergence
+  + §10.97 per-level energy conservation + §10.142 zero-mode
+  preservation → `hL2 : ∀ t, 0 ≤ t → hsSeminormSq 0 (ext.θ_lim t) =
+  hsSeminormSq 0 (ext.θ_lim 0)`.  Built on new bridge lemmas
+  `Lp_two_norm_sq_eq_integral_norm_sq`,
+  `tendsto_Lp_two_norm_sub_of_tendsto_integral_sq`,
+  `tendsto_integral_norm_sq_of_tendsto_L2sub`,
+  `integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero`, and
+  `tendsto_hsSeminormSq_of_tendsto_L2sub_torus`.
+- **§10.148 `exists_sqgSolution_via_RouteB_from_galerkin_energy`** —
+  hypothesis-free capstone consuming §10.147.  Produces `SqgSolution`
+  from `HasAubinLionsExtraction` witness + per-level `hsSeminormSq 0`
+  invariance + velocity witness + `smoothInitialData`.  The `hL2`
+  hypothesis of §10.145 is now internal.
+- **§10.149 `HasModeLipschitzFamily`** — structural predicate
+  packaging the Fourier-side compactness ingredients: universal mode
+  extension, uniform mode-wise bound, uniform per-mode Lipschitz-in-
+  time constant.  Plus `galerkinModeCoeff` canonical constructor.
+- **§10.150 `HasPerModeLimit`** — structural predicate for the output
+  of Arzelà–Ascoli + Cantor diagonal: extracted subsequence + per-mode
+  limit function + per-mode pointwise-in-time convergence.  Plus
+  `HasPerModeLimit.b_zero_mode` automatic triviality from `0 ∉ sqgBox n`.
+- **§10.151 `HasFourierSynthesis` + `HasAubinLionsExtraction.ofPerModeLimit`**
+  — Parseval-synthesis interface: given per-mode limit + Lp-valued
+  synthesis witness, one-line construction of `HasAubinLionsExtraction`.
+- **§10.152 `HasModeLipschitzFamily.ofSqgGalerkinBounds`** —
+  structural discharge for the SQG Galerkin family using §10.123's
+  `sq_galerkinExtend_le_L2Sq` (modeBound concretely discharged via
+  `Real.sqrt_sq` + `Real.sqrt_le_sqrt`) and a named per-mode Lipschitz
+  hypothesis `L m` (derivable from §10.138's `H⁻²` bound + §10.116's
+  Galerkin ODE via FTC, remaining work).
+
+**Diagnostic breakthrough during §10.147 work.**  After 9 CI failures
+on heartbeat-exhausted whnf timeouts, `set_option diagnostics true`
+pinpointed the root cause: `sqgBox n := Fintype.piFinset (Finset.Icc
+(-(n+1)) (n+1)) .erase 0` with symbolic `n = nsub k` drove isDefEq into
+a loop unfolding `Int.rec` (3.5M times), `List.range.loop` (162k
+times), `Quot.lift` (117k times).  Fix:
+`attribute [local irreducible] sqgBox` in the §10.147 section.
+Documented in memory as `feedback_lean_diagnostic_workflow.md` so
+future sessions skip the trial-and-error.
+
+**Remaining Item-1 work** (explicit Lean targets):
+1. `HasPerModeLimit.ofModeLipschitzFamily` — classical Arzelà–Ascoli
+   (mathlib `BoundedContinuousFunction.arzelaAscoli`) + Cantor
+   diagonal across ℤ² \ {0} (mathlib `Denumerable`).
+2. `HasFourierSynthesis.ofPerModeLimit` — Parseval + Fatou + dominated
+   convergence on ℓ²(ℤ²).
+3. Finish `§10.152`: derive per-mode Lipschitz `L m` from §10.138 +
+   §10.116 ODE via FTC.
+
++540 lines, ~19,670 total.  Zero `sorry`.  Zero axioms beyond mathlib.
+
 ## v0.4.37 — 2026-04-20
 
 **§10.146 — zero-datum instance of Route B (second attempt, fixed).**
