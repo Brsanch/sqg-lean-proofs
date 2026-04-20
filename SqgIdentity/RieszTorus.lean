@@ -15678,4 +15678,59 @@ theorem galerkin_chain_sequence
       (stepSpec (chainEndpt n).val (chainEndpt n).property).1
       (stepSpec (chainEndpt n).val (chainEndpt n).property).2 t ht
 
+/-! ### §10.106 Global function from the chain pieces (value + norm bound)
+
+Given the chain sequence `(η, β)` from §10.105, define a single
+`α : ℝ → ↥S → ℂ` piecewise:
+  `α t = β ⌊t/ε⌋₊ (t − ⌊t/ε⌋₊ · ε)`  for `t ≥ 0`.
+
+This section establishes `α 0 = c₀` and the pointwise norm bound
+`‖α t‖ ≤ R/2` for all `t ≥ 0`. The `HasDerivAt` assembly is deferred
+to §10.107 (interior) and §10.108 (final capstone). -/
+
+theorem galerkin_global_alpha_exists
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R ε : ℝ} (hε : 0 < ε)
+    (hStep : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+        ∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hInv : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c₀ →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) := by
+  classical
+  obtain ⟨η, β, hη0, hηB, hβ0, hβε, _hβD, hβB⟩ :=
+    galerkin_chain_sequence S hε hStep hInv c₀ hc₀
+  -- Global α via Nat.floor.
+  refine ⟨fun t => β (⌊t / ε⌋₊) (t - (⌊t / ε⌋₊ : ℝ) * ε), ?_, ?_⟩
+  · -- α 0 = c₀
+    show β (⌊(0 : ℝ) / ε⌋₊) (0 - (⌊(0 : ℝ) / ε⌋₊ : ℝ) * ε) = c₀
+    have h0 : ⌊(0 : ℝ) / ε⌋₊ = 0 := by
+      simp [Nat.floor_eq_zero, hε]
+    rw [h0]
+    simp [hβ0, hη0]
+  · -- Norm bound for t ≥ 0.
+    intros t ht
+    set k : ℕ := ⌊t / ε⌋₊ with hk_def
+    have ht_ε : 0 ≤ t / ε := div_nonneg ht hε.le
+    have hk_lo : (k : ℝ) ≤ t / ε := Nat.floor_le ht_ε
+    have hk_hi : t / ε < (k : ℝ) + 1 := Nat.lt_floor_add_one _
+    -- Reduce to β k (t - k·ε) with (t - k·ε) ∈ [0, ε].
+    have h_shift_nn : 0 ≤ t - (k : ℝ) * ε := by
+      have : (k : ℝ) * ε ≤ t := by
+        have := (div_le_iff₀ hε).mp hk_lo
+        linarith
+      linarith
+    have h_shift_lt : t - (k : ℝ) * ε < ε := by
+      have h1 : t < ((k : ℝ) + 1) * ε := by
+        have := (div_lt_iff₀ hε).mp hk_hi
+        linarith
+      nlinarith
+    exact hβB k (t - (k : ℝ) * ε) ⟨h_shift_nn, h_shift_lt.le⟩
+
 end SqgIdentity
