@@ -16283,7 +16283,7 @@ theorem galerkin_time_global_real_symmetric
         HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) ∧
       (∀ t, 0 ≤ t → ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖c₀‖) := by
   obtain ⟨α, hα0, hα_norm, hα_deriv⟩ :=
-    galerkin_global_existence_from_invariance hR c₀ hc₀ hInv
+    galerkin_global_existence_from_invariance S hR c₀ hc₀ hInv
   refine ⟨α, hα0, hα_norm, hα_deriv, ?_⟩
   intros t ht
   have hRealC := hRealSymPropagates α hα0 hα_deriv
