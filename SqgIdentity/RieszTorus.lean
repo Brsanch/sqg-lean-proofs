@@ -15981,4 +15981,68 @@ theorem galerkin_global_existence_from_invariance
   obtain ⟨ε, hε, hStep⟩ := galerkin_forward_step S hR
   exact galerkin_global_hasDerivWithinAt_conditional S hε hStep (hInv ε hε) c₀ hc₀
 
+/-! ### §10.109 Sup-norm bound from `L²`-energy conservation
+
+Finite-sum `L²` energy conservation (§10.97, `galerkinEnergyH0_const`)
+does not directly preserve the Pi sup-norm on `↥S → ℂ`, but bounds it
+up to a factor `√|S|`. Specifically for any `c : ↥S → ℂ`:
+
+  `‖c‖² ≤ ∑_m ‖c m‖² ≤ |S| · ‖c‖²`,
+
+whence conservation of the middle quantity gives
+`‖α t‖ ≤ √|S| · ‖α 0‖`. This section exposes that bound as a pure
+corollary of sum conservation — independent of how conservation is
+established (in particular it applies to solutions with
+`HasDerivWithinAt` on an interval, not just `HasDerivAt` on ℝ). -/
+
+lemma pi_sum_sq_le_card_mul_sup_sq
+    {ι : Type*} [Fintype ι] {β : Type*} [SeminormedAddCommGroup β]
+    (c : ι → β) :
+    (∑ m : ι, ‖c m‖ ^ 2) ≤ (Fintype.card ι : ℝ) * ‖c‖ ^ 2 := by
+  calc (∑ m : ι, ‖c m‖ ^ 2)
+      ≤ ∑ _m : ι, ‖c‖ ^ 2 :=
+        Finset.sum_le_sum (fun m _ => by
+          have : ‖c m‖ ≤ ‖c‖ := norm_le_pi_norm c m
+          have h0 : 0 ≤ ‖c m‖ := norm_nonneg _
+          nlinarith)
+    _ = (Fintype.card ι : ℝ) * ‖c‖ ^ 2 := by
+        rw [Finset.sum_const, Finset.card_univ]
+        ring
+
+lemma pi_term_sq_le_sum_sq
+    {ι : Type*} [Fintype ι] {β : Type*} [SeminormedAddCommGroup β]
+    (c : ι → β) (m : ι) :
+    ‖c m‖ ^ 2 ≤ ∑ m' : ι, ‖c m' ‖ ^ 2 := by
+  refine Finset.single_le_sum (f := fun m' => ‖c m'‖ ^ 2) ?_ (Finset.mem_univ m)
+  intros i _; positivity
+
+theorem galerkin_supNorm_le_sqrt_card_of_sum_sq_const
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hE : ∀ t : ℝ, (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖α 0 m‖ ^ 2)
+    (t : ℝ) :
+    ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ := by
+  have hCard : (Fintype.card (↥S) : ℝ) = (S.card : ℝ) := by
+    rw [Fintype.card_coe]
+  have hRHS_nn : 0 ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ :=
+    mul_nonneg (Real.sqrt_nonneg _) (norm_nonneg _)
+  rw [pi_norm_le_iff_of_nonneg hRHS_nn]
+  intro m
+  -- ‖α t m‖² ≤ ∑ ‖α t m'‖² = ∑ ‖α 0 m'‖² ≤ |S| · ‖α 0‖².
+  have hSq : ‖α t m‖ ^ 2 ≤ (S.card : ℝ) * ‖α 0‖ ^ 2 := by
+    calc ‖α t m‖ ^ 2
+        ≤ ∑ m' : ↥S, ‖α t m'‖ ^ 2 := pi_term_sq_le_sum_sq (α t) m
+      _ = ∑ m' : ↥S, ‖α 0 m'‖ ^ 2 := hE t
+      _ ≤ (Fintype.card ↥S : ℝ) * ‖α 0‖ ^ 2 := pi_sum_sq_le_card_mul_sup_sq (α 0)
+      _ = (S.card : ℝ) * ‖α 0‖ ^ 2 := by rw [hCard]
+  -- Take square roots.
+  have hLHS_nn : 0 ≤ ‖α t m‖ := norm_nonneg _
+  have h_target : (‖α t m‖) ^ 2 ≤ (Real.sqrt ((S.card : ℝ)) * ‖α 0‖) ^ 2 := by
+    have hCd_nn : (0 : ℝ) ≤ (S.card : ℝ) := Nat.cast_nonneg _
+    have hSq0 : (Real.sqrt ((S.card : ℝ)) * ‖α 0‖) ^ 2
+        = (S.card : ℝ) * ‖α 0‖ ^ 2 := by
+      rw [mul_pow, Real.sq_sqrt hCd_nn]
+    rw [hSq0]; exact hSq
+  exact abs_le_of_sq_le_sq' h_target hRHS_nn |>.2
+
 end SqgIdentity
