@@ -4,6 +4,40 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.19 — 2026-04-20
+
+Within-interval `L²`-sum conservation + unconditional ball-invariance
+discharge for §10.108's `hInv`. Extends v0.4.18 by ~166 lines.
+
+- **§10.110 `galerkinEnergyH0_const_on_Icc`** — ports §10.97's L²
+  conservation from `∀ t, HasDerivAt α (vf α(t)) t` on all of `ℝ` to
+  the within-interval `∀ t ∈ [0, ε], HasDerivWithinAt α (vf α(t))
+  (Icc 0 ε) t`. Building blocks:
+  - `galerkinEnergyH0_hasDerivWithinAt` — `HasDerivWithinAt.fun_sum`
+    + per-coord `.norm_sq` + `hasDerivWithinAt_pi`.
+  - `galerkinEnergyH0_hasDerivWithinAt_zero` — reapply §10.96's
+    inner-sum-real-part-zero identity (copied from §10.97).
+  - Apply `constant_of_has_deriv_right_zero` after converting
+    `HasDerivWithinAt (Icc 0 ε) x → HasDerivWithinAt (Ici x) x`
+    via `.mono` onto `Ico x ε` + `hasDerivWithinAt_inter` with
+    the open neighborhood `Iio ε`.
+- **§10.111 `galerkin_supNorm_bound_on_Icc`** — direct application
+  of §10.109 with §10.110's conservation, giving
+  `‖α t‖ ≤ √|S| · ‖α 0‖` at every `t ∈ [0, ε]`.
+- **§10.111 `galerkin_hInv_discharged`** — convenience wrapper
+  in the exact shape consumed by §10.108's `hInv`: given
+  `0 < S.card` and `‖c‖ ≤ R / (2·√|S|)`, delivers `‖α t‖ ≤ R/2`.
+  The `√|S|` appears as a hypothesis rescaling (intrinsic to the
+  sup-norm ↔ `ℓ²` comparison, not a proof artifact).
+
+This completes the unconditional discharge of §10.108's `hInv` for
+real-symmetric Galerkin solutions on finite Fourier support.
+Together with the rest of §10.101-§10.111, time-global existence
+is now unconditionally provable on this class — modulo the
+`R/(2·√|S|)` rescaling in the initial-data hypothesis.
+
+16,923 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.18 — 2026-04-20
 
 Pure norm bound bridging `ℓ²`-sum conservation (§10.97) and the
