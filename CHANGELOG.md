@@ -4,6 +4,34 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.32 — 2026-04-20
+
+**Hygiene release: `push_neg` deprecation + CI Node 24 opt-in.**
+No mathematical content change.
+
+- **Item 10.** Replaced 10 occurrences of `push_neg at h` with
+  `push Not at h` throughout `RieszTorus.lean`. The `push Not` form is
+  the mathlib-recommended successor as of the v4.29 deprecation cycle.
+- **Item 11.** CI workflow updated ahead of the June 2026 Node 20
+  removal deadline in GitHub Actions. `actions/checkout@v5` bumped to
+  `@v6` (Node 24 native). `leanprover/lean-action@v1` floats to the
+  latest v1.x (v1.4.0 at time of writing); its transitive
+  `actions/cache@v4` dependency is still on Node 20, so
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"` is set at the job level
+  to force those transitive JS actions to Node 24. Inline comment
+  documents the removal condition.
+- **OPEN.md** added as the canonical open-items tracker. Replaces the
+  drift-prone ad-hoc regeneration of "what's left" from context.
+  Each subsequent release strikes items off this file so the list
+  has a single source of truth.
+
+Marked for the record: items 7 (`hFluxBound` from L∞) and 8
+(`l2Conservation` from `Re⟨α, galerkinVF⟩ = 0`) from the original
+open-items list were already closed in-tree — §10.93 / §10.94 cover
+item 7, and §10.96 / §10.97 / `galerkinToLp_hsSeminormSq_zero_const`
+cover item 8. The v0.4.10 session memory note listing them as open
+was stale.
+
 ## v0.4.31 — 2026-04-20
 
 **§10.131–§10.132 — concrete closure of the v0.4.30 chain on the
