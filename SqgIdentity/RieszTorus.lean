@@ -19216,11 +19216,39 @@ theorem integral_norm_sq_galerkinToLp_sqgBox
     (galerkinToLp (sqgBox n) c)
     (mFourierCoeff_galerkin_sqgBox_zero_any n c)
 
-set_option maxHeartbeats 1600000 in
+set_option maxHeartbeats 1200000 in
+/-- **Integral-level conservation for the Aubin–Lions limit.**
+`∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖²` from strong-`L²` convergence +
+per-level Galerkin energy conservation.  Preliminary to
+`l2Conservation_of_aubinLions`. -/
+theorem integral_norm_sq_aubinLions_const
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    (t : ℝ) (ht : 0 ≤ t) :
+    (∫ x, ‖ext.θ_lim t x‖ ^ 2) = (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) := by
+  have h_lim_t := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
+  have h_lim_0 := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
+  have h_const_k : ∀ k : ℕ,
+      (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+        = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
+    fun k =>
+      (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) t)).trans
+        ((hLevel (ext.nsub k) t ht).trans
+          (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) 0)).symm)
+  exact tendsto_nhds_unique (h_lim_t.congr h_const_k) h_lim_0
+
+set_option maxHeartbeats 400000 in
 /-- **Route B `l2Conservation` from Aubin–Lions.** From the strong-`L²`
 Aubin–Lions extraction (§10.139) and per-level Galerkin energy
 conservation (§10.97), produce the `l2Conservation` hypothesis
-consumed by §10.144. -/
+consumed by §10.144.  Splits into `integral_norm_sq_aubinLions_const`
+(for `∫ ‖·‖²`) + zero-mode lift via
+`integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero`. -/
 theorem l2Conservation_of_aubinLions
     [DecidableEq (Fin 2 → ℤ)]
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
@@ -19232,35 +19260,13 @@ theorem l2Conservation_of_aubinLions
     ∀ t, 0 ≤ t →
       hsSeminormSq 0 (ext.θ_lim t) = hsSeminormSq 0 (ext.θ_lim 0) := by
   intro t ht
-  -- Zero-mode vanishes on the limit at both 0 and t.
   have h_zero_t : mFourierCoeff (ext.θ_lim t) (0 : Fin 2 → ℤ) = 0 :=
     mFourierCoeff_aubinLionsLimit_zero ext
       (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) ht
   have h_zero_0 : mFourierCoeff (ext.θ_lim 0) (0 : Fin 2 → ℤ) = 0 :=
     mFourierCoeff_aubinLionsLimit_zero ext
       (fun n τ _ => mFourierCoeff_galerkin_sqgBox_zero_any n (α n τ)) le_rfl
-  -- Strong-L² limits: ∫ ‖f_k τ‖² → ∫ ‖θ_lim τ‖² for τ ∈ {t, 0}.
-  have h_lim_t := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
-  have h_lim_0 := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
-  -- Per-level constant-in-time energy (term-mode, cheap composition).
-  have h_const_k : ∀ k : ℕ,
-      (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
-        = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
-    fun k =>
-      (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) t)).trans
-        ((hLevel (ext.nsub k) t ht).trans
-          (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) 0)).symm)
-  -- Transport h_lim_t via pointwise equality using Tendsto.congr (avoids
-  -- heavy `rw` into the Tendsto type).
-  have h_lim_t' : Filter.Tendsto
-      (fun k : ℕ =>
-        ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2)
-      Filter.atTop (nhds (∫ x, ‖ext.θ_lim t x‖ ^ 2)) :=
-    h_lim_t.congr h_const_k
-  -- ∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖² by limit uniqueness.
-  have h_int_eq : (∫ x, ‖ext.θ_lim t x‖ ^ 2) = (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) :=
-    tendsto_nhds_unique h_lim_t' h_lim_0
-  -- Lift via zero-mode split, composed in a calc.
+  have h_int_eq := integral_norm_sq_aubinLions_const ext hLevel t ht
   have h_split_t :=
     integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (ext.θ_lim t) h_zero_t
   have h_split_0 :=
