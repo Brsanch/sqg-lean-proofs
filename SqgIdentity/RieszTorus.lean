@@ -19769,4 +19769,86 @@ theorem galerkinExtend_mode_lipschitz_of_ODE_bound
     (C := M) hCont hDeriv hBound t ⟨hst, le_refl t⟩
   exact h
 
+/-- **§10.153.C** `HasModeLipschitzFamily` from uniform `H⁻²` bound +
+per-mode Galerkin ODE.  Combines §10.152 (§10.123-based modeBound)
+with §10.153.A (H⁻² → per-mode bound) + §10.153.B (MVT) to produce
+`L m := Real.sqrt K * fracDerivSymbol 2 m` concretely. -/
+noncomputable def HasModeLipschitzFamily.ofSqgGalerkinH2Bound
+    [DecidableEq (Fin 2 → ℤ)]
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hEnergy : ∀ n t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ₀ m‖ ^ 2)
+    (K : ℝ) (hK : 0 ≤ K)
+    (hH2 : UniformGalerkinRHSHsNegSqBound α 2 K)
+    (hDeriv : ∀ (n : ℕ) (m : Fin 2 → ℤ) (τ : ℝ), 0 ≤ τ →
+      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+        (Set.Ici τ) τ)
+    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m) (Set.Icc s t)) :
+    HasModeLipschitzFamily α :=
+  HasModeLipschitzFamily.ofSqgGalerkinBounds θ₀ hEnergy
+    (fun m => Real.sqrt K * fracDerivSymbol 2 m)
+    (fun m => mul_nonneg (Real.sqrt_nonneg _) (fracDerivSymbol_nonneg 2 m))
+    (fun n m s t hs ht => by
+      -- Case-split m = 0 first: galerkinExtend (sqgBox n) (α n _) 0 = 0
+      -- identically (since 0 ∉ sqgBox n), so both sides are 0.
+      by_cases hm : m = 0
+      · subst hm
+        have hExt_t : galerkinExtend (sqgBox n) (α n t) (0 : Fin 2 → ℤ) = 0 :=
+          galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox n)
+        have hExt_s : galerkinExtend (sqgBox n) (α n s) (0 : Fin 2 → ℤ) = 0 :=
+          galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox n)
+        rw [hExt_t, hExt_s, sub_zero, norm_zero, fracDerivSymbol_zero,
+            mul_zero, zero_mul]
+      -- Now m ≠ 0: apply §10.153.A pointwise + §10.153.B integral bound.
+      -- Split by sign of (t - s).
+      rcases le_or_lt s t with hst | hts
+      · -- s ≤ t: apply §10.153.B on [s, t].
+        have hDerivOn : ∀ τ ∈ Set.Ico s t,
+            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+              (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+              (Set.Ici τ) τ :=
+          fun τ hτ => hDeriv n m τ (le_trans hs hτ.1)
+        have hContOn : ContinuousOn
+            (fun σ => galerkinExtend (sqgBox n) (α n σ) m) (Set.Icc s t) :=
+          hCont n m s t hs hst
+        have hBoundOn : ∀ τ ∈ Set.Ico s t,
+            ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
+              ≤ Real.sqrt K * fracDerivSymbol 2 m :=
+          fun τ hτ => galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans hs hτ.1)) hm
+        have h := galerkinExtend_mode_lipschitz_of_ODE_bound
+          (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m)
+          hst hDerivOn hContOn hBoundOn
+        rw [abs_of_nonneg (by linarith : (0:ℝ) ≤ t - s)]
+        exact h
+      · -- t < s: apply §10.153.B on [t, s] (reversed).
+        have hDerivOn : ∀ τ ∈ Set.Ico t s,
+            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+              (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+              (Set.Ici τ) τ :=
+          fun τ hτ => hDeriv n m τ (le_trans ht hτ.1)
+        have hContOn : ContinuousOn
+            (fun σ => galerkinExtend (sqgBox n) (α n σ) m) (Set.Icc t s) :=
+          hCont n m t s ht hts.le
+        have hBoundOn : ∀ τ ∈ Set.Ico t s,
+            ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
+              ≤ Real.sqrt K * fracDerivSymbol 2 m :=
+          fun τ hτ => galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans ht hτ.1)) hm
+        have h := galerkinExtend_mode_lipschitz_of_ODE_bound
+          (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m)
+          hts.le hDerivOn hContOn hBoundOn
+        rw [show |t - s| = s - t from by
+          rw [abs_of_neg (by linarith : t - s < 0)]; ring]
+        rw [show galerkinExtend (sqgBox n) (α n t) m
+              - galerkinExtend (sqgBox n) (α n s) m
+            = -(galerkinExtend (sqgBox n) (α n s) m
+              - galerkinExtend (sqgBox n) (α n t) m) from by ring]
+        rw [norm_neg]
+        exact h)
+
 end SqgIdentity
