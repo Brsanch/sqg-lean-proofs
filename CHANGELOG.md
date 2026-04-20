@@ -4,6 +4,22 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.36 — 2026-04-20
+
+**§10.146 — zero-datum instance of Route B.** Exercises the v0.4.35
+Route B structural chain end-to-end on the zero initial datum, as a
+consistency check. Provides:
+
+- `HasAubinLionsExtraction.ofZero` — trivial extraction witness with
+  identity subsequence and zero limit. Strong-`L²` tendsto is
+  literal zero after unfolding `galerkinToLp (sqgBox n) 0 = 0`.
+- `exists_sqgSolution_via_RouteB_zero` — `SqgSolution` existence
+  through the full Route B capstone for the zero datum, verifying
+  the §10.144 `SqgEvolutionAxioms` assembly and the §10.145
+  composition with `exists_sqgSolution_of_aubinLions` work together.
+
++74 lines; zero `sorry`; CI green.
+
 ## v0.4.35 — 2026-04-20
 
 **§10.137–§10.145 — Route B conditional chain for the generic-`L²`
