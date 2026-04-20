@@ -15605,4 +15605,72 @@ theorem galerkin_chain_n_step
           have := ht.2; rw [hTn_succ] at this; linarith
         exact hβB (t - Tn) hmem
 
+/-! ### §10.105 Chain sequence of endpoints and step solutions
+
+Under ball-invariance, bundle the forward iteration into two sequences:
+  `η : ℕ → ↥S → ℂ` — endpoint values with `η 0 = c₀` and `‖η n‖ ≤ R/2`.
+  `β : ℕ → ℝ → ↥S → ℂ` — step solutions with `β n 0 = η n`,
+     `β n ε = η (n+1)`, and `HasDerivWithinAt` on `[0, ε]`.
+
+These are produced via `Nat.rec` + `Classical.choose` on `hStep`.
+`§10.106` glues them into a single `α : ℝ → ↥S → ℂ`. -/
+
+theorem galerkin_chain_sequence
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R ε : ℝ} (hε : 0 < ε)
+    (hStep : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+        ∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
+    (hInv : ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c₀ →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2) :
+    ∃ η : ℕ → (↥S → ℂ), ∃ β : ℕ → ℝ → (↥S → ℂ),
+      η 0 = c₀ ∧
+      (∀ n, ‖η n‖ ≤ R / 2) ∧
+      (∀ n, β n 0 = η n) ∧
+      (∀ n, β n ε = η (n + 1)) ∧
+      (∀ n, ∀ t ∈ Set.Icc (0 : ℝ) ε,
+        HasDerivWithinAt (β n) (galerkinVectorField S (β n t))
+          (Set.Icc (0 : ℝ) ε) t) ∧
+      (∀ n, ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖β n t‖ ≤ R / 2) := by
+  classical
+  -- Classical-choice step function.
+  let stepFn : (c : ↥S → ℂ) → ‖c‖ ≤ R / 2 → ℝ → (↥S → ℂ) :=
+    fun c hc => Classical.choose (hStep c hc)
+  have stepSpec : ∀ (c : ↥S → ℂ) (hc : ‖c‖ ≤ R / 2),
+      (stepFn c hc) 0 = c ∧
+      ∀ t ∈ Set.Icc (0 : ℝ) ε,
+        HasDerivWithinAt (stepFn c hc)
+          (galerkinVectorField S ((stepFn c hc) t))
+          (Set.Icc (0 : ℝ) ε) t := fun c hc => Classical.choose_spec (hStep c hc)
+  -- Endpoint sequence as Nat-indexed pairs carrying the norm bound.
+  let chainEndpt : ℕ → {c : ↥S → ℂ // ‖c‖ ≤ R / 2} := fun n =>
+    Nat.rec (motive := fun _ => {c : ↥S → ℂ // ‖c‖ ≤ R / 2})
+      ⟨c₀, hc₀⟩
+      (fun _ prev =>
+        let f := stepFn prev.val prev.property
+        let hsp := stepSpec prev.val prev.property
+        ⟨f ε, hInv prev.val prev.property f hsp.1 hsp.2 ε ⟨hε.le, le_rfl⟩⟩)
+      n
+  refine ⟨fun n => (chainEndpt n).val,
+          fun n => stepFn (chainEndpt n).val (chainEndpt n).property,
+          ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- η 0 = c₀
+    rfl
+  · -- ∀ n, ‖η n‖ ≤ R/2
+    intro n; exact (chainEndpt n).property
+  · -- β n 0 = η n
+    intro n; exact (stepSpec _ _).1
+  · -- β n ε = η (n+1)
+    intro n; rfl
+  · -- HasDerivWithinAt
+    intro n t ht; exact (stepSpec _ _).2 t ht
+  · -- Norm bound on β n
+    intro n t ht
+    exact hInv _ _ _ (stepSpec _ _).1 (stepSpec _ _).2 t ht
+
 end SqgIdentity
