@@ -18105,7 +18105,7 @@ theorem isGalerkinLimitData_of_galerkin_realSym
       (fun m t => galerkinExtend S₀ (α t) m) where
   zeroMode := fun _ _ => galerkinExtend_apply_of_not_mem _ _ h0
   initial := fun m => by
-    simp only
+    show galerkinExtend S₀ (α 0) m = mFourierCoeff (galerkinToLp S₀ c₀) m
     rw [mFourierCoeff_galerkinToLp, hα0]
   summable := fun t _ => by
     apply summable_of_ne_finset_zero (s := S₀)
