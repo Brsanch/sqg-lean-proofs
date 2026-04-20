@@ -4,6 +4,33 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.22 — 2026-04-20
+
+Within-interval real-symmetry propagation. Extends v0.4.21 by ~111 lines.
+
+- **§10.114 `starSwap_hasDerivWithinAt`** — within-interval analog of
+  the existing `starSwap_hasDerivAt`. Shows `β := starSwap ∘ α`
+  satisfies the Galerkin ODE as a `HasDerivWithinAt` statement
+  whenever `α` does. Proof is identical in shape: `hasDerivWithinAt_pi`
+  + per-coord `HasDerivWithinAt.star`.
+- **§10.114 `hRealC_of_initial_and_bound_on_Ici`** — ports §10.100's
+  `hRealC_of_initial_and_bound` from the global
+  `∀ t, HasDerivAt α (vf α(t)) t` hypothesis to the within-interval
+  `∀ t ≥ 0, HasDerivWithinAt α (vf α(t)) (Ici 0) t`. Proof strategy
+  substitutes `ODE_solution_unique_univ` with
+  `ODE_solution_unique_of_mem_Icc_right` on `Icc 0 T` for each
+  `T > 0` (invoked with `T := τ + 1` at the call site), with
+  Lipschitz on `closedBall 0 M` via `ContDiffOn.exists_lipschitzOnWith`
+  (same pattern as §10.102).
+
+Combined with §10.113, this is the last technical piece needed to
+fully discharge `hRealSymPropagates` internally for real-symmetric
+initial data, provided the caller supplies an L∞ coefficient bound
+(the natural choice is `M := √|S|·‖c₀‖ + 1` from §10.112, breaking
+any apparent circularity in the combined capstone).
+
+17,114 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.21 — 2026-04-20
 
 Unified time-global capstone. Extends v0.4.20 by ~45 lines.
