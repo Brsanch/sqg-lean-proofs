@@ -19216,7 +19216,7 @@ theorem integral_norm_sq_galerkinToLp_sqgBox
     (galerkinToLp (sqgBox n) c)
     (mFourierCoeff_galerkin_sqgBox_zero_any n c)
 
-set_option maxHeartbeats 800000 in
+set_option maxHeartbeats 1600000 in
 /-- **Route B `l2Conservation` from Aubin–Lions.** From the strong-`L²`
 Aubin–Lions extraction (§10.139) and per-level Galerkin energy
 conservation (§10.97), produce the `l2Conservation` hypothesis
@@ -19243,25 +19243,27 @@ theorem l2Conservation_of_aubinLions
   have h_lim_t := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
   have h_lim_0 := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
   -- Per-level constant-in-time energy: ∫ ‖f_k t‖² = ∫ ‖f_k 0‖².
+  -- Composed via `trans` for minimal elaborator pressure.
   have h_const_k : ∀ k : ℕ,
       (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
-        = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) := by
-    intro k
-    rw [integral_norm_sq_galerkinToLp_sqgBox,
-        integral_norm_sq_galerkinToLp_sqgBox]
-    exact hLevel (ext.nsub k) t ht
-  -- Align the two sequences.
-  have h_lim_t' := by
-    have : (fun k : ℕ =>
-        ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+        = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
+    fun k =>
+      (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) t)).trans
+        ((hLevel (ext.nsub k) t ht).trans
+          (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) 0)).symm)
+  -- Rewrite h_lim_t's sequence to match h_lim_0's via funext-produced
+  -- sequence equality.
+  have h_seq_eq :
+      (fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
         = fun k : ℕ =>
           ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2 :=
-      funext h_const_k
-    exact this ▸ h_lim_t
+    funext h_const_k
+  rw [h_seq_eq] at h_lim_t
   -- ∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖² by limit uniqueness.
   have h_int_eq : (∫ x, ‖ext.θ_lim t x‖ ^ 2) = (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) :=
-    tendsto_nhds_unique h_lim_t' h_lim_0
-  -- Lift via zero-mode split to `hsSeminormSq 0` on both sides.
+    tendsto_nhds_unique h_lim_t h_lim_0
+  -- Lift via zero-mode split.
   have h_split_t :=
     integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (ext.θ_lim t) h_zero_t
   have h_split_0 :=
