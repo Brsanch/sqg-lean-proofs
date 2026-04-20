@@ -36,11 +36,15 @@ on `𝕋ᵈ`. Two phases:
   to `s > 2`.
 Target release: **v0.5.0**.
 
-### 6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`
-State and prove the per-mode Duhamel identity for genuine SQG weak
-solutions. Feeds `SqgEvolutionAxioms_strong.of_sqgDuhamelIdentity_via_MMP`
-to extend the strong form beyond the finite-support Galerkin class.
-Target release: **v0.4.36**.
+### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
+Structural bridge delivered by §10.135–§10.136:
+`IsSqgWeakSolution.of_timeTest_of_bumpSeq` lifts
+`IsSqgWeakSolutionTimeTest` to `IsSqgWeakSolution` given a
+`HasBumpToIndicatorSequence` witness at every `(m, s, t)`, and
+`SqgEvolutionAxioms_strong.of_timeTest_via_MMP` composes with §10.14.
+Concrete construction of `HasBumpToIndicatorSequence` from mathlib's
+`ContDiffBump` infrastructure is separately available but not
+required by the chain.
 
 ## Infrastructure
 
