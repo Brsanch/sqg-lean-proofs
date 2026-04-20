@@ -16625,4 +16625,127 @@ theorem hRealC_of_initial_and_bound_on_Icc
       = β τ ⟨-n, hnn_in⟩ := by rw [heq]
     _ = star (α τ ⟨n, hn⟩) := hβapp
 
+/-! ### §10.116.C Uniform-`ε` forward step with ball-containment
+
+Parallel to `galerkin_forward_step` (§10.103) but delivering the
+`α t ∈ closedBall c₀ (R/2)` containment from §10.116.A, needed for
+the L∞ coefficient bound when applying §10.116.B. -/
+
+theorem galerkin_forward_step_with_ball
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R : ℝ} (hR : 0 < R) :
+    ∃ ε : ℝ, 0 < ε ∧
+      ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+        ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+          (∀ t ∈ Set.Icc (0 : ℝ) ε,
+            HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) ∧
+          (∀ t : ℝ, α t ∈ Metric.closedBall c₀ (R / 2)) := by
+  classical
+  obtain ⟨K, hK⟩ : ∃ K, LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall (0 : ↥S → ℂ) R) := by
+    refine (galerkinVectorField_contDiff S (n := 1)).contDiffOn.exists_lipschitzOnWith
+      ?_ (convex_closedBall 0 R) (isCompact_closedBall 0 R)
+    decide
+  obtain ⟨C, hC_nn, hC_bound⟩ := galerkinVectorField_quadratic_bound S
+  set L_real : ℝ := C * R ^ 2 with hL_def
+  have hL_nn : 0 ≤ L_real := by positivity
+  set L : NNReal := ⟨L_real, hL_nn⟩ with hL_NN
+  have hL_coe : (L : ℝ) = L_real := rfl
+  have hBound_ball : ∀ c ∈ Metric.closedBall (0 : ↥S → ℂ) R,
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) := by
+    intros c hc
+    rw [Metric.mem_closedBall, dist_zero_right] at hc
+    calc ‖galerkinVectorField S c‖
+        ≤ C * ‖c‖ ^ 2 := hC_bound c
+      _ ≤ C * R ^ 2 := by
+          apply mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (norm_nonneg _) hc 2) hC_nn
+      _ = L_real := rfl
+  set ε : ℝ := (R / 2) / ((L : ℝ) + 1) with hε_def
+  have hLp1_pos : 0 < (L : ℝ) + 1 := by rw [hL_coe]; linarith
+  have hR2_pos : 0 < R / 2 := by linarith
+  have hε_pos : 0 < ε := div_pos hR2_pos hLp1_pos
+  refine ⟨ε, hε_pos, ?_⟩
+  intro c₀ hc₀_norm
+  have h_ball_sub : Metric.closedBall c₀ (R / 2) ⊆ Metric.closedBall (0 : ↥S → ℂ) R := by
+    intros x hx
+    rw [Metric.mem_closedBall, dist_zero_right]
+    rw [Metric.mem_closedBall] at hx
+    calc ‖x‖ = ‖(x - c₀) + c₀‖ := by rw [sub_add_cancel]
+      _ ≤ ‖x - c₀‖ + ‖c₀‖ := norm_add_le _ _
+      _ = dist x c₀ + ‖c₀‖ := by rw [dist_eq_norm]
+      _ ≤ R / 2 + R / 2 := add_le_add hx hc₀_norm
+      _ = R := by ring
+  have hLip_small : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (R / 2)) := hK.mono h_ball_sub
+  have hBound_small : ∀ c ∈ Metric.closedBall c₀ (R / 2),
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) :=
+    fun c hc => hBound_ball c (h_ball_sub hc)
+  set a : NNReal := ⟨R / 2, hR2_pos.le⟩ with ha_def
+  have ha_coe : (a : ℝ) = R / 2 := rfl
+  have hTime : (L : ℝ) * ε ≤ (a : ℝ) := by
+    have h1 : (L : ℝ) * ε ≤ ((L : ℝ) + 1) * ε :=
+      mul_le_mul_of_nonneg_right (by linarith) hε_pos.le
+    have h2 : ((L : ℝ) + 1) * ε = R / 2 := by
+      rw [hε_def]; field_simp
+    rw [ha_coe]; linarith
+  have hLip_small' : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (a : ℝ)) := by rw [ha_coe]; exact hLip_small
+  have hBound_small' : ∀ c ∈ Metric.closedBall c₀ (a : ℝ),
+      ‖galerkinVectorField S c‖ ≤ (L : ℝ) := by rw [ha_coe]; exact hBound_small
+  obtain ⟨α, hα0, hα_deriv, hα_ball⟩ :=
+    galerkin_local_exists_with_ball_containment S c₀ hε_pos hLip_small' hBound_small' hTime
+  refine ⟨α, hα0, ?_, ?_⟩
+  · intros t ht
+    have ht_big : t ∈ Set.Icc (-ε) ε := ⟨le_trans (neg_nonpos_of_nonneg hε_pos.le) ht.1, ht.2⟩
+    exact (hα_deriv t ht_big).mono (Set.Icc_subset_Icc (by linarith) le_rfl)
+  · intros t
+    have := hα_ball t
+    rw [ha_coe] at this
+    exact this
+
+/-! ### §10.116.D Real-symmetric forward step
+
+Combines §10.116.B (within-Icc real-symmetry propagation) with §10.116.C
+(ball-containment forward step). Given real-symmetric `c₀`, the forward
+Picard step produces `α` with `α(τ)` real-symmetric for every
+`τ ∈ Icc 0 ε`. The L∞ bound `M := R` feeding §10.116.B comes from the
+ball-containment `‖α τ - c₀‖ ≤ R/2` plus `‖c₀‖ ≤ R/2`, giving `‖α τ‖ ≤ R`. -/
+
+theorem galerkin_realSym_forward_step
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    {R : ℝ} (hR : 0 < R) :
+    ∃ ε : ℝ, 0 < ε ∧
+      ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+        (∀ n ∈ S, galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n)) →
+        ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+          (∀ t ∈ Set.Icc (0 : ℝ) ε,
+            HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) ∧
+          (∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n ∈ S,
+            galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)) := by
+  obtain ⟨ε, hε_pos, hStep⟩ := galerkin_forward_step_with_ball S hR
+  refine ⟨ε, hε_pos, ?_⟩
+  intros c₀ hc₀ hRealC₀
+  obtain ⟨α, hα0, hα_deriv, hα_ball⟩ := hStep c₀ hc₀
+  refine ⟨α, hα0, hα_deriv, ?_⟩
+  have hR_nn : 0 ≤ R := le_of_lt hR
+  have hBound : ∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ R := by
+    intros τ _hτ n
+    by_cases hn : n ∈ S
+    · rw [galerkinExtend_apply_of_mem S _ hn]
+      have hdist : dist (α τ) c₀ ≤ R / 2 := (Metric.mem_closedBall.mp (hα_ball τ))
+      have hdiff : ‖α τ - c₀‖ ≤ R / 2 := by rw [← dist_eq_norm]; exact hdist
+      have hnorm_t : ‖α τ‖ ≤ R := by
+        calc ‖α τ‖ = ‖(α τ - c₀) + c₀‖ := by rw [sub_add_cancel]
+          _ ≤ ‖α τ - c₀‖ + ‖c₀‖ := norm_add_le _ _
+          _ ≤ R / 2 + R / 2 := add_le_add hdiff hc₀
+          _ = R := by ring
+      exact (norm_le_pi_norm (α τ) ⟨n, hn⟩).trans hnorm_t
+    · rw [galerkinExtend_apply_of_not_mem S _ hn, norm_zero]
+      exact hR_nn
+  have hRealC₀_α : ∀ n ∈ S,
+      galerkinExtend S (α 0) (-n) = star (galerkinExtend S (α 0) n) := by
+    intros n hn; rw [hα0]; exact hRealC₀ n hn
+  exact hRealC_of_initial_and_bound_on_Icc hS ε α hα_deriv hRealC₀_α hR_nn hBound
+
 end SqgIdentity
