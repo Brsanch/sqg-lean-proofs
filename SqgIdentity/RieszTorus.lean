@@ -14940,4 +14940,52 @@ theorem galerkinVectorField_neg_eq_star_of_realSymmetric
       = star (galerkinRHS S (galerkinExtend S c) n)
   exact galerkinRHS_neg_eq_star_of_realSymmetric hS _ hRealC
 
+/-- **Universal starSwap identity for `galerkinRHS`.** For any coefficient
+function `d : (Fin 2 → ℤ) → ℂ` (no real-symmetry required), the `galerkinRHS`
+satisfies
+`galerkinRHS S (fun m => star (d (-m))) n = star (galerkinRHS S d (-n))`
+under `IsSymmetricSupport S`. This is the algebraic identity underlying
+real-symmetry propagation via ODE uniqueness: defining `β τ := starSwap (α τ)`,
+it ensures `β` satisfies the same Galerkin ODE as `α`. -/
+theorem galerkinRHS_starSwap_identity
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (d : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    galerkinRHS S (fun m => star (d (-m))) n = star (galerkinRHS S d (-n)) := by
+  unfold galerkinRHS
+  rw [star_neg, star_sum]
+  congr 1
+  apply Finset.sum_nbij' (fun ℓ : Fin 2 → ℤ => -ℓ) (fun ℓ : Fin 2 → ℤ => -ℓ)
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓS, hℓ'⟩ := hℓ
+    refine ⟨hS _ hℓS, ?_⟩
+    show -n - -ℓ ∈ S
+    rw [sub_neg_eq_add, show -n + ℓ = -(n - ℓ) from by ring]
+    exact hS _ hℓ'
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓS, hℓ'⟩ := hℓ
+    refine ⟨hS _ hℓS, ?_⟩
+    show n - -ℓ ∈ S
+    rw [sub_neg_eq_add, show n + ℓ = -(-n - ℓ) from by ring]
+    exact hS _ hℓ'
+  · intros ℓ _; simp
+  · intros ℓ _; simp
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ
+    obtain ⟨hℓS, _⟩ := hℓ
+    -- Goal: star (d (-ℓ)) * star (d (-(n - ℓ))) * K(ℓ, n - ℓ)
+    --     = star (d (-ℓ) * d (-n - -ℓ) * K(-ℓ, -n - -ℓ))
+    rw [show (-n - -ℓ : Fin 2 → ℤ) = -n + ℓ from by ring]
+    rw [show (∑ j : Fin 2, sqgVelocitySymbol j (-ℓ) * derivSymbol j (-n + ℓ))
+          = ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (n - ℓ) from by
+      apply Finset.sum_congr rfl
+      intros j _
+      rw [sqgVelocitySymbol_neg,
+          show (-n + ℓ : Fin 2 → ℤ) = -(n - ℓ) from by ring, derivSymbol_neg]
+      ring]
+    rw [star_mul', star_mul', star_K_eq_K]
+    rw [show (-(n - ℓ) : Fin 2 → ℤ) = -n + ℓ from by ring]
+
 end SqgIdentity
