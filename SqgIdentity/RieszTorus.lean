@@ -19229,6 +19229,26 @@ theorem tendsto_integral_norm_sq_of_tendsto_L2sub_torus
       (nhds (∫ x, ‖g x‖ ^ 2)) :=
   tendsto_integral_norm_sq_of_tendsto_L2sub h
 
+set_option maxHeartbeats 800000 in
+/-- **Strong-L² convergence lifts to `hsSeminormSq 0` convergence when
+zero mode vanishes both on the sequence and on the limit.** The key
+primitive used in Route B `l2Conservation`. -/
+theorem tendsto_hsSeminormSq_of_tendsto_L2sub_torus
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hL2 : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2) l (nhds 0))
+    (hZero_f : ∀ i, mFourierCoeff (f i) (0 : Fin 2 → ℤ) = 0)
+    (hZero_g : mFourierCoeff g (0 : Fin 2 → ℤ) = 0) :
+    Filter.Tendsto (fun i => hsSeminormSq 0 (f i)) l
+      (nhds (hsSeminormSq 0 g)) := by
+  have h_lim := tendsto_integral_norm_sq_of_tendsto_L2sub_torus hL2
+  have h_eq_g : (∫ x, ‖g x‖ ^ 2) = hsSeminormSq 0 g :=
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero g hZero_g
+  rw [h_eq_g] at h_lim
+  exact h_lim.congr (fun i =>
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (f i) (hZero_f i))
+
 set_option maxHeartbeats 400000 in
 /-- **When the zero mode vanishes, `∫ ‖f‖² = hsSeminormSq 0 f`.**
 Localized helper so the capstone avoids heavy `rw` against
@@ -19276,11 +19296,11 @@ theorem tendsto_integral_norm_sq_galerkinToLp_raw
       Filter.atTop (nhds (∫ x, ‖θ_lim t x‖ ^ 2)) :=
   tendsto_integral_norm_sq_of_tendsto_L2sub (tendsto_L2_proof t ht)
 
-set_option maxHeartbeats 800000 in
-/-- **Raw Route B `l2Conservation`.** Direct: use strong-`L²` convergence
-→ Tendsto of integrals → Tendsto of `hsSeminormSq` (via zero-mode lift
-at each k and at the limit) → `tendsto_nhds_unique`.  Skips the
-intermediate integral-level theorem. -/
+set_option maxHeartbeats 400000 in
+/-- **Raw Route B `l2Conservation`.**  Uses
+`tendsto_hsSeminormSq_of_tendsto_L2sub_torus` to get
+`Tendsto (hsSeminormSq 0 ∘ f_k) → hsSeminormSq 0 g` at both t and 0,
+then `Tendsto.congr` against `hLevel` + `tendsto_nhds_unique`. -/
 theorem l2Conservation_of_aubinLions_raw
     [DecidableEq (Fin 2 → ℤ)]
     (nsub : ℕ → ℕ)
@@ -19300,55 +19320,36 @@ theorem l2Conservation_of_aubinLions_raw
     ∀ t, 0 ≤ t →
       hsSeminormSq 0 (θ_lim t) = hsSeminormSq 0 (θ_lim 0) := by
   intro t ht
-  -- Integral-level strong-L² limit at time t.
-  have h_lim_int_t : Filter.Tendsto
-      (fun k : ℕ =>
-        ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x‖ ^ 2)
-      Filter.atTop (nhds (∫ x, ‖θ_lim t x‖ ^ 2)) :=
-    tendsto_integral_norm_sq_of_tendsto_L2sub_torus (tendsto_L2_proof t ht)
-  -- Convert limit point from ∫ ‖θ_lim t‖² to hsSeminormSq 0 (θ_lim t)
-  -- via the zero-mode split at the limit.
-  have h_lim_hs_t : Filter.Tendsto
-      (fun k : ℕ =>
-        ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x‖ ^ 2)
-      Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) := by
-    have h_eq := integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
-      (θ_lim t) (hZero t ht)
-    rw [← h_eq]; exact h_lim_int_t
-  -- Convert sequence from ∫ ‖galerkinToLp‖² to hsSeminormSq 0 (galerkinToLp).
-  have h_lim_hs_t' : Filter.Tendsto
+  have h_zero_galerkin : ∀ k : ℕ,
+      mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t))
+        (0 : Fin 2 → ℤ) = 0 :=
+    fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) t)
+  have h_zero_galerkin_0 : ∀ k : ℕ,
+      mFourierCoeff (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0))
+        (0 : Fin 2 → ℤ) = 0 :=
+    fun k => mFourierCoeff_galerkin_sqgBox_zero_any (nsub k) (α (nsub k) 0)
+  -- Strong-L² → hsSeminormSq Tendsto at both t and 0.
+  have h_lim_t : Filter.Tendsto
       (fun k : ℕ =>
         hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) t)))
-      Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) := by
-    refine h_lim_hs_t.congr (fun k => ?_)
-    exact integral_norm_sq_galerkinToLp_sqgBox (nsub k) (α (nsub k) t)
-  -- Same at time 0.
-  have h_lim_int_0 : Filter.Tendsto
-      (fun k : ℕ =>
-        ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) x‖ ^ 2)
-      Filter.atTop (nhds (∫ x, ‖θ_lim 0 x‖ ^ 2)) :=
-    tendsto_integral_norm_sq_of_tendsto_L2sub_torus (tendsto_L2_proof 0 le_rfl)
-  have h_lim_hs_0 : Filter.Tendsto
-      (fun k : ℕ =>
-        ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) x‖ ^ 2)
-      Filter.atTop (nhds (hsSeminormSq 0 (θ_lim 0))) := by
-    have h_eq := integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
-      (θ_lim 0) (hZero 0 le_rfl)
-    rw [← h_eq]; exact h_lim_int_0
-  have h_lim_hs_0' : Filter.Tendsto
+      Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) :=
+    tendsto_hsSeminormSq_of_tendsto_L2sub_torus
+      (tendsto_L2_proof t ht) h_zero_galerkin (hZero t ht)
+  have h_lim_0 : Filter.Tendsto
       (fun k : ℕ =>
         hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)))
-      Filter.atTop (nhds (hsSeminormSq 0 (θ_lim 0))) := by
-    refine h_lim_hs_0.congr (fun k => ?_)
-    exact integral_norm_sq_galerkinToLp_sqgBox (nsub k) (α (nsub k) 0)
-  -- Per-k equality in the hsSeminormSq form (this is `hLevel` directly).
-  have h_lim_hs_t'' : Filter.Tendsto
+      Filter.atTop (nhds (hsSeminormSq 0 (θ_lim 0))) :=
+    tendsto_hsSeminormSq_of_tendsto_L2sub_torus
+      (tendsto_L2_proof 0 le_rfl) h_zero_galerkin_0 (hZero 0 le_rfl)
+  -- Transport h_lim_t's sequence via hLevel: at time t the sequence equals
+  -- the time-0 sequence level-wise.
+  have h_lim_t' : Filter.Tendsto
       (fun k : ℕ =>
         hsSeminormSq 0 (galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0)))
       Filter.atTop (nhds (hsSeminormSq 0 (θ_lim t))) :=
-    h_lim_hs_t'.congr (fun k => hLevel (nsub k) t ht)
+    h_lim_t.congr (fun k => hLevel (nsub k) t ht)
   -- Limit uniqueness.
-  exact tendsto_nhds_unique h_lim_hs_t'' h_lim_hs_0'
+  exact tendsto_nhds_unique h_lim_t' h_lim_0
 
 set_option maxHeartbeats 800000 in
 /-- **Route B `l2Conservation` from Aubin–Lions (bundled wrapper).**
