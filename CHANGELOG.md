@@ -4,6 +4,36 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.14 — 2026-04-20
+
+Time-global existence scaffolding: quadratic growth bound + uniform-ε
+Picard + forward-step utility. Steps 1-3 of the global existence program.
+~16,130 lines, zero `sorry`, zero new axioms.
+
+- **§10.101 `galerkinVectorField_quadratic_bound`** — `‖galerkinVectorField S c‖ ≤ C·‖c‖²`
+  where `C = ∑_{(ℓ,k) ∈ S × S} ‖galerkinKKernel ℓ k‖`. Bilinear/polynomial
+  growth of the Galerkin vector field, via per-mode bound +
+  reindex `ℓ ↦ (ℓ, m-ℓ)` into the full `S × S` product.
+- **§10.102 `galerkin_uniform_ε_picard`** — Given radius `R > 0`, extract
+  Lipschitz constant on `closedBall 0 R` (via `ContDiffOn.exists_lipschitzOnWith`
+  + §10.101 growth bound), pick `ε = (R/2)/(L+1)` where `L = C·R²`, and
+  apply mathlib Picard-Lindelöf on `closedBall c₀ (R/2) ⊆ closedBall 0 R`
+  for any `c₀` with `‖c₀‖ ≤ R/2`.
+- **§10.103 `galerkin_forward_step`** — one-sided variant on `[0, ε]`
+  (forward iteration building block).
+
+Remaining for full time-global existence (deferred to next session):
+Nat-indexed chain construction, piecewise gluing, HasDerivAt
+assembly on ℝ, L² conservation → forward-invariance of the ball,
+final capstone. Estimated ~550-750 lines.
+
+CI pitfalls caught: mathlib renames `pow_le_pow_left → pow_le_pow_left₀`,
+`div_le_iff → div_le_iff₀`. Fresh `div_le_iff₀` rewrite still brittle
+(instance mismatch between `Real.partialOrder.toLE` and `Real.instLE`);
+use `field_simp` + `linarith` instead.
+
+Archive: [TBD — Zenodo DOI pending].
+
 ## v0.4.13 — 2026-04-20
 
 Real-symmetry ODE propagation: closes `hRealC` in the Phase-3 capstone
