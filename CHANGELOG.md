@@ -4,6 +4,56 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.30 — 2026-04-20
+
+**§10.125–§10.130 — conditional Galerkin-limit → `SqgSolution` chain.**
+Formalizes the passage-to-the-limit half of the Sₙ ↗ weak-`L²`
+argument in a hypothesis-keyed form: whenever a classical extraction
+produces the predicate data `IsGalerkinLimitData θ b`, a synthesized
+`L²` trajectory `GalerkinLimitTrajectory θ b`, and a Riesz velocity
+witness, a full `SqgSolution` falls out algebraically. The only open
+ingredient after v0.4.30 is the construction of those packaged
+hypotheses from v0.4.29's uniform estimates, i.e. the per-mode
+equicontinuity + diagonal extraction + Fourier synthesis step
+(classical Resnick theory).
+
+- **§10.125** `IsGalerkinLimitData θ b` — predicate bundling: zero
+  mode at every forward time, initial-data Fourier match,
+  uniform-in-`t` ℓ²-summability, `∑' m, ‖b m t‖²` conservation, and
+  real-symmetry of `b`. `IsGalerkinLimitData.ofZero` instantiates
+  the degenerate zero datum.
+- **§10.126** `galerkinLimitHasFourierCoeff b θ_t` predicate +
+  `hsSeminormSq_zero_of_fourierCoeff_eq` identifying
+  `hsSeminormSq 0 (θ_t) = ∑' m, ‖b m‖²` when `b 0 = 0`.
+- **§10.127** `GalerkinLimitTrajectory θ b` structure bundling the
+  synthesized `Lp`-trajectory with its Fourier-coefficient match and
+  initial-time slice. `GalerkinLimitTrajectory.ofZero` instance.
+- **§10.128** `SqgEvolutionAxioms.of_galerkinLimit` — derives
+  `SqgEvolutionAxioms` from the three packaged hypotheses. All three
+  clauses transfer structurally: L² conservation via §10.126, mean
+  conservation via §10.125's `zeroMode`, velocity via the
+  `HasGalerkinLimitVelocity` witness.
+- **§10.129** `exists_sqgSolution_of_galerkinLimit` — `SqgSolution`
+  capstone from the packaged limit + `smoothInitialData` summability.
+- **§10.130** `exists_sqgSolution_ofZero` — unconditional zero-datum
+  `SqgSolution` existence, exercising the full §10.125–§10.129 chain
+  without any weak-compactness machinery.
+
+### Remaining open (full chain status)
+
+v0.4.29's uniform-estimate layer (§10.118–§10.123) + v0.4.30's
+conditional limit chain (§10.125–§10.130) sandwich a single
+remaining mathematical obstruction: constructing
+`IsGalerkinLimitData` + `GalerkinLimitTrajectory` from the
+§10.121 per-level Galerkin family for non-zero `L²` data. That
+step needs either a per-mode Ḣ¹-type bound on the Galerkin
+trajectory (or on the symbol-weighted ℓ² mass) to close
+equicontinuity, or an `H⁻²` test-function duality bypass. The
+mathematical theory (Resnick 1995) resolves it at the PDE level;
+the Lean formalization would require mathlib-weight measure-
+theoretic weak-compactness infrastructure that is non-trivial to
+wire up.
+
 ## v0.4.29 — 2026-04-20
 
 **§10.118–§10.123 — Sₙ ↗ weak-* limit infrastructure from generic
