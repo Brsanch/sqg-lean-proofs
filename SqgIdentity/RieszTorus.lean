@@ -18777,7 +18777,7 @@ theorem sq_sub_mFourierCoeff_le_L2Sq
     hP.summable
   have hSingle : ‖mFourierCoeff (f - g) m‖ ^ 2
       ≤ ∑' k : d → ℤ, ‖mFourierCoeff (f - g) k‖ ^ 2 :=
-    le_tsum hSumm m (fun _ _ => sq_nonneg _)
+    hSumm.le_tsum m (fun _ _ => sq_nonneg _)
   rw [hP.tsum_eq] at hSingle
   have hIntEq : (∫ x, ‖(f - g) x‖ ^ 2) = ∫ x, ‖f x - g x‖ ^ 2 := by
     apply MeasureTheory.integral_congr_ae
