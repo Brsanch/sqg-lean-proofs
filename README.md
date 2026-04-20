@@ -129,6 +129,34 @@ class, regularity is unconditional:
   parallel construction of the §10.117 `SqgSolution` now routed
   through §10.125–§10.130. Demonstrates the conditional chain is
   instantiable on non-zero inputs.
+- **`SqgEvolutionAxioms_strong` via Ici-0 Duhamel port (§10.133–§10.134).**
+  Upgrades the §10.117 / §10.132 `SqgSolution` to the Duhamel-level
+  strong axioms. Uses
+  `intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le` to port
+  the §10.91 → §10.92 → §10.94 chain to consume the
+  `HasDerivWithinAt ... (Ici 0)` shape delivered by §10.116.
+  Headline: `exists_sqgSolution_strong_of_galerkin_realSym`.
+- **Time-test → Duhamel bridge (§10.135–§10.136).** Structural
+  closure of the step-(B) gap from §10.16:
+  `IsSqgWeakSolution.of_timeTest_of_bumpSeq` lifts
+  `IsSqgWeakSolutionTimeTest` to `IsSqgWeakSolution` given a
+  `HasBumpToIndicatorSequence` witness. Proof is a one-line
+  `tendsto_nhds_unique` on the two pointwise-equal sequences of
+  integrals.
+  `SqgEvolutionAxioms_strong.of_timeTest_via_MMP` composes with
+  §10.14's MMP-keyed promotion.
+- **Route B conditional chain for the generic-`L²` limit (§10.137–§10.146).**
+  Structural closure of item 1 (originally "generic-L² Galerkin →
+  full-SQG extraction"). Packages a classical Aubin–Lions extraction
+  + `H⁻²` time-derivative bound + `l2Conservation` of the limit into
+  a single conditional existence theorem
+  `exists_sqgSolution_via_RouteB` for the `SqgSolution`. Exercised
+  unconditionally on the zero datum by
+  `exists_sqgSolution_via_RouteB_zero` (§10.146) via
+  `HasAubinLionsExtraction.ofZero`. Per-mode Fourier convergence
+  under strong-`L²` (§10.141 `tendsto_mFourierCoeff_of_tendsto_L2Sq`)
+  is the bridge from the `Lp` side to the Fourier-coefficient side
+  used throughout.
 
 ## What is *not* proven
 
@@ -136,24 +164,26 @@ class, regularity is unconditional:
   `BKMCriterionS2.hsPropagationS2` outside the finite-support class.
 - The fractional Sobolev bootstrap for `s > 2` (requires Kato–Ponce-type
   estimates on `𝕋²` that are not yet in mathlib).
-- A mode-wise weak-form PDE identity against the concrete
-  `sqgNonlinearFlux`. Supplying this identity for a real SQG solution
-  would discharge the remaining SQG-specific input.
-- The `SqgEvolutionAxioms_strong` / Duhamel-level upgrade of the
-  Galerkin-derived `SqgSolution` of §10.117. `SqgEvolutionAxioms`
-  (the weak form consumed by `SqgSolution`) is discharged
-  unconditionally; the strong form would require either a full-ℝ
-  `HasDerivAt` extension of the §10.116 trajectory or an Ici-0 variant
-  of §10.94's Duhamel composition.
-- Construction of `IsGalerkinLimitData` + `GalerkinLimitTrajectory`
-  from §10.118–§10.123's per-level uniform estimates for non-zero
-  `L²` initial data. v0.4.30 formalizes the conditional half:
-  given the packaged hypotheses, the `SqgSolution` follows
-  algebraically (§10.125–§10.130). What remains is the *existence*
-  of those hypotheses for generic `L²` data — classically a
-  per-mode Arzelà–Ascoli + diagonal argument closed via an `Ḣ¹` or
-  `H⁻²` test-function bound (Resnick 1995). Requires mathlib-weight
-  weak-compactness machinery not yet wired in.
+- Construction of the `HasAubinLionsExtraction` witness
+  (§10.139) for non-zero `L²` data from the uniform `L²` bound
+  (§10.122) + an `H⁻²` time-derivative bound. Classical Aubin–Lions
+  compactness; requires mathlib-scale weak-compactness / Fréchet–
+  Kolmogorov infrastructure not yet in tree.
+- The `l2Conservation` hypothesis fed to §10.144
+  (`SqgEvolutionAxioms.of_aubinLions`) for non-zero data. Classical
+  `Lp`-norm continuity under strong-`L²` convergence; requires
+  `MeasureTheory.L2` inner-product bridge lemmas composed with
+  §10.97's Galerkin `ℓ²`-conservation and §10.119's Parseval-on-
+  truncation identity.
+- A concrete `HasBumpToIndicatorSequence` witness (§10.135)
+  constructed from mathlib's `ContDiffBump` infrastructure, to close
+  item 6 analytically rather than only structurally.
+
+## Canonical open-items tracker
+
+See [`OPEN.md`](./OPEN.md) in the repo root for the authoritative
+list of what remains, linked to tagged releases that closed each
+item.
 
 ## Building
 
