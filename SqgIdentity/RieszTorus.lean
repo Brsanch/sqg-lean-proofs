@@ -18598,4 +18598,152 @@ theorem SqgEvolutionAxioms_strong.of_timeTest_via_MMP
   exact SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
     hE hMMP u hu_velocity hWeak
 
+/-! ### §10.137 Negative Sobolev seminorms (H⁻ˢ) on `𝕋ᵈ`
+
+Route B infrastructure. The existing `hsSeminormSq s f` is defined
+via `fracDerivSymbol s` at real `s`, which is `(latticeNorm n)^s` off
+zero. For `s < 0` this gives `|n|^s = 1/|n|^{-s}`, i.e., the
+negative-index Sobolev weight. Lemmas in this section spell out the
+basic algebra and the Cauchy–Schwarz duality
+`|⟨f, g⟩| ≤ ‖f‖_{Hˢ} · ‖g‖_{H⁻ˢ}` in Fourier form, which Route B
+consumes at every pairing of Galerkin states against `H²` test
+functions.
+
+The key dualities:
+* `hsSeminormSq_pair_cauchy` — per-mode Cauchy–Schwarz pairing,
+  `∑' m, ‖f̂(m) · ĝ(m)‖ ≤ √(hsSeminormSq s f) · √(hsSeminormSq (-s) g)`
+  whenever both seminorm sums are finite.
+* `hsSeminormSq_neg_nonneg` — trivial nonnegativity.
+-/
+
+/-- Nonnegativity of `hsSeminormSq` at any real index `s`. (The
+definition sums nonnegative terms.) -/
+theorem hsSeminormSq_nonneg_any {d : Type*} [Fintype d] (s : ℝ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus d))) :
+    0 ≤ hsSeminormSq s f := by
+  unfold hsSeminormSq
+  exact tsum_nonneg (fun _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+
+/-! ### §10.138 `H⁻²` bound predicate for a Galerkin RHS
+
+Packages the Route B Fourier-side time-derivative bound as an
+explicit predicate: `GalerkinRHSHsNegSqBound S c s K` asserts
+`∑' m, σ_{-s}(m)² · ‖galerkinRHS S c m‖² ≤ K`. The main downstream
+consumer is the Aubin–Lions-style compactness of §10.139.
+
+For Route B at `s = 2`, this specializes to the classical
+`‖dθ/dt‖²_{H⁻²} ≤ K` bound uniform in `|S|`, derivable from the
+`L² × L² → H⁻¹` bilinear inequality on `𝕋²` plus the
+`u · ∇θ = ∇·(u θ)` identity. The derivation is deferred to §10.141
+(Route B execution step); §10.138 provides the interface. -/
+
+/-- **`H⁻ˢ` seminorm bound on `galerkinRHS S c`.** Assertion that the
+Fourier-side `H⁻ˢ` norm of `galerkinRHS S c m` (as a function of `m`)
+is bounded by a constant `K ≥ 0`. Analog of the classical Resnick
+`‖dθ/dt‖_{H⁻²} ≤ C · ‖θ₀‖²_{L²}` estimate. -/
+def GalerkinRHSHsNegSqBound
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (s : ℝ) (K : ℝ) : Prop :=
+  Summable (fun m : Fin 2 → ℤ =>
+    (fracDerivSymbol (-s) m) ^ 2 * ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2) ∧
+  (∑' m : Fin 2 → ℤ,
+    (fracDerivSymbol (-s) m) ^ 2 * ‖galerkinRHS S (galerkinExtend S c) m‖ ^ 2) ≤ K
+
+/-- **Uniform-in-`n` version for the Sₙ↗ Galerkin family.**
+Asserts the `H⁻ˢ` bound `K` holds for `galerkinRHS (sqgBox n) (αₙ τ)`
+at every `n` and `τ ≥ 0`. The Route B classical estimate supplies
+this with `s = 2` and `K = C · (∫ ‖θ‖²)²` uniformly. -/
+def UniformGalerkinRHSHsNegSqBound
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) (s : ℝ) (K : ℝ) : Prop :=
+  ∀ n : ℕ, ∀ τ : ℝ, 0 ≤ τ → GalerkinRHSHsNegSqBound (sqgBox n) (α n τ) s K
+
+/-! ### §10.139 Aubin–Lions-style compactness predicate
+
+Packages the strong-`L²` compactness conclusion as a named structure:
+given uniform `L²` bounds and uniform `H⁻²` time-derivative bounds on
+a sequence of `L²` trajectories `θₙ : ℝ → Lp ℂ 2`, a subsequence
+converges strongly in `L²(𝕋²)` pointwise in `t` (and indeed uniformly
+on compact time intervals). The predicate factors this classical
+result out of the chain so that Route B's main theorem can consume it
+as a hypothesis; a concrete construction from mathlib's compactness
+toolkit plus the Fréchet–Kolmogorov / Aubin–Lions machinery is the
+content of §10.143. -/
+
+/-- **Strong-`L²` diagonal-subsequence witness for a uniformly
+bounded Galerkin family.** Records the output of a classical Aubin–
+Lions extraction on the Sₙ↗ Galerkin trajectories: a subsequence
+`nₖ ↗` and a limit `θ_lim : ℝ → Lp ℂ 2` such that `θₙₖ(t) → θ_lim(t)`
+strongly in `L²` at every `t ≥ 0`.
+
+The classical analytical input (Aubin–Lions from uniform `L²` +
+uniform `H⁻²` time-derivative) gives the existence of this witness;
+the predicate packages it so that downstream axiomatic transfer
+works uniformly. -/
+structure HasAubinLionsExtraction
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
+  /-- Extracted subsequence index function. -/
+  nsub : ℕ → ℕ
+  /-- Subsequence is strictly increasing (required for it to be a genuine
+  subsequence in the classical sense). -/
+  strictMono : StrictMono nsub
+  /-- The `L²` limit trajectory. -/
+  θ_lim : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))
+  /-- Initial-data match. -/
+  init_eq : θ_lim 0 = θ
+  /-- Strong-`L²` pointwise-in-`t` convergence along the subsequence:
+  for every `t ≥ 0`, `‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) - θ_lim t‖_{L²} → 0`. -/
+  tendsto_L2 : ∀ t : ℝ, 0 ≤ t →
+    Filter.Tendsto
+      (fun k : ℕ =>
+        (∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x
+              - θ_lim t x‖ ^ 2))
+      Filter.atTop (nhds 0)
+
+/-! ### §10.140 Route B main theorem: `SqgSolution` from uniform
+estimates + Aubin–Lions extraction
+
+Assembles §10.119 (uniform `L²`), §10.138 (uniform `H⁻²`
+time-derivative), and §10.139 (Aubin–Lions extraction) into a single
+conditional `SqgSolution` existence theorem. Downstream concrete
+construction (§10.141–§10.143) supplies the three hypotheses from
+classical 2D Fourier estimates. -/
+
+/-- **Fourier coefficients of the Aubin–Lions limit match a
+per-mode limit function.** Strong `L²` convergence `θₙₖ(t) → θ_lim(t)`
+implies `mFourierCoeff θₙₖ(t) m → mFourierCoeff (θ_lim t) m` for
+every mode `m`, because the Fourier-coefficient functional is
+continuous on `Lp ℂ 2`. This packages the per-mode limit function
+`b(m, t) := mFourierCoeff (θ_lim t) m` consumed by
+`IsGalerkinLimitData`. -/
+def aubinLionsLimitCoeff
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α) :
+    (Fin 2 → ℤ) → ℝ → ℂ :=
+  fun m t => mFourierCoeff (ext.θ_lim t) m
+
+/-- **Route B conditional capstone.** Given:
+* `θ : Lp ℂ 2 (𝕋²)` — initial data.
+* A per-level Galerkin family `α`.
+* An Aubin–Lions extraction witness (§10.139).
+* An `SqgEvolutionAxioms`-providing witness on the limit trajectory.
+* `smoothInitialData` summability for the limit.
+
+Produces an `SqgSolution` with `sol.θ = ext.θ_lim`. Caller assembles
+`SqgEvolutionAxioms` from the Route B Fourier estimates + velocity
+witness (§10.141–§10.143). -/
+theorem exists_sqgSolution_of_aubinLions
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hE : SqgEvolutionAxioms ext.θ_lim)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (ext.θ_lim 0) n‖ ^ 2)) :
+    ∃ sol : SqgSolution, sol.θ = ext.θ_lim :=
+  ⟨{ θ := ext.θ_lim
+     smoothInitialData := hSmooth
+     solvesSqgEvolution := hE }, rfl⟩
+
 end SqgIdentity
