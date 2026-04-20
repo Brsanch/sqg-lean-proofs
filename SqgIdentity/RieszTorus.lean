@@ -19242,8 +19242,7 @@ theorem l2Conservation_of_aubinLions
   -- Strong-L² limits: ∫ ‖f_k τ‖² → ∫ ‖θ_lim τ‖² for τ ∈ {t, 0}.
   have h_lim_t := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
   have h_lim_0 := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
-  -- Per-level constant-in-time energy: ∫ ‖f_k t‖² = ∫ ‖f_k 0‖².
-  -- Composed via `trans` for minimal elaborator pressure.
+  -- Per-level constant-in-time energy (term-mode, cheap composition).
   have h_const_k : ∀ k : ℕ,
       (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
         = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
@@ -19251,24 +19250,25 @@ theorem l2Conservation_of_aubinLions
       (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) t)).trans
         ((hLevel (ext.nsub k) t ht).trans
           (integral_norm_sq_galerkinToLp_sqgBox (ext.nsub k) (α (ext.nsub k) 0)).symm)
-  -- Rewrite h_lim_t's sequence to match h_lim_0's via funext-produced
-  -- sequence equality.
-  have h_seq_eq :
+  -- Transport h_lim_t via pointwise equality using Tendsto.congr (avoids
+  -- heavy `rw` into the Tendsto type).
+  have h_lim_t' : Filter.Tendsto
       (fun k : ℕ =>
-          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
-        = fun k : ℕ =>
-          ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2 :=
-    funext h_const_k
-  rw [h_seq_eq] at h_lim_t
+        ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2)
+      Filter.atTop (nhds (∫ x, ‖ext.θ_lim t x‖ ^ 2)) :=
+    h_lim_t.congr h_const_k
   -- ∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖² by limit uniqueness.
   have h_int_eq : (∫ x, ‖ext.θ_lim t x‖ ^ 2) = (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) :=
-    tendsto_nhds_unique h_lim_t h_lim_0
-  -- Lift via zero-mode split.
+    tendsto_nhds_unique h_lim_t' h_lim_0
+  -- Lift via zero-mode split, composed in a calc.
   have h_split_t :=
     integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (ext.θ_lim t) h_zero_t
   have h_split_0 :=
     integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (ext.θ_lim 0) h_zero_0
-  rw [← h_split_t, ← h_split_0, h_int_eq]
+  calc hsSeminormSq 0 (ext.θ_lim t)
+      = ∫ x, ‖ext.θ_lim t x‖ ^ 2 := h_split_t.symm
+    _ = ∫ x, ‖ext.θ_lim 0 x‖ ^ 2 := h_int_eq
+    _ = hsSeminormSq 0 (ext.θ_lim 0) := h_split_0
 
 /-! ### §10.148 Route B capstone without the `hL2` hypothesis
 
