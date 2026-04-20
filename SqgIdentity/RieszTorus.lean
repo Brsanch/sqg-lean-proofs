@@ -16818,7 +16818,7 @@ theorem galerkin_realSym_chain_n_step
           HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) ∧
         (∀ τ ∈ Set.Icc (0 : ℝ) ε, ∀ n ∈ S,
           galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)))
-    (c₀ : ↥S → ℂ) (hc₀_ℓ² : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (c₀ : ↥S → ℂ) (hc₀_l2 : (∑ m : ↥S, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
     (hRealC₀ : ∀ n ∈ S,
       galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n))
     (n : ℕ) :
@@ -16831,7 +16831,7 @@ theorem galerkin_realSym_chain_n_step
       (∀ τ ∈ Set.Icc (0 : ℝ) ((n : ℝ) * ε),
         (∑ m : ↥S, ‖α τ m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2) := by
   have h_R2_nn : (0 : ℝ) ≤ R / 2 := by linarith
-  have hc₀_bound : ‖c₀‖ ≤ R / 2 := piNorm_le_of_sum_sq_le_sq c₀ h_R2_nn hc₀_ℓ²
+  have hc₀_bound : ‖c₀‖ ≤ R / 2 := piNorm_le_of_sum_sq_le_sq c₀ h_R2_nn hc₀_l2
   induction n with
   | zero =>
     obtain ⟨α₀, hα₀0, hα₀D, hα₀R⟩ := hStep c₀ hc₀_bound hRealC₀
@@ -16865,7 +16865,7 @@ theorem galerkin_realSym_chain_n_step
     have h_αTn_E : (∑ m : ↥S, ‖α_n Tn m‖ ^ 2) = ∑ m : ↥S, ‖c₀ m‖ ^ 2 :=
       hα_nE Tn ⟨hTn_nn, le_rfl⟩
     have h_αTn_sq : (∑ m : ↥S, ‖α_n Tn m‖ ^ 2) ≤ (R / 2) ^ 2 := by
-      rw [h_αTn_E]; exact hc₀_ℓ²
+      rw [h_αTn_E]; exact hc₀_l2
     have h_αTn_bound : ‖α_n Tn‖ ≤ R / 2 :=
       piNorm_le_of_sum_sq_le_sq (α_n Tn) h_R2_nn h_αTn_sq
     have h_αTn_realSym : ∀ m ∈ S,
