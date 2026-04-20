@@ -4,6 +4,28 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.20 — 2026-04-20
+
+Unified global sup-norm bound. Extends v0.4.19 by ~35 lines.
+
+- **§10.112 `galerkin_supNorm_le_sqrt_card_on_Ici`** — time-global
+  counterpart of §10.111's `galerkin_supNorm_bound_on_Icc`. For any
+  `α : ℝ → ↥S → ℂ` satisfying the Galerkin ODE on `Ici 0` with
+  real-symmetric data, the sup norm is bounded uniformly in time
+  by `√|S| · ‖α 0‖` for **all** `t ≥ 0` (not just on a finite
+  interval `[0, ε]`).
+
+  Proof is a one-liner: apply §10.111 with `ε := t + 1` and restrict
+  the `HasDerivWithinAt` hypothesis from `Ici 0` to the subset
+  `Icc 0 (t + 1)` via `.mono`.
+
+Together §10.108 + §10.112 give **unconditional uniform
+boundedness**: any real-symmetric trajectory produced by the
+conditional construction in §10.108 satisfies the uniform-in-time
+sup bound `‖α t‖ ≤ √|S| · ‖α 0‖`, for all `t ≥ 0`.
+
+16,958 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.19 — 2026-04-20
 
 Within-interval `L²`-sum conservation + unconditional ball-invariance
