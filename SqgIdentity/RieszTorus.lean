@@ -19229,26 +19229,6 @@ theorem tendsto_integral_norm_sq_of_tendsto_L2sub_torus
       (nhds (∫ x, ‖g x‖ ^ 2)) :=
   tendsto_integral_norm_sq_of_tendsto_L2sub h
 
-set_option maxHeartbeats 800000 in
-/-- **Strong-L² convergence lifts to `hsSeminormSq 0` convergence when
-zero mode vanishes both on the sequence and on the limit.** The key
-primitive used in Route B `l2Conservation`. -/
-theorem tendsto_hsSeminormSq_of_tendsto_L2sub_torus
-    {ι : Type*} {l : Filter ι}
-    {f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
-    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
-    (hL2 : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2) l (nhds 0))
-    (hZero_f : ∀ i, mFourierCoeff (f i) (0 : Fin 2 → ℤ) = 0)
-    (hZero_g : mFourierCoeff g (0 : Fin 2 → ℤ) = 0) :
-    Filter.Tendsto (fun i => hsSeminormSq 0 (f i)) l
-      (nhds (hsSeminormSq 0 g)) := by
-  have h_lim := tendsto_integral_norm_sq_of_tendsto_L2sub_torus hL2
-  have h_eq_g : (∫ x, ‖g x‖ ^ 2) = hsSeminormSq 0 g :=
-    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero g hZero_g
-  rw [h_eq_g] at h_lim
-  exact h_lim.congr (fun i =>
-    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (f i) (hZero_f i))
-
 set_option maxHeartbeats 400000 in
 /-- **When the zero mode vanishes, `∫ ‖f‖² = hsSeminormSq 0 f`.**
 Localized helper so the capstone avoids heavy `rw` against
@@ -19271,6 +19251,26 @@ theorem integral_norm_sq_galerkinToLp_sqgBox
   integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero
     (galerkinToLp (sqgBox n) c)
     (mFourierCoeff_galerkin_sqgBox_zero_any n c)
+
+set_option maxHeartbeats 800000 in
+/-- **Strong-L² convergence lifts to `hsSeminormSq 0` convergence when
+zero mode vanishes both on the sequence and on the limit.** The key
+primitive used in Route B `l2Conservation`. -/
+theorem tendsto_hsSeminormSq_of_tendsto_L2sub_torus
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hL2 : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2) l (nhds 0))
+    (hZero_f : ∀ i, mFourierCoeff (f i) (0 : Fin 2 → ℤ) = 0)
+    (hZero_g : mFourierCoeff g (0 : Fin 2 → ℤ) = 0) :
+    Filter.Tendsto (fun i => hsSeminormSq 0 (f i)) l
+      (nhds (hsSeminormSq 0 g)) := by
+  have h_lim := tendsto_integral_norm_sq_of_tendsto_L2sub_torus hL2
+  have h_eq_g : (∫ x, ‖g x‖ ^ 2) = hsSeminormSq 0 g :=
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero g hZero_g
+  rw [h_eq_g] at h_lim
+  exact h_lim.congr (fun i =>
+    integral_norm_sq_eq_hsSeminormSq_zero_of_zero_fourier_zero (f i) (hZero_f i))
 
 -- Un-bundled (raw) helpers — the theorems below take `nsub`, `θ_lim`,
 -- `tendsto_L2_proof` as independent arguments rather than projecting
