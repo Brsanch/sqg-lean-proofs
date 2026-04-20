@@ -4,6 +4,44 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.12 — 2026-04-19
+
+Real-coefficient symmetry algebraic preservation (building blocks for
+ODE propagation). 15,700 lines (14,991 `RieszTorus` + 709 `Basic`), zero
+`sorry`, zero new axioms.
+
+Three new lemmas establishing the algebraic ingredients for propagating
+real-coefficient symmetry from initial to all times under the Galerkin
+ODE. The full ODE-uniqueness propagation (closing `hRealC` to a τ=0-only
+hypothesis in §10.98) is deferred to a subsequent session; this release
+ships the algebraic identities that will feed that argument.
+
+- **§10.99 `galerkinRHS_neg_eq_star_of_realSymmetric`**: under
+  `IsSymmetricSupport S` and `hRealC` on `c`,
+  `galerkinRHS S c (-n) = star (galerkinRHS S c n)`. Proof via
+  `Finset.sum_nbij'` reindex `ℓ ↔ -ℓ` + K-kernel self-star (via
+  `star_derivSymbol` + `star_sqgVelocitySymbol`) + K-kernel
+  double-negation-invariance.
+- **Subtype lift `galerkinVectorField_neg_eq_star_of_realSymmetric`**:
+  §10.99 at the `↥S → ℂ` vector-field level via definitional
+  `galerkinVectorField S c ⟨m, h⟩ = galerkinRHS S (ext c) m`.
+- **§10.99 extension `galerkinRHS_starSwap_identity`**: universal (no
+  `hRealC` required) — for any `d : (Fin 2 → ℤ) → ℂ`,
+  `galerkinRHS S (fun m => star (d (-m))) n = star (galerkinRHS S d (-n))`
+  under `IsSymmetricSupport S` alone. Same reindex + algebraic structure
+  as §10.99, but no reality hypothesis. This is the precise identity
+  that the ODE-uniqueness propagation will consume — it says the
+  Galerkin vector field commutes with the "starSwap" operator
+  `c ↦ fun m => star (c (-m))` as functions, regardless of whether `c`
+  itself has real symmetry.
+
+CI pitfalls caught: `Finset.sum_nbij'` takes **non-dependent** `i : ι → κ`
+(not `∀ a ∈ s, β`); `fun ℓ _ => -ℓ` confuses the elaborator. Pattern
+`fun ℓ : τ => -ℓ` works. Beta-reduction via `dsimp only` needed before
+rewriting arguments hidden behind lambda redexes.
+
+Archive: [TBD — Zenodo DOI pending].
+
 ## v0.4.11 — 2026-04-19
 
 Phase-3 self-contained Galerkin → `SqgEvolutionAxioms_strong` capstone.
