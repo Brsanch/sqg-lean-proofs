@@ -19193,6 +19193,42 @@ lemma mFourierCoeff_galerkin_sqgBox_zero_any
     mFourierCoeff (galerkinToLp (sqgBox n) c) (0 : Fin 2 → ℤ) = 0 :=
   mFourierCoeff_galerkinToLp_sqgBox_zero n c
 
+-- Torus/volume-specialized bridge lemmas.  These eliminate the
+-- `{α : Type*} [MeasurableSpace α] {μ}` inference cascade at call sites
+-- inside the Route B conservation chain, which was causing whnf
+-- heartbeat exhaustion even at 800k.
+
+/-- **Torus-specialized `Lp ℂ 2`-norm ↔ integral bridge.** -/
+theorem Lp_two_norm_sq_eq_integral_norm_sq_torus
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    ‖f‖ ^ 2 = ∫ x, ‖f x‖ ^ 2 :=
+  Lp_two_norm_sq_eq_integral_norm_sq f
+
+/-- **Torus-specialized `∫ ‖(f - g) x‖² = ∫ ‖f x - g x‖²`.** -/
+theorem integral_norm_sub_sq_eq_coeFn_sub_torus
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    (∫ x, ‖(f - g) x‖ ^ 2) = ∫ x, ‖f x - g x‖ ^ 2 :=
+  integral_norm_sub_sq_eq_coeFn_sub f g
+
+/-- **Torus-specialized strong-L²-sub → Lp-norm-sub convergence.** -/
+theorem tendsto_Lp_two_norm_sub_of_tendsto_integral_sq_torus
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (h : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2) l (nhds 0)) :
+    Filter.Tendsto (fun i => ‖f i - g‖) l (nhds 0) :=
+  tendsto_Lp_two_norm_sub_of_tendsto_integral_sq h
+
+/-- **Torus-specialized squared L² norm continuity.** -/
+theorem tendsto_integral_norm_sq_of_tendsto_L2sub_torus
+    {ι : Type*} {l : Filter ι}
+    {f : ι → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (h : Filter.Tendsto (fun i => ∫ x, ‖f i x - g x‖ ^ 2) l (nhds 0)) :
+    Filter.Tendsto (fun i => ∫ x, ‖f i x‖ ^ 2) l
+      (nhds (∫ x, ‖g x‖ ^ 2)) :=
+  tendsto_integral_norm_sq_of_tendsto_L2sub h
+
 set_option maxHeartbeats 400000 in
 /-- **When the zero mode vanishes, `∫ ‖f‖² = hsSeminormSq 0 f`.**
 Localized helper so the capstone avoids heavy `rw` against
@@ -19269,7 +19305,7 @@ theorem l2Conservation_of_aubinLions_raw
       (fun k : ℕ =>
         ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x‖ ^ 2)
       Filter.atTop (nhds (∫ x, ‖θ_lim t x‖ ^ 2)) :=
-    tendsto_integral_norm_sq_of_tendsto_L2sub (tendsto_L2_proof t ht)
+    tendsto_integral_norm_sq_of_tendsto_L2sub_torus (tendsto_L2_proof t ht)
   -- Convert limit point from ∫ ‖θ_lim t‖² to hsSeminormSq 0 (θ_lim t)
   -- via the zero-mode split at the limit.
   have h_lim_hs_t : Filter.Tendsto
@@ -19291,7 +19327,7 @@ theorem l2Conservation_of_aubinLions_raw
       (fun k : ℕ =>
         ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) x‖ ^ 2)
       Filter.atTop (nhds (∫ x, ‖θ_lim 0 x‖ ^ 2)) :=
-    tendsto_integral_norm_sq_of_tendsto_L2sub (tendsto_L2_proof 0 le_rfl)
+    tendsto_integral_norm_sq_of_tendsto_L2sub_torus (tendsto_L2_proof 0 le_rfl)
   have h_lim_hs_0 : Filter.Tendsto
       (fun k : ℕ =>
         ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) 0) x‖ ^ 2)
