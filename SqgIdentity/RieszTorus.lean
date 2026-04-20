@@ -18237,4 +18237,246 @@ theorem exists_sqgSolution_via_galerkinLimit_of_finite_support
   rw [hsol]
   exact traj.init_eq
 
+/-! ### §10.133 `Ici 0`-variant of the strong-axioms Duhamel chain
+
+The §10.91 → §10.92 → §10.94 chain discharges
+`SqgEvolutionAxioms_strong` from a Galerkin trajectory with
+`HasDerivAt` on all of `ℝ`. §10.116.H.3 only delivers
+`HasDerivWithinAt ... (Set.Ici 0) t` for `t ≥ 0`, so §10.94 could not
+be fed directly from the §10.116 / §10.132 trajectory. This section
+ports the chain to consume the `Ici 0` hypothesis using
+`intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le`, which
+takes the `HasDerivWithinAt ... (Ioi x) x` shape obtainable from the
+`Ici 0` derivative via `HasDerivWithinAt.mono`.
+
+Since `IsSqgWeakSolutionOnSupport` only asks the Duhamel identity at
+`s ≥ 0`, only the per-mode FTC step (§10.91 internals) actually
+requires the `Ici 0` adaptation — the downstream `of_galerkin_dynamics_on_support`
+and `of_galerkin_dynamics_with_L_inf_bound_on_support` reassemble without
+further changes once the Ici-0 weak-solution witness is in hand.
+
+Capstone: `exists_sqgSolution_strong_of_galerkin_realSym` parallels
+`exists_sqgSolution_via_galerkinLimit_of_finite_support` (§10.132) but
+produces `SqgEvolutionAxioms_strong` instead of `SqgEvolutionAxioms`.
+Closes item 2 of the open-items list. -/
+
+/-- **§10.133.A — Per-mode FTC for `Ici 0` Galerkin trajectories.**
+Parallel to `galerkin_mode_FTC` (§10.55), consuming
+`HasDerivWithinAt ... (Ici 0)` at every `τ ≥ 0` rather than
+`HasDerivAt` at every `τ ∈ ℝ`. The conclusion is the same per-mode
+FTC identity on any forward interval `[s, t]` with `s ≥ 0`. -/
+theorem galerkin_mode_FTC_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, 0 ≤ τ →
+      HasDerivWithinAt α (galerkinVectorField S (α τ)) (Set.Ici 0) τ)
+    (m : ↥S) {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) :
+    α t m - α s m = ∫ τ in s..t, (galerkinVectorField S (α τ)) m := by
+  have hIcc_sub : Set.Icc s t ⊆ Set.Ici 0 := fun x hx => le_trans hs hx.1
+  -- Continuity of α on [s, t] from the within-derivative on Ici 0.
+  have hCont_α : ContinuousOn α (Set.Icc s t) := fun x hx => by
+    have hx_nn : 0 ≤ x := le_trans hs hx.1
+    exact ((hα x hx_nn).continuousWithinAt).mono hIcc_sub
+  -- Continuity of the m-projection of α on [s, t].
+  have hCont_αm : ContinuousOn (fun τ => α τ m) (Set.Icc s t) :=
+    (continuous_apply m).comp_continuousOn hCont_α
+  -- Continuity of the integrand (galerkinVectorField ∘ α projected to m).
+  have hCont_integrand :
+      ContinuousOn (fun τ => (galerkinVectorField S (α τ)) m) (Set.Icc s t) :=
+    (continuous_apply m).comp_continuousOn
+      ((galerkinVectorField_continuous S).comp_continuousOn hCont_α)
+  -- Integrability of the integrand on [s, t].
+  have hIntegrable :
+      IntervalIntegrable (fun τ => (galerkinVectorField S (α τ)) m) volume s t :=
+    hCont_integrand.intervalIntegrable_of_Icc hst
+  -- Per-coordinate right-derivative on Ioi x for x ∈ Ioo s t.
+  have hDerivRight : ∀ x ∈ Set.Ioo s t,
+      HasDerivWithinAt (fun τ => α τ m)
+        ((galerkinVectorField S (α x)) m) (Set.Ioi x) x := by
+    intro x hx
+    have hx_nn : 0 ≤ x := le_of_lt (lt_of_le_of_lt hs hx.1)
+    have hIoi_sub : Set.Ioi x ⊆ Set.Ici 0 := fun y hy => le_of_lt (lt_of_le_of_lt hx_nn hy)
+    have h_within_Ioi : HasDerivWithinAt α (galerkinVectorField S (α x)) (Set.Ioi x) x :=
+      (hα x hx_nn).mono hIoi_sub
+    exact (hasDerivWithinAt_pi.mp h_within_Ioi) m
+  -- Apply the HasDeriv_right FTC.
+  symm
+  exact intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le hst hCont_αm
+    hDerivRight hIntegrable
+
+/-- **§10.133.B — `IsSqgWeakSolutionOnSupport` from an `Ici 0` Galerkin
+trajectory.** Mirror of §10.91 consuming the within-derivative on
+`Ici 0`. Uses §10.133.A at every `(s, t)` with `0 ≤ s ≤ t`, then
+chains through §10.48's `galerkinRHS_eq_neg_sqgNonlinearFlux`
+identification to package the Duhamel identity against the
+`sqgNonlinearFlux`. -/
+theorem IsSqgWeakSolutionOnSupport.of_galerkin_dynamics_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, 0 ≤ τ →
+      HasDerivWithinAt α (galerkinVectorField S (α τ)) (Set.Ici 0) τ) :
+    IsSqgWeakSolutionOnSupport S
+      (fun τ => galerkinToLp S (α τ))
+      (fun j τ => shellVelocity S (galerkinExtend S (α τ)) j) := by
+  intro m hm s t hs hst
+  -- Step 1: LHS to α-coefficient difference.
+  have hLHS :
+      mFourierCoeff (galerkinToLp S (α t)) m -
+          mFourierCoeff (galerkinToLp S (α s)) m
+        = α t ⟨m, hm⟩ - α s ⟨m, hm⟩ := by
+    rw [mFourierCoeff_galerkinToLp, mFourierCoeff_galerkinToLp,
+        galerkinExtend_apply_of_mem _ _ hm, galerkinExtend_apply_of_mem _ _ hm]
+  -- Step 2: FTC (§10.133.A) turns the α-difference into the interval integral.
+  have hFTC : α t ⟨m, hm⟩ - α s ⟨m, hm⟩
+      = ∫ τ in s..t, (galerkinVectorField S (α τ)) ⟨m, hm⟩ :=
+    galerkin_mode_FTC_Ici α hα ⟨m, hm⟩ hs hst
+  -- Step 3: §10.48 identifies the integrand as `-sqgNonlinearFlux`.
+  have h_vf : ∀ τ : ℝ,
+      (galerkinVectorField S (α τ)) ⟨m, hm⟩
+        = -sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m := fun τ =>
+    galerkinRHS_eq_neg_sqgNonlinearFlux S (α τ) m
+  have h_integrand :
+      ∫ τ in s..t, (galerkinVectorField S (α τ)) ⟨m, hm⟩
+        = ∫ τ in s..t, -sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m :=
+    intervalIntegral.integral_congr (fun τ _ => h_vf τ)
+  -- Step 4: Chain + factor -1.
+  rw [hLHS, hFTC, h_integrand, intervalIntegral.integral_neg]
+  -- Step 5: Interval integral → Icc integral.
+  congr 1
+  rw [intervalIntegral.integral_of_le hst,
+      ← MeasureTheory.integral_Icc_eq_integral_Ioc]
+
+/-- **§10.133.C — `SqgEvolutionAxioms_strong` from an `Ici 0` Galerkin
+trajectory + per-mode flux bound.** Mirror of §10.92 (line 14320) with
+the derivative hypothesis relaxed to `HasDerivWithinAt ... (Ici 0)` at
+every `τ ≥ 0`. Composes §10.133.B with §10.90 (on-support Duhamel →
+strong axioms). -/
+theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, 0 ≤ τ →
+      HasDerivWithinAt α (galerkinVectorField S (α τ)) (Set.Ici 0) τ)
+    (hE : SqgEvolutionAxioms (fun τ => galerkinToLp S (α τ)))
+    (hFluxBound : ∀ m ∈ S, ∃ K : ℝ, 0 ≤ K ∧
+      ∀ τ : ℝ, 0 ≤ τ →
+        ‖sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m‖ ≤ K) :
+    SqgEvolutionAxioms_strong (fun τ => galerkinToLp S (α τ)) := by
+  have hSupport : ∀ τ : ℝ, ∀ n ∉ S,
+      mFourierCoeff (galerkinToLp S (α τ)) n = 0 := fun τ n hn => by
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn]
+  exact SqgEvolutionAxioms_strong.of_finite_support_weak_on_support
+    (fun τ => galerkinToLp S (α τ)) S hSupport hE
+    (fun j τ => shellVelocity S (galerkinExtend S (α τ)) j)
+    hFluxBound
+    (IsSqgWeakSolutionOnSupport.of_galerkin_dynamics_Ici α hα)
+
+/-- **§10.133.D — `SqgEvolutionAxioms_strong` from an `Ici 0` Galerkin
+trajectory + uniform L∞ coefficient bound.** Mirror of §10.94
+(line 14480) consuming the `Ici 0` derivative. Internally discharges
+`hFluxBound` via §10.93's `sqgNonlinearFlux_galerkin_bounded_of_L_inf`. -/
+theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support_Ici
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ τ, 0 ≤ τ →
+      HasDerivWithinAt α (galerkinVectorField S (α τ)) (Set.Ici 0) τ)
+    (hE : SqgEvolutionAxioms (fun τ => galerkinToLp S (α τ)))
+    {M : ℝ}
+    (hBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ M) :
+    SqgEvolutionAxioms_strong (fun τ => galerkinToLp S (α τ)) := by
+  set K : ℝ := M ^ 2 * (S.card : ℝ)
+    + M ^ 2 * ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 with hK_def
+  have hK_nn : 0 ≤ K := by
+    have h_card_nn : (0 : ℝ) ≤ (S.card : ℝ) := Nat.cast_nonneg _
+    have h_sum_nn : (0 : ℝ) ≤ ∑ ℓ ∈ S, (fracDerivSymbol 1 ℓ) ^ 2 :=
+      Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+    have h_M2_nn : (0 : ℝ) ≤ M ^ 2 := sq_nonneg _
+    rw [hK_def]; nlinarith
+  have hFluxBound : ∀ m ∈ S, ∃ Km : ℝ, 0 ≤ Km ∧
+      ∀ τ : ℝ, 0 ≤ τ →
+        ‖sqgNonlinearFlux (galerkinToLp S (α τ))
+            (fun j => shellVelocity S (galerkinExtend S (α τ)) j) m‖ ≤ Km :=
+    fun m _ => ⟨K, hK_nn, fun τ hτ => by
+      rw [hK_def]
+      exact sqgNonlinearFlux_galerkin_bounded_of_L_inf (α τ) (hBound τ hτ) m⟩
+  exact SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support_Ici
+    α hα hE hFluxBound
+
+/-! ### §10.134 Strong-form capstone on the finite-Fourier-support class
+
+Parallel to §10.132 (`exists_sqgSolution_via_galerkinLimit_of_finite_support`),
+but lands `SqgEvolutionAxioms_strong` on the produced trajectory via
+§10.133.D. Uses §10.116.H.3 for time-global Galerkin existence with
+π-norm ≤ R/2 (→ uniform L∞ bound M := R/2 via `piNorm`) and §10.117.B
+for the underlying `SqgEvolutionAxioms`. -/
+
+/-- **Strong-form `SqgSolution` from a finite-support real-symmetric
+ℓ²-bounded initial coefficient vector.** Produces an `SqgSolution`
+whose time-zero slice is `galerkinToLp S₀ c₀`, and additionally a
+`SqgEvolutionAxioms_strong` witness for the underlying trajectory.
+Closes item 2 of the open-items list for the finite-support class. -/
+theorem exists_sqgSolution_strong_of_galerkin_realSym
+    (S₀ : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S₀)
+    (hS : IsSymmetricSupport S₀)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S₀ → ℂ)
+    (hc₀_l2 : (∑ m : ↥S₀, ‖c₀ m‖ ^ 2) ≤ (R / 2) ^ 2)
+    (hRealC₀ : ∀ n ∈ S₀,
+      galerkinExtend S₀ c₀ (-n) = star (galerkinExtend S₀ c₀ n)) :
+    ∃ (sol : SqgSolution)
+      (_hStrong : SqgEvolutionAxioms_strong sol.θ),
+      sol.θ 0 = galerkinToLp S₀ c₀ := by
+  obtain ⟨α, hα0, hderiv, hL2_const, hRealSym, hpinorm⟩ :=
+    galerkin_time_global_unconditional_realSym S₀ hS hR c₀ hc₀_l2 hRealC₀
+  have hData : IsGalerkinLimitData (galerkinToLp S₀ c₀)
+      (fun m t => galerkinExtend S₀ (α t) m) :=
+    isGalerkinLimitData_of_galerkin_realSym h0 hS c₀ α hα0 hL2_const hRealSym
+  set traj : GalerkinLimitTrajectory (galerkinToLp S₀ c₀)
+      (fun m t => galerkinExtend S₀ (α t) m) :=
+    galerkinLimitTrajectory_of_galerkin c₀ α hα0 with htraj
+  have hVel : HasGalerkinLimitVelocity traj.θ_lim
+      (fun j τ => shellVelocity S₀ (galerkinExtend S₀ (α τ)) j) :=
+    hasGalerkinLimitVelocity_of_galerkin c₀ α hα0
+  have hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (traj.θ_lim 0) n‖ ^ 2) := by
+    refine ⟨3, by norm_num, ?_⟩
+    apply hsSeminormSq_summable_of_finite_support 3 (traj.θ_lim 0) S₀
+    intros n hn
+    show mFourierCoeff (galerkinToLp S₀ (α 0)) n = 0
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn]
+  obtain ⟨sol, hsol⟩ :=
+    exists_sqgSolution_of_galerkinLimit hData traj hVel hSmooth
+  -- Uniform L∞ bound from the π-norm bound.
+  have hLinfBound : ∀ τ : ℝ, 0 ≤ τ → ∀ n, ‖galerkinExtend S₀ (α τ) n‖ ≤ R / 2 := by
+    intros τ hτ n
+    by_cases hn : n ∈ S₀
+    · rw [galerkinExtend_apply_of_mem _ _ hn]
+      have hpin : ‖α τ‖ ≤ R / 2 := hpinorm τ hτ
+      exact le_trans (norm_le_pi_norm (α τ) ⟨n, hn⟩) hpin
+    · rw [galerkinExtend_apply_of_not_mem _ _ hn, norm_zero]
+      linarith [le_of_lt hR]
+  -- Base SqgEvolutionAxioms for the lifted trajectory.
+  have hE : SqgEvolutionAxioms (fun τ => galerkinToLp S₀ (α τ)) := by
+    apply SqgEvolutionAxioms.of_galerkin_realSym_Ici h0
+    intros t ht
+    rw [hα0]
+    exact hL2_const t ht
+  -- Apply §10.133.D to produce the strong axioms.
+  have hStrong : SqgEvolutionAxioms_strong (fun τ => galerkinToLp S₀ (α τ)) :=
+    SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support_Ici
+      α hderiv hE hLinfBound
+  -- Transport the strong axioms to sol.θ via the equality sol.θ = traj.θ_lim.
+  have hSolEq : sol.θ = traj.θ_lim := hsol
+  have hTrajEq : traj.θ_lim = fun τ => galerkinToLp S₀ (α τ) := rfl
+  have hSolTheta : sol.θ = fun τ => galerkinToLp S₀ (α τ) := by rw [hSolEq, hTrajEq]
+  refine ⟨sol, ?_, ?_⟩
+  · rw [hSolTheta]; exact hStrong
+  · show sol.θ 0 = galerkinToLp S₀ c₀
+    rw [hsol]
+    exact traj.init_eq
+
 end SqgIdentity
