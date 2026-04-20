@@ -4,6 +4,33 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.26 — 2026-04-20
+
+Real-symmetric chain n-step with ℓ²-sum invariant. Extends v0.4.25 by
+~200 lines.
+
+- **§10.116.F `galerkin_realSym_chain_n_step`** — mirror of §10.104
+  with two additional invariants tracked through the induction:
+  (a) real-symmetry at every `τ ∈ [0, n·ε]`, and (b) ℓ²-sum equality
+  `∑ ‖α τ m‖² = ∑ ‖c₀ m‖²` (preserved exactly by §10.110). No `hInv`
+  hypothesis needed: the pi-norm bound `‖α τ‖_π ≤ R/2` is derived
+  pointwise from the ℓ²-sum invariant plus the initial
+  `∑ ‖c₀ m‖² ≤ (R/2)²`, via `piNorm_le_of_sum_sq_le_sq`.
+
+- **Refactor §10.110 `galerkinEnergyH0_const_on_Icc`** — weakens
+  `hRealC` hypothesis from `∀ τ, 0 ≤ τ → ∀ n ∈ S, …` to the
+  morally stronger `∀ τ ∈ Icc 0 ε, ∀ n ∈ S, …`. Internal proof only
+  uses the hypothesis at `x ∈ Ico 0 ε`, so the interface change is
+  free. §10.111 `galerkin_supNorm_bound_on_Icc` and §10.116.E adapt
+  via `fun τ hτ => hRealC τ hτ.1` at the callsite; external shape is
+  unchanged.
+
+- **`piNorm_le_of_sum_sq_le_sq`** — reusable helper: for any
+  `c : ι → E` and `B ≥ 0`, `∑ ‖c i‖² ≤ B² ⇒ ‖c‖_π ≤ B`. Used by
+  §10.116.F at the base and induction-step junctions.
+
+17,693 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.25 — 2026-04-20
 
 Real-symmetric forward step + ℓ²→pi chain invariant. Extends v0.4.24
