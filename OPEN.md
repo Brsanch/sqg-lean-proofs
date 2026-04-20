@@ -14,11 +14,10 @@ that is *not* a finite trigonometric polynomial. Requires per-mode
 time-modulus of continuity, diagonal subsequence extraction, and
 Fourier synthesis. Target release: **v0.4.37**.
 
-### 2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132
-The existing Galerkin-derived `SqgSolution` satisfies only the
-weak-form `SqgEvolutionAxioms`. Upgrade to the Duhamel-level
-`SqgEvolutionAxioms_strong` via a backward-Picard extension of §10.116
-to full ℝ, feeding §10.94. Target release: **v0.4.35**.
+### ~~2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132~~ ✓ Closed in v0.4.33
+Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →
+§10.94 Duhamel chain via `intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le`.
+Headline: `exists_sqgSolution_strong_of_galerkin_realSym`.
 
 ### 3. `MaterialMaxPrinciple.hOnePropagation` off the finite-Fourier-support class
 Extend §10.56's MMP discharge to solutions with infinite Fourier
@@ -54,9 +53,11 @@ then confirm a fresh DOI mints on the next tag.
 ## Previously-listed items now resolved
 
 The following items on prior "what's left" lists are **already
-closed** in current code, though memory / README captions may still
-mention them:
+closed** in current code:
 
+- ~~2. `SqgEvolutionAxioms_strong` upgrade~~ — closed in v0.4.33
+  via §10.133–§10.134 (Ici-0 port of Duhamel chain; headline
+  `exists_sqgSolution_strong_of_galerkin_realSym`).
 - ~~Derive `hFluxBound` from uniform L∞~~ — closed by §10.93
   `sqgNonlinearFlux_galerkin_bounded_of_L_inf` +
   §10.94 `SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support`.

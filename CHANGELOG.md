@@ -4,6 +4,43 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.33 — 2026-04-20
+
+**§10.133–§10.134 — `SqgEvolutionAxioms_strong` for the §10.117 /
+§10.132 `SqgSolution`.** Closes item 2 of the open-items list on the
+finite-Fourier-support class. The existing Galerkin-derived
+`SqgSolution` (v0.4.28, v0.4.31) carries only the weak-form
+`SqgEvolutionAxioms`. v0.4.33 upgrades the underlying trajectory to
+`SqgEvolutionAxioms_strong` by porting the §10.91 → §10.92 → §10.94
+Duhamel chain to consume the `HasDerivWithinAt ... (Ici 0)` shape
+delivered by §10.116.H.3 (rather than full-ℝ `HasDerivAt`).
+
+Route: `intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le`
+accepts exactly the right-derivative shape obtainable from the Ici-0
+within-derivative via `HasDerivWithinAt.mono`. The rest of the chain
+(`IsSqgWeakSolutionOnSupport` → `SqgEvolutionAxioms_strong`) goes
+through unchanged because `IsSqgWeakSolutionOnSupport` already asks
+only `0 ≤ s ≤ t`.
+
+- **§10.133.A** `galerkin_mode_FTC_Ici` — per-mode FTC for the
+  Ici-0 Galerkin trajectory on `[s, t]` with `0 ≤ s ≤ t`. Uses
+  `continuous_apply` + `ContinuousOn` of `galerkinVectorField ∘ α`
+  on `Icc s t` + `integral_eq_sub_of_hasDeriv_right_of_le`.
+- **§10.133.B** `IsSqgWeakSolutionOnSupport.of_galerkin_dynamics_Ici`
+  — mirror of §10.91 consuming the Ici-0 derivative.
+- **§10.133.C** `SqgEvolutionAxioms_strong.of_galerkin_dynamics_on_support_Ici`
+  — mirror of §10.92. Abstract flux-bound form.
+- **§10.133.D** `SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support_Ici`
+  — mirror of §10.94. L∞ coefficient bound discharges `hFluxBound`
+  internally via §10.93.
+- **§10.134** `exists_sqgSolution_strong_of_galerkin_realSym` —
+  headline capstone paralleling §10.132 but producing both
+  `SqgSolution` and `SqgEvolutionAxioms_strong` on the underlying
+  trajectory. The uniform L∞ bound `R/2` is extracted from the
+  §10.116.H.3 π-norm bound via `norm_le_pi_norm`.
+
++242 lines; zero `sorry`, zero new axioms beyond mathlib; CI green.
+
 ## v0.4.32 — 2026-04-20
 
 **Hygiene release: `push_neg` deprecation + CI Node 24 opt-in.**
