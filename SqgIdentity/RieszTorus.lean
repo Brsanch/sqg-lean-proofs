@@ -19663,17 +19663,22 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinBounds
   modeBound_nonneg := fun _ => Real.sqrt_nonneg _
   modeBound_holds := by
     intro n t m ht
-    -- `galerkinModeCoeff α n t m = galerkinExtend (sqgBox n) (α n t) m`
-    -- and `‖·‖² ≤ ∫ ‖θ₀‖²` by §10.123, so `‖·‖ ≤ √(∫ ‖θ₀‖²)`.
+    -- Produce the bound in a form that uses the same DecidableEq
+    -- instance as `sq_galerkinExtend_le_L2Sq` (i.e. the theorem's
+    -- `[DecidableEq]` parameter), then `convert` bridges to the
+    -- auto-synthesized instance at the `galerkinModeCoeff` call site.
     have h_sq := sq_galerkinExtend_le_L2Sq θ₀ n (α n) (hEnergy n) ht m
     have h_norm_nn : (0 : ℝ) ≤ ‖galerkinExtend (sqgBox n) (α n t) m‖ :=
       norm_nonneg _
+    have h_bound : ‖galerkinExtend (sqgBox n) (α n t) m‖
+        ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2) := by
+      calc ‖galerkinExtend (sqgBox n) (α n t) m‖
+          = Real.sqrt (‖galerkinExtend (sqgBox n) (α n t) m‖ ^ 2) :=
+            (Real.sqrt_sq h_norm_nn).symm
+        _ ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2) := Real.sqrt_le_sqrt h_sq
     show ‖galerkinModeCoeff α n t m‖ ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2)
     unfold galerkinModeCoeff
-    calc ‖galerkinExtend (sqgBox n) (α n t) m‖
-        = Real.sqrt (‖galerkinExtend (sqgBox n) (α n t) m‖ ^ 2) :=
-          (Real.sqrt_sq h_norm_nn).symm
-      _ ≤ Real.sqrt (∫ x, ‖θ₀ x‖ ^ 2) := Real.sqrt_le_sqrt h_sq
+    convert h_bound
   modeLipschitz := L
   modeLipschitz_nonneg := hL_nonneg
   modeLipschitz_holds := by
