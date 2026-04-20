@@ -15380,7 +15380,7 @@ theorem galerkin_uniform_ε_picard
     calc ‖galerkinVectorField S c‖
         ≤ C * ‖c‖ ^ 2 := hC_bound c
       _ ≤ C * R ^ 2 := by
-          apply mul_le_mul_of_nonneg_left (pow_le_pow_left (norm_nonneg _) hc 2) hC_nn
+          apply mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (norm_nonneg _) hc 2) hC_nn
       _ = L_real := rfl
   -- Step 3: pick ε = (R/2) / (L + 1), so L · ε ≤ R/2.
   set ε : ℝ := (R / 2) / ((L : ℝ) + 1) with hε_def
@@ -15410,7 +15410,7 @@ theorem galerkin_uniform_ε_picard
     rw [ha_coe, hε_def]
     rw [hL_coe]
     rw [show (L_real) * (R / 2 / (L_real + 1)) = L_real * (R/2) / (L_real + 1) from by ring]
-    rw [div_le_iff hLp1_pos]
+    rw [div_le_iff₀ hLp1_pos]
     have : L_real * (R/2) ≤ (L_real + 1) * (R/2) := by
       apply mul_le_mul_of_nonneg_right _ hR2_pos.le
       linarith
