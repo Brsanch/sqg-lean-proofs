@@ -14841,4 +14841,86 @@ theorem SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound
   SqgEvolutionAxioms_strong.of_galerkin_dynamics_with_L_inf_bound_on_support
     α hα (SqgEvolutionAxioms.of_galerkin_dynamics h0 hS α hα hRealC) hBound
 
+/-! ### §10.99 Real-coefficient symmetry: algebraic preservation
+
+For any `c : (Fin 2 → ℤ) → ℂ` with real-coefficient symmetry on `S`
+(`c(-n) = star(c(n))` for `n ∈ S`), the identity
+`galerkinRHS S c (-n) = star(galerkinRHS S c n)` holds for every `n`.
+
+Ingredients: `sqgVelocitySymbol_neg` (odd), `derivSymbol_neg` (odd),
+K-kernel self-star via product of two purely-imaginary factors,
+K-kernel invariant under double negation of arguments, and the
+reindex `ℓ ↦ -ℓ` on the Galerkin filter under `hSym`. -/
+
+/-- **Star of `derivSymbol` negates it.** -/
+lemma star_derivSymbol (j : Fin 2) (n : Fin 2 → ℤ) :
+    star (derivSymbol j n) = -derivSymbol j n := by
+  unfold derivSymbol
+  rw [star_mul']
+  have hSI : star Complex.I = -Complex.I := Complex.conj_I
+  rw [hSI, star_ofReal_complex]
+  ring
+
+/-- **K-kernel is real (self-star).** -/
+lemma star_K_eq_K (a b : Fin 2 → ℤ) :
+    star (∑ j : Fin 2, sqgVelocitySymbol j a * derivSymbol j b)
+      = ∑ j : Fin 2, sqgVelocitySymbol j a * derivSymbol j b := by
+  rw [star_sum]
+  apply Finset.sum_congr rfl
+  intros j _
+  rw [star_mul', star_sqgVelocitySymbol, star_derivSymbol]
+  ring
+
+/-- **Algebraic real-symmetry preservation for `galerkinRHS`.** -/
+theorem galerkinRHS_neg_eq_star_of_realSymmetric
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S)
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hRealC : ∀ n ∈ S, c (-n) = star (c n))
+    {n : Fin 2 → ℤ} :
+    galerkinRHS S c (-n) = star (galerkinRHS S c n) := by
+  unfold galerkinRHS
+  rw [star_neg, star_sum]
+  congr 1
+  -- Reindex via ℓ ↔ -ℓ. Finset.sum_nbij' takes non-dependent i, j.
+  apply Finset.sum_nbij' (fun ℓ : Fin 2 → ℤ => -ℓ) (fun ℓ : Fin 2 → ℤ => -ℓ)
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓS, hℓ'⟩ := hℓ
+    refine ⟨hS _ hℓS, ?_⟩
+    show n - -ℓ ∈ S
+    rw [sub_neg_eq_add, show n + ℓ = -(-n - ℓ) from by ring]
+    exact hS _ hℓ'
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ ⊢
+    obtain ⟨hℓS, hℓ'⟩ := hℓ
+    refine ⟨hS _ hℓS, ?_⟩
+    show -n - -ℓ ∈ S
+    rw [sub_neg_eq_add, show -n + ℓ = -(n - ℓ) from by ring]
+    exact hS _ hℓ'
+  · intros ℓ _; simp
+  · intros ℓ _; simp
+  · intros ℓ hℓ
+    rw [Finset.mem_filter] at hℓ
+    obtain ⟨hℓS, hℓ'⟩ := hℓ
+    have h_n_plus_ℓ_S : n + ℓ ∈ S := by
+      rw [show n + ℓ = -(-n - ℓ) from by ring]
+      exact hS _ hℓ'
+    -- Goal: c(ℓ) · c(-n - ℓ) · K(ℓ, -n - ℓ)
+    --     = star (c(-ℓ) · c(n - -ℓ) · K(-ℓ, n - -ℓ))
+    rw [show (n : Fin 2 → ℤ) - -ℓ = n + ℓ from by ring]
+    rw [show (∑ j : Fin 2, sqgVelocitySymbol j (-ℓ) * derivSymbol j (n + ℓ))
+          = ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (-n - ℓ) from by
+      apply Finset.sum_congr rfl
+      intros j _
+      rw [sqgVelocitySymbol_neg,
+          show (n + ℓ : Fin 2 → ℤ) = -(-n - ℓ) from by ring, derivSymbol_neg]
+      ring]
+    rw [star_mul', star_mul']
+    rw [star_K_eq_K]
+    rw [hRealC ℓ hℓS, star_star]
+    rw [show (-n - ℓ : Fin 2 → ℤ) = -(n + ℓ) from by ring,
+        hRealC (n + ℓ) h_n_plus_ℓ_S]
+    ring
+
 end SqgIdentity
