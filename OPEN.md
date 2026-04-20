@@ -62,10 +62,10 @@ required by the chain.
 ## Infrastructure
 
 ### 9. Zenodo webhook
-Broken since v0.4.3. 17 releases have landed without Zenodo
-archives (v0.4.15 through v0.4.31). Fix: re-authorize the webhook
-at `github.com/SolomonB14D3/sqg-lean-proofs/settings/integrations`,
-then confirm a fresh DOI mints on the next tag.
+Broken since v0.4.3. 23 releases have landed without Zenodo archives
+(v0.4.15 through v0.4.37). Fix: re-authorize the webhook at
+`github.com/SolomonB14D3/sqg-lean-proofs/settings/integrations`, then
+confirm a fresh DOI mints on the next tag.
 
 ## Previously-listed items now resolved
 
