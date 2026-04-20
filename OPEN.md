@@ -1,9 +1,7 @@
 # Open items — sqg-lean-proofs
 
 Canonical list of everything remaining before the project is closed.
-Each item is linked to the execution plan at
-`.claude/plans/plan-it-out-don-t-mossy-kahan.md` on the executor's
-side, and to the tagged release that will close it on this side.
+Each item is linked to the tagged release that will close it.
 
 ## SQG mathematics
 
