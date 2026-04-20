@@ -14921,6 +14921,5 @@ theorem galerkinRHS_neg_eq_star_of_realSymmetric
     rw [hRealC ℓ hℓS, star_star]
     rw [show (-n - ℓ : Fin 2 → ℤ) = -(n + ℓ) from by ring,
         hRealC (n + ℓ) h_n_plus_ℓ_S]
-    ring
 
 end SqgIdentity
