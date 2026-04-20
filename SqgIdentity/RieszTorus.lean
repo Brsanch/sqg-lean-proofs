@@ -16460,4 +16460,53 @@ theorem galerkin_time_global_real_symmetric_initial
   -- Apply §10.114 to propagate real-symmetry to every τ ≥ 0.
   exact hRealC_of_initial_and_bound_on_Ici hS α hα_deriv hRealC₀_α hR2 hBound
 
+/-! ### §10.116.A Local Picard-Lindelöf wrapper with ball-containment
+
+Variant of `galerkin_local_exists_given_bounds` that additionally
+exposes `α t ∈ closedBall c₀ a` for all `t : ℝ`. Mathlib's
+`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt₀`
+proves this containment internally (via
+`ODE.FunSpace.compProj_mem_closedBall`) but does not expose it in the
+return signature; we replay the proof here to keep the containment
+witness. -/
+
+open ODE in
+theorem galerkin_local_exists_with_ball_containment
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c₀ : ↥S → ℂ) {a L K : NNReal} {ε : ℝ} (hε : 0 < ε)
+    (hLip : LipschitzOnWith K (galerkinVectorField S)
+      (Metric.closedBall c₀ (a : ℝ)))
+    (hBound : ∀ c ∈ Metric.closedBall c₀ (a : ℝ),
+      ‖galerkinVectorField S c‖ ≤ L)
+    (hTime : (L : ℝ) * ε ≤ (a : ℝ)) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t ∈ Set.Icc (-ε) ε,
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (-ε) ε) t) ∧
+      (∀ t : ℝ, α t ∈ Metric.closedBall c₀ (a : ℝ)) := by
+  classical
+  set f : ℝ → (↥S → ℂ) → (↥S → ℂ) := fun _ => galerkinVectorField S with hf_def
+  have ht_in : (0 : ℝ) ∈ Set.Icc (-ε) ε := ⟨by linarith, by linarith⟩
+  set t₀ : Set.Icc (-ε) ε := ⟨0, ht_in⟩ with ht₀_def
+  have hPL : IsPicardLindelof f t₀ c₀ a 0 L K := {
+    lipschitzOnWith := fun _ _ => hLip
+    continuousOn := fun _ _ => continuousOn_const
+    norm_le := fun _ _ _ hx => hBound _ hx
+    mul_max_le := by
+      show (L : ℝ) * max (ε - (0 : ℝ)) ((0 : ℝ) - (-ε)) ≤ (a : ℝ) - 0
+      rw [sub_zero, zero_sub, neg_neg, max_self, sub_zero]
+      exact hTime
+  }
+  obtain ⟨α, hα⟩ := FunSpace.exists_isFixedPt_next hPL (Metric.mem_closedBall_self le_rfl)
+  refine ⟨α.compProj, ?_, ?_, ?_⟩
+  · rw [FunSpace.compProj_val, ← hα, FunSpace.next_apply₀]
+  · intros t ht
+    apply hasDerivWithinAt_picard_Icc t₀.2 hPL.continuousOn_uncurry
+      α.continuous_compProj.continuousOn
+      (fun _ _ => α.compProj_mem_closedBall hPL.mul_max_le) c₀ ht |>.congr_of_mem _ ht
+    intros t' ht'
+    nth_rw 1 [← hα]
+    rw [FunSpace.compProj_of_mem ht', FunSpace.next_apply]
+  · intro t
+    exact α.compProj_mem_closedBall hPL.mul_max_le
+
 end SqgIdentity
