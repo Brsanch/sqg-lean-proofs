@@ -16113,7 +16113,7 @@ theorem galerkinEnergyH0_const_on_Icc
     (α : ℝ → (↥S → ℂ))
     (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
       HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
-    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+    (hRealC : ∀ τ, 0 ≤ τ → ∀ n ∈ S,
         galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
     (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
     (∑ m : ↥S, ‖α t m‖ ^ 2) = ∑ m : ↥S, ‖α 0 m‖ ^ 2 := by
@@ -16125,7 +16125,7 @@ theorem galerkinEnergyH0_const_on_Icc
     intros x hx
     have hx_in : x ∈ Set.Icc (0 : ℝ) ε := ⟨hx.1, le_of_lt hx.2⟩
     have hE_Icc : HasDerivWithinAt E 0 (Set.Icc (0 : ℝ) ε) x :=
-      galerkinEnergyH0_hasDerivWithinAt_zero hS α (Set.Icc 0 ε) x (hα x hx_in) (hRealC x)
+      galerkinEnergyH0_hasDerivWithinAt_zero hS α (Set.Icc 0 ε) x (hα x hx_in) (hRealC x hx.1)
     have h_ico : HasDerivWithinAt E 0 (Set.Ico x ε) x := by
       apply hE_Icc.mono
       intros y hy; exact ⟨le_trans hx.1 hy.1, le_of_lt hy.2⟩
@@ -16155,7 +16155,7 @@ theorem galerkin_supNorm_bound_on_Icc
     (α : ℝ → (↥S → ℂ))
     (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
       HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
-    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+    (hRealC : ∀ τ, 0 ≤ τ → ∀ n ∈ S,
         galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
     (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
     ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ := by
@@ -16193,7 +16193,7 @@ theorem galerkin_hInv_discharged
     (α : ℝ → (↥S → ℂ)) (hα0 : α 0 = c)
     (hα : ∀ t ∈ Set.Icc (0 : ℝ) ε,
       HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t)
-    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+    (hRealC : ∀ τ, 0 ≤ τ → ∀ n ∈ S,
         galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
     (t : ℝ) (ht : t ∈ Set.Icc (0 : ℝ) ε) :
     ‖α t‖ ≤ R / 2 := by
@@ -16229,7 +16229,7 @@ theorem galerkin_supNorm_le_sqrt_card_on_Ici
     (α : ℝ → (↥S → ℂ))
     (hα : ∀ t, 0 ≤ t →
       HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t)
-    (hRealC : ∀ τ : ℝ, ∀ n ∈ S,
+    (hRealC : ∀ τ, 0 ≤ τ → ∀ n ∈ S,
         galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n))
     (t : ℝ) (ht : 0 ≤ t) :
     ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖α 0‖ := by
@@ -16275,7 +16275,7 @@ theorem galerkin_time_global_real_symmetric
     (hRealSymPropagates : ∀ α : ℝ → (↥S → ℂ), α 0 = c₀ →
       (∀ t, 0 ≤ t →
         HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) →
-      ∀ τ : ℝ, ∀ n ∈ S,
+      ∀ τ, 0 ≤ τ → ∀ n ∈ S,
         galerkinExtend S (α τ) (-n) = star (galerkinExtend S (α τ) n)) :
     ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
       (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) ∧
@@ -16401,5 +16401,63 @@ theorem hRealC_of_initial_and_bound_on_Ici
   calc α τ ⟨-n, hnn_in⟩
       = β τ ⟨-n, hnn_in⟩ := by rw [heq]
     _ = star (α τ ⟨n, hn⟩) := hβapp
+
+/-! ### §10.115 Time-global capstone with real-symmetric initial data
+
+Wires §10.114 into §10.113 to discharge the `hRealSymPropagates`
+hypothesis internally. The only remaining open hypothesis is `hInv`
+(universal ball-invariance over the `R/2`-ball). Real-symmetry of
+the initial coefficient vector `c₀` plus the L∞ bound `‖α τ‖ ≤ R/2`
+(from `hInv` via §10.108) together feed
+`hRealC_of_initial_and_bound_on_Ici` with `M := R/2`, producing
+within-interval real-symmetry propagation of the constructed `α`. -/
+
+theorem galerkin_time_global_real_symmetric_initial
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsSymmetricSupport S) (hS_card : 0 < S.card)
+    {R : ℝ} (hR : 0 < R)
+    (c₀ : ↥S → ℂ) (hc₀ : ‖c₀‖ ≤ R / 2)
+    (hRealSym₀ : ∀ n ∈ S,
+      galerkinExtend S c₀ (-n) = star (galerkinExtend S c₀ n))
+    (hInv : ∀ ε > 0, ∀ c : ↥S → ℂ, ‖c‖ ≤ R / 2 →
+      ∀ α : ℝ → (↥S → ℂ), α 0 = c →
+        (∀ t ∈ Set.Icc (0 : ℝ) ε,
+          HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t) →
+        ∀ t ∈ Set.Icc (0 : ℝ) ε, ‖α t‖ ≤ R / 2) :
+    ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ R / 2) ∧
+      (∀ t, 0 ≤ t →
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Ici (0 : ℝ)) t) ∧
+      (∀ t, 0 ≤ t → ‖α t‖ ≤ Real.sqrt ((S.card : ℝ)) * ‖c₀‖) := by
+  apply galerkin_time_global_real_symmetric S hS hS_card hR c₀ hc₀ hInv
+  intros α hα0 hα_deriv
+  have hR2 : 0 ≤ R / 2 := le_of_lt (half_pos hR)
+  -- Re-derive the L∞ bound from `hInv` directly (since §10.113 hands us only
+  -- `hα0` and `hα_deriv`). For each `τ ≥ 0`, invoke `hInv` on `[0, τ + 1]`.
+  have hα_norm : ∀ τ, 0 ≤ τ → ‖α τ‖ ≤ R / 2 := by
+    intros τ hτ
+    set εT : ℝ := τ + 1 with hεT_def
+    have hεT_pos : 0 < εT := by linarith
+    have hα_Icc : ∀ t ∈ Set.Icc (0 : ℝ) εT,
+        HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) εT) t := by
+      intros t ht
+      have ht_ge : 0 ≤ t := ht.1
+      have hsub : Set.Icc (0 : ℝ) εT ⊆ Set.Ici (0 : ℝ) := fun x hx => hx.1
+      exact (hα_deriv t ht_ge).mono hsub
+    have hτ_in : τ ∈ Set.Icc (0 : ℝ) εT := ⟨hτ, by linarith⟩
+    exact hInv εT hεT_pos c₀ hc₀ α hα0 hα_Icc τ hτ_in
+  -- L∞ coefficient bound in the shape expected by §10.114.
+  have hBound : ∀ τ, 0 ≤ τ → ∀ n, ‖galerkinExtend S (α τ) n‖ ≤ R / 2 := by
+    intros τ hτ n
+    by_cases hn : n ∈ S
+    · rw [galerkinExtend_apply_of_mem S _ hn]
+      exact (norm_le_pi_norm (α τ) ⟨n, hn⟩).trans (hα_norm τ hτ)
+    · rw [galerkinExtend_apply_of_not_mem S _ hn, norm_zero]; exact hR2
+  -- Real-symmetry at τ = 0, via α 0 = c₀.
+  have hRealC₀_α : ∀ n ∈ S,
+      galerkinExtend S (α 0) (-n) = star (galerkinExtend S (α 0) n) := by
+    intros n hn; rw [hα0]; exact hRealSym₀ n hn
+  -- Apply §10.114 to propagate real-symmetry to every τ ≥ 0.
+  exact hRealC_of_initial_and_bound_on_Ici hS α hα_deriv hRealC₀_α hR2 hBound
 
 end SqgIdentity
