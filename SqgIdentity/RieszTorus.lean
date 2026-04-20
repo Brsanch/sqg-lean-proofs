@@ -15423,4 +15423,26 @@ theorem galerkin_uniform_ε_picard
     rw [ha_coe]; exact hBound_small
   exact galerkin_local_exists_given_bounds S c₀ hε_pos hLip_small' hBound_small' hTime
 
+/-! ### §10.103 Forward one-step: `c₀ ↦ α(ε)` via `galerkin_uniform_ε_picard`
+
+Utility extracting the "next value" `α(ε)` from the uniform-ε Picard
+theorem, plus the HasDerivWithinAt witness over the interval `[0, ε]`. -/
+
+theorem galerkin_forward_step
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    {R : ℝ} (hR : 0 < R) :
+    ∃ ε : ℝ, 0 < ε ∧
+      ∀ c₀ : ↥S → ℂ, ‖c₀‖ ≤ R / 2 →
+        ∃ α : ℝ → (↥S → ℂ), α 0 = c₀ ∧
+          ∀ t ∈ Set.Icc (0 : ℝ) ε,
+            HasDerivWithinAt α (galerkinVectorField S (α t)) (Set.Icc (0 : ℝ) ε) t := by
+  obtain ⟨ε, hε_pos, hExist⟩ := galerkin_uniform_ε_picard S hR
+  refine ⟨ε, hε_pos, ?_⟩
+  intros c₀ hc₀
+  obtain ⟨α, hα0, hα_deriv⟩ := hExist c₀ hc₀
+  refine ⟨α, hα0, ?_⟩
+  intros t ht
+  have ht_big : t ∈ Set.Icc (-ε) ε := ⟨le_trans (neg_nonpos_of_nonneg hε_pos.le) ht.1, ht.2⟩
+  exact (hα_deriv t ht_big).mono (Set.Icc_subset_Icc (by linarith) le_rfl)
+
 end SqgIdentity
