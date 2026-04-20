@@ -4,6 +4,62 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.27 — 2026-04-20
+
+**§10.116 complete.** Unconditional time-global Galerkin existence
+on the real-symmetric ℓ²-bounded class. Extends v0.4.26 by ~420
+lines (§10.116.G + §10.116.H).
+
+- **§10.116.G `galerkin_realSym_existence_on_horizon`** — arbitrary
+  finite horizon: for any `T ≥ 0`, a real-symmetric Galerkin
+  trajectory on `[0, T]` with full invariants. Direct corollary of
+  §10.116.F with `n := ⌈T/ε⌉`.
+
+- **§10.116.H.1 `galerkin_realSym_chain_sequence`** — mirror of
+  §10.105 with real-symmetry and ℓ²-sum invariants in the subtype
+  carried through `Nat.rec`. The invariant
+  `Inv c := (∑ ‖c m‖² = ∑ ‖c₀ m‖²) ∧ real-sym c` is closed under
+  `stepFn c hinv ε` by §10.110 (ℓ²-conservation) + `hStep`'s
+  real-symmetry preservation. Pi-norm bound for `hStep`'s
+  precondition follows via `piNorm_le_of_sum_sq_le_sq`.
+
+- **§10.116.H.2 `galerkin_realSym_global_on_Ici`** — mirror of
+  §10.107 with the Nat-floor piecewise glue
+  `α t := β ⌊t/ε⌋₊ (t - ⌊t/ε⌋₊·ε)`. Same three-case structure
+  (strict interior / junction / origin) for `HasDerivWithinAt` on
+  `Ici 0`. Adds ℓ²-sum conservation, real-symmetry, and pi-norm
+  bound conclusions at every `t ≥ 0`.
+
+- **§10.116.H.3 `galerkin_time_global_unconditional_realSym`** — the
+  headline capstone. Plugs §10.116.D (`galerkin_realSym_forward_step`)
+  into §10.116.H.2. Fully unconditional on the real-symmetric class
+  with `∑ ‖c₀ m‖² ≤ (R/2)²`:
+
+    * no `hInv` (universal ball-invariance) hypothesis
+    * no `hRealSymPropagates` hypothesis
+    * no L∞ slack bound hypothesis
+
+  Delivers the full 5-way conjunction at every `t ≥ 0`: `α 0 = c₀`,
+  `HasDerivWithinAt α (galerkinVectorField S (α t)) (Ici 0) t`,
+  `∑ ‖α t m‖² = ∑ ‖c₀ m‖²`, real-symmetry of `α t`, and
+  `‖α t‖_π ≤ R/2`.
+
+### §10.116 program summary
+
+Total §10.116 contribution: **~950 lines** (A through H) — larger
+than initially scoped (~300), reflecting the genuine mathematical
+content: Picard ball-containment extraction, within-Icc real-symmetry
+propagation, real-symmetric forward step + chain sequence + Nat-floor
+globalization + ℓ²-invariant-tracking subtype construction.
+
+The only remaining open hypotheses for time-global existence on the
+class of trajectories with finite Fourier support + real-coefficient
+symmetry + uniform L∞ bound (the "Galerkin real-symmetric class"
+of §10.100-§10.103 and §10.115 CHANGELOG notes) are now fully
+discharged by this chain.
+
+18,114 lines, zero `sorry`, zero new axioms.
+
 ## v0.4.26 — 2026-04-20
 
 Real-symmetric chain n-step with ℓ²-sum invariant. Extends v0.4.25 by
