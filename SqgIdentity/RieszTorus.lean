@@ -15558,15 +15558,15 @@ theorem galerkin_chain_n_step
           · exact hγ_left t ht_le
         by_cases ht_eq : t = Tn
         · subst ht_eq
-          have h_β_right_deriv : HasDerivWithinAt γ (galerkinVectorField S (γ t))
-              (Set.Icc t Tn1) t := by
-            have hγt' : γ t = β (t - t) := hγ_right t le_rfl
+          have h_β_right_deriv : HasDerivWithinAt γ (galerkinVectorField S (γ Tn))
+              (Set.Icc Tn Tn1) Tn := by
+            have hγt' : γ Tn = β (Tn - Tn) := hγ_right Tn le_rfl
             rw [hγt']
-            refine (hβ_transD t ⟨le_rfl, hTn_le⟩).congr ?_ ?_
+            refine (hβ_transD Tn ⟨le_rfl, hTn_le⟩).congr ?_ ?_
             · intros y hy; exact hγ_right y hy.1
-            · exact hγ_right t le_rfl
-          have h_union : HasDerivWithinAt γ (galerkinVectorField S (γ t))
-              (Set.Icc (0 : ℝ) t ∪ Set.Icc t Tn1) t :=
+            · exact hγ_right Tn le_rfl
+          have h_union : HasDerivWithinAt γ (galerkinVectorField S (γ Tn))
+              (Set.Icc (0 : ℝ) Tn ∪ Set.Icc Tn Tn1) Tn :=
             hγ_on_left.union h_β_right_deriv
           rwa [Set.Icc_union_Icc_eq_Icc ht.1 hTn_le] at h_union
         · -- t < Tn strictly.
