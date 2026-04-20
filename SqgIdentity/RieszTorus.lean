@@ -19216,7 +19216,22 @@ theorem integral_norm_sq_galerkinToLp_sqgBox
     (galerkinToLp (sqgBox n) c)
     (mFourierCoeff_galerkin_sqgBox_zero_any n c)
 
-set_option maxHeartbeats 1200000 in
+set_option maxHeartbeats 800000 in
+/-- **Per-time strong-L² limit of integral of squared norm.** Specialized
+to `HasAubinLionsExtraction` to avoid repeated implicit-measure
+unification at each call site. -/
+theorem tendsto_integral_norm_sq_galerkinToLp_aubinLions
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (t : ℝ) (ht : 0 ≤ t) :
+    Filter.Tendsto
+      (fun k : ℕ =>
+        ∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
+      Filter.atTop (nhds (∫ x, ‖ext.θ_lim t x‖ ^ 2)) :=
+  tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
+
+set_option maxHeartbeats 800000 in
 /-- **Integral-level conservation for the Aubin–Lions limit.**
 `∫ ‖θ_lim t‖² = ∫ ‖θ_lim 0‖²` from strong-`L²` convergence +
 per-level Galerkin energy conservation.  Preliminary to
@@ -19231,8 +19246,8 @@ theorem integral_norm_sq_aubinLions_const
         = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
     (t : ℝ) (ht : 0 ≤ t) :
     (∫ x, ‖ext.θ_lim t x‖ ^ 2) = (∫ x, ‖ext.θ_lim 0 x‖ ^ 2) := by
-  have h_lim_t := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 t ht)
-  have h_lim_0 := tendsto_integral_norm_sq_of_tendsto_L2sub (ext.tendsto_L2 0 le_rfl)
+  have h_lim_t := tendsto_integral_norm_sq_galerkinToLp_aubinLions ext t ht
+  have h_lim_0 := tendsto_integral_norm_sq_galerkinToLp_aubinLions ext 0 le_rfl
   have h_const_k : ∀ k : ℕ,
       (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) x‖ ^ 2)
         = (∫ x, ‖galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) 0) x‖ ^ 2) :=
