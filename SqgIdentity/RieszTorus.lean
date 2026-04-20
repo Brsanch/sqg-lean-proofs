@@ -18979,25 +18979,19 @@ noncomputable def HasAubinLionsExtraction.ofZero :
   θ_lim := fun _ => 0
   init_eq := rfl
   tendsto_L2 := fun t _ => by
-    -- Each term is ∫ ‖galerkinToLp (sqgBox k) 0 - 0‖² = 0.
-    have hZero : ∀ k : ℕ,
-        (∫ x, ‖galerkinToLp (sqgBox (id k)) 0 x
-              - (fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) t x‖ ^ 2)
-          = 0 := by
-      intro k
-      have h1 : galerkinToLp (sqgBox (id k)) (0 : ↥(sqgBox (id k)) → ℂ)
-          = (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
-        unfold galerkinToLp trigPoly
-        simp [galerkinExtend]
-      rw [h1]
+    -- Goal: Tendsto (fun k : ℕ => ∫ ‖galerkinToLp (sqgBox k) ((fun _ _ _ => 0) k t) x
+    --         − ((fun _ : ℝ => 0) t) x‖²) atTop (nhds 0).
+    -- Every integrand is the zero integral because galerkinToLp on the zero
+    -- coefficient vector is the zero Lp element.
+    convert tendsto_const_nhds using 1
+    funext k
+    -- Goal: ∫ x, ‖galerkinToLp (sqgBox k) (fun _ => 0) x − (0 : Lp _) x‖² = 0
+    have hGtoLp_zero : galerkinToLp (sqgBox k) (fun _ : ↥(sqgBox k) => (0 : ℂ))
+        = (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
+      unfold galerkinToLp trigPoly
       simp
-    have hConstZero :
-        (fun k : ℕ => (∫ x, ‖galerkinToLp (sqgBox (id k))
-              (0 : ↥(sqgBox (id k)) → ℂ) x
-              - (fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) t x‖ ^ 2))
-          = fun _ => (0 : ℝ) := funext hZero
-    rw [hConstZero]
-    exact tendsto_const_nhds
+    rw [hGtoLp_zero]
+    simp
 
 /-- **Route B produces an `SqgSolution` for the zero datum.** -/
 theorem exists_sqgSolution_via_RouteB_zero :
