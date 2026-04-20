@@ -18989,38 +18989,35 @@ theorem zero_trinary_apply_eq_zero
   rfl
 
 /-- **Zero-datum `HasAubinLionsExtraction`.** The trivial extraction
-where every Galerkin trajectory is zero and the limit is zero. -/
+where every Galerkin trajectory is zero and the limit is zero. Uses
+`nsub := fun n => n` (not `id`) so the structure-field projection
+beta-reduces directly in downstream goals. -/
 noncomputable def HasAubinLionsExtraction.ofZero :
     HasAubinLionsExtraction
       (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
       (fun _ _ _ => (0 : ℂ)) where
-  nsub := id
+  nsub := fun n => n
   strictMono := strictMono_id
   θ_lim := fun _ => 0
   init_eq := rfl
   tendsto_L2 := fun t _ => by
-    -- Rewrite each integrand to 0, then apply `tendsto_const_nhds`.
-    have hZeroFn : ∀ k : ℕ,
-        galerkinToLp (sqgBox ((id : ℕ → ℕ) k))
-            (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ))
-              ((id : ℕ → ℕ) k) t)
-          = (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
-      intro k
-      rw [zero_trinary_apply_eq_zero k t]
-      exact galerkinToLp_zero (sqgBox k)
+    -- After field substitution, goal has the shape
+    --   Tendsto (fun k => ∫ ‖galerkinToLp (sqgBox k) (fun m => 0) x - 0‖²) atTop (nhds 0)
+    -- where the `(fun _ _ _ => 0) k t` reduces to `fun _ : ↥(sqgBox k) => 0`.
     have hIntegrandZero : ∀ k : ℕ,
-        (∫ x, ‖galerkinToLp (sqgBox ((id : ℕ → ℕ) k))
-              (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ))
-                ((id : ℕ → ℕ) k) t) x
+        (∫ x, ‖galerkinToLp (sqgBox k)
+              (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t) x
               - ((fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))))
                   t) x‖ ^ 2) = 0 := by
       intro k
-      rw [hZeroFn k]
+      have hZeroFn :
+          ((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t
+            = (0 : ↥(sqgBox k) → ℂ) := by funext m; rfl
+      rw [hZeroFn, galerkinToLp_zero]
       simp
     rw [show (fun k : ℕ =>
-        (∫ x, ‖galerkinToLp (sqgBox ((id : ℕ → ℕ) k))
-              (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ))
-                ((id : ℕ → ℕ) k) t) x
+        (∫ x, ‖galerkinToLp (sqgBox k)
+              (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t) x
               - ((fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))))
                   t) x‖ ^ 2))
         = fun _ : ℕ => (0 : ℝ) from funext hIntegrandZero]
