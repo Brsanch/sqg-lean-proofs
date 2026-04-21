@@ -25136,7 +25136,7 @@ theorem hsSeminormSq_trigPolyProduct_le_latticeZeta_interp
       ≤ hsSeminormSq s (trigPolyProduct A B cf cg) :=
     hsSeminormSq_mono_of_le hts _ h_summable_s
   have h_prod := (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A B cf cg hA hB
-  linarith
+  exact le_trans h_mono h_prod
 
 /-! ### §11.29 Monotone constant form
 
