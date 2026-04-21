@@ -28,6 +28,21 @@ This matches `sqgBox` (which uses `ℓ∞`-balls) and makes `Δ_N` a
 namespace SqgIdentity
 
 open Complex Finset MeasureTheory
+
+-- Replicate the file-local instance from `Mathlib.Analysis.Fourier.AddCircleMulti`
+-- so `Lp ℂ 2 (volume : Measure (UnitAddTorus d))` resolves to the same type
+-- as in `RieszTorus.lean` (where `trigPoly`, `mFourierCoeff` are defined).
+noncomputable local instance lpProjectorMeasureSpace :
+    MeasureSpace UnitAddCircle := ⟨AddCircle.haarAddCircle⟩
+
+local instance lpProjectorHaar :
+    MeasureTheory.Measure.IsAddHaarMeasure (volume : Measure UnitAddCircle) :=
+  inferInstanceAs (Measure.IsAddHaarMeasure AddCircle.haarAddCircle)
+
+local instance lpProjectorProb :
+    MeasureTheory.IsProbabilityMeasure (volume : Measure UnitAddCircle) :=
+  inferInstanceAs (IsProbabilityMeasure AddCircle.haarAddCircle)
+
 open UnitAddTorus
 
 /-! ### §11.1 Dyadic annuli on `ℤ²` -/
