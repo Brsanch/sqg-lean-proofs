@@ -23629,4 +23629,60 @@ theorem hsSeminormSq_zero_trigPolyProduct_le_young
           ((∑ a ∈ A, ‖cf a‖) * (∑ b ∈ B, ‖cg b‖ ^ 2)) := h_sum
     _ = (∑ a ∈ A, ‖cf a‖) ^ 2 * (∑ b ∈ B, ‖cg b‖ ^ 2) := by ring
 
+/-! ### §11.23 Cauchy–Schwarz bridge: `ℓ¹` → weighted `ℓ²`
+
+For `s > 0` and `0 ∉ A`:
+  `(∑_{a ∈ A} ‖cf a‖)² ≤ (∑_{a ∈ A} ‖a‖^{-2s}) · hsSeminormSq s (trigPoly A cf)`.
+
+Combined with §11.22 (Young `ℓ¹ × ℓ² → ℓ²`) this yields the genuinely
+uniform-in-support Kato–Ponce bound (§11.24), because
+`∑_{a ∈ A} ‖a‖^{-2s} ≤ ∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} = C_s^{glob} < ∞`
+for `s > d/2 = 1` on `𝕋²` (lattice zeta summability, deferred). -/
+
+/-- **§11.23.A — Cauchy–Schwarz bridge.**  For `s > 0` and `0 ∉ A`,
+the `ℓ¹` norm of `cf` is bounded by the lattice-summability constant
+`∑ ‖a‖^{-2s}` times `hsSeminormSq s (trigPoly A cf)`. -/
+theorem sum_norm_sq_le_latticeWeight_mul_hsSeminormSq
+    [DecidableEq (Fin 2 → ℤ)]
+    {A : Finset (Fin 2 → ℤ)} (hA : (0 : Fin 2 → ℤ) ∉ A)
+    {s : ℝ} (hs : 0 < s) (cf : (Fin 2 → ℤ) → ℂ) :
+    (∑ a ∈ A, ‖cf a‖) ^ 2
+      ≤ (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf) := by
+  -- Cauchy–Schwarz on reals with F = ‖a‖^{-s}, G = ‖a‖^s · ‖cf a‖.
+  have h_cs := Finset.sum_mul_sq_le_sq_mul_sq A
+    (fun a => (latticeNorm a) ^ (-s))
+    (fun a => (latticeNorm a) ^ s * ‖cf a‖)
+  -- Massage the CS factors.
+  have h_prod : ∀ a ∈ A,
+      (latticeNorm a) ^ (-s) * ((latticeNorm a) ^ s * ‖cf a‖) = ‖cf a‖ := by
+    intros a ha
+    have h_ne : a ≠ 0 := fun h => hA (h ▸ ha)
+    have h_pos : 0 < latticeNorm a := latticeNorm_pos h_ne
+    rw [← mul_assoc, ← Real.rpow_add h_pos,
+        show (-s + s : ℝ) = 0 from by ring,
+        Real.rpow_zero, one_mul]
+  have h_f_sq : ∀ a ∈ A,
+      ((latticeNorm a) ^ (-s)) ^ 2 = (latticeNorm a) ^ (-(2 * s)) := by
+    intros a _
+    rw [← Real.rpow_natCast ((latticeNorm a) ^ (-s)) 2,
+        ← Real.rpow_mul (latticeNorm_nonneg _)]
+    congr 1
+    push_cast
+    ring
+  have h_g_sq : ∀ a ∈ A,
+      ((latticeNorm a) ^ s * ‖cf a‖) ^ 2
+        = (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2 := by
+    intros a ha
+    rw [mul_pow]
+    congr 1
+    have h_ne : a ≠ 0 := fun h => hA (h ▸ ha)
+    rw [fracDerivSymbol_of_ne_zero s h_ne]
+  -- Rewrite h_cs to match the goal.
+  rw [Finset.sum_congr rfl h_prod,
+      Finset.sum_congr rfl h_f_sq,
+      Finset.sum_congr rfl h_g_sq] at h_cs
+  rw [hsSeminormSq_trigPoly]
+  exact h_cs
+
 end SqgIdentity
