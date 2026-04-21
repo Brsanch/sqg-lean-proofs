@@ -22791,10 +22791,6 @@ theorem HasSqgGalerkinHsClosure.uniform_bound_ofZero
   intro n t _ _
   rw [show galerkinToLp (sqgBox n) (zeroGalerkin n t)
         = galerkinToLp (sqgBox n) 0 from by unfold zeroGalerkin; rfl]
-  -- galerkinToLp S 0 = 0 (zero coefficients give zero trig poly)
-  have : galerkinToLp (sqgBox n) (0 : ↥(sqgBox n) → ℂ) = 0 := by
-    unfold galerkinToLp trigPoly galerkinExtend
-    simp
-  rw [this, hsSeminormSq_of_zero]
+  rw [galerkinToLp_zero, hsSeminormSq_of_zero]
 
 end SqgIdentity
