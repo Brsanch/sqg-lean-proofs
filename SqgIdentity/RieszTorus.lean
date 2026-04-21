@@ -19769,24 +19769,118 @@ theorem galerkinExtend_mode_lipschitz_of_ODE_bound
     (C := M) hCont hDeriv hBound t ⟨hst, le_refl t⟩
   exact h
 
--- **§10.153.C attempts continue to hit isDefEq loops** during
--- elaboration of the composed §10.153.A + §10.153.B bound, even in
--- the existential `∃ L, ...` form.  `sqgBox` is already
--- file-scoped-irreducible via §10.147's `attribute [local irreducible]
--- sqgBox` (leaked through the ambient `SqgIdentity` namespace), so
--- the unfolding loop is not coming from `sqgBox` itself.  Likely
--- culprits are nested `galerkinExtend (sqgBox _) (α _ _) _` /
--- `galerkinRHS (sqgBox _) _ _` applications under the
--- `GalerkinRHSHsNegSqBound S c 2 K` unfolding, which exercises
--- `DecidableEq (↥(sqgBox _))` synthesis across the two
--- `∀ τ ∈ Set.Ico s t, ‖...‖ ≤ M` sub-proofs.  Bumping heartbeats
--- to 800k (and previously 1.6M) does not resolve the loop.
---
--- §10.153.A + §10.153.B remain standalone building blocks that a
--- Lean caller can compose with `HasModeLipschitzFamily.ofSqgGalerkinBounds`
--- (§10.152) to produce `HasModeLipschitzFamily` witnesses on a
--- case-by-case basis; the monolithic wrapper is deferred pending
--- targeted elaborator-friendly refactoring of the `galerkinRHS` call.
+/-! ### §10.153.C Monolithic composition of §10.153.A + §10.153.B
+(diagnostic run — heartbeat loop identification)
+
+Two prior `§10.153.C` attempts hit persistent isDefEq loops during
+elaboration of the composed §10.153.A + §10.153.B bound:
+
+* v0.4.38 attempt: direct `HasModeLipschitzFamily` struct-field
+  constructor — 1.6M heartbeats insufficient.
+* v0.4.39 retry: existential `∃ L, ...` form to avoid struct-field
+  unification — 800k heartbeats insufficient.
+
+`sqgBox` is already file-scoped-irreducible via §10.147's
+`attribute [local irreducible] sqgBox` (leaked through the ambient
+`SqgIdentity` namespace), so the loop is not from `sqgBox` unfolding.
+
+This section re-enables the existential form with
+`set_option diagnostics true + diagnostics.threshold 100` per the
+v0.4.38 diagnostic workflow (`feedback_lean_diagnostic_workflow.md`):
+if CI fails, the log will list the specific declaration(s) unfolded
+in the millions — the actual loop culprit — allowing a targeted
+`attribute [local irreducible]` fix. -/
+
+set_option maxHeartbeats 400000 in
+set_option diagnostics true in
+set_option diagnostics.threshold 100 in
+/-- **§10.153.C (diagnostic)** Per-mode Lipschitz constant for the
+uniform-`H⁻²` SQG Galerkin family, in existential form consumable by
+§10.152.  Composes §10.153.A (per-mode upper bound on `galerkinRHS`)
+with §10.153.B (MVT on the per-mode trajectory) across the
+`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split.
+
+Run with `diagnostics true` to reveal the loop culprit. -/
+theorem sqgGalerkin_modeLipschitz_from_UniformH2
+    [DecidableEq (Fin 2 → ℤ)]
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (K : ℝ) (hK : 0 ≤ K)
+    (hH2 : UniformGalerkinRHSHsNegSqBound α 2 K)
+    (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ m : Fin 2 → ℤ,
+      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+        (Set.Ici τ) τ)
+    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (Set.Icc s t)) :
+    ∃ L : (Fin 2 → ℤ) → ℝ,
+      (∀ m, 0 ≤ L m) ∧
+      ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → 0 ≤ t →
+        ‖galerkinExtend (sqgBox n) (α n t) m
+          - galerkinExtend (sqgBox n) (α n s) m‖
+          ≤ L m * |t - s| := by
+  refine ⟨fun m => if m = 0 then 0 else Real.sqrt K * fracDerivSymbol 2 m,
+    ?hNN, ?hHolds⟩
+  case hNN =>
+    intro m
+    by_cases hm : m = 0
+    · simp [hm]
+    · simp only [hm, if_false]
+      exact mul_nonneg (Real.sqrt_nonneg _)
+        (le_of_lt (fracDerivSymbol_pos 2 hm))
+  case hHolds =>
+    intro n m s t hs ht
+    by_cases hm : m = 0
+    · subst hm
+      have h0_nm : (0 : Fin 2 → ℤ) ∉ sqgBox n := zero_not_mem_sqgBox n
+      have h_t : galerkinExtend (sqgBox n) (α n t) (0 : Fin 2 → ℤ) = 0 :=
+        galerkinExtend_apply_of_not_mem _ _ h0_nm
+      have h_s : galerkinExtend (sqgBox n) (α n s) (0 : Fin 2 → ℤ) = 0 :=
+        galerkinExtend_apply_of_not_mem _ _ h0_nm
+      simp [h_t, h_s]
+    · simp only [hm, if_false]
+      rcases le_total s t with hst | hts
+      · have h_abs : |t - s| = t - s := abs_of_nonneg (sub_nonneg.mpr hst)
+        rw [h_abs]
+        have h_bound : ∀ τ ∈ Set.Ico s t,
+            ‖galerkinRHS (sqgBox n)
+              (galerkinExtend (sqgBox n) (α n τ)) m‖
+              ≤ Real.sqrt K * fracDerivSymbol 2 m := by
+          intro τ hτ
+          exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans hs hτ.1)) hm
+        have h_deriv_local : ∀ τ ∈ Set.Ico s t,
+            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+              (galerkinRHS (sqgBox n)
+                (galerkinExtend (sqgBox n) (α n τ)) m)
+              (Set.Ici τ) τ := fun τ hτ =>
+          hDeriv n τ (le_trans hs hτ.1) m
+        exact galerkinExtend_mode_lipschitz_of_ODE_bound
+          (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hst
+          h_deriv_local (hCont n m s t hs hst) h_bound
+      · have h_abs : |t - s| = s - t := abs_of_nonpos (sub_nonpos.mpr hts)
+        rw [h_abs]
+        have h_bound : ∀ τ ∈ Set.Ico t s,
+            ‖galerkinRHS (sqgBox n)
+              (galerkinExtend (sqgBox n) (α n τ)) m‖
+              ≤ Real.sqrt K * fracDerivSymbol 2 m := by
+          intro τ hτ
+          exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans ht hτ.1)) hm
+        have h_deriv_local : ∀ τ ∈ Set.Ico t s,
+            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+              (galerkinRHS (sqgBox n)
+                (galerkinExtend (sqgBox n) (α n τ)) m)
+              (Set.Ici τ) τ := fun τ hτ =>
+          hDeriv n τ (le_trans ht hτ.1) m
+        have h_mvt : ‖galerkinExtend (sqgBox n) (α n s) m
+            - galerkinExtend (sqgBox n) (α n t) m‖
+            ≤ Real.sqrt K * fracDerivSymbol 2 m * (s - t) :=
+          galerkinExtend_mode_lipschitz_of_ODE_bound
+            (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hts
+            h_deriv_local (hCont n m t s ht hts) h_bound
+        rw [norm_sub_rev]
+        exact h_mvt
 
 /-! ### §10.154 Coefficient-injectivity bridge for `HasFourierSynthesis`
 
