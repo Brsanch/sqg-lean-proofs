@@ -22840,4 +22840,156 @@ lemma hsSeminormSq_fourierTruncate_zero
     hsSeminormSq s (fourierTruncate A (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) = 0 := by
   rw [fourierTruncate_zero, hsSeminormSq_of_zero]
 
+/-! ### §11.17 Finite-Fourier-support pointwise product — mode convolution
+
+Classical Kato–Ponce uses pointwise multiplication of functions on `𝕋²`.
+Since `Lp ℂ 2` is not a ring, we work with `trigPoly`-represented
+products via the Fourier convolution formula:
+  `(f · g)̂(n) = ∑_{a + b = n} f̂(a) · ĝ(b)`.
+
+On finite-Fourier-support data `f = trigPoly A cf`, `g = trigPoly B cg`,
+the convolution is a finite sum, and the product is itself a
+trigonometric polynomial supported on the Minkowski sum `A + B`.  This
+`trigPoly`-representation is the foundation for the concrete
+Kato–Ponce product bound (§11.20) on the finite-Fourier-support class,
+which is what the Galerkin `sqgBox` provides for §10.174's `hBoundS`. -/
+
+/-- **Minkowski sum of two finsets on `ℤ²`.**  `sumSet A B = A + B`. -/
+def sumSet
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) : Finset (Fin 2 → ℤ) :=
+  (A ×ˢ B).image (fun p => p.1 + p.2)
+
+lemma mem_sumSet_iff
+    [DecidableEq (Fin 2 → ℤ)]
+    {A B : Finset (Fin 2 → ℤ)} {n : Fin 2 → ℤ} :
+    n ∈ sumSet A B ↔ ∃ a ∈ A, ∃ b ∈ B, a + b = n := by
+  unfold sumSet
+  simp only [Finset.mem_image, Finset.mem_product, Prod.exists]
+  constructor
+  · rintro ⟨a, b, ⟨ha, hb⟩, hsum⟩
+    exact ⟨a, ha, b, hb, hsum⟩
+  · rintro ⟨a, ha, b, hb, hsum⟩
+    exact ⟨a, b, ⟨ha, hb⟩, hsum⟩
+
+/-- **Mode convolution of two finsupp coefficient sequences on `ℤ²`.**
+Fourier-side representation of the pointwise product
+`trigPoly A cf · trigPoly B cg`. -/
+noncomputable def modeConvolution
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    (Fin 2 → ℤ) → ℂ :=
+  fun n => ∑ a ∈ A, ∑ b ∈ B, if a + b = n then cf a * cg b else 0
+
+/-- **Modes outside `A + B` contribute 0 to the convolution.** -/
+lemma modeConvolution_eq_zero_of_not_mem_sumSet
+    [DecidableEq (Fin 2 → ℤ)]
+    {A B : Finset (Fin 2 → ℤ)} {cf cg : (Fin 2 → ℤ) → ℂ}
+    {n : Fin 2 → ℤ} (hn : n ∉ sumSet A B) :
+    modeConvolution A B cf cg n = 0 := by
+  unfold modeConvolution
+  apply Finset.sum_eq_zero
+  intros a ha
+  apply Finset.sum_eq_zero
+  intros b hb
+  split_ifs with hsum
+  · exfalso
+    exact hn (mem_sumSet_iff.mpr ⟨a, ha, b, hb, hsum⟩)
+  · rfl
+
+/-- **`trigPoly`-representation of the pointwise product of two trig polys.**
+Defined as `trigPoly (sumSet A B) (modeConvolution A B cf cg)`.  Its
+Fourier coefficients equal the convolution everywhere (§11.17.B). -/
+noncomputable def trigPolyProduct
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  trigPoly (sumSet A B) (modeConvolution A B cf cg)
+
+/-- **§11.17.A — Raw Fourier coefficients of the trig-poly product.**
+Indicator form. -/
+theorem mFourierCoeff_trigPolyProduct_ite
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    mFourierCoeff (trigPolyProduct A B cf cg) n
+      = if n ∈ sumSet A B then modeConvolution A B cf cg n else 0 := by
+  unfold trigPolyProduct
+  exact mFourierCoeff_trigPoly (sumSet A B) (modeConvolution A B cf cg) n
+
+/-- **§11.17.B — Full-range Fourier coefficients of the trig-poly product.**
+For every `n : Fin 2 → ℤ`, the Fourier coefficient equals the mode
+convolution.  This is the clean form used downstream. -/
+theorem mFourierCoeff_trigPolyProduct
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    mFourierCoeff (trigPolyProduct A B cf cg) n
+      = modeConvolution A B cf cg n := by
+  rw [mFourierCoeff_trigPolyProduct_ite]
+  split_ifs with hn
+  · rfl
+  · exact (modeConvolution_eq_zero_of_not_mem_sumSet hn).symm
+
+/-- **§11.17.C — Trig-poly product vanishes outside `sumSet A B`.** -/
+lemma mFourierCoeff_trigPolyProduct_eq_zero_of_not_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    {A B : Finset (Fin 2 → ℤ)} {cf cg : (Fin 2 → ℤ) → ℂ}
+    {n : Fin 2 → ℤ} (hn : n ∉ sumSet A B) :
+    mFourierCoeff (trigPolyProduct A B cf cg) n = 0 := by
+  rw [mFourierCoeff_trigPolyProduct]
+  exact modeConvolution_eq_zero_of_not_mem_sumSet hn
+
+/-- **Mode convolution with zero left factor is zero.** -/
+lemma modeConvolution_zero_left
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cg : (Fin 2 → ℤ) → ℂ) :
+    modeConvolution A B (fun _ => (0 : ℂ)) cg = fun _ => (0 : ℂ) := by
+  funext n
+  unfold modeConvolution
+  apply Finset.sum_eq_zero
+  intros a _
+  apply Finset.sum_eq_zero
+  intros b _
+  split_ifs
+  · rw [zero_mul]
+  · rfl
+
+/-- **Mode convolution with zero right factor is zero.** -/
+lemma modeConvolution_zero_right
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf : (Fin 2 → ℤ) → ℂ) :
+    modeConvolution A B cf (fun _ => (0 : ℂ)) = fun _ => (0 : ℂ) := by
+  funext n
+  unfold modeConvolution
+  apply Finset.sum_eq_zero
+  intros a _
+  apply Finset.sum_eq_zero
+  intros b _
+  split_ifs
+  · rw [mul_zero]
+  · rfl
+
+/-- **Trig-poly product with zero left factor is zero.** -/
+lemma trigPolyProduct_zero_left
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cg : (Fin 2 → ℤ) → ℂ) :
+    trigPolyProduct A B (fun _ => (0 : ℂ)) cg = 0 := by
+  unfold trigPolyProduct
+  rw [modeConvolution_zero_left]
+  unfold trigPoly
+  apply Finset.sum_eq_zero
+  intros n _
+  rw [zero_smul]
+
+/-- **Trig-poly product with zero right factor is zero.** -/
+lemma trigPolyProduct_zero_right
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf : (Fin 2 → ℤ) → ℂ) :
+    trigPolyProduct A B cf (fun _ => (0 : ℂ)) = 0 := by
+  unfold trigPolyProduct
+  rw [modeConvolution_zero_right]
+  unfold trigPoly
+  apply Finset.sum_eq_zero
+  intros n _
+  rw [zero_smul]
+
 end SqgIdentity
