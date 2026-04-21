@@ -316,24 +316,37 @@ Item 5.A delivered across §11.17–§11.21:
   - §11.25.D `young_peetre_weighted_right`: dual of §11.25.C, applying
     §11.22 (ℓ¹ × ℓ² direction) to `T_2'(n)`:
     `∑_n T_2'(n)² ≤ (∑_a ‖cf a‖)² · hsSeminormSq s (trigPoly B cg)`.
-
-**Still outstanding for unconditional Item 5 closure:** §11.25.E
-Banach-algebra `Ḣˢ` product bound — assembled by combining §11.25.C
-(weighted Young left) + §11.25.D (weighted Young right) + §11.25.C₂
-(sqrt-Peetre) + §11.23 (CS bridge) via pointwise bound
-`(σ_s n)² · ‖modeConv‖² ≤ 2^{2s} · (T_1'² + T_2'²)`.  Target:
+- §11.25.E `hsSeminormSq_trigPolyProduct_le_banach_algebra`: **Banach-
+  algebra `Ḣˢ` product bound on `trigPolyProduct`** — full assembly of
+  §11.25.A–D + C₂ + §11.23 into
   `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · (C_s(A) + C_s(B)) · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
-for `0 ∉ A`, `0 ∉ B`, `s ≥ 1`; ~150 LOC.  Then: global lattice
-zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for `s > 1`
-(standard); wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge
-via the SQG-specific velocity bound on `∇θ_n · u_n` and the §10.174
-`hBoundS` discharge.  Classical remainder ~250–400 LOC.
+  for `s ≥ 1`, `0 ∉ A`, `0 ∉ B`, where
+  `C_s(A) = ∑_{a ∈ A} ‖a‖^{-2s}`.  Proof: pointwise sqrt-Peetre
+  `σ_s(n) · ‖modeConv‖ ≤ √(2^{2s-1}) · (T_1'(n) + T_2'(n))` via
+  §11.25.C₂ + triangle + `σ_s(n) = σ_s(a+b)` under χ; squaring plus
+  `(x+y)² ≤ 2(x² + y²)` gives pointwise
+  `(σ_s n)² · ‖modeConv‖² ≤ 2^{2s} · (T_1'(n)² + T_2'(n)²)`; sum over
+  `n ∈ sumSet A B` + §11.25.C + §11.25.D bounds each square sum by
+  `hsSeminormSq · (ℓ¹)²`; §11.23 CS bridge discharges the `ℓ¹` factors
+  into `C_s(·) · hsSeminormSq`.  Helper lemma §11.25.E₁
+  `fracDerivSymbol_mul_modeConvolution_norm_le_sqrt_peetre` isolates
+  the pointwise sqrt-Peetre bound (linear form).
 
-With §11.17–§11.25.A–D + C₂, all the Young + Cauchy–Schwarz +
-sqrt-Peetre building blocks are in-tree.  Assembly into §11.25.E
-Banach-algebra form is the natural next step.  The structural
-chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound (feeding
-§10.174's `hBoundS`) is in-tree.
+**Still outstanding for unconditional Item 5 closure:**
+- Global lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
+  `s > d/2 = 1` on `𝕋²` (standard 2D real-analysis fact; ~100 LOC).
+  Promotes §11.25.E's support-dependent `C_s(A) + C_s(B)` to a
+  support-INDEPENDENT absolute constant for `A, B = sqgBox n`.
+- Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
+  SQG-specific velocity bound on `∇θ_n · u_n` (Riesz transform
+  `u = R θ` + gradient estimate; ~200 LOC).
+- §10.174 `hBoundS` discharge (~50 LOC).
+
+Classical remainder ~350 LOC after §11.25.E closure.
+
+With §11.17–§11.25.E, the full finite-support Banach-algebra `Ḣˢ`
+product bound is in-tree.  Next step: lift to support-independent
+via global lattice zeta summability + Phase 10 wiring.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:

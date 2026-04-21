@@ -143,14 +143,47 @@ concrete trig-poly Kato–Ponce delivered across §11.17–§11.21
     (§11.25.C₂).
   - `young_peetre_weighted_right`: dual of §11.25.C via §11.22
     (ℓ¹ × ℓ² direction) on `T_2'` (§11.25.D).
+- **§11.25.E** `hsSeminormSq_trigPolyProduct_le_banach_algebra` —
+  **Banach-algebra `Ḣˢ` product bound on `trigPolyProduct`.**
+  Full assembly of §11.25.A–D + C₂ + §11.23 into:
+  `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · (C_s(A) + C_s(B)) · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
+  for `s ≥ 1`, `0 ∉ A`, `0 ∉ B`, where
+  `C_s(A) = ∑_{a ∈ A} ‖a‖^{-2s}`.  Proof strategy:
+  1. §11.25.E₁ `fracDerivSymbol_mul_modeConvolution_norm_le_sqrt_peetre`
+     — pointwise sqrt-Peetre: `σ_s(n) · ‖modeConv(n)‖ ≤ √(2^{2s-1}) ·
+     (T_1'(n) + T_2'(n))` via triangle on `modeConv`, distribution of
+     `σ_s n` into the indicator sum, replacement `σ_s n = σ_s(a+b)`
+     under χ, and §11.25.C₂ sqrt-Peetre applied elementwise.
+  2. Square + `(x + y)² ≤ 2(x² + y²)`:
+     `(σ_s n)² · ‖modeConv‖² ≤ 2^{2s} · (T_1'(n)² + T_2'(n)²)`.
+  3. Sum over `n ∈ sumSet A B` (via `Finset.sum_le_sum` + factor 2^{2s}
+     out + split the two squared sums).
+  4. Apply §11.25.C to bound `∑_n T_1'(n)²` and §11.25.D to bound
+     `∑_n T_2'(n)²`, rewriting RHS via `hsSeminormSq_trigPoly` so the
+     weighted-sum factors become `hsSeminormSq s (trigPoly · ·)`.
+  5. Apply §11.23 (CS bridge) to replace the remaining `ℓ¹` factors
+     `(∑_b ‖cg b‖)²`, `(∑_a ‖cf a‖)²` with
+     `C_s(B) · hsSeminormSq s (trigPoly B cg)` and
+     `C_s(A) · hsSeminormSq s (trigPoly A cf)` respectively, using
+     `hA : 0 ∉ A`, `hB : 0 ∉ B`, and `hs_pos : 0 < s`
+     (derived from `1 ≤ s`).
+  6. Combine + `ring`: `C_s(A) + C_s(B)` factor emerges.
 
-**Still outstanding for unconditional Item 5.A closure:** global
-lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
-`s > 1`; Peetre-weighted `Ḣˢ` upgrade of §11.24 combining with
-§11.19.C; structural bridge from this uniform bound to
-`HasSqgGalerkinHsClosure` via the SQG-specific velocity bound on
-`∇θ_n · u_n`; wiring into §10.174's `hBoundS` hypothesis.
-Classical remainder ~400–600 LOC.
+  Combined with global lattice zeta summability
+  `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for `s > d/2 = 1` on `𝕋²`
+  (deferred), this delivers the support-INDEPENDENT Banach-algebra
+  bound.  For Galerkin `A = B = sqgBox n`, this is uniform in `n`
+  and discharges `hBoundS` in §10.174's Aubin-Lions interpolation.
+
+**Still outstanding for unconditional Item 5.A closure:**
+- Global lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞`
+  for `s > 1` (~100 LOC).
+- `HasTrigPolyKatoPonceBound → HasSqgGalerkinHsClosure` bridge via
+  SQG velocity `u_n = R θ_n` (Riesz transform) + gradient `∇θ_n`
+  (~200 LOC).
+- §10.174 `hBoundS` discharge (~50 LOC).
+
+Classical remainder ~350 LOC.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
