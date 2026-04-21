@@ -155,10 +155,9 @@ closed** in current code:
   `10.5281/zenodo.19674045`, commit `16a00e5` stripped the stale
   `"version"` field).  Concept DOI badge in README now resolves to
   v0.4.39.  The 24 orphan records under `19646556` are published and
-  therefore undeletable by the owner — a separate email to
-  `info@zenodo.org` is needed to purge or relink them; this is admin
-  hygiene, not a blocker.  Zenodo's GitHub integration already points
-  at the current `Brsanch/sqg-lean-proofs` repo (not the old
+  therefore undeletable by the owner; they are accepted as clutter
+  and not worth further action.  Zenodo's GitHub integration already
+  points at the current `Brsanch/sqg-lean-proofs` repo (not the old
   `SolomonB14D3/sqg-lean-proofs` slug), so once the user re-enables
   sync, future tags will archive correctly into the canonical chain.
 
