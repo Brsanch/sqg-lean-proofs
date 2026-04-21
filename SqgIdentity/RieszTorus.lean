@@ -24684,4 +24684,40 @@ lemma sum_annularShell_rpow_le {s : ℝ} (hs_pos : 0 < s) {k : ℕ} (hk : 1 ≤ 
         · exact_mod_cast card_annularShell_le k
         · exact Real.rpow_nonneg h_k_nn _
 
+/-! ### §11.26.F Concrete lattice-zeta constant
+
+Define the ambient lattice-zeta constant as the tsum of the shell-
+bounded series over `k ≥ 1`:
+`latticeZetaConst s := 8·∑_{k ≥ 1} k^{1-2s} + 4·∑_{k ≥ 1} k^{-2s}`.
+
+For `s > 1`, both tsums are finite via `Real.summable_one_div_nat_rpow`.
+The full `HasLatticeZetaBound s (latticeZetaConst s)` proof is deferred
+(requires shell-partition of arbitrary `A ⊆ ℤ² \ {0}` + disjoint
+biUnion + partial-sum ≤ tsum bookkeeping; see §11.26.F next-session
+entry).  Infrastructure in-tree for downstream use. -/
+
+/-- **§11.26.F₁ — Lattice-zeta constant `latticeZetaConst s`.**
+Tsum of the shell-bounded series: `8·ζ(2s-1) + 4·ζ(2s)` where ζ is
+the Riemann zeta function (sum from n = 1).  For `s > 1`, this is
+finite and provides a uniform upper bound on `∑_{a ∈ A} ‖a‖^{-2s}`
+for every finite `A ⊆ ℤ² \ {0}` (proof deferred). -/
+noncomputable def latticeZetaConst (s : ℝ) : ℝ :=
+  8 * ∑' (n : ℕ), 1 / ((n + 1 : ℝ) ^ (2 * s - 1)) +
+  4 * ∑' (n : ℕ), 1 / ((n + 1 : ℝ) ^ (2 * s))
+
+/-- **§11.26.F₂ — `latticeZetaConst s ≥ 0`.** -/
+lemma latticeZetaConst_nonneg (s : ℝ) : 0 ≤ latticeZetaConst s := by
+  unfold latticeZetaConst
+  apply add_nonneg
+  · apply mul_nonneg (by norm_num : (0 : ℝ) ≤ 8)
+    apply tsum_nonneg
+    intros n
+    apply div_nonneg (by norm_num : (0 : ℝ) ≤ 1)
+    exact Real.rpow_nonneg (by positivity) _
+  · apply mul_nonneg (by norm_num : (0 : ℝ) ≤ 4)
+    apply tsum_nonneg
+    intros n
+    apply div_nonneg (by norm_num : (0 : ℝ) ≤ 1)
+    exact Real.rpow_nonneg (by positivity) _
+
 end SqgIdentity
