@@ -24480,4 +24480,26 @@ theorem HasLatticeZetaBound.mono
   nonneg := le_trans hC.nonneg hCC'
   bound := fun A hA => le_trans (hC.bound A hA) hCC'
 
+/-! ### §11.26 Prerequisites for the concrete lattice zeta bound
+
+Building up the ingredients needed for an explicit `HasLatticeZetaBound
+s C` witness at `s > 1` (i.e., `s > d/2 = 1` on `𝕋²`).
+
+**Strategy:** partition `ℤ² \ {0}` by `ℓ∞`-radius into annular shells.
+On shell `k` (radius-k `ℓ∞`-boundary), `|shell| ≤ 8k` and `‖a‖_{ℓ²} ≥ k`,
+so `∑_{a ∈ shell_k} ‖a‖^{-2s} ≤ 8k · k^{-2s} = 8 k^{1-2s}`.  Sum over
+`k ≥ 1`: `8 ∑_{k ≥ 1} k^{1-2s}`, summable for `s > 1` via mathlib's
+`Real.summable_one_div_nat_rpow` at `p = 2s - 1`. -/
+
+/-- **§11.26.A — 1D p-series for shell-weighted lattice zeta.**
+`Summable (fun n : ℕ => 1 / (n : ℝ) ^ (2 * s - 1))` for `s > 1`.
+Direct application of mathlib's `Real.summable_one_div_nat_rpow` at
+`p = 2s - 1`.  Used in §11.26 downstream for the annular-shell
+lattice-zeta bound. -/
+theorem summable_one_div_nat_rpow_at_two_s_sub_one
+    {s : ℝ} (hs : 1 < s) :
+    Summable (fun n : ℕ => 1 / (n : ℝ) ^ (2 * s - 1)) := by
+  rw [Real.summable_one_div_nat_rpow]
+  linarith
+
 end SqgIdentity
