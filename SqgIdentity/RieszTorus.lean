@@ -24927,4 +24927,44 @@ theorem hasLatticeZetaBound_latticeZetaConst {s : ℝ} (hs : 1 < s) :
           · exact mul_le_mul_of_nonneg_left h_tsum2 (by norm_num : (0 : ℝ) ≤ 4)
     _ = latticeZetaConst s := by rw [latticeZetaConst]
 
+/-! ### §11.27 Fully unconditional Banach-algebra `Ḣˢ` product bound
+
+Composition of §11.26.H (concrete `HasLatticeZetaBound s (latticeZetaConst s)`
+for `s > 1`) with §11.25.G `HasTrigPolyBanachAlgebraBound.of_latticeZeta`
+(concrete Banach-algebra bound from a lattice-zeta witness) yields an
+**unconditional** `HasTrigPolyBanachAlgebraBound` witness for every
+`s > 1` with concrete constant `2^{2s}·(2·latticeZetaConst s)`.
+
+This is the first Banach-algebra product bound in the project with
+zero open hypotheses — the entire lattice-zeta leg of Route A
+Item 5.A is now unconditional. -/
+
+/-- **§11.27 — Unconditional `HasTrigPolyBanachAlgebraBound` for `s > 1`.**
+Concrete witness with constant `2^{2s}·(2·latticeZetaConst s)`.
+Compose §11.25.G `.of_latticeZeta` with §11.26.H
+`hasLatticeZetaBound_latticeZetaConst`. -/
+theorem hasTrigPolyBanachAlgebraBound_of_gt_one {s : ℝ} (hs : 1 < s) :
+    HasTrigPolyBanachAlgebraBound s
+      (2 ^ (2 * s) * (2 * latticeZetaConst s)) :=
+  HasTrigPolyBanachAlgebraBound.of_latticeZeta (le_of_lt hs)
+    (hasLatticeZetaBound_latticeZetaConst hs)
+
+/-- **§11.27.A — Explicit zero-coefficient exemplar on the
+unconditional bound.**  Exercises §11.27 on the zero left factor:
+`hsSeminormSq s (trigPolyProduct A B 0 cg) = 0 ≤ 2^{2s}·(2·latticeZetaConst s)
+    · hsSeminormSq s (trigPoly A 0) · hsSeminormSq s (trigPoly B cg)`.
+
+Since the LHS is zero (via §11.25.H₁) and the RHS is a product of
+non-negative reals, the inequality holds trivially.  Sanity check
+that the unconditional bound reduces correctly on zero factors. -/
+theorem hasTrigPolyBanachAlgebraBound_of_gt_one_zero_left
+    {s : ℝ} (hs : 1 < s)
+    (A B : Finset (Fin 2 → ℤ)) (cg : (Fin 2 → ℤ) → ℂ)
+    (hA : (0 : Fin 2 → ℤ) ∉ A) (hB : (0 : Fin 2 → ℤ) ∉ B) :
+    hsSeminormSq s (trigPolyProduct A B (fun _ => (0 : ℂ)) cg)
+      ≤ (2 ^ (2 * s) * (2 * latticeZetaConst s))
+          * hsSeminormSq s (trigPoly A (fun _ => (0 : ℂ)))
+          * hsSeminormSq s (trigPoly B cg) := by
+  exact (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A B _ cg hA hB
+
 end SqgIdentity
