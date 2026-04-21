@@ -19801,11 +19801,11 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinH2Bound
           galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox n)
         have hExt_s : galerkinExtend (sqgBox n) (α n s) (0 : Fin 2 → ℤ) = 0 :=
           galerkinExtend_apply_of_not_mem _ _ (zero_not_mem_sqgBox n)
-        rw [hExt_t, hExt_s, sub_zero, norm_zero, fracDerivSymbol_zero,
-            mul_zero, zero_mul]
+        simp only [hExt_t, hExt_s, sub_zero, norm_zero, fracDerivSymbol_zero,
+            mul_zero, zero_mul, le_refl]
       -- Now m ≠ 0: apply §10.153.A pointwise + §10.153.B integral bound.
-      -- Split by sign of (t - s).
-      rcases le_or_lt s t with hst | hts
+      -- Split by sign of (t - s) via `le_total`.
+      rcases le_total s t with hst | hts
       · -- s ≤ t: apply §10.153.B on [s, t].
         have hDerivOn : ∀ τ ∈ Set.Ico s t,
             HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
@@ -19825,7 +19825,7 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinH2Bound
           hst hDerivOn hContOn hBoundOn
         rw [abs_of_nonneg (by linarith : (0:ℝ) ≤ t - s)]
         exact h
-      · -- t < s: apply §10.153.B on [t, s] (reversed).
+      · -- t ≤ s: apply §10.153.B on [t, s], then swap signs.
         have hDerivOn : ∀ τ ∈ Set.Ico t s,
             HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
               (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
@@ -19833,7 +19833,7 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinH2Bound
           fun τ hτ => hDeriv n m τ (le_trans ht hτ.1)
         have hContOn : ContinuousOn
             (fun σ => galerkinExtend (sqgBox n) (α n σ) m) (Set.Icc t s) :=
-          hCont n m t s ht hts.le
+          hCont n m t s ht hts
         have hBoundOn : ∀ τ ∈ Set.Ico t s,
             ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
               ≤ Real.sqrt K * fracDerivSymbol 2 m :=
@@ -19841,14 +19841,61 @@ noncomputable def HasModeLipschitzFamily.ofSqgGalerkinH2Bound
             (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans ht hτ.1)) hm
         have h := galerkinExtend_mode_lipschitz_of_ODE_bound
           (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m)
-          hts.le hDerivOn hContOn hBoundOn
+          hts hDerivOn hContOn hBoundOn
         rw [show |t - s| = s - t from by
-          rw [abs_of_neg (by linarith : t - s < 0)]; ring]
+          rw [abs_of_nonpos (by linarith : t - s ≤ 0)]; ring]
         rw [show galerkinExtend (sqgBox n) (α n t) m
               - galerkinExtend (sqgBox n) (α n s) m
             = -(galerkinExtend (sqgBox n) (α n s) m
               - galerkinExtend (sqgBox n) (α n t) m) from by ring]
         rw [norm_neg]
         exact h)
+
+/-! ### §10.156 Item 1 structural capstone
+
+Composes the full Route B chain into a single existence theorem for
+`SqgSolution` from per-mode extraction + Fourier synthesis witnesses:
+
+```
+HasPerModeLimit ──────────┐   (§10.150)
+                          ▼
+HasFourierSynthesis ──→ HasAubinLionsExtraction  (§10.151, §10.139)
+                          ▼
+                    hsSeminormSq 0 conservation   (§10.147)
+                          ▼
+                  SqgEvolutionAxioms              (§10.144)
+                          ▼
+                    SqgSolution                   (§10.145, §10.148)
+```
+
+Every field on the inputs is either in-tree (proved) or an explicit
+classical-analysis target (the Arzelà–Ascoli + Cantor diagonal
+construction of `HasPerModeLimit` from `HasModeLipschitzFamily`; the
+Fourier synthesis of `HasFourierSynthesis` from `HasPerModeLimit`).
+
+§10.156 is the "Item 1 maximally-closed" headline: with `per` and `syn`
+provided, `SqgSolution` existence is unconditional. -/
+
+/-- **Route B `SqgSolution` from per-mode limit + Fourier synthesis
+witnesses.**  Top-level Item-1 existence theorem, consuming every
+piece §10.139–§10.152 has packaged.  The `per` + `syn` witnesses
+encapsulate all remaining classical analytical content. -/
+theorem exists_sqgSolution_via_RouteB_from_perModeLimit_synthesis
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (syn : HasFourierSynthesis per θ)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity syn.θ_lim u)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (syn.θ_lim 0) n‖ ^ 2)) :
+    ∃ sol : SqgSolution, sol.θ = syn.θ_lim :=
+  exists_sqgSolution_via_RouteB_from_galerkin_energy
+    (HasAubinLionsExtraction.ofPerModeLimit per syn) hLevel hu hSmooth
 
 end SqgIdentity
