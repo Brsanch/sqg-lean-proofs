@@ -21043,4 +21043,187 @@ theorem sqgGalerkin_hCont_of_galerkinVectorField
   rw [h_fn] at h_coord
   exact h_coord.mono (fun x hx => le_trans hs hx.1)
 
+/-! ### §10.167 `MaterialMaxPrinciple` off the finite-Fourier-support class
+
+Item 3 of `OPEN.md`.  Extends §10.56's MMP discharge — which only
+applied to trajectories with **fixed finite** Fourier support and a
+uniform coefficient bound — to the `L²`-limit class:  given a Galerkin
+sequence converging strongly in `L²` pointwise in time to a limit `θ`
+and a **uniform-in-`n`-and-`t`** `Ḣ¹` bound on the Galerkin states,
+`MaterialMaxPrinciple θ` holds.
+
+The route is the classical one:  lower-semicontinuity of the `Ḣ¹`
+seminorm under strong-`L²` convergence.  Since each Fourier
+coefficient is a continuous linear functional of `f ∈ L²`, per-mode
+convergence `f̂ₙ(m) → f̂(m)` follows from strong-`L²` convergence
+(§10.141).  Finite-Fourier partial sums then pass to the limit
+continuously, and an `iSup`-bounded family of partial sums is summable
+with tsum ≤ the uniform bound.
+
+This extension closes Item 3 without introducing any analytic axiom:
+the uniform `Ḣ¹` bound becomes an explicit hypothesis of the consumer,
+which is exactly what classical regularity theory supplies at the
+level of Galerkin approximation.
+
+### §10.167.A Lower-semicontinuity of `hsSeminormSq` under `L²` limits
+
+Structural lemma.  Given an `L²`-convergent sequence `fₙ → g` with a
+uniform bound on `hsSeminormSq s (fₙ)`, the limit `g` satisfies the
+same bound, and its weighted Fourier-coefficient family is summable. -/
+
+/-- **§10.167.A  Lower-semicontinuity of `hsSeminormSq s` under strong-
+`L²` convergence.**
+
+If `fₙ → g` strongly in `L²` and `hsSeminormSq s (fₙ) ≤ M` uniformly in
+`n`, with each `fₙ`'s weighted Fourier-coefficient family summable,
+then the weighted family for `g` is summable and `hsSeminormSq s g ≤ M`.
+
+Proof.  Per-mode convergence `mFourierCoeff fₙ m → mFourierCoeff g m`
+(§10.141) lifts to `(fracDerivSymbol s m)² · ‖·‖²` via continuity of
+squaring and multiplication.  Finite sums `∑ m ∈ F, weighted g m` are
+limits of `∑ m ∈ F, weighted fₙ m`, each bounded by `hsSeminormSq s fₙ ≤ M`
+via `Summable.sum_le_tsum`.  Therefore every finset sum of the `g`-family
+is bounded by `M`, and `summable_of_sum_le` / `Real.tsum_le_of_sum_le`
+conclude. -/
+theorem hsSeminormSq_le_of_L2_limit_uniform_bound
+    {d : Type*} [Fintype d]
+    (s : ℝ) {M : ℝ}
+    {fₙ : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus d))}
+    {g : Lp ℂ 2 (volume : Measure (UnitAddTorus d))}
+    (hConv : Filter.Tendsto (fun n => ∫ x, ‖fₙ n x - g x‖ ^ 2)
+      Filter.atTop (nhds 0))
+    (hSumm_fn : ∀ n : ℕ, Summable (fun m : d → ℤ =>
+      (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2))
+    (hBound : ∀ n : ℕ, hsSeminormSq s (fₙ n) ≤ M) :
+    Summable (fun m : d → ℤ =>
+        (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff g m‖ ^ 2) ∧
+      hsSeminormSq s g ≤ M := by
+  -- Per-mode Fourier coefficient convergence (§10.141).
+  have h_coeff_conv : ∀ m : d → ℤ,
+      Filter.Tendsto (fun n => mFourierCoeff (fₙ n) m)
+        Filter.atTop (nhds (mFourierCoeff g m)) :=
+    fun m => tendsto_mFourierCoeff_of_tendsto_L2Sq hConv m
+  -- Lift to squared norms and then weighted terms.
+  have h_weighted_conv : ∀ m : d → ℤ,
+      Filter.Tendsto
+        (fun n => (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2)
+        Filter.atTop
+        (nhds ((fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff g m‖ ^ 2)) := by
+    intro m
+    have h_norm : Filter.Tendsto (fun n => ‖mFourierCoeff (fₙ n) m‖)
+        Filter.atTop (nhds ‖mFourierCoeff g m‖) := (h_coeff_conv m).norm
+    have h_sq : Filter.Tendsto (fun n => ‖mFourierCoeff (fₙ n) m‖ ^ 2)
+        Filter.atTop (nhds (‖mFourierCoeff g m‖ ^ 2)) := h_norm.pow 2
+    exact h_sq.const_mul _
+  -- For every finite `F`, the partial sum for `g` is bounded by `M`.
+  have h_nonneg : ∀ m : d → ℤ,
+      0 ≤ (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff g m‖ ^ 2 :=
+    fun m => mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  have h_nonneg_fn : ∀ n : ℕ, ∀ m : d → ℤ,
+      0 ≤ (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2 :=
+    fun _ m => mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  have h_finset_bound : ∀ F : Finset (d → ℤ),
+      ∑ m ∈ F, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff g m‖ ^ 2 ≤ M := by
+    intro F
+    -- Partial sum continuity via `tendsto_finset_sum`.
+    have h_fin_conv : Filter.Tendsto
+        (fun n => ∑ m ∈ F, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2)
+        Filter.atTop
+        (nhds (∑ m ∈ F, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff g m‖ ^ 2)) :=
+      tendsto_finset_sum F (fun m _ => h_weighted_conv m)
+    -- Each partial sum along the sequence is bounded by `M`.
+    have h_fin_le : ∀ n : ℕ,
+        ∑ m ∈ F, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2 ≤ M := by
+      intro n
+      calc ∑ m ∈ F, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2
+          ≤ ∑' m : d → ℤ,
+              (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n) m‖ ^ 2 :=
+            (hSumm_fn n).sum_le_tsum F (fun m _ => h_nonneg_fn n m)
+        _ = hsSeminormSq s (fₙ n) := rfl
+        _ ≤ M := hBound n
+    exact le_of_tendsto' h_fin_conv h_fin_le
+  refine ⟨summable_of_sum_le (fun m => h_nonneg m) h_finset_bound, ?_⟩
+  exact Real.tsum_le_of_sum_le (fun m => h_nonneg m) h_finset_bound
+
+/-! ### §10.167.B `MaterialMaxPrinciple` from `L²`-limit + uniform `Ḣ¹`
+
+Extends §10.56 to the `L²`-limit class.  Given a time-varying `θ` that
+is the pointwise-in-`t` `L²` limit of a sequence `fₙ` of time-varying
+`L²` functions, each satisfying a uniform `Ḣ¹` bound and summability,
+`MaterialMaxPrinciple θ` holds with bound `M`. -/
+
+/-- **§10.167.B  MMP discharge from an `L²`-limit sequence with uniform
+`Ḣ¹` control.**
+
+The hypotheses are the minimum needed for MMP to propagate under
+strong-`L²` convergence:
+
+* `hConv` — pointwise-in-`t` strong-`L²` convergence `fₙ(t) → θ(t)`.
+* `hSumm_fn` — per-`n`-per-`t` summability of the `Ḣ¹` weighted
+  Fourier family on `fₙ`.
+* `hBound` — uniform-in-`n`-and-`t` `Ḣ¹` bound on `fₙ`.
+
+Produces `MaterialMaxPrinciple θ` via §10.167.A at every forward
+time. -/
+theorem MaterialMaxPrinciple.of_L2_limit_uniform_H1
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (fₙ : ℕ → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hConv : ∀ t : ℝ, 0 ≤ t →
+      Filter.Tendsto (fun n => ∫ x, ‖fₙ n t x - θ t x‖ ^ 2)
+        Filter.atTop (nhds 0))
+    (M : ℝ)
+    (hSumm_fn : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      Summable (fun m : Fin 2 → ℤ =>
+        (fracDerivSymbol 1 m) ^ 2 * ‖mFourierCoeff (fₙ n t) m‖ ^ 2))
+    (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (fₙ n t) ≤ M) :
+    MaterialMaxPrinciple θ where
+  hOnePropagation := ⟨M, fun t ht =>
+    (hsSeminormSq_le_of_L2_limit_uniform_bound (s := 1) (M := M)
+      (hConv t ht) (fun n => hSumm_fn n t ht) (fun n => hBound n t ht)).2⟩
+  hOneSummability := fun t ht =>
+    (hsSeminormSq_le_of_L2_limit_uniform_bound (s := 1) (M := M)
+      (hConv t ht) (fun n => hSumm_fn n t ht) (fun n => hBound n t ht)).1
+  freeDerivativeAtKappaMax := trivial
+  materialSegmentExpansion := trivial
+  farFieldBoundary := trivial
+
+/-! ### §10.167.C `MaterialMaxPrinciple` for the Aubin–Lions limit
+
+Specializes §10.167.B to the `HasAubinLionsExtraction` witness from
+§10.139.  Given a Galerkin family `α` with finite-support states
+`galerkinToLp (sqgBox n) (α n t)` and uniform-in-`n`-and-`t` `Ḣ¹`
+bound, the Aubin–Lions limit `ext.θ_lim` satisfies
+`MaterialMaxPrinciple`.  Combined with §10.56's finite-support
+discharge on each level, this delivers MMP for the infinite-support
+limit from a single `Ḣ¹` bound hypothesis on the Galerkin
+approximation. -/
+
+/-- **§10.167.C  MMP discharge for the Aubin–Lions limit.**
+
+Consumes a `HasAubinLionsExtraction` witness plus a uniform-in-`n`-and-
+`t` `Ḣ¹` bound on the Galerkin states `galerkinToLp (sqgBox n) (α n t)`
+and produces `MaterialMaxPrinciple (ext.θ_lim)` via §10.167.B.  The
+pointwise-in-`t` strong-`L²` convergence comes from `ext.tendsto_L2`. -/
+theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (M : ℝ)
+    (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M) :
+    MaterialMaxPrinciple ext.θ_lim :=
+  MaterialMaxPrinciple.of_L2_limit_uniform_H1 ext.θ_lim
+    (fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+    (fun t ht => ext.tendsto_L2 t ht)
+    M
+    (fun k t ht =>
+      hsSeminormSq_summable_of_finite_support 1
+        (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+        (sqgBox (ext.nsub k))
+        (fun n hn => by
+          rw [mFourierCoeff_galerkinToLp,
+              galerkinExtend_apply_of_not_mem _ _ hn]))
+    (fun k t ht => hBound (ext.nsub k) t ht)
+
 end SqgIdentity
