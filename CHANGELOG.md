@@ -228,6 +228,46 @@ Classical remainder ~400 LOC.
   identity) + `hsSeminormSq_of_zero` (zero function has zero Ḣˢ
   seminorm).  Uses default `decidablePiFintype` (no class parameter)
   to avoid the instance-mismatch pattern diagnosed in §11.25.G.
+- **§11.25.I** `HasLatticeZetaBound.mono` — utility monotonicity
+  lemma: if `HasLatticeZetaBound s C` and `C ≤ C'`, then
+  `HasLatticeZetaBound s C'`.  Trivial field-wise le_trans.
+
+### §11.26 Lattice zeta partial progress toward concrete witness
+
+Building infrastructure for a concrete
+`HasLatticeZetaBound s (latticeZetaConst s)` witness at `s > 1`,
+via the annular-shell + 1D p-series reduction.
+
+- **§11.26.A** `summable_one_div_nat_rpow_at_two_s_sub_one` —
+  `Summable (fun n : ℕ => 1/(n : ℝ)^(2s-1))` for `s > 1`, via
+  mathlib's `Real.summable_one_div_nat_rpow`.
+- **§11.26.B** `abs_coord_le_latticeNorm` — `|(n j : ℝ)| ≤ latticeNorm n`
+  via `sq_le_latticeNorm_sq` + `Real.sqrt_sq_eq_abs` + `Real.sqrt_le_sqrt`.
+- **§11.26.B₂** `max_abs_coord_le_latticeNorm` — `ℓ∞ ≤ ℓ²` on `Fin 2 → ℤ`.
+- **§11.26.C** `annularShell k : Finset (Fin 2 → ℤ)` — subset of piFinset
+  Icc² with filter `m ≠ 0 ∧ (|m 0| = k ∨ |m 1| = k)`.  Represents the
+  "ring" of integer points with `ℓ∞`-norm exactly `k`.
+- **§11.26.C₁/C₂/C₃** — membership characterization, `latticeNorm m ≥ k`
+  on shell k, shell at k=0 is empty.
+- **§11.26.D** `card_annularShell_le` — `|shell k| ≤ 8k + 4` via
+  filter-or decomposition + `Fintype.card_filter_piFinset_eq_of_mem` +
+  `Fintype.filter_piFinset_of_notMem` (explicit-arg form to avoid
+  instance-synthesis failure on underscores).
+- **§11.26.E** `sum_annularShell_rpow_le` — shell-sum bound
+  `∑_{m ∈ shell k} ‖m‖^{-2s} ≤ (8k+4) · k^{-2s}` via pointwise monotonicity
+  of `x ↦ x^{-2s}` (`inv_anti₀` + `Real.rpow_neg`) + cardinality.
+- **§11.26.F₁** `latticeZetaConst s := 8·∑'(n+1)^{-(2s-1)} + 4·∑'(n+1)^{-2s}`
+  — the candidate uniform constant (tsum form).
+- **§11.26.F₂** `latticeZetaConst_nonneg` — nonnegativity via
+  `tsum_nonneg` + `div_nonneg` + `Real.rpow_nonneg`.
+
+**Remaining for unconditional Item 5.A closure via concrete lattice zeta:**
+- §11.26.F main proof: `HasLatticeZetaBound s (latticeZetaConst s)`
+  for `s > 1`.  Requires: (i) `shellOf m : ℕ := max (|m 0|).toNat
+  (|m 1|).toNat` + proofs `m ∈ shell (shellOf m)` for m ≠ 0; (ii)
+  shell-partition of arbitrary `A ⊆ ℤ² \ {0}` as disjoint biUnion;
+  (iii) sum decomposition via `Finset.sum_biUnion`; (iv) partial-sum
+  ≤ tsum bridge.  ~80 LOC.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
