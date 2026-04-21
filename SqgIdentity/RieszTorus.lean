@@ -23330,7 +23330,7 @@ theorem hsSeminormSq_trigPolyProduct_le_kato_ponce
             (fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
         = ∑ a ∈ A, ∑ b ∈ B,
             (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2 * ‖cg b‖ ^ 2 := by
-              rw [Finset.sum_product']
+              rw [Finset.sum_product]
       _ = ∑ a ∈ A,
             ((fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2) * ∑ b ∈ B, ‖cg b‖ ^ 2 := by
               apply Finset.sum_congr rfl
@@ -23348,7 +23348,7 @@ theorem hsSeminormSq_trigPolyProduct_le_kato_ponce
             ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2
         = ∑ a ∈ A, ∑ b ∈ B,
             ‖cf a‖ ^ 2 * (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2 := by
-              rw [Finset.sum_product']
+              rw [Finset.sum_product]
       _ = ∑ a ∈ A,
             ‖cf a‖ ^ 2 * ∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2 := by
               apply Finset.sum_congr rfl
