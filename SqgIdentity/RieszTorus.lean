@@ -23685,4 +23685,39 @@ theorem sum_norm_sq_le_latticeWeight_mul_hsSeminormSq
   rw [hsSeminormSq_trigPoly]
   exact h_cs
 
+/-! ### §11.24 Uniform-in-support L² product bound
+
+Combining §11.22 (Young) + §11.23 (CS bridge) gives the uniform
+finite-lattice L² product bound:
+
+  `∑_n ‖modeConv(n)‖² ≤ C_s(A) · hsSeminormSq s (trigPoly A cf) · (∑_b ‖cg b‖²)`
+
+where `C_s(A) = ∑_{a ∈ A} ‖a‖^{-2s}` is bounded by the (lattice)
+zeta `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s}` which is finite for `s > d/2 = 1`.
+For the Galerkin scheme at `A = sqgBox n` (`0 ∉ sqgBox n`), this
+delivers the uniform-in-`n` `L²` product bound. -/
+
+/-- **§11.24 — Uniform-in-support L² product bound.** -/
+theorem l2_trigPolyProduct_le_uniform
+    [DecidableEq (Fin 2 → ℤ)]
+    {A B : Finset (Fin 2 → ℤ)} (hA : (0 : Fin 2 → ℤ) ∉ A)
+    {s : ℝ} (hs : 0 < s) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf)
+          * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+  have h_young := hsSeminormSq_zero_trigPolyProduct_le_young A B cf cg
+  have h_cs := sum_norm_sq_le_latticeWeight_mul_hsSeminormSq hA hs cf
+  have h_cg_nn : 0 ≤ ∑ b ∈ B, ‖cg b‖ ^ 2 :=
+    Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+  calc ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖) ^ 2 * (∑ b ∈ B, ‖cg b‖ ^ 2) := h_young
+    _ ≤ ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf))
+        * (∑ b ∈ B, ‖cg b‖ ^ 2) :=
+          mul_le_mul_of_nonneg_right h_cs h_cg_nn
+    _ = (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf)
+          * (∑ b ∈ B, ‖cg b‖ ^ 2) := by ring
+
 end SqgIdentity
