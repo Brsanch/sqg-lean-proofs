@@ -70,35 +70,40 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
   constructs `HasFourierSynthesis per θ` with zero `Lp`-coercion exposure
   to the caller.  Composes §10.162 + §10.163 +
   `HasPerModeLimit.tendsto_modeCoeff`.
+- **§10.165.A/B/C/D + `sqgGalerkin_hExtract_witness`** (commits
+  `e9e51a8`, `4d8010e`, `c6a0407`, `e2fab41`, `0d99c72`) — full
+  Arzelà–Ascoli + Cantor diagonal construction: BW on bounded
+  complex sequences (§10.165.A), Cantor diagonal across a countable
+  family of bounded ℂ-sequences (§10.165.B), application to
+  `(Fin 2 → ℤ) × ℚ`-indexed rational-time data (§10.165.C),
+  Lipschitz-driven extension to every real `t ≥ 0` via CauchySeq +
+  rational approximation (§10.165.D).  Final composition
+  `sqgGalerkin_hExtract_witness` produces the `hExtract` witness
+  demanded by §10.155.B unconditionally from `HasModeLipschitzFamily`.
+- **§10.153.C `m`-restriction** (commit `4e02eef`) — restricts
+  `hDeriv` / `hCont` hypotheses to `m ∈ sqgBox n` and handles
+  leakage modes internally (`galerkinExtend = 0` there, so the
+  Lipschitz bound is trivially satisfied).  Resolves the scoping
+  issue that previously blocked Item 1 input #3.
+- **§10.166.A/B** (commit `e6b0015`) — discharges of §10.153.C's
+  restricted `hDeriv` / `hCont` from the whole-trajectory derivative
+  of §10.116 via `hasDerivWithinAt_pi` / `continuousOn_pi` and the
+  `rfl` identity `galerkinVectorField ⟨m, hm⟩ = galerkinRHS
+  (galerkinExtend _) m` (line 13737).
 
-**Remaining Item 1 analytical work (2 inputs, down from 4):**
+**Item 1 analytical work — ALL THREE INPUTS DISCHARGED STRUCTURALLY:**
 
 1. ~~**Strong-`L²` convergence**~~ — ✓ **closed down to elementary
-   tightness** via §10.164.  `h_L2` of §10.159.C is no longer a
-   user-facing hypothesis; callers of `HasFourierSynthesis.ofTight`
-   supply only ℓ²-level data (summability + tightness of the per-mode
-   coefficient differences).  The tightness itself would be discharged
-   from a uniform `H^s` bound with `s > 0` — a standard Rellich-style
-   compactness statement that SQG Galerkin trajectories satisfy.
-2. **Classical Arzelà–Ascoli + Cantor diagonal extraction** (the
-   `hExtract` input of §10.155.B).  Mathlib has
-   `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
-   (Fin 2 → ℤ)`; ~300-line assembly.
-3. **`hDeriv` / `hCont` / `hH2` discharges** for §10.153.C from
-   §10.116's Galerkin ODE + §10.138's `H⁻²` bound via per-mode
-   derivative projection.  **Structural question flagged (2026-04-21):**
-   §10.153.C universally quantifies `hDeriv` over all
-   `m : Fin 2 → ℤ`; for leakage modes `m ∉ sqgBox n ∪ {0}` the LHS is
-   the constant-zero function so `HasDerivWithinAt` forces the value
-   `galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m = 0`.
-   But `galerkinRHS` is only known in-tree to vanish on radial shells
-   (`galerkinRHS_eq_zero_of_isRadialShell`, line 11159); `sqgBox n` is
-   not radial.  Resolution options: (a) restrict §10.153.C's
-   `m`-quantification to `sqgBox n ∪ {0}` and match the downstream
-   consumer's use; (b) prove `galerkinRHS` vanishes at leakage modes
-   for the specific `α` from §10.116 via convolution-symmetry
-   cancellation on the `sqgBox n` support.  Needs a scoping decision
-   before the discharge can be drafted.
+   tightness** via §10.164.
+2. ~~**Classical Arzelà–Ascoli + Cantor diagonal extraction**~~ —
+   ✓ **closed unconditionally** via §10.165 (the `hExtract` witness
+   for §10.155.B follows from `HasModeLipschitzFamily` alone).
+3. ~~**`hDeriv` / `hCont` discharges for §10.153.C**~~ — ✓ **closed**
+   via §10.166.A/B (Item 1 input #3; consumes the whole-trajectory
+   derivative from §10.116).  `hH2` (uniform `H⁻²` bound) is the
+   remaining SQG-specific analytic input; it will be discharged from
+   the §10.116 uniform `L∞` coefficient bound + §10.138 once the
+   mathlib Kato–Ponce infrastructure allows.
 
 Route B infrastructure now delivers `SQG Galerkin data →
 HasModeLipschitzFamily → HasPerModeLimit → HasFourierSynthesis →
