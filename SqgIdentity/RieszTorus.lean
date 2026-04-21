@@ -20287,4 +20287,43 @@ noncomputable def HasFourierSynthesis.ofSummable
     (fun m t ht => mFourierCoeff_θLimOfSummable per hSum m t ht)
     h_L2
 
+/-! ### §10.160 Parseval on a difference — building block for strong-L²
+
+The strong-`L²` convergence proof in `HasFourierSynthesis.ofSummable`
+(§10.159.C) needs to express `∫ ‖f - g‖²` as a per-mode sum of
+squared Fourier-coefficient differences.  This is Parseval applied to
+`f - g`, combined with the linearity
+`mFourierCoeff (f - g) m = mFourierCoeff f m - mFourierCoeff g m`.
+
+§10.160 factors this as a standalone lemma so later discharges of
+`h_L2` can consume it directly, without re-deriving the Parseval
+step each time. -/
+
+/-- **§10.160  Parseval on a difference.**  For any two `L²(𝕋²)`
+elements `f, g`:
+`∫ ‖f x - g x‖² dx = ∑' m, ‖mFourierCoeff f m - mFourierCoeff g m‖²`. -/
+theorem integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    (∫ x, ‖f x - g x‖ ^ 2) =
+    ∑' m : Fin 2 → ℤ, ‖mFourierCoeff f m - mFourierCoeff g m‖ ^ 2 := by
+  -- Parseval on `(f - g)` at the `Lp` level.
+  have h_pars : HasSum (fun m : Fin 2 → ℤ => ‖mFourierCoeff (f - g) m‖ ^ 2)
+      (∫ x, ‖(f - g) x‖ ^ 2) := hasSum_sq_mFourierCoeff (f - g)
+  -- Linearity of `mFourierCoeff` on the difference via `mFourierCoeffLM`.
+  have h_sub : ∀ m : Fin 2 → ℤ,
+      mFourierCoeff (f - g) m = mFourierCoeff f m - mFourierCoeff g m := by
+    intro m
+    show mFourierCoeffLM m (f - g) = mFourierCoeffLM m f - mFourierCoeffLM m g
+    rw [map_sub]
+  -- `‖(f - g) x‖² = ‖f x - g x‖²` a.e. (via `Lp` subtraction coercion).
+  have h_ae : (fun x => ‖(f - g) x‖ ^ 2) =ᵐ[volume]
+      fun x => ‖f x - g x‖ ^ 2 := by
+    filter_upwards [Lp.coeFn_sub f g] with x hx
+    rw [hx]
+  -- Integrals agree by a.e. equality.
+  have h_int_eq : (∫ x, ‖(f - g) x‖ ^ 2) = ∫ x, ‖f x - g x‖ ^ 2 :=
+    integral_congr_ae h_ae
+  rw [← h_int_eq, ← h_pars.tsum_eq]
+  exact tsum_congr (fun m => by rw [h_sub m])
+
 end SqgIdentity
