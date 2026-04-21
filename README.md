@@ -19,8 +19,9 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 20,000 lines of Lean 4 source, with
-**zero `sorry` and no axioms beyond mathlib**.
+The formalization comprises over 19,800 lines of Lean 4 source in the
+`RieszTorus` module (over 20,500 lines project-wide), with **zero
+`sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
 
@@ -157,6 +158,33 @@ class, regularity is unconditional:
   under strong-`L²` (§10.141 `tendsto_mFourierCoeff_of_tendsto_L2Sq`)
   is the bridge from the `Lp` side to the Fourier-coefficient side
   used throughout.
+- **`l2Conservation` internally discharged (§10.147, v0.4.38).**
+  The `hL2` hypothesis fed to §10.144 is produced unconditionally
+  from the other Route B data: strong-`L²` convergence of the
+  Galerkin restrictions + §10.97 per-level energy conservation +
+  §10.142 zero-mode preservation. The hypothesis-free capstone
+  `exists_sqgSolution_via_RouteB_from_galerkin_energy` (§10.148)
+  produces an `SqgSolution` from `HasAubinLionsExtraction` alone,
+  without the `hL2` input.
+- **Structural chain for `HasAubinLionsExtraction` existence (§10.149–§10.153).**
+  Factors the remaining item 1 analytical gap into three
+  precisely-typed Lean construction targets, replacing the
+  earlier "mathlib-scale weak-compactness infrastructure" blocker
+  with named theorem signatures. Predicates:
+  `HasModeLipschitzFamily` (§10.149) → `HasPerModeLimit`
+  (§10.150) → `HasFourierSynthesis` (§10.151) →
+  `HasAubinLionsExtraction` (§10.139) via the one-line bridge
+  `HasAubinLionsExtraction.ofPerModeLimit` (§10.151).
+  `HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152)
+  discharges the sup-over-time mode bound concretely from §10.123
+  and takes the per-mode Lipschitz constant `L m` as input; the
+  per-mode `H⁻²`-energy primitive `galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero`
+  (§10.153.A) and the mean-value-theorem Lipschitz bound
+  `galerkinExtend_mode_lipschitz_of_ODE_bound` (§10.153.B) supply
+  the analytic inputs needed to close `L m` in a future session.
+  Capstone `exists_sqgSolution_via_RouteB_from_perModeLimit_synthesis`
+  (§10.156) produces an `SqgSolution` from the per-mode limit +
+  Fourier synthesis data directly.
 
 ## What is *not* proven
 
@@ -164,17 +192,22 @@ class, regularity is unconditional:
   `BKMCriterionS2.hsPropagationS2` outside the finite-support class.
 - The fractional Sobolev bootstrap for `s > 2` (requires Kato–Ponce-type
   estimates on `𝕋²` that are not yet in mathlib).
-- Construction of the `HasAubinLionsExtraction` witness
-  (§10.139) for non-zero `L²` data from the uniform `L²` bound
-  (§10.122) + an `H⁻²` time-derivative bound. Classical Aubin–Lions
-  compactness; requires mathlib-scale weak-compactness / Fréchet–
-  Kolmogorov infrastructure not yet in tree.
-- The `l2Conservation` hypothesis fed to §10.144
-  (`SqgEvolutionAxioms.of_aubinLions`) for non-zero data. Classical
-  `Lp`-norm continuity under strong-`L²` convergence; requires
-  `MeasureTheory.L2` inner-product bridge lemmas composed with
-  §10.97's Galerkin `ℓ²`-conservation and §10.119's Parseval-on-
-  truncation identity.
+- The three named Lean construction targets for non-zero
+  `HasAubinLionsExtraction` (item 1 analytical closure). Each is a
+  precisely-typed Lean theorem signature, not a vague
+  "mathlib-scale infrastructure" dependency:
+    1. **`HasPerModeLimit.ofModeLipschitzFamily`** — mode-wise
+       Arzelà–Ascoli on `[0, T]` + Cantor diagonal across
+       `ℤ² \ {0}`. Consumes `HasModeLipschitzFamily` (§10.149)
+       delivered by §10.152.
+    2. **`HasFourierSynthesis.ofPerModeLimit`** — Parseval + Fatou +
+       dominated convergence on `ℓ²(ℤ²)` producing the `Lp`-valued
+       limit with strong-`L²` convergence. Consumes `HasPerModeLimit`
+       (§10.150).
+    3. **Per-mode Lipschitz `L m` for §10.152** — FTC closure of the
+       per-mode Lipschitz constant from §10.138's `H⁻²` bound +
+       §10.116's Galerkin ODE. §10.153.A + §10.153.B supply the
+       building blocks; the monolithic wrapper is deferred.
 - A concrete `HasBumpToIndicatorSequence` witness (§10.135)
   constructed from mathlib's `ContDiffBump` infrastructure, to close
   item 6 analytically rather than only structurally.
