@@ -110,15 +110,30 @@ concrete trig-poly Kato–Ponce delivered across §11.17–§11.21
   - Final assembly via `Finset.sum_product` + `Finset.mul_sum` +
     `Finset.sum_mul` to factor `∑ p, ‖cf p.1‖·‖cg p.2‖²` as
     `(∑ a, ‖cf a‖)·(∑ b, ‖cg b‖²)` (§11.22.E).
+- **§11.23** `sum_norm_sq_le_latticeWeight_mul_hsSeminormSq` — CS
+  bridge `ℓ¹ → weighted ℓ²` for `0 ∉ A`, `s > 0`:
+  `(∑_a ‖cf a‖)² ≤ (∑_a ‖a‖^{-2s}) · hsSeminormSq s (trigPoly A cf)`.
+  Proof: `Finset.sum_mul_sq_le_sq_mul_sq` with `F a = ‖a‖^{-s}`,
+  `G a = ‖a‖^s · ‖cf a‖`, computing the factors via `Real.rpow_add`
+  for `F · G = ‖cf a‖` (exponent `-s + s = 0` + `Real.rpow_zero`),
+  `Real.rpow_mul` for `F² = ‖a‖^{-2s}`, and `mul_pow` +
+  `fracDerivSymbol_of_ne_zero` for `G² = (σ_s a)² · ‖cf a‖²`.
+  Key input: `latticeNorm_pos` for `a ≠ 0` (from `0 ∉ A`).
+- **§11.24** `l2_trigPolyProduct_le_uniform` — uniform-in-support
+  `L²` product bound combining §11.22 + §11.23:
+  `∑_n ‖modeConv(n)‖² ≤ C_s(A) · hsSeminormSq s (trigPoly A cf) · (∑_b ‖cg b‖²)`
+  where `C_s(A) = ∑_{a ∈ A} ‖a‖^{-2s}`.  For `A = sqgBox n` the
+  constant `C_s(A)` is bounded by the global lattice zeta
+  `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s}` (finite for `s > d/2 = 1`), giving
+  uniform-in-`n` L² product bound on the Galerkin dynamics.
 
-**Still outstanding for unconditional Item 5.A closure:** Cauchy–
-Schwarz bridge `(∑_a ‖cf a‖)² ≤ C_s · hsSeminormSq s (trigPoly A cf)`
-for `s > d/2 = 1` (requires `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability,
-§11.23); combination of §11.22 + §11.23 into the uniform-in-support
-Kato–Ponce bound (§11.24); structural bridge from
-`HasTrigPolyKatoPonceBound` to `HasSqgGalerkinHsClosure` via the
-SQG-specific velocity bound on `∇θ_n · u_n`; wiring into §10.174's
-`hBoundS` hypothesis.  Classical remainder ~500–800 LOC.
+**Still outstanding for unconditional Item 5.A closure:** global
+lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
+`s > 1`; Peetre-weighted `Ḣˢ` upgrade of §11.24 combining with
+§11.19.C; structural bridge from this uniform bound to
+`HasSqgGalerkinHsClosure` via the SQG-specific velocity bound on
+`∇θ_n · u_n`; wiring into §10.174's `hBoundS` hypothesis.
+Classical remainder ~400–600 LOC.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
