@@ -24565,18 +24565,4 @@ lemma latticeNorm_ge_of_mem_annularShell (k : ℕ) (m : Fin 2 → ℤ)
     calc (k : ℝ) = |(m 1 : ℝ)| := h_abs.symm
       _ ≤ latticeNorm m := abs_coord_le_latticeNorm m 1
 
-/-- **§11.26.C₃ — Shell at level `0` is empty.** -/
-lemma annularShell_zero : annularShell 0 = ∅ := by
-  unfold annularShell
-  apply Finset.eq_empty_of_forall_notMem
-  intros m hm
-  rw [Finset.mem_filter, Fintype.mem_piFinset] at hm
-  obtain ⟨h_Icc, h_ne, _⟩ := hm
-  apply h_ne
-  funext i
-  have h := h_Icc i
-  rw [Finset.mem_Icc] at h
-  simp only [Nat.cast_zero, neg_zero] at h
-  omega
-
 end SqgIdentity
