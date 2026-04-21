@@ -22131,4 +22131,226 @@ theorem sqg_regularity_of_aubinLions_ofZero_interpolation :
     (fun n t _ s _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
     hE
 
+/-! ### §10.177 Parametric-`s` Galerkin finite-sum energy
+
+Generalizes §10.68's `trigPolyEnergyHs2` to arbitrary `s : ℝ`.
+
+```
+trigPolyEnergyHs s S c := ∑ m : ↥S, (fracDerivSymbol s m.val)² · ‖c m‖²
+```
+
+This is the **pointwise-differentiable** form of the `Ḣˢ` energy for
+Galerkin coefficients.  `trigPolyEnergyHs_eq_hsSeminormSq` bridges
+to the tsum form `hsSeminormSq s (galerkinToLp S c)`.
+
+Phase 1 + Phase 3 deliverable of the Route A plan. -/
+
+/-- **Parametric-`s` trig-poly energy (finite-sum form).** -/
+noncomputable def trigPolyEnergyHs
+    (s : ℝ) (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : ℝ :=
+  ∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 * ‖c m‖ ^ 2
+
+lemma trigPolyEnergyHs_nonneg
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)] (c : ↥S → ℂ) :
+    0 ≤ trigPolyEnergyHs s S c := by
+  unfold trigPolyEnergyHs
+  exact Finset.sum_nonneg (fun m _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+
+/-- Specialization: `s = 2` recovers §10.68's `trigPolyEnergyHs2`. -/
+lemma trigPolyEnergyHs_two
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)] (c : ↥S → ℂ) :
+    trigPolyEnergyHs 2 S c = trigPolyEnergyHs2 S c := rfl
+
+/-- Specialization: `s = 0` recovers `∑ m, ‖c m‖²` on coefficients
+whose support avoids the origin (so that `fracDerivSymbol 0` is not
+triggered at zero). -/
+lemma trigPolyEnergyHs_zero_of_not_mem_zero
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (h0 : (0 : Fin 2 → ℤ) ∉ S) (c : ↥S → ℂ) :
+    trigPolyEnergyHs 0 S c = ∑ m : ↥S, ‖c m‖ ^ 2 := by
+  unfold trigPolyEnergyHs
+  apply Finset.sum_congr rfl
+  intros m _
+  have hm_ne : m.val ≠ 0 := fun hv => h0 (hv ▸ m.property)
+  rw [fracDerivSymbol_of_ne_zero 0 hm_ne, Real.rpow_zero]; ring
+
+/-- **Bridge: finite-sum `Ḣˢ` energy = `hsSeminormSq s (galerkinToLp S c)`.**
+Generalization of §10.68's `trigPolyEnergyHs2_eq_hsSeminormSq` to
+arbitrary `s : ℝ`. -/
+theorem trigPolyEnergyHs_eq_hsSeminormSq
+    (s : ℝ) (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) :
+    trigPolyEnergyHs s S c = hsSeminormSq s (galerkinToLp S c) := by
+  unfold trigPolyEnergyHs hsSeminormSq
+  -- Show the tsum collapses to a Finset sum over `S`.
+  have hZeroOff : ∀ n ∉ S,
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2 = 0 := by
+    intros n hn
+    rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hn,
+        norm_zero]; ring
+  rw [tsum_eq_sum (s := S) (fun n hn => hZeroOff n hn)]
+  -- Rewrite the Finset sum over S as a sum over the subtype ↥S.
+  rw [← Finset.sum_attach S (fun n =>
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) n‖ ^ 2)]
+  apply Finset.sum_congr rfl
+  intros m _
+  rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_mem _ _ m.property]
+
+/-- **Energy bound transferred from parametric trig-poly to `hsSeminormSq`.**
+Generalization of `hsSeminormSq_le_of_trigPolyEnergyHs2_le`. -/
+lemma hsSeminormSq_le_of_trigPolyEnergyHs_le
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (E : ℝ) (hE : trigPolyEnergyHs s S c ≤ E) :
+    hsSeminormSq s (galerkinToLp S c) ≤ E := by
+  rw [← trigPolyEnergyHs_eq_hsSeminormSq]; exact hE
+
+/-! ### §10.178 Pointwise derivative of parametric-`s` Galerkin energy
+
+Generalizes §10.69's `trigPolyEnergyHs2_hasDerivAt` to arbitrary `s : ℝ`.
+The structure is identical: each coordinate `τ ↦ α τ m` has derivative
+`galerkinVectorField S (α τ) m` (via `hasDerivAt_pi`), and `HasDerivAt.norm_sq`
+differentiates the squared norm via the real inner product on `ℂ`.  The
+`(fracDerivSymbol s m)²` weight is pulled out by `const_mul`.
+
+Output:
+```
+d/dτ trigPolyEnergyHs s S (α τ)
+  = ∑ m : ↥S, (fracDerivSymbol s m.val)² · 2 · ⟪α τ m, galerkinVectorField S (α τ) m⟫_ℝ
+```
+
+This is the Galerkin `Ḣˢ` energy identity (Phase 1 at `s = 1`; Phase 3 at
+`s ∈ (1, 2]`). -/
+
+theorem trigPolyEnergyHs_hasDerivAt
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (τ : ℝ) :
+    HasDerivAt (fun t => trigPolyEnergyHs s S (α t))
+      (∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 *
+        (2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m)))) τ := by
+  unfold trigPolyEnergyHs
+  apply HasDerivAt.fun_sum
+  intros m _
+  have hαm : HasDerivAt (fun t => α t m) (galerkinVectorField S (α τ) m) τ :=
+    (hasDerivAt_pi.mp (hα τ)) m
+  have hNormSq := hαm.norm_sq
+  exact hNormSq.const_mul _
+
+/-- **§10.178.A  Specialization to `s = 1`: the `Ḣ¹` energy identity
+(Phase 1 deliverable).** -/
+theorem trigPolyEnergyH1_hasDerivAt
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (τ : ℝ) :
+    HasDerivAt (fun t => trigPolyEnergyHs 1 S (α t))
+      (∑ m : ↥S, (fracDerivSymbol 1 m.val) ^ 2 *
+        (2 * (@inner ℝ ℂ _ (α τ m) (galerkinVectorField S (α τ) m)))) τ :=
+  trigPolyEnergyHs_hasDerivAt 1 α hα τ
+
+/-! ### §10.179 `Ḣˢ` energy flux decomposition
+
+The `Ḣˢ` energy flux
+`F_s(α τ) := ∑_{m ∈ ↥S} (|m|^s)² · 2 · ⟪α τ m, galerkinVectorField S (α τ) m⟫_ℝ`
+is the classical advection-convolution flux against the Sobolev weight.
+We package it as a named quantity for downstream use. -/
+
+/-- **Galerkin `Ḣˢ` flux.** The formal time-derivative of `trigPolyEnergyHs s`. -/
+noncomputable def galerkinHsFlux
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : ℝ :=
+  ∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 *
+    (2 * (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m)))
+
+/-- **Energy identity in compact form**: `d/dτ trigPolyEnergyHs s S (α τ)
+= galerkinHsFlux s (α τ)`. -/
+theorem galerkinHsFlux_eq_deriv
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (τ : ℝ) :
+    deriv (fun t => trigPolyEnergyHs s S (α t)) τ = galerkinHsFlux s (α τ) :=
+  (trigPolyEnergyHs_hasDerivAt s α hα τ).deriv
+
+/-- **Zero flux on radial shells.** When `S` is a radial shell,
+`galerkinVectorField S c = 0`, so the flux vanishes regardless of `s`. -/
+lemma galerkinHsFlux_eq_zero_of_isRadialShell
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (hS : IsRadialShell S) (c : ↥S → ℂ) :
+    galerkinHsFlux s c = 0 := by
+  unfold galerkinHsFlux
+  rw [galerkinVectorField_eq_zero_of_isRadialShell hS]
+  simp
+
+/-! ### §10.180 Galerkin `Ḣˢ` energy is continuous in time
+
+`t ↦ trigPolyEnergyHs s S (α t)` is differentiable at every `τ`
+(with derivative `galerkinHsFlux s (α τ)`), so in particular continuous.
+We package this as a reusable lemma for Grönwall application. -/
+
+lemma trigPolyEnergyHs_differentiable
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t) :
+    Differentiable ℝ (fun t => trigPolyEnergyHs s S (α t)) :=
+  fun τ => (trigPolyEnergyHs_hasDerivAt s α hα τ).differentiableAt
+
+lemma trigPolyEnergyHs_continuous
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t) :
+    Continuous (fun t => trigPolyEnergyHs s S (α t)) :=
+  (trigPolyEnergyHs_differentiable s α hα).continuous
+
+/-! ### §10.181 Sobolev energy monotonicity identity on an interval
+
+For use in Grönwall-style bounds: if
+`|deriv (trigPolyEnergyHs s ∘ α) τ| ≤ K · trigPolyEnergyHs s S (α τ)` on
+`[0, T]`, then `trigPolyEnergyHs s S (α t) ≤ trigPolyEnergyHs s S (α 0) ·
+exp(K · t)` on `[0, T]`.
+
+Directly calls the existing `scalar_gronwall_exp` used by §10.79's
+`galerkinTrigEnergyHs2_gronwall_bound`. -/
+
+theorem trigPolyEnergyHs_gronwall_bound
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (K T : ℝ) (hT : 0 ≤ T)
+    (hDerivBound : ∀ x ∈ Set.Ico 0 T,
+      |deriv (fun t => trigPolyEnergyHs s S (α t)) x|
+        ≤ K * |trigPolyEnergyHs s S (α x)|) :
+    ∀ t ∈ Set.Icc 0 T,
+      trigPolyEnergyHs s S (α t)
+        ≤ trigPolyEnergyHs s S (α 0) * Real.exp (K * t) := by
+  have hE_hasDerivWithin : ∀ x ∈ Set.Ico 0 T,
+      HasDerivWithinAt (fun t => trigPolyEnergyHs s S (α t))
+        (deriv (fun t => trigPolyEnergyHs s S (α t)) x) (Set.Ici x) x := by
+    intros x _
+    exact (trigPolyEnergyHs_hasDerivAt s α hα x).hasDerivWithinAt
+  have hE_cont : ContinuousOn (fun t => trigPolyEnergyHs s S (α t))
+                    (Set.Icc 0 T) :=
+    (trigPolyEnergyHs_continuous s α hα).continuousOn
+  exact scalar_gronwall_exp (fun t => trigPolyEnergyHs s S (α t)) K T hT
+    hE_cont hE_hasDerivWithin hDerivBound
+    (fun _ _ => trigPolyEnergyHs_nonneg s (α _))
+
+/-- **Corollary**: Bound on `hsSeminormSq` via parametric-`s` Grönwall. -/
+theorem hsSeminormSq_galerkin_gronwall_bound
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (α : ℝ → (↥S → ℂ))
+    (hα : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t)
+    (K T : ℝ) (hT : 0 ≤ T)
+    (hDerivBound : ∀ x ∈ Set.Ico 0 T,
+      |deriv (fun t => trigPolyEnergyHs s S (α t)) x|
+        ≤ K * |trigPolyEnergyHs s S (α x)|) :
+    ∀ t ∈ Set.Icc 0 T,
+      hsSeminormSq s (galerkinToLp S (α t))
+        ≤ hsSeminormSq s (galerkinToLp S (α 0)) * Real.exp (K * t) := by
+  intro t ht
+  rw [← trigPolyEnergyHs_eq_hsSeminormSq, ← trigPolyEnergyHs_eq_hsSeminormSq]
+  exact trigPolyEnergyHs_gronwall_bound s α hα K T hT hDerivBound t ht
+
 end SqgIdentity
