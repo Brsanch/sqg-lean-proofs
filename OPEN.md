@@ -47,22 +47,32 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
   single API taking `per`, an `Lp` witness, an initial coefficient
   match, an ℓ²-summability datum, and a strong-`L²` convergence
   datum.  The caller never supplies an `Lp`-valued witness directly.
-- **§10.160 `integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub`**
-  (commit `8a5f87b`) — first-pass attempt at Parseval on a
-  difference.  **Currently breaks CI** (unsolved goals near line
-  20320); blocks the strong-`L²` convergence discharge.
-- **§10.161 `integral_norm_sq_galerkin_sub_θLim_eq_tsum`** (commit
-  `b35e5a5`) — stacks `rw [integral_norm_sq_sub_eq_...]` onto §10.160
-  and inherits the breakage.
+- **§10.160 `integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub`** —
+  Parseval on a difference (`∫ ‖f - g‖² = ∑' m, ‖f̂ m - ĝ m‖²` on the
+  2-torus).  Green on CI as of commit `5428199` (`Pi.sub_apply` fix).
+- **§10.161 `integral_norm_sq_galerkin_sub_θLim_eq_tsum`** — L²-to-ℓ²
+  bridge: specializes §10.160 to `f = galerkinToLp` and `g =
+  θLimOfSummable`, composing the Fourier-coefficient identities for
+  both sides.  Green via §10.160's fix.
+- **§10.162 `tendsto_integral_norm_sq_galerkin_sub_θLim_of_tsum`**
+  (commit `48420b8`) — `Tendsto.congr` wrapper on §10.161.  Converts
+  `h_L2` (L²-integral Tendsto, the hypothesis of §10.159.C) into a
+  pure ℓ²-tsum Tendsto on per-mode coefficient differences.  Zero
+  `Lp`-coercion bookkeeping remains downstream.
 
 **Remaining Item 1 analytical work (3 inputs, down from 4):**
 
 1. **Strong-`L²` convergence** of the extracted Galerkin sequence to
-   `θLimOfSummable` (the `h_L2` input of §10.159.C).  The §10.160
-   + §10.161 Parseval-on-difference approach is the right plan; just
-   needs the unsolved-goals fix on §10.160 (likely a tighter rewrite
-   on the `Lp.coeFn_sub` a.e. step near line 20321), then Fatou + DCT
-   on `ℓ²(ℤ²)` composes the rest.
+   `θLimOfSummable` (the `h_L2` input of §10.159.C).  §10.160–§10.162
+   have reduced this to the pure ℓ² statement
+   `Tendsto (fun k => ∑' m, ‖galerkinExtend_(nsub k) t m - per.b m t‖²)
+    atTop (𝓝 0)`
+   with no `Lp` coercions in sight.  What's left is a Vitali-style
+   tight-family ℓ² convergence argument: per-mode convergence (from
+   `HasPerModeLimit`) + tightness of the coefficient family (uniform
+   tail control, which a `H^s` bound with `s > 0` would supply) ⇒
+   `∑' m, ‖·‖² → 0`.  The general-ℓ² Vitali lemma can live in a free-
+   standing form (no SQG-specifics) and is ~100 line in Lean.
 2. **Classical Arzelà–Ascoli + Cantor diagonal extraction** (the
    `hExtract` input of §10.155.B).  Mathlib has
    `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
