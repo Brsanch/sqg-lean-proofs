@@ -24925,6 +24925,6 @@ theorem hasLatticeZetaBound_latticeZetaConst {s : ℝ} (hs : 1 < s) :
           apply add_le_add
           · exact mul_le_mul_of_nonneg_left h_tsum1 (by norm_num : (0 : ℝ) ≤ 8)
           · exact mul_le_mul_of_nonneg_left h_tsum2 (by norm_num : (0 : ℝ) ≤ 4)
-    _ = latticeZetaConst s := by unfold latticeZetaConst
+    _ = latticeZetaConst s := by rw [latticeZetaConst]
 
 end SqgIdentity
