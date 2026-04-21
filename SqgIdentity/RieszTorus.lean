@@ -21401,7 +21401,8 @@ both `s = 1` and generic `s ∈ (1, 2]`. -/
 theorem hsSeminormSq_zero_galerkin_of_trinary_zero
     (s : ℝ) (n : ℕ) (t : ℝ) :
     hsSeminormSq s (galerkinToLp (sqgBox n)
-      (((fun _ _ _ => (0 : ℂ)) : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) n t)) = 0 := by
+      (((fun _ _ _ => (0 : ℂ)) : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) n t))
+      = (0 : ℝ) := by
   rw [zero_trinary_apply_eq_zero, galerkinToLp_zero]
   exact hsSeminormSq_of_zero s
 
