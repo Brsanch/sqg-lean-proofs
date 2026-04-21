@@ -20208,4 +20208,82 @@ theorem mFourierCoeff_θLimOfLp
   unfold θLimOfLp
   rw [mFourierCoeff_fourierSynthesisLp, h_agree m t ht]
 
+/-! ### §10.159 `HasFourierSynthesis.ofSummable` — the cleanest
+constructor for Target #2
+
+Composes §10.154.B (coefficient-injectivity bridge) with §10.157
+(Fourier synthesis) + §10.158 (lp-valued θ_lim) into a single
+top-level constructor that takes:
+
+* `per : HasPerModeLimit α` — output of Arzelà–Ascoli + Cantor diagonal
+  (still a named classical hypothesis via §10.155.B)
+* `θ : Lp ℂ 2` + initial coefficient match `per.b m 0 = mFourierCoeff θ m`
+* `hSum` — ℓ²-summability of `per.b · t` at every `t ≥ 0` (from the
+  uniform L² Galerkin bound + Fatou on `ℓ²`)
+* `h_L2` — strong-L² convergence of the extracted Galerkin sequence
+  to the constructed `θ_lim` (Parseval + DCT on `ℓ²`)
+
+and produces `HasFourierSynthesis per θ`.  The `θ_lim` field is
+constructed internally via `θLimOfSummable` — the caller no longer
+supplies any `Lp`-valued witness directly; only the elementary
+summability + initial match + classical strong-L² convergence.
+-/
+
+/-- **§10.159.A  Concrete `θ_lim` from per-mode limit + summability.**
+Builds the `θ_lim : ℝ → Lp ℂ 2` operator used by `HasFourierSynthesis`
+directly from `per : HasPerModeLimit α` and an ℓ²-summability
+hypothesis on `per.b · t` at every `t ≥ 0`.
+
+On `0 ≤ t`: the Fourier synthesis of the `lp` element built by
+§10.158.C (`lpOfSummableSqNorm`).
+On `t < 0`: `0` (any value; `HasFourierSynthesis` only requires
+behaviour for `t ≥ 0`). -/
+noncomputable def θLimOfSummable
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable fun m : Fin 2 → ℤ => ‖per.b m t‖ ^ 2) :
+    ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  fun t =>
+    if ht : 0 ≤ t then
+      fourierSynthesisLp (lpOfSummableSqNorm (fun m => per.b m t) (hSum t ht))
+    else 0
+
+/-- **§10.159.B  Fourier coefficients of `θLimOfSummable` match `per.b`.** -/
+theorem mFourierCoeff_θLimOfSummable
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable fun m : Fin 2 → ℤ => ‖per.b m t‖ ^ 2)
+    (m : Fin 2 → ℤ) (t : ℝ) (ht : 0 ≤ t) :
+    mFourierCoeff (θLimOfSummable per hSum t) m = per.b m t := by
+  unfold θLimOfSummable
+  rw [dif_pos ht]
+  rw [mFourierCoeff_fourierSynthesisLp, lpOfSummableSqNorm_coeff]
+
+/-- **§10.159.C  `HasFourierSynthesis.ofSummable` — top-level Target #2
+constructor.**  Assembles `HasFourierSynthesis per θ` from the
+elementary inputs: per-mode summability + initial coefficient match +
+strong-L² convergence to the constructed `θ_lim`.  The `θ_lim`
+itself is built internally — the caller supplies no `Lp`-valued
+witness directly. -/
+noncomputable def HasFourierSynthesis.ofSummable
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hInit_b : ∀ m : Fin 2 → ℤ, per.b m 0 = mFourierCoeff θ m)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable fun m : Fin 2 → ℤ => ‖per.b m t‖ ^ 2)
+    (h_L2 : ∀ (t : ℝ), 0 ≤ t →
+      Filter.Tendsto
+        (fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (per.nsub k)) (α (per.nsub k) t) x
+                - θLimOfSummable per hSum t x‖ ^ 2)
+        Filter.atTop (nhds 0)) :
+    HasFourierSynthesis per θ :=
+  HasFourierSynthesis.ofPerModeLimit per hInit_b
+    (θLimOfSummable per hSum)
+    (fun m t ht => mFourierCoeff_θLimOfSummable per hSum m t ht)
+    h_L2
+
 end SqgIdentity
