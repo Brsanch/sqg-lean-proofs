@@ -20147,4 +20147,42 @@ theorem mFourierCoeff_fourierSynthesisLp
   simp only [mFourierBasis_repr] at this
   exact this
 
+/-! ### §10.158 `θ_lim` construction via `fourierSynthesisLp`
+
+Composes §10.157's `fourierSynthesisLp` with an `lp`-valued per-mode
+limit `bLp : ℝ → lp (fun _ => ℂ) 2` into the concrete
+`θ_lim : ℝ → Lp ℂ 2` operator required by `HasFourierSynthesis.ofPerModeLimit`
+(§10.154.B).  The Fourier coefficients of the constructed `θ_lim`
+match `per.b · t` at every `t ≥ 0` by composing §10.157.B with the
+`bLp ↔ per.b` agreement hypothesis.
+
+§10.158 reduces the remaining `θ_lim` content of `HasFourierSynthesis`
+(Target #2) to a single concrete ingredient: an `lp`-valued per-mode
+limit `bLp` matching `per.b`.  Producing `bLp` from `per` + an ℓ²-summability
+hypothesis at every `t ≥ 0` is a straightforward wrap using mathlib's
+`Memℓp`-from-summable bridge (deferred to a follow-up session). -/
+
+/-- **§10.158.A  Concrete `θ_lim` operator via Fourier synthesis.**
+Given an `lp (fun _ : Fin 2 → ℤ => ℂ) 2`-valued function `bLp` of time,
+produces the corresponding `Lp ℂ 2`-valued trajectory via pointwise
+Fourier synthesis. -/
+noncomputable def θLimOfLp
+    (bLp : ℝ → lp (fun _ : Fin 2 → ℤ => ℂ) 2) :
+    ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  fun t => fourierSynthesisLp (bLp t)
+
+/-- **§10.158.B  Fourier coefficients of `θLimOfLp` match the per-mode
+limit.**  For every `t ≥ 0` at which the `bLp` sequence agrees with
+`per.b`, the constructed `θLimOfLp` has Fourier coefficients exactly
+`per.b · t`. -/
+theorem mFourierCoeff_θLimOfLp
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (bLp : ℝ → lp (fun _ : Fin 2 → ℤ => ℂ) 2)
+    (h_agree : ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t → (bLp t) m = per.b m t)
+    (m : Fin 2 → ℤ) (t : ℝ) (ht : 0 ≤ t) :
+    mFourierCoeff (θLimOfLp bLp t) m = per.b m t := by
+  unfold θLimOfLp
+  rw [mFourierCoeff_fourierSynthesisLp, h_agree m t ht]
+
 end SqgIdentity
