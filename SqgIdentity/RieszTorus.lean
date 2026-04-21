@@ -20722,6 +20722,6 @@ theorem cantor_diagonal_complex
     funext j; show s i (nsub (i + j)) = s i (nsub (j + i))
     rw [Nat.add_comm]
   rw [h_eq_shift] at hShifted
-  exact (tendsto_add_atTop_iff_nat i).mp hShifted
+  exact (Filter.tendsto_add_atTop_iff_nat i).mp hShifted
 
 end SqgIdentity
