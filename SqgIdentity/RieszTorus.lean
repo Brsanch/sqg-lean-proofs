@@ -21897,7 +21897,6 @@ This is the **Item 1 analytical closure**: combined with §10.165's
 remaining `hH2` hypothesis structurally, using only classical
 `L²`-conservation + the ODE hypotheses supplied by §10.116. -/
 noncomputable def HasModeLipschitzFamily.ofSqgGalerkin_l2_conservation
-    [DecidableEq (Fin 2 → ℤ)]
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hEnergy : ∀ n t, 0 ≤ t →
@@ -21941,7 +21940,6 @@ Unconditional production of the per-mode limit structure from the
 Galerkin `L²` conservation hypothesis, closing Item 1's `hH2`-style
 analytic gap. -/
 noncomputable def HasPerModeLimit.ofSqgGalerkin_l2_conservation
-    [DecidableEq (Fin 2 → ℤ)]
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hEnergy : ∀ n t, 0 ≤ t →
