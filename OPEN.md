@@ -345,10 +345,16 @@ Item 5.A delivered across §11.17–§11.21:
   parallel to §11.21 `HasTrigPolyKatoPonceBound` but in Banach-algebra
   form `C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`.  §11.25.G
   `HasTrigPolyBanachAlgebraBound.of_latticeZeta` concrete constructor:
-  `HasLatticeZetaBound s C_z` + `s ≥ 1` → instance at `C = 2^{2s} · 2C_z`.
-- §11.25.H `hsSeminormSq_trigPolyProduct_zero_le_banach_algebra` —
-  zero-coefficient exemplar: `cf = 0` ⟹ `trigPolyProduct = 0` ⟹ bound
-  trivially holds at any `C ≥ 0`.  Structural witness.
+  `HasLatticeZetaBound s C_z` + `s ≥ 1` → instance at `C = 2^{2s} · 2·C_z`.
+  **Final form removes the `[DecidableEq (Fin 2 → ℤ)]` class parameter**
+  to avoid an instance mismatch between the theorem's fresh `inst✝`
+  and the structure's default-synthesized `decidablePiFintype`.
+- §11.25.H₁/H₂ `hsSeminormSq_trigPolyProduct_zero_left` /
+  `_zero_right` — zero-coefficient exemplars.  `trigPolyProduct_zero_left`
+  / `_zero_right` + `hsSeminormSq_of_zero` give `hsSeminormSq s
+  (trigPolyProduct A B 0 cg) = 0` (and symmetric for right).
+  Structural sanity check that the Banach-algebra bound reduces
+  correctly on zero factors.
 
 **Still outstanding for unconditional Item 5 closure:**
 - Global lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
