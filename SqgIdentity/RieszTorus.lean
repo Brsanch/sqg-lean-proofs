@@ -21730,6 +21730,8 @@ theorem galerkinRHS_norm_le_latticeNorm_mul_l2_sum
           ∀ ℓ₂ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
           (fun ℓ : Fin 2 → ℤ => m - ℓ) ℓ₁ = (fun ℓ => m - ℓ) ℓ₂ → ℓ₁ = ℓ₂ := by
         intros ℓ₁ _ ℓ₂ _ heq
+        -- heq : (fun ℓ => m - ℓ) ℓ₁ = (fun ℓ => m - ℓ) ℓ₂; β-reduce.
+        dsimp only at heq
         -- heq : m - ℓ₁ = m - ℓ₂; apply (m - ·) to both sides to get ℓ₁ = ℓ₂.
         calc ℓ₁ = m - (m - ℓ₁) := (sub_sub_cancel m ℓ₁).symm
           _ = m - (m - ℓ₂) := by rw [heq]
