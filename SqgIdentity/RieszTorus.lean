@@ -24576,8 +24576,7 @@ lemma annularShell_zero : annularShell 0 = ∅ := by
   funext i
   have h := h_Icc i
   rw [Finset.mem_Icc] at h
-  have h_pos : -(↑(0 : ℕ) : ℤ) ≤ m i := h.1
-  have h_upper : m i ≤ ↑(0 : ℕ) := h.2
+  simp only [Nat.cast_zero, neg_zero] at h
   omega
 
 end SqgIdentity
