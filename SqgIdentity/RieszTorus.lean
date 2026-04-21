@@ -24418,24 +24418,29 @@ structure HasTrigPolyBanachAlgebraBound (s : ℝ) (C : ℝ) : Prop where
     hsSeminormSq s (trigPolyProduct A B cf cg)
       ≤ C * hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg)
 
+set_option maxHeartbeats 400000 in
 /-- **§11.25.G — `HasTrigPolyBanachAlgebraBound` from `HasLatticeZetaBound`.**
-Concrete instance at `C = 2^{2s} · 2·C_z` for `s ≥ 1`.  The `bound`
-field is established via `by intros; exact …; linarith` pattern to
-sidestep `isDefEq` timeouts on the rpow-heavy constant expression. -/
+Concrete instance at `C = 2^{2s} · (2·C_z)` for `s ≥ 1`.  Implementation:
+build the two field witnesses as separate `have`s outside the structure
+so their types are elaborated once (without the structure-field
+reduction dance that triggered the `isDefEq` timeout on first
+attempts).  `maxHeartbeats` doubled because the rpow-heavy constant
+expression stresses instance synthesis even via this factored path. -/
 theorem HasTrigPolyBanachAlgebraBound.of_latticeZeta
     [DecidableEq (Fin 2 → ℤ)]
     {s : ℝ} (hs : 1 ≤ s) {C_z : ℝ} (hC : HasLatticeZetaBound s C_z) :
     HasTrigPolyBanachAlgebraBound s (2 ^ (2 * s) * (2 * C_z)) := by
-  refine ⟨?_, ?_⟩
-  · -- nonneg
-    have h_pow_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s) :=
-      Real.rpow_nonneg (by norm_num) _
-    have h_2c_nn : (0 : ℝ) ≤ 2 * C_z := by linarith [hC.nonneg]
-    exact mul_nonneg h_pow_nn h_2c_nn
-  · -- bound
-    intros A B cf cg hA hB
-    have h :=
-      hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra hs hA hB hC cf cg
-    linarith
+  have h_pow_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s) :=
+    Real.rpow_nonneg (by norm_num) _
+  have h_2c_nn : (0 : ℝ) ≤ 2 * C_z := by linarith [hC.nonneg]
+  have h_nonneg : (0 : ℝ) ≤ 2 ^ (2 * s) * (2 * C_z) := mul_nonneg h_pow_nn h_2c_nn
+  have h_bound : ∀ (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ),
+      (0 : Fin 2 → ℤ) ∉ A → (0 : Fin 2 → ℤ) ∉ B →
+      hsSeminormSq s (trigPolyProduct A B cf cg)
+        ≤ 2 ^ (2 * s) * (2 * C_z)
+            * hsSeminormSq s (trigPoly A cf)
+            * hsSeminormSq s (trigPoly B cg) := fun A B cf cg hA hB =>
+    hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra hs hA hB hC cf cg
+  exact ⟨h_nonneg, h_bound⟩
 
 end SqgIdentity
