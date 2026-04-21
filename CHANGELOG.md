@@ -4,6 +4,76 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.4.39 — 2026-04-20
+
+**Item 1 analytical closure — three structural reductions + concrete
+Fourier synthesis operator.**  All three remaining Route B analytical
+targets from v0.4.38 now have named Lean theorem signatures:
+
+- **§10.153.C `sqgGalerkin_modeLipschitz_from_UniformH2`** — Target #3
+  monolithic closure (composes §10.153.A + §10.153.B across
+  `m = 0` / `m ≠ 0` and `s ≤ t` / `t ≤ s` splits).  Produces the
+  `(L, hL_nonneg, hL_holds)` data consumed by
+  `HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152) from a
+  uniform `H⁻²` bound + the Galerkin ODE hypotheses, in existential
+  form.  Closed after a 6-retry diagnostic iteration that identified
+  the actual loop culprit (DecidableEq-instance synthesis on
+  `Fin 2 → ℤ` / `↥(sqgBox _)` via `Int.decEq ↦ 70k`,
+  `Multiset.decidableForallMultiset ↦ 55k`).  Fix: keep
+  `GalerkinRHSHsNegSqBound` locally irreducible + restructure the
+  theorem to take the per-`(n, τ)` hypothesis directly rather than
+  `UniformGalerkinRHSHsNegSqBound`.  The diagnostic workflow from
+  `feedback_lean_diagnostic_workflow.md` saved ~40 min of blind
+  heartbeat-bumping.
+- **§10.154 `Lp_eq_of_mFourierCoeff_eq` + `HasFourierSynthesis.ofPerModeLimit`**
+  — Target #2 coefficient-injectivity bridge + constructor.
+  §10.154.A establishes that two `Lp ℂ 2` elements with matching
+  Fourier coefficients are equal (via `mFourierBasis.repr.injective`).
+  §10.154.B assembles `HasFourierSynthesis per θ` from a synthesis
+  witness + an initial coefficient match (which replaces the
+  stronger `θ_lim 0 = θ` field via §10.154.A).
+- **§10.155 `HasModeLipschitzFamily.modeCoeff_eq_galerkinExtend` +
+  `HasPerModeLimit.ofModeLipschitzFamily`** — Target #1 structural
+  reduction.  §10.155.A bridges `lip.modeCoeff` with `galerkinExtend`
+  via the `modeCoeff_eq`/`_off` fields.  §10.155.B takes a classical
+  Arzelà–Ascoli + Cantor diagonal extraction witness and produces
+  `HasPerModeLimit α` from `HasModeLipschitzFamily α`.
+- **§10.157 `fourierSynthesisLp`** — **concrete Fourier synthesis
+  operator** (not just a reduction): lifts an ℓ²-summable coefficient
+  sequence to the corresponding `Lp ℂ 2` element via mathlib's
+  `mFourierBasis.repr.symm`.  `mFourierCoeff_fourierSynthesisLp` proves
+  the Fourier coefficients of the synthesis recover the input sequence.
+- **§10.158 `θLimOfLp` + `mFourierCoeff_θLimOfLp`** — concrete
+  `θ_lim` operator for `HasFourierSynthesis` (composes §10.157's
+  `fourierSynthesisLp` with an `lp`-valued per-mode limit function).
+  Coefficient match theorem closes the `h_coeff` input of §10.154.B
+  algebraically given `bLp ↔ per.b` agreement.
+
+**Diagnostic workflow paid off.**  6 retries on §10.153.C with
+structured bisection (diagnostic output reading + targeted fixes):
+retry 1 `classical` (no effect), retry 2 both predicates irreducible +
+diag (counts 265k → 434 — loop killed, but function-expected error),
+retry 3 inner only (loop returned — confirmed retry 2's fix was on
+`Uniform`), retry 4 helper + `noncomputable def` for §10.155 (helper
+hit loop during type-check), retry 5 drop `Uniform` from signature
+(loop broken decisively, only arithmetic mismatch remained), retry 6
+`neg_sub` bridge (green).  Each retry informed the next — no blind
+heartbeat bumping.
+
+**Remaining Item-1 work** (what still needs genuine mathlib wrangling):
+1. Strong-`L²` convergence of the extracted Galerkin sequence to
+   `θLimOfLp` — Parseval on the difference + Fatou + DCT on `ℓ²(ℤ²)`.
+2. Classical Arzelà–Ascoli + Cantor diagonal extraction (§10.155.B's
+   `hExtract` input).  Mathlib has `BoundedContinuousFunction.arzelaAscoli`
+   + `Denumerable (Fin 2 → ℤ)` — ~300-line assembly.
+3. `hDeriv` / `hCont` / `hH2` discharges for §10.153.C from §10.116's
+   Galerkin ODE + §10.138's `H⁻²` bound via derivative projection.
+4. `Memℓp 2 ↔ Summable (‖·‖²)` bridge — elementary mathlib name lookup
+   (the §10.158.C guess `memℓp_two_iff_summable_sq_norm` was wrong).
+
+~ +200 lines vs v0.4.38, ~19,900 total.  Zero `sorry`.  Zero axioms
+beyond mathlib.
+
 ## v0.4.38 — 2026-04-20
 
 **§10.147–§10.152 — Route B analytical chain extended.**  First of two

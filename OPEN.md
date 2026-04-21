@@ -5,36 +5,54 @@ Each item is linked to the tagged release that will close it.
 
 ## SQG mathematics
 
-### 1. Generic-`L²` Galerkin → full-SQG extraction (Route B; chain extended v0.4.38)
-**Status:** Chain extended through §10.147–§10.152. `l2Conservation`
-(hypothesis #2 below) is now **internally discharged** from strong-`L²`
-convergence + §10.97 per-level energy conservation + §10.142 zero-mode
-preservation.  Route B capstone
-`exists_sqgSolution_via_RouteB_from_galerkin_energy` (§10.148)
-produces an `SqgSolution` without the `hL2` hypothesis.
+### 1. Generic-`L²` Galerkin → full-SQG extraction (Route B; v0.4.39)
+**Status:** All three named Lean targets from v0.4.38 have constructors
+in-tree.  `l2Conservation` is internally discharged (§10.147, v0.4.38).
+Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
+(§10.148) produces an `SqgSolution` without the `hL2` hypothesis.
 
-Additional structural reduction (§10.149–§10.152) factors
-`HasAubinLionsExtraction` existence into three precisely-typed Lean
-construction targets:
+**v0.4.39 closed constructors:**
 
-1. **`HasPerModeLimit.ofModeLipschitzFamily`** — classical
-   Arzelà–Ascoli (mode-wise on `[0, T]`) + Cantor diagonal across
-   `ℤ² \ {0}`.  Mathlib has `BoundedContinuousFunction.arzelaAscoli`
-   and `Denumerable (Fin 2 → ℤ)`; assembly is ~300-line Lean work.
-2. **`HasFourierSynthesis.ofPerModeLimit`** — Parseval + Fatou +
-   dominated convergence on `ℓ²(ℤ²)` producing the Lp-valued limit
-   and strong-`L²` convergence.  Moderate, ~100–200 lines.
-3. **Finish `§10.152`** — derive per-mode Lipschitz `L m` from
-   §10.138's `H⁻²` bound + §10.116's Galerkin ODE via FTC.  Currently
-   taken as a hypothesis input to `HasModeLipschitzFamily.ofSqgGalerkinBounds`.
-   Tractable, ~50–100 lines.
+- **§10.153.C `sqgGalerkin_modeLipschitz_from_UniformH2`** — Target #3
+  monolithic composition of §10.153.A + §10.153.B, in existential form
+  consumable by §10.152.  Closed after 6-retry diagnostic workflow
+  (DecidableEq synthesis loop, broken by local irreducibility on
+  `GalerkinRHSHsNegSqBound` + direct per-`(n, τ)` hypothesis form).
+- **§10.154.A/B `Lp_eq_of_mFourierCoeff_eq` +
+  `HasFourierSynthesis.ofPerModeLimit`** — Target #2 coefficient-
+  injectivity bridge + structural constructor.  Reduces
+  `HasFourierSynthesis` construction to a synthesis witness + initial
+  coefficient match + strong-L² convergence.
+- **§10.155.A/B `HasModeLipschitzFamily.modeCoeff_eq_galerkinExtend` +
+  `HasPerModeLimit.ofModeLipschitzFamily`** — Target #1 structural
+  reduction.  Reduces `HasPerModeLimit` construction to a classical
+  Arzelà–Ascoli + Cantor diagonal extraction witness.
+- **§10.157 `fourierSynthesisLp`** — concrete Fourier synthesis
+  operator via `mFourierBasis.repr.symm`.
+- **§10.158.A/B `θLimOfLp` + `mFourierCoeff_θLimOfLp`** — concrete
+  `θ_lim` operator for `HasFourierSynthesis` from an `lp`-valued
+  per-mode limit function.
 
-Route B infrastructure (v0.4.38) now provides the complete chain
-`SQG Galerkin data → HasModeLipschitzFamily → HasPerModeLimit →
-HasFourierSynthesis → HasAubinLionsExtraction → SqgSolution`, each
-arrow a named Lean theorem.  The three remaining targets above are the
-ONLY analytical gaps — no more "mathlib-scale Bochner infrastructure"
-vagueness; every gap is a specific named-theorem signature.
+**Remaining Item 1 analytical work:**
+
+1. **Strong-`L²` convergence** of the extracted Galerkin sequence to
+   `θLimOfLp` (the `h_L2` input of §10.154.B).  Parseval on the
+   difference + Fatou + DCT on `ℓ²(ℤ²)`.
+2. **Classical Arzelà–Ascoli + Cantor diagonal extraction** (the
+   `hExtract` input of §10.155.B).  Mathlib has
+   `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
+   (Fin 2 → ℤ)`; ~300-line assembly.
+3. **`hDeriv` / `hCont` / `hH2` discharges** for §10.153.C from
+   §10.116's Galerkin ODE + §10.138's `H⁻²` bound via per-mode
+   derivative projection.
+4. **`Memℓp 2 ↔ Summable (‖·‖²)` bridge** — elementary mathlib lookup
+   for the correct lemma name (§10.158.C guess was wrong; deferred).
+
+Route B infrastructure now delivers `SQG Galerkin data →
+HasModeLipschitzFamily → HasPerModeLimit → HasFourierSynthesis →
+HasAubinLionsExtraction → SqgSolution`, plus the concrete
+Fourier-synthesis operator.  Only genuine mathlib-scale classical
+analysis remains.
 
 ### ~~2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132~~ ✓ Closed in v0.4.33
 Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →
