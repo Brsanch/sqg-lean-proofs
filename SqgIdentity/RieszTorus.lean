@@ -20326,4 +20326,38 @@ theorem integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub
   rw [← h_int_eq, ← h_pars.tsum_eq]
   exact tsum_congr (fun m => by rw [h_sub m])
 
+/-! ### §10.161 Galerkin-to-`θLim` squared difference as per-mode ℓ² sum
+
+Combines §10.160 (Parseval on a difference) with
+`mFourierCoeff_galerkinToLp` (existing) and
+`mFourierCoeff_θLimOfSummable` (§10.159.B) to express the squared
+`L²`-norm of the difference between the extracted Galerkin truncation
+and the `θ_lim` operator constructed from a summable per-mode limit as
+a per-mode ℓ² sum of coefficient differences.
+
+This is the bridge from the `L²` side (where strong convergence lives)
+to the `ℓ²(ℤ²)` side (where per-mode convergence + DCT applies).  Once
+strong-`L²` convergence reduces to `Tendsto (∑' m, ‖·‖²) atTop (𝓝 0)`,
+the remaining argument is classical ℓ² analysis. -/
+
+/-- **§10.161  Galerkin-to-`θLim` squared `L²`-difference as per-mode
+ℓ² sum.**  For the extracted Galerkin subsequence at every `t ≥ 0`:
+`∫ ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x - θLimOfSummable per hSum t x‖² dx
+  = ∑' m, ‖galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m - per.b m t‖²`. -/
+theorem integral_norm_sq_galerkin_sub_θLim_eq_tsum
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable fun m : Fin 2 → ℤ => ‖per.b m t‖ ^ 2)
+    (k : ℕ) (t : ℝ) (ht : 0 ≤ t) :
+    (∫ x, ‖galerkinToLp (sqgBox (per.nsub k)) (α (per.nsub k) t) x
+            - θLimOfSummable per hSum t x‖ ^ 2)
+    = ∑' m : Fin 2 → ℤ,
+        ‖galerkinExtend (sqgBox (per.nsub k)) (α (per.nsub k) t) m
+          - per.b m t‖ ^ 2 := by
+  rw [integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub]
+  refine tsum_congr (fun m => ?_)
+  rw [mFourierCoeff_galerkinToLp,
+      mFourierCoeff_θLimOfSummable per hSum m t ht]
+
 end SqgIdentity
