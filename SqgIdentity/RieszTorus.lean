@@ -19791,43 +19791,39 @@ if CI fails, the log will list the specific declaration(s) unfolded
 in the millions — the actual loop culprit — allowing a targeted
 `attribute [local irreducible]` fix. -/
 
--- Retry 4: keep BOTH predicates irreducible (retry 3 showed that
--- `GalerkinRHSHsNegSqBound`-only is insufficient to break the loop —
--- it was retry 2's `UniformGalerkinRHSHsNegSqBound` irreducibility
--- that stopped the chain, but retry 2 also broke the `hH2 n τ` call
--- by preventing unfolding to the function form.  Resolution: define
--- a helper `UniformGalerkinRHSHsNegSqBound.step` that extracts the
--- per-(n, τ) inner predicate BEFORE the irreducibility attributes
--- apply, then use that helper inside the theorem body.  This keeps
--- both predicates irreducible inside the main theorem elaboration
--- while still letting callers extract step-wise bounds.
--- (See feedback_lean_diagnostic_workflow.md for the overall workflow.)
-
-/-- **Helper: extract per-`(n, τ)` `GalerkinRHSHsNegSqBound` from
-the uniform version.**  Defined BEFORE the irreducibility attributes,
-so it has access to the reducible definition of
-`UniformGalerkinRHSHsNegSqBound`. -/
-theorem UniformGalerkinRHSHsNegSqBound.step
-    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)} [DecidableEq (Fin 2 → ℤ)]
-    {s K : ℝ} (hH2 : UniformGalerkinRHSHsNegSqBound α s K)
-    (n : ℕ) (τ : ℝ) (hτ : 0 ≤ τ) :
-    GalerkinRHSHsNegSqBound (sqgBox n) (α n τ) s K :=
-  hH2 n τ hτ
-
+-- Retry 5: drop `UniformGalerkinRHSHsNegSqBound` from the theorem's
+-- signature entirely.  Retry 4 tried to define a helper `.step` that
+-- extracted the per-(n, τ) bound from the Uniform wrapper, but the
+-- helper itself hit the whnf loop during type-checking of its body.
+--
+-- Observation: the Uniform wrapper adds zero content over the direct
+-- `∀ n τ, 0 ≤ τ → GalerkinRHSHsNegSqBound ...` form.  Taking the
+-- unfolded form directly as a hypothesis bypasses the isDefEq check
+-- on the Uniform type entirely, while still letting
+-- `GalerkinRHSHsNegSqBound` stay locally irreducible (which broke
+-- the DecidableEq synthesis loop in retry 2).  Callers with a
+-- `UniformGalerkinRHSHsNegSqBound α 2 K` witness apply it as
+-- `(fun n τ hτ => hH2 n τ hτ)` — trivial unpack at the call site
+-- rather than inside this theorem's elaboration.
 attribute [local irreducible] GalerkinRHSHsNegSqBound
-attribute [local irreducible] UniformGalerkinRHSHsNegSqBound
 
 set_option maxHeartbeats 400000 in
 /-- **§10.153.C** Per-mode Lipschitz constant for the uniform-`H⁻²`
 SQG Galerkin family, in existential form consumable by §10.152.
 Composes §10.153.A (per-mode upper bound on `galerkinRHS`) with
 §10.153.B (MVT on the per-mode trajectory) across the
-`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split. -/
+`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split.
+
+Hypothesis `hH2` takes the unfolded per-`(n, τ)` form rather than
+`UniformGalerkinRHSHsNegSqBound α 2 K`, to avoid a whnf loop on the
+Uniform wrapper during elaboration.  Callers with a `Uniform` witness
+pass `(fun n τ hτ => hU n τ hτ)`. -/
 theorem sqgGalerkin_modeLipschitz_from_UniformH2
     [DecidableEq (Fin 2 → ℤ)]
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
     (K : ℝ) (hK : 0 ≤ K)
-    (hH2 : UniformGalerkinRHSHsNegSqBound α 2 K)
+    (hH2 : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ →
+      GalerkinRHSHsNegSqBound (sqgBox n) (α n τ) 2 K)
     (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ m : Fin 2 → ℤ,
       HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
         (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
@@ -19872,8 +19868,7 @@ theorem sqgGalerkin_modeLipschitz_from_UniformH2
           intro τ hτ
           exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
             (sqgBox n) (α n τ) K hK
-            (UniformGalerkinRHSHsNegSqBound.step hH2 n τ
-              (le_trans hs hτ.1)) hm
+            (hH2 n τ (le_trans hs hτ.1)) hm
         have h_deriv_local : ∀ τ ∈ Set.Ico s t,
             HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
               (galerkinRHS (sqgBox n)
@@ -19892,8 +19887,7 @@ theorem sqgGalerkin_modeLipschitz_from_UniformH2
           intro τ hτ
           exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
             (sqgBox n) (α n τ) K hK
-            (UniformGalerkinRHSHsNegSqBound.step hH2 n τ
-              (le_trans ht hτ.1)) hm
+            (hH2 n τ (le_trans ht hτ.1)) hm
         have h_deriv_local : ∀ τ ∈ Set.Ico t s,
             HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
               (galerkinRHS (sqgBox n)
