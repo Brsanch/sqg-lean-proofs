@@ -20319,7 +20319,7 @@ theorem integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub
   have h_ae : (fun x => ‖(f - g) x‖ ^ 2) =ᵐ[volume]
       fun x => ‖f x - g x‖ ^ 2 := by
     filter_upwards [Lp.coeFn_sub f g] with x hx
-    rw [hx]
+    rw [hx, Pi.sub_apply]
   -- Integrals agree by a.e. equality.
   have h_int_eq : (∫ x, ‖(f - g) x‖ ^ 2) = ∫ x, ‖f x - g x‖ ^ 2 :=
     integral_congr_ae h_ae
