@@ -23326,22 +23326,40 @@ theorem hsSeminormSq_trigPolyProduct_le_kato_ponce
           (fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
         = (∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
             * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
-    -- Parses via left-assoc as `((σ·cf) p.1) * ‖cg‖² p.2`; matches
-    -- `f p.1 * g p.2` directly with the chosen `f` and `g`.
-    rw [← Finset.sum_mul_sum]
+    calc ∑ p ∈ A ×ˢ B,
+            (fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
+        = ∑ a ∈ A, ∑ b ∈ B,
+            (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2 * ‖cg b‖ ^ 2 := by
+              rw [Finset.sum_product']
+      _ = ∑ a ∈ A,
+            ((fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2) * ∑ b ∈ B, ‖cg b‖ ^ 2 := by
+              apply Finset.sum_congr rfl
+              intros a _
+              rw [← Finset.mul_sum]
+      _ = (∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+            * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+              rw [← Finset.sum_mul]
   have h_factor₂ :
       ∑ p ∈ A ×ˢ B,
           ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2
         = (∑ a ∈ A, ‖cf a‖ ^ 2)
             * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2) := by
-    -- Re-associate so `f p.1 * g p.2` matches (`f p.1 = ‖cf p.1‖²`,
-    -- `g p.2 = (σ_s p.2)² · ‖cg p.2‖²`).
-    have h_assoc : ∀ p : (Fin 2 → ℤ) × (Fin 2 → ℤ),
-        ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2
-          = ‖cf p.1‖ ^ 2 * ((fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2) :=
-      fun p => by ring
-    rw [Finset.sum_congr rfl (fun p _ => h_assoc p)]
-    rw [← Finset.sum_mul_sum]
+    calc ∑ p ∈ A ×ˢ B,
+            ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2
+        = ∑ a ∈ A, ∑ b ∈ B,
+            ‖cf a‖ ^ 2 * (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2 := by
+              rw [Finset.sum_product']
+      _ = ∑ a ∈ A,
+            ‖cf a‖ ^ 2 * ∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2 := by
+              apply Finset.sum_congr rfl
+              intros a _
+              rw [Finset.mul_sum]
+              apply Finset.sum_congr rfl
+              intros b _
+              ring
+      _ = (∑ a ∈ A, ‖cf a‖ ^ 2)
+            * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2) := by
+              rw [← Finset.sum_mul]
   have h_card_nn : (0 : ℝ) ≤ (A ×ˢ B).card := by exact_mod_cast Nat.zero_le _
   -- Assemble.
   calc hsSeminormSq s (trigPolyProduct A B cf cg)
@@ -23367,5 +23385,52 @@ theorem hsSeminormSq_trigPolyProduct_le_kato_ponce
            + (∑ a ∈ A, ‖cf a‖ ^ 2)
               * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2)) := by
           rw [h_factor₁, h_factor₂]; ring
+
+/-! ### §11.21 Concrete trig-poly Kato–Ponce bound as a hypothesis type
+
+Bundles §11.20.C into a named hypothesis structure `HasTrigPolyKatoPonceBound`
+parallel to `HasKatoPonceProductBound` (§11.7), but keyed on the
+trig-poly pointwise product `trigPolyProduct` rather than the
+paraproduct stubs.  Admits a concrete instance with `C = 2^{2s-1}`
+for any `s ≥ 1` via §11.20.C. -/
+
+/-- **Trig-poly Kato–Ponce bound** hypothesis.  Bounds the `Ḣˢ` seminorm
+of `trigPolyProduct A B cf cg` in a Leibniz-style split `Ḣˢ·L² + L²·Ḣˢ`,
+with the support-dependent factor `(A ×ˢ B).card` absorbed into the
+bound body.  `C` is the support-INDEPENDENT constant. -/
+structure HasTrigPolyKatoPonceBound (s : ℝ) (C : ℝ) where
+  bound : ∀ (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ),
+    hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ C * ((A ×ˢ B).card : ℝ) *
+          ((∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+              * (∑ b ∈ B, ‖cg b‖ ^ 2)
+           + (∑ a ∈ A, ‖cf a‖ ^ 2)
+              * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2))
+
+/-- **§11.21.A — Concrete `HasTrigPolyKatoPonceBound` from §11.20.C.**
+For `s ≥ 1`, `HasTrigPolyKatoPonceBound s (2^{2s-1})` holds. -/
+noncomputable def HasTrigPolyKatoPonceBound.of_peetre
+    {s : ℝ} (hs : 1 ≤ s) :
+    HasTrigPolyKatoPonceBound s (2 ^ (2 * s - 1)) where
+  bound := by
+    intros A B cf cg
+    classical
+    have h := hsSeminormSq_trigPolyProduct_le_kato_ponce hs A B cf cg
+    -- h : LHS ≤ (A ×ˢ B).card * 2^(2s-1) * (...)
+    -- Goal: LHS ≤ 2^(2s-1) * ((A ×ˢ B).card : ℝ) * (...)
+    -- Same bound modulo Nat→Real coercion + commutativity.
+    calc hsSeminormSq s (trigPolyProduct A B cf cg)
+        ≤ (A ×ˢ B).card * 2 ^ (2 * s - 1) *
+            ((∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+                * (∑ b ∈ B, ‖cg b‖ ^ 2)
+             + (∑ a ∈ A, ‖cf a‖ ^ 2)
+                * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2)) := h
+      _ = 2 ^ (2 * s - 1) * ((A ×ˢ B).card : ℝ) *
+            ((∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+                * (∑ b ∈ B, ‖cg b‖ ^ 2)
+             + (∑ a ∈ A, ‖cf a‖ ^ 2)
+                * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2)) := by
+            push_cast
+            ring
 
 end SqgIdentity
