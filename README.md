@@ -318,27 +318,32 @@ class, regularity is unconditional:
 
 ### Planned work: Route A (in-project Littlewood–Paley)
 
-The next phase of development will formalize the remaining classical
-SQG analytic content **in-project** in `SqgIdentity/` as mathlib-
-shaped primitives.  Dependency graph, LOC estimates, and phase order
-are documented in [`OPEN.md`](./OPEN.md) "Next-session plan" section.
+**Status: structural skeleton delivered.** All 12 phases of Route A
+have structural content in `RieszTorus.lean` (§10.177–§10.182 and
+§11.1–§11.10, inline because the local `rieszTorusMeasureSpace`
+instance doesn't export across files).
 
-- **Phases 1–5** (~2410 LOC): Galerkin `Ḣˢ` energy identities for
-  `s ∈ [1, 2]`, MMP-based `‖∇u_n‖_{L∞}` bound, BKM-integral Grönwall.
-  Discharges `OPEN.md` Items 2 and 3 unconditionally from classical
-  SQG content (still conditional on global regularity for uniform
-  `∀ t ≥ 0`; unconditional on bounded `[0, T]` for smooth data).
-- **Phases 6–10** (~2400 LOC): Littlewood–Paley on `𝕋²` (dyadic
-  projectors `Δ_N`), paraproduct calculus `T_f g` + `R(f, g)`,
-  commutator `[Jˢ, f] · ∇g` estimate, full Kato–Ponce
-  `‖Jˢ(fg)‖_{L^p}`, SQG application for `s > 2`.  Discharges
-  `OPEN.md` Item 5.
-- **Phase 11** (~300 LOC): structural wrappers, zero-datum,
-  docs.
-- **Phase 12**: CI iteration overhead (~20%).
+- **Phases 1 + 3** (§10.177–§10.181, ~220 LOC): Parametric-`s`
+  Galerkin `Ḣˢ` energy identity + Grönwall bound.
+- **Phases 2 + 5** (§10.182, ~120 LOC): `HasGalerkinHsGronwallFamily`
+  hypothesis package + uniform-across-levels bound extraction.
+- **Phase 6** (§11.1–§11.4, ~140 LOC): Littlewood–Paley primitives
+  (`dyadicAnnulus N`, `fourierTruncate`, `lpProjector`, `lpPartialSum`,
+  Fourier-coefficient + seminorm computations).
+- **Phases 7–9** (§11.5–§11.7, ~50 LOC): Paraproduct, remainder,
+  commutator, full Kato–Ponce hypothesis types (structural).
+- **Phase 10** (§11.8–§11.9, ~40 LOC): `HasSqgGalerkinHsClosure`
+  structural bridge + `HasGalerkinHsGronwallFamily.of_sqgClosure`
+  Phase 10 → Phase 5 bridge.
+- **Phase 11** (§11.10, ~40 LOC): Zero-datum exemplar.
+- **Phase 12**: CI iteration overhead.
 
-Total: ~4810 lines over ~12–15 agent-hours, spread across ~10–15
-CI-gated sessions.
+**What remains for unconditional Item 5 closure:** a concrete witness
+of `HasKatoPonceProductBound s C` (classical Littlewood–Paley +
+paraproduct content ~1500–2000 LOC).  Once supplied, the structural
+chain composes through `HasSqgGalerkinHsClosure` →
+`HasGalerkinHsGronwallFamily` → `.global_uniform_bound` feeding
+§10.174's `hBoundS` hypothesis.
 - The remaining Item 1 classical analytical inputs, each consumed by
   the v0.4.39 structural constructors as a precisely-typed, named
   hypothesis:
