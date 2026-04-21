@@ -24327,4 +24327,78 @@ theorem hsSeminormSq_trigPolyProduct_le_banach_algebra
           * hsSeminormSq s (trigPoly A cf)
           * hsSeminormSq s (trigPoly B cg) := by ring
 
+/-! ### §11.25.F Lattice zeta bound hypothesis + support-independent form
+
+Parametrises §11.25.E on a uniform lattice zeta bound so the final
+`Ḣˢ` Banach-algebra estimate carries a support-INDEPENDENT constant,
+matching the Galerkin need (uniform in `n` for `A = B = sqgBox n`).
+
+The hypothesis type `HasLatticeZetaBound s C` packages the claim
+"every nonzero-lattice finset `A ⊆ ℤ² \ {0}` has `∑_a ‖a‖^{-2s} ≤ C`."
+A concrete witness requires the global summability
+`Summable (fun a : ℤ² \ {0} ↦ ‖a‖^{-2s})` for `s > d/2 = 1` — a
+standard 2D real-analysis fact, deferred to a follow-on section
+(or mathlib contribution). -/
+
+/-- **§11.25.F₁ — Lattice zeta bound hypothesis.**  The uniform bound
+on nonzero-lattice finite sums `∑_{a ∈ A} ‖a‖^{-2s} ≤ C` for every
+`A ⊆ ℤ² \ {0}` (finite).  Concrete instance for `s > 1` uses global
+lattice zeta summability on `ℤ² \ {0}`. -/
+structure HasLatticeZetaBound (s : ℝ) (C : ℝ) : Prop where
+  nonneg : 0 ≤ C
+  bound : ∀ (A : Finset (Fin 2 → ℤ)),
+    (0 : Fin 2 → ℤ) ∉ A →
+      (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s))) ≤ C
+
+/-- **§11.25.F — Support-independent Banach-algebra `Ḣˢ` bound.**  For
+`s ≥ 1` with `HasLatticeZetaBound s C`, the finite-lattice Banach-
+algebra bound has constant `2C` (uniform in `A, B ⊆ ℤ² \ {0}`):
+
+  `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · 2C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
+
+Composes §11.25.E with the lattice-zeta hypothesis to discharge the
+support-dependent `C_s(A) + C_s(B)` factor. -/
+theorem hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 ≤ s) {A B : Finset (Fin 2 → ℤ)}
+    (hA : (0 : Fin 2 → ℤ) ∉ A) (hB : (0 : Fin 2 → ℤ) ∉ B)
+    {C : ℝ} (hC : HasLatticeZetaBound s C)
+    (cf cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ 2 ^ (2 * s) * (2 * C)
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by
+  have h_E := hsSeminormSq_trigPolyProduct_le_banach_algebra hs hA hB cf cg
+  have h_A := hC.bound A hA
+  have h_B := hC.bound B hB
+  have h_sum : (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+      + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))) ≤ 2 * C := by linarith
+  have h_pow_2s_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s) :=
+    Real.rpow_nonneg (by norm_num) _
+  have h_hsA_nn : 0 ≤ hsSeminormSq s (trigPoly A cf) := hsSeminormSq_nonneg_any _ _
+  have h_hsB_nn : 0 ≤ hsSeminormSq s (trigPoly B cg) := hsSeminormSq_nonneg_any _ _
+  have h_prod_nn : 0 ≤ hsSeminormSq s (trigPoly A cf)
+      * hsSeminormSq s (trigPoly B cg) :=
+    mul_nonneg h_hsA_nn h_hsB_nn
+  have h_factor_nn : 0 ≤ 2 ^ (2 * s)
+      * (hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg)) :=
+    mul_nonneg h_pow_2s_nn h_prod_nn
+  calc hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ 2 ^ (2 * s)
+          * ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+              + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))))
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := h_E
+    _ = 2 ^ (2 * s)
+          * (hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg))
+          * ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+              + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s)))) := by ring
+    _ ≤ 2 ^ (2 * s)
+          * (hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg))
+          * (2 * C) :=
+          mul_le_mul_of_nonneg_left h_sum h_factor_nn
+    _ = 2 ^ (2 * s) * (2 * C)
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by ring
+
 end SqgIdentity
