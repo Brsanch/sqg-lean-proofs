@@ -4,6 +4,99 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## Unreleased (post-v0.4.39, on `main`) — 2026-04-21
+
+**Theorem 3 off the finite-Fourier-support class + end-to-end capstone.**
+Items 1 (analytical closure), 3 (MMP off finite-support), and 4 (BKM
+off finite-support) from `OPEN.md` all closed structurally.  The
+`MaterialMaxPrinciple` and `BKMCriterionS2` hypotheses of the
+conditional Theorem 3 now lift off the finite-Fourier-support class
+to every strong-`L²` Galerkin limit, given uniform `Ḣˢ` bounds on
+the Galerkin approximation.
+
+Item 1 analytical inputs — all three structurally discharged:
+
+- **§10.160–§10.164** — strong-`L²` convergence reduced to elementary
+  tightness via `HasFourierSynthesis.ofTight`.  Parseval-on-difference
+  (§10.160), specialisation to the Galerkin-limit coefficient pair
+  (§10.161), `Tendsto.congr` wrapper (§10.162), pure-ℓ² Vitali
+  convergence on squared differences (§10.163), tight-family capstone
+  (§10.164).
+- **§10.165.A/B/C/D + `sqgGalerkin_hExtract_witness`** — Bolzano–
+  Weierstrass on `ℂ` (§10.165.A), Cantor diagonal across countable
+  families of bounded ℂ-sequences (§10.165.B), rational-time
+  subsequence for `HasModeLipschitzFamily` (§10.165.C), Lipschitz-
+  driven extension from rational to real times (§10.165.D).  Final
+  composition produces the `hExtract` witness demanded by §10.155.B
+  unconditionally from `HasModeLipschitzFamily`.
+- **§10.166.A/B** — `hDeriv` / `hCont` discharges for §10.153.C's
+  restricted hypotheses from §10.116's whole-trajectory derivative.
+  Composed with §10.153.C's `m`-restriction to `sqgBox n` (commit
+  `4e02eef`), Item 1 input #3 is closed.
+
+Item 3 — MMP off finite-support class (§10.167):
+
+- **§10.167.A `hsSeminormSq_le_of_L2_limit_uniform_bound`** — pure
+  Fourier-side lower-semicontinuity lemma.  Strong-`L²` convergence
+  + per-`n` weighted summability + uniform `Ḣˢ` bound ⇒ weighted
+  family on the limit is summable and the bound transfers.  Proof:
+  per-mode Fourier convergence (§10.141) + `tendsto_finset_sum` +
+  `summable_of_sum_le` / `Real.tsum_le_of_sum_le` from mathlib.
+- **§10.167.B `MaterialMaxPrinciple.of_L2_limit_uniform_H1`** — MMP
+  for `θ` realised as a pointwise-in-`t` strong-`L²` limit of a
+  sequence with uniform `Ḣ¹` bound and per-state summability.
+- **§10.167.C `MaterialMaxPrinciple.of_aubinLions_uniform_H1`** —
+  specialisation to `HasAubinLionsExtraction`.  5 CI iterations to
+  resolve a `DecidableEq (Fin 2 → ℤ)` instance-synthesis mismatch
+  between the theorem's explicit binder and the
+  `Fintype.decidablePiFintype` auto-synthesis used by
+  `ext.tendsto_L2`.  Final fix: drop the explicit binder.
+
+Item 4 — BKM off finite-support class (§10.168):
+
+- **§10.168.A `BKMCriterionS2.of_L2_limit_uniform_Hs`** — BKM from an
+  `L²`-limit sequence with per-`s` uniform `Ḣˢ` bound on the
+  sequence.  Reuses §10.167.A at each `s ∈ (1, 2]`; the `Ḣ¹`
+  hypothesis inside `hsPropagationS2` is unused.
+- **§10.168.B `BKMCriterionS2.of_aubinLions_uniform_Hs`** —
+  specialisation to `HasAubinLionsExtraction`.  One-shot green CI —
+  §10.167 lessons transferred directly.
+- **`hsSeminormSq_summable_galerkinToLp`** — parametric-`s`
+  companion to §10.167's `hsSeminormSq_one_summable_galerkinToLp`.
+
+Theorem 3 capstone on the Aubin–Lions limit (§10.169 – §10.171):
+
+- **§10.169 `sqg_regularity_of_aubinLions_uniform_Hs`** —
+  conditional Theorem 3 on `s ∈ [0, 2]` for `ext.θ_lim` from uniform
+  `Ḣˢ` bounds on the Galerkin states at `s = 1` and `s ∈ (1, 2]`.
+  Composes §10.167.C + §10.168.B + `sqg_regularity_via_s2_bootstrap`.
+- **§10.170 `sqg_regularity_of_aubinLions_ofZero`** — zero-datum
+  instance.  Exercises the full composition on
+  `HasAubinLionsExtraction.ofZero`.  Uses the auxiliary
+  `hsSeminormSq_zero_galerkin_of_trinary_zero` + `.le` to lift
+  `... = 0` to `... ≤ 0`.
+- **§10.171 `sqg_solution_and_regularity_via_RouteB_uniform_Hs`** —
+  end-to-end capstone.  Composes §10.148
+  (`exists_sqgSolution_via_RouteB_from_galerkin_energy`) with
+  §10.169, delivering both a genuine `SqgSolution` on `𝕋²` and the
+  Theorem 3 regularity conclusion on `s ∈ [0, 2]` for its
+  `θ`-field.  This is the maximally-closed form of Theorem 3
+  reachable from the current infrastructure: what remains is
+  classical SQG analysis (uniform `Ḣˢ` energy estimates, `hH2`
+  bilinear bound) and the mathlib Kato–Ponce contribution.
+
+Infrastructure cleanup:
+
+- **Zenodo webhook (OPEN.md item 9)** — canonical concept
+  `19583256` extended to v0.4.39 via REST API (DOI
+  `10.5281/zenodo.19674045`).  Stale `"version"` field stripped
+  from `.zenodo.json` (commit `16a00e5`).
+- **README CI badge** — fixed to point at the new repo slug
+  `Brsanch/sqg-lean-proofs`.
+
+Statistics: ~21,100 lines in `RieszTorus.lean` at HEAD (~21,600
+project-wide).  Zero `sorry`, no axioms beyond mathlib.
+
 ## v0.4.39 — 2026-04-20
 
 **Item 1 analytical closure — three structural reductions + concrete
