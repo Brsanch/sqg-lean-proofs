@@ -20921,7 +20921,7 @@ theorem exists_realLimit_of_rationalSubseq
       have step1 : L * |t - ((q' : ℚ) : ℝ)| ≤ (L + 1) * |t - ((q' : ℚ) : ℝ)| :=
         mul_le_mul_of_nonneg_right (by linarith) h_abs_nn
       have step2 : (L + 1) * |t - ((q' : ℚ) : ℝ)| < (L + 1) * (ε / (4 * (L + 1))) :=
-        (mul_lt_mul_left hL1_pos).mpr hq'_close
+        mul_lt_mul_of_pos_left hq'_close hL1_pos
       have step3 : (L + 1) * (ε / (4 * (L + 1))) = ε / 4 := by
         field_simp
       linarith
