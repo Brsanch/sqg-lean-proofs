@@ -24003,4 +24003,328 @@ private theorem young_peetre_weighted_right
   rw [h_rhs_cf, h_rhs_cg] at h_young
   exact h_young
 
+/-! ### §11.25.E Banach-algebra `Ḣˢ` product bound
+
+Final assembly of §11.25.C (Peetre-weighted Young, left) + §11.25.D
+(Peetre-weighted Young, right) + §11.25.C₂ (sqrt-Peetre) + §11.23
+(Cauchy–Schwarz bridge `ℓ¹ → weighted ℓ²`) into the full
+Banach-algebra estimate:
+
+  `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · (C_s(A) + C_s(B)) · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
+
+for `s ≥ 1`, `0 ∉ A`, `0 ∉ B`, where
+`C_s(A) = ∑_{a ∈ A} ‖a‖^{-2s}`.
+
+Combined with global lattice zeta summability
+`∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for `s > d/2 = 1` on `𝕋²`
+(standard, deferred), the weights `C_s(A)`, `C_s(B)` are uniformly
+bounded, delivering the support-independent Banach-algebra product
+bound.  For the Galerkin scheme at `A = B = sqgBox n`, this is
+uniform in `n` and discharges `hBoundS` in §10.174's Aubin–Lions
+interpolation.
+
+**Proof strategy:**
+1. Pointwise sqrt-Peetre: `σ_s(n) · ‖modeConv(n)‖ ≤ √(2^{2s-1})·(T₁'(n) + T₂'(n))`
+   where `T₁'(n), T₂'(n)` are the indicator sums on `A ×ˢ B` that
+   §11.25.C and §11.25.D bound.
+2. Square and use `(x+y)² ≤ 2·(x² + y²)` to get
+   `(σ_s n)² · ‖modeConv‖² ≤ 2^{2s} · (T₁'(n)² + T₂'(n)²)`.
+3. Sum over `n ∈ sumSet A B`, apply §11.25.C + §11.25.D.
+4. Discharge the `ℓ¹` factors via §11.23 (Cauchy–Schwarz bridge).
+-/
+
+/-- **§11.25.E₁ — Linear sqrt-Peetre bound on `σ_s · ‖modeConv‖`.**
+From the triangle inequality for `modeConvolution` (§11.22.A),
+the replacement `σ_s(n) = σ_s(p.1 + p.2)` under the indicator, and
+§11.25.C₂ (sqrt-Peetre on `σ_s(a+b)`):
+
+  `σ_s(n) · ‖modeConv A B cf cg n‖
+    ≤ √(2^{2s-1}) · (T₁'(n) + T₂'(n))`
+
+where
+
+  `T₁'(n) = ∑_{(a,b) ∈ A×B, a+b=n} σ_s(a) · ‖cf a‖ · ‖cg b‖`
+  `T₂'(n) = ∑_{(a,b) ∈ A×B, a+b=n} ‖cf a‖ · (σ_s(b) · ‖cg b‖)`. -/
+private lemma fracDerivSymbol_mul_modeConvolution_norm_le_sqrt_peetre
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 ≤ s) (A B : Finset (Fin 2 → ℤ))
+    (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    fracDerivSymbol s n * ‖modeConvolution A B cf cg n‖
+      ≤ Real.sqrt (2 ^ (2 * s - 1))
+          * ((∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n
+                  then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖
+                  else 0)
+             + (∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n
+                  then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖)
+                  else 0)) := by
+  have h_tri := modeConvolution_norm_le_sum_abs A B cf cg n
+  have h_sigma_nn : 0 ≤ fracDerivSymbol s n := fracDerivSymbol_nonneg _ _
+  have h_mul : fracDerivSymbol s n * ‖modeConvolution A B cf cg n‖
+      ≤ fracDerivSymbol s n
+          * ∑ p ∈ A ×ˢ B,
+              (if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0) :=
+    mul_le_mul_of_nonneg_left h_tri h_sigma_nn
+  -- Distribute σ_s n into the sum, and use σ_s n = σ_s(p.1 + p.2) inside χ.
+  have h_rewrite : fracDerivSymbol s n
+      * ∑ p ∈ A ×ˢ B,
+          (if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0)
+      = ∑ p ∈ A ×ˢ B,
+          (if p.1 + p.2 = n
+             then fracDerivSymbol s (p.1 + p.2) * ‖cf p.1‖ * ‖cg p.2‖
+             else 0) := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intros p _
+    by_cases hp : p.1 + p.2 = n
+    · rw [if_pos hp, if_pos hp, ← hp]; ring
+    · rw [if_neg hp, if_neg hp, mul_zero]
+  -- Elementwise sqrt-Peetre via §11.25.C₂.
+  have h_peetre : ∀ p ∈ A ×ˢ B,
+      (if p.1 + p.2 = n
+         then fracDerivSymbol s (p.1 + p.2) * ‖cf p.1‖ * ‖cg p.2‖
+         else 0)
+        ≤ Real.sqrt (2 ^ (2 * s - 1))
+            * (if p.1 + p.2 = n
+                 then (fracDerivSymbol s p.1 + fracDerivSymbol s p.2)
+                        * ‖cf p.1‖ * ‖cg p.2‖
+                 else 0) := by
+    intros p _
+    by_cases hp : p.1 + p.2 = n
+    · rw [if_pos hp, if_pos hp]
+      have h_peetre_pt := fracDerivSymbol_add_le_sqrt hs p.1 p.2
+      have h_prod_nn : 0 ≤ ‖cf p.1‖ * ‖cg p.2‖ :=
+        mul_nonneg (norm_nonneg _) (norm_nonneg _)
+      calc fracDerivSymbol s (p.1 + p.2) * ‖cf p.1‖ * ‖cg p.2‖
+          = fracDerivSymbol s (p.1 + p.2) * (‖cf p.1‖ * ‖cg p.2‖) := by ring
+        _ ≤ (Real.sqrt (2 ^ (2 * s - 1))
+              * (fracDerivSymbol s p.1 + fracDerivSymbol s p.2))
+            * (‖cf p.1‖ * ‖cg p.2‖) :=
+              mul_le_mul_of_nonneg_right h_peetre_pt h_prod_nn
+        _ = Real.sqrt (2 ^ (2 * s - 1))
+              * ((fracDerivSymbol s p.1 + fracDerivSymbol s p.2)
+                  * ‖cf p.1‖ * ‖cg p.2‖) := by ring
+    · rw [if_neg hp, if_neg hp, mul_zero]
+  have h_sum_peetre := Finset.sum_le_sum h_peetre
+  -- Factor √(2^{2s-1}) out and split the (σ_s p.1 + σ_s p.2) term.
+  have h_split : ∑ p ∈ A ×ˢ B,
+        Real.sqrt (2 ^ (2 * s - 1))
+          * (if p.1 + p.2 = n
+               then (fracDerivSymbol s p.1 + fracDerivSymbol s p.2)
+                      * ‖cf p.1‖ * ‖cg p.2‖
+               else 0)
+      = Real.sqrt (2 ^ (2 * s - 1))
+          * ((∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n
+                  then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖
+                  else 0)
+             + (∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n
+                  then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖)
+                  else 0)) := by
+    rw [← Finset.mul_sum]
+    congr 1
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intros p _
+    by_cases hp : p.1 + p.2 = n
+    · rw [if_pos hp, if_pos hp, if_pos hp]; ring
+    · rw [if_neg hp, if_neg hp, if_neg hp]; ring
+  calc fracDerivSymbol s n * ‖modeConvolution A B cf cg n‖
+      ≤ fracDerivSymbol s n
+          * ∑ p ∈ A ×ˢ B,
+              (if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0) := h_mul
+    _ = ∑ p ∈ A ×ˢ B,
+          (if p.1 + p.2 = n
+             then fracDerivSymbol s (p.1 + p.2) * ‖cf p.1‖ * ‖cg p.2‖
+             else 0) := h_rewrite
+    _ ≤ ∑ p ∈ A ×ˢ B,
+          Real.sqrt (2 ^ (2 * s - 1))
+            * (if p.1 + p.2 = n
+                 then (fracDerivSymbol s p.1 + fracDerivSymbol s p.2)
+                        * ‖cf p.1‖ * ‖cg p.2‖
+                 else 0) := h_sum_peetre
+    _ = Real.sqrt (2 ^ (2 * s - 1))
+          * ((∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n
+                  then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖
+                  else 0)
+             + (∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n
+                  then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖)
+                  else 0)) := h_split
+
+/-- **§11.25.E — Banach-algebra `Ḣˢ` product bound on `trigPolyProduct`.**
+For `s ≥ 1`, `0 ∉ A`, `0 ∉ B`:
+
+  `hsSeminormSq s (trigPolyProduct A B cf cg)
+    ≤ 2^{2s} · (C_s(A) + C_s(B))
+        · hsSeminormSq s (trigPoly A cf)
+        · hsSeminormSq s (trigPoly B cg)`
+
+where `C_s(A) = ∑_{a ∈ A} ‖a‖^{-2s}`.  Assembly of the §11.25.A–D +
+C₂ + §11.23 building blocks. -/
+theorem hsSeminormSq_trigPolyProduct_le_banach_algebra
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 ≤ s) {A B : Finset (Fin 2 → ℤ)}
+    (hA : (0 : Fin 2 → ℤ) ∉ A) (hB : (0 : Fin 2 → ℤ) ∉ B)
+    (cf cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ 2 ^ (2 * s)
+          * ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+              + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))))
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by
+  have hs_pos : 0 < s := lt_of_lt_of_le one_pos hs
+  -- Abbreviations for the T_i'(n) indicator sums.
+  set T1 : (Fin 2 → ℤ) → ℝ := fun n =>
+    ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+      then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0 with hT1_def
+  set T2 : (Fin 2 → ℤ) → ℝ := fun n =>
+    ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+      then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0 with hT2_def
+  have h_T1_nn : ∀ n, 0 ≤ T1 n := fun n => by
+    apply Finset.sum_nonneg
+    intros p _
+    split_ifs
+    · exact mul_nonneg (mul_nonneg (fracDerivSymbol_nonneg _ _) (norm_nonneg _))
+        (norm_nonneg _)
+    · exact le_refl _
+  have h_T2_nn : ∀ n, 0 ≤ T2 n := fun n => by
+    apply Finset.sum_nonneg
+    intros p _
+    split_ifs
+    · exact mul_nonneg (norm_nonneg _)
+        (mul_nonneg (fracDerivSymbol_nonneg _ _) (norm_nonneg _))
+    · exact le_refl _
+  -- Step 1: Pointwise bound.
+  have h_pow_2s_1_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s - 1) :=
+    Real.rpow_nonneg (by norm_num) _
+  have h_pow_2s_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s) :=
+    Real.rpow_nonneg (by norm_num) _
+  have h_sqrt_sq : (Real.sqrt (2 ^ (2 * s - 1))) ^ 2 = 2 ^ (2 * s - 1) := by
+    rw [sq, Real.mul_self_sqrt h_pow_2s_1_nn]
+  have h_2s_eq : (2 : ℝ) ^ (2 * s) = 2 * 2 ^ (2 * s - 1) := by
+    have h2 : (2 : ℝ) ^ (2 * s) = 2 ^ (2 * s - 1 + 1) := by
+      congr 1; ring
+    rw [h2, Real.rpow_add (by norm_num : (2 : ℝ) > 0), Real.rpow_one]
+    ring
+  have h_pointwise : ∀ n ∈ sumSet A B,
+      (fracDerivSymbol s n) ^ 2 * ‖modeConvolution A B cf cg n‖ ^ 2
+        ≤ 2 ^ (2 * s) * (T1 n ^ 2 + T2 n ^ 2) := by
+    intros n _
+    have h_linbound :=
+      fracDerivSymbol_mul_modeConvolution_norm_le_sqrt_peetre hs A B cf cg n
+    have h_lhs_nn : 0 ≤ fracDerivSymbol s n * ‖modeConvolution A B cf cg n‖ :=
+      mul_nonneg (fracDerivSymbol_nonneg _ _) (norm_nonneg _)
+    have h_sum_nn : 0 ≤ T1 n + T2 n := add_nonneg (h_T1_nn n) (h_T2_nn n)
+    have h_rhs_nn : 0 ≤ Real.sqrt (2 ^ (2 * s - 1)) * (T1 n + T2 n) :=
+      mul_nonneg (Real.sqrt_nonneg _) h_sum_nn
+    have h_sq : (fracDerivSymbol s n * ‖modeConvolution A B cf cg n‖) ^ 2
+        ≤ (Real.sqrt (2 ^ (2 * s - 1)) * (T1 n + T2 n)) ^ 2 :=
+      pow_le_pow_left₀ h_lhs_nn h_linbound 2
+    have h_sq_expand :
+        (Real.sqrt (2 ^ (2 * s - 1)) * (T1 n + T2 n)) ^ 2
+          = 2 ^ (2 * s - 1) * (T1 n + T2 n) ^ 2 := by
+      rw [mul_pow, h_sqrt_sq]
+    have h_T_sq_le : (T1 n + T2 n) ^ 2 ≤ 2 * (T1 n ^ 2 + T2 n ^ 2) := by
+      nlinarith [sq_nonneg (T1 n - T2 n)]
+    calc (fracDerivSymbol s n) ^ 2 * ‖modeConvolution A B cf cg n‖ ^ 2
+        = (fracDerivSymbol s n * ‖modeConvolution A B cf cg n‖) ^ 2 := by ring
+      _ ≤ (Real.sqrt (2 ^ (2 * s - 1)) * (T1 n + T2 n)) ^ 2 := h_sq
+      _ = 2 ^ (2 * s - 1) * (T1 n + T2 n) ^ 2 := h_sq_expand
+      _ ≤ 2 ^ (2 * s - 1) * (2 * (T1 n ^ 2 + T2 n ^ 2)) :=
+            mul_le_mul_of_nonneg_left h_T_sq_le h_pow_2s_1_nn
+      _ = 2 ^ (2 * s) * (T1 n ^ 2 + T2 n ^ 2) := by rw [h_2s_eq]; ring
+  -- Step 2: Sum over n ∈ sumSet A B.
+  rw [hsSeminormSq_trigPolyProduct]
+  have h_sum := Finset.sum_le_sum h_pointwise
+  -- Factor 2^{2s} out.
+  have h_factor_2s :
+      ∑ n ∈ sumSet A B, 2 ^ (2 * s) * (T1 n ^ 2 + T2 n ^ 2)
+        = 2 ^ (2 * s) *
+            ((∑ n ∈ sumSet A B, T1 n ^ 2)
+              + (∑ n ∈ sumSet A B, T2 n ^ 2)) := by
+    rw [← Finset.mul_sum, Finset.sum_add_distrib]
+  rw [h_factor_2s] at h_sum
+  -- Step 3: Apply §11.25.C and §11.25.D.
+  have h_T1_bound := young_peetre_weighted_left s A B cf cg
+  have h_T2_bound := young_peetre_weighted_right s A B cf cg
+  -- Rewrite h_T1/T2 bound's RHS via hsSeminormSq_trigPoly.
+  have h_hsA : (∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+      = hsSeminormSq s (trigPoly A cf) := (hsSeminormSq_trigPoly s A cf).symm
+  have h_hsB : (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2)
+      = hsSeminormSq s (trigPoly B cg) := (hsSeminormSq_trigPoly s B cg).symm
+  -- Rephrase in terms of T1, T2, and hsSeminormSq.
+  have h_T1_rephrased : (∑ n ∈ sumSet A B, T1 n ^ 2)
+        ≤ hsSeminormSq s (trigPoly A cf) * (∑ b ∈ B, ‖cg b‖) ^ 2 := by
+    simp only [hT1_def] at h_T1_bound ⊢
+    rw [← h_hsA]
+    exact h_T1_bound
+  have h_T2_rephrased : (∑ n ∈ sumSet A B, T2 n ^ 2)
+        ≤ (∑ a ∈ A, ‖cf a‖) ^ 2 * hsSeminormSq s (trigPoly B cg) := by
+    simp only [hT2_def] at h_T2_bound ⊢
+    rw [← h_hsB]
+    exact h_T2_bound
+  -- Step 4: Apply §11.23 CS bridge to ℓ¹ factors.
+  have h_CS_A := sum_norm_sq_le_latticeWeight_mul_hsSeminormSq hA hs_pos cf
+  have h_CS_B := sum_norm_sq_le_latticeWeight_mul_hsSeminormSq hB hs_pos cg
+  -- Combine.
+  have h_hsA_nn : 0 ≤ hsSeminormSq s (trigPoly A cf) := hsSeminormSq_nonneg_any _ _
+  have h_hsB_nn : 0 ≤ hsSeminormSq s (trigPoly B cg) := hsSeminormSq_nonneg_any _ _
+  have h_T1_final : (∑ n ∈ sumSet A B, T1 n ^ 2)
+      ≤ hsSeminormSq s (trigPoly A cf)
+          * ((∑ b ∈ B, (latticeNorm b) ^ (-(2 * s)))
+              * hsSeminormSq s (trigPoly B cg)) :=
+    le_trans h_T1_rephrased (mul_le_mul_of_nonneg_left h_CS_B h_hsA_nn)
+  have h_T2_final : (∑ n ∈ sumSet A B, T2 n ^ 2)
+      ≤ ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf))
+          * hsSeminormSq s (trigPoly B cg) :=
+    le_trans h_T2_rephrased (mul_le_mul_of_nonneg_right h_CS_A h_hsB_nn)
+  have h_sum_final :
+      (∑ n ∈ sumSet A B, T1 n ^ 2) + (∑ n ∈ sumSet A B, T2 n ^ 2)
+        ≤ ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+            + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))))
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by
+    have h_combined :
+        (∑ n ∈ sumSet A B, T1 n ^ 2) + (∑ n ∈ sumSet A B, T2 n ^ 2)
+          ≤ hsSeminormSq s (trigPoly A cf)
+              * ((∑ b ∈ B, (latticeNorm b) ^ (-(2 * s)))
+                  * hsSeminormSq s (trigPoly B cg))
+            + ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+                * hsSeminormSq s (trigPoly A cf))
+              * hsSeminormSq s (trigPoly B cg) :=
+      add_le_add h_T1_final h_T2_final
+    have h_rearrange :
+        hsSeminormSq s (trigPoly A cf)
+            * ((∑ b ∈ B, (latticeNorm b) ^ (-(2 * s)))
+                * hsSeminormSq s (trigPoly B cg))
+          + ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+              * hsSeminormSq s (trigPoly A cf))
+            * hsSeminormSq s (trigPoly B cg)
+        = ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+            + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))))
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by ring
+    linarith [h_combined, h_rearrange.le, h_rearrange.ge]
+  calc ∑ n ∈ sumSet A B,
+          (fracDerivSymbol s n) ^ 2 * ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ 2 ^ (2 * s) *
+          ((∑ n ∈ sumSet A B, T1 n ^ 2)
+            + (∑ n ∈ sumSet A B, T2 n ^ 2)) := h_sum
+    _ ≤ 2 ^ (2 * s) *
+          (((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+              + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))))
+            * hsSeminormSq s (trigPoly A cf)
+            * hsSeminormSq s (trigPoly B cg)) :=
+          mul_le_mul_of_nonneg_left h_sum_final h_pow_2s_nn
+    _ = 2 ^ (2 * s)
+          * ((∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+              + (∑ b ∈ B, (latticeNorm b) ^ (-(2 * s))))
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by ring
+
 end SqgIdentity
