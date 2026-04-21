@@ -22811,18 +22811,15 @@ lemma lpProjector_vanishes_off_annulus
 `fourierTruncate A 0 = 0`, `lpProjector N 0 = 0`. -/
 
 lemma fourierTruncate_zero
-    [DecidableEq (Fin 2 → ℤ)]
     (A : Finset (Fin 2 → ℤ)) :
     fourierTruncate A (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) = 0 := by
   unfold fourierTruncate trigPoly
   apply Finset.sum_eq_zero
   intros n _
-  -- mFourierCoeff of the zero Lp element is zero; we can use mFourierCoeff_zero
-  rw [mFourierCoeff_zero]
-  simp
+  -- Beta-reduce the lambda, then rewrite mFourierCoeff 0 = 0, close via zero_smul.
+  simp [mFourierCoeff_zero]
 
 lemma lpProjector_zero
-    [DecidableEq (Fin 2 → ℤ)]
     (N : ℕ) :
     lpProjector N (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) = 0 := by
   unfold lpProjector
@@ -22833,13 +22830,11 @@ lemma lpProjector_zero
 Direct specializations used by the zero-datum Kato-Ponce chain. -/
 
 lemma hsSeminormSq_lpProjector_zero
-    [DecidableEq (Fin 2 → ℤ)]
     (s : ℝ) (N : ℕ) :
     hsSeminormSq s (lpProjector N (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) = 0 := by
   rw [lpProjector_zero, hsSeminormSq_of_zero]
 
 lemma hsSeminormSq_fourierTruncate_zero
-    [DecidableEq (Fin 2 → ℤ)]
     (s : ℝ) (A : Finset (Fin 2 → ℤ)) :
     hsSeminormSq s (fourierTruncate A (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) = 0 := by
   rw [fourierTruncate_zero, hsSeminormSq_of_zero]
