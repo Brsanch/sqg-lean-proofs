@@ -20474,4 +20474,60 @@ theorem tsum_sq_sub_tendsto_zero_of_tight
   have h_tail_bound : (∑' i : { i // i ∉ F }, ‖f k i.val - g i.val‖ ^ 2) ≤ ε / 2 := hF k
   linarith
 
+/-! ### §10.164 `HasFourierSynthesis.ofTight` — drop-in capstone
+
+Composes §10.159.C (`ofSummable`) with §10.162 (integral → tsum reduction)
+and §10.163 (tight-family ℓ² Vitali convergence) into a single top-level
+constructor that takes only elementary tight-family inputs.
+
+Once the caller supplies per-mode summability (Fatou + uniform ℓ² bound)
+plus summability/tightness of the coefficient *differences*, the `h_L2`
+hypothesis of §10.159.C is discharged entirely internally.  No `Lp`
+coercion bookkeeping reaches the caller, and strong-`L²` convergence is
+produced from the pure ℓ² Vitali argument of §10.163.
+
+This is the maximally-closed form of `HasFourierSynthesis` construction
+reachable without an additional compactness input: every non-structural
+hypothesis is now an elementary ℓ²-level statement on the coefficient
+sequence, with no `Lp`, `Parseval`, or `Fatou`-level analysis required
+of the caller. -/
+
+/-- **§10.164  `HasFourierSynthesis.ofTight` — Tight-family capstone.**
+Builds `HasFourierSynthesis per θ` from the four elementary ℓ²-level
+inputs:
+
+* `hInit_b` — initial coefficient match at `t = 0`.
+* `hSum` — per-mode ℓ²-summability of `per.b · t` at every `t ≥ 0`.
+* `h_sum_diff` — per-mode ℓ²-summability of the Galerkin-to-limit
+  coefficient differences at every `t ≥ 0` and `k : ℕ`.
+* `h_tight` — uniform ℓ²-tail tightness on those coefficient differences.
+
+`h_L2` of §10.159.C is discharged internally via §10.162 + §10.163. -/
+noncomputable def HasFourierSynthesis.ofTight
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hInit_b : ∀ m : Fin 2 → ℤ, per.b m 0 = mFourierCoeff θ m)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable fun m : Fin 2 → ℤ => ‖per.b m t‖ ^ 2)
+    (h_sum_diff : ∀ t : ℝ, 0 ≤ t → ∀ k : ℕ,
+      Summable fun m : Fin 2 → ℤ =>
+        ‖galerkinExtend (sqgBox (per.nsub k)) (α (per.nsub k) t) m
+          - per.b m t‖ ^ 2)
+    (h_tight : ∀ t : ℝ, 0 ≤ t → ∀ ε : ℝ, 0 < ε →
+      ∃ F : Finset (Fin 2 → ℤ), ∀ k : ℕ,
+        (∑' m : { m // m ∉ F },
+          ‖galerkinExtend (sqgBox (per.nsub k)) (α (per.nsub k) t) m.val
+            - per.b m.val t‖ ^ 2) ≤ ε) :
+    HasFourierSynthesis per θ :=
+  HasFourierSynthesis.ofSummable per hInit_b hSum
+    (fun t ht =>
+      tendsto_integral_norm_sq_galerkin_sub_θLim_of_tsum per hSum
+        (fun t' ht' =>
+          tsum_sq_sub_tendsto_zero_of_tight
+            (fun m => per.tendsto_modeCoeff m t' ht')
+            (h_sum_diff t' ht')
+            (h_tight t' ht'))
+        t ht)
+
 end SqgIdentity
