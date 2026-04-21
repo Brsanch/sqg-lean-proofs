@@ -21244,11 +21244,16 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     (fₙ := fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
     ?_ M ?_ ?_
   · intro t ht
+    show Filter.Tendsto (fun n : ℕ => ∫ x, ‖(galerkinToLp (sqgBox (ext.nsub n))
+        (α (ext.nsub n) t)) x - (ext.θ_lim t) x‖ ^ 2) Filter.atTop (nhds 0)
     exact ext.tendsto_L2 t ht
   · intro k t _
+    show Summable (fun m : Fin 2 → ℤ => (fracDerivSymbol 1 m) ^ 2 *
+      ‖mFourierCoeff (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t)) m‖ ^ 2)
     exact hsSeminormSq_one_summable_galerkinToLp
       (sqgBox (ext.nsub k)) (α (ext.nsub k) t)
   · intro k t ht
+    show hsSeminormSq 1 (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t)) ≤ M
     exact hBound (ext.nsub k) t ht
 
 end SqgIdentity
