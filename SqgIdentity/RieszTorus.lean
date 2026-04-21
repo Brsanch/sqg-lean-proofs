@@ -22098,8 +22098,11 @@ theorem sqg_solution_and_regularity_via_RouteB_interpolation
   refine ⟨sol, hsol, ?_⟩
   intro s hs0
   rw [hsol]
+  -- Transport `sol.solvesSqgEvolution : SqgEvolutionAxioms sol.θ` to
+  -- `SqgEvolutionAxioms ext.θ_lim` via `hsol : sol.θ = ext.θ_lim`.
+  have hE : SqgEvolutionAxioms ext.θ_lim := hsol ▸ sol.solvesSqgEvolution
   exact sqg_regularity_of_aubinLions_via_interpolation
-    ext M₁ Ms hBoundOne hBoundS sol.solvesSqgEvolution s hs0
+    ext M₁ Ms hBoundOne hBoundS hE s hs0
 
 /-! ### §10.176 Zero-datum instance of §10.174 (full-range)
 
