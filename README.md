@@ -1,6 +1,6 @@
 # SQG Identity — Lean 4 Formalization
 
-[![CI](https://github.com/SolomonB14D3/sqg-lean-proofs/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/SolomonB14D3/sqg-lean-proofs/actions/workflows/lean_action_ci.yml)
+[![CI](https://github.com/Brsanch/sqg-lean-proofs/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/Brsanch/sqg-lean-proofs/actions/workflows/lean_action_ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19583256.svg)](https://doi.org/10.5281/zenodo.19583256)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
@@ -67,7 +67,7 @@ axiomatic footprint is inspectable.
 | Hypothesis | Scope | Status in this repository |
 |---|---|---|
 | `FracSobolevCalculus` | Mode-wise Ḣˢ monotonicity | Discharged unconditionally (`ofMathlib`) |
-| `MaterialMaxPrinciple` | Uniform Ḣ¹ bound | Discharged on the finite-support, uniform-ℓ∞-coefficient class (§10.56) |
+| `MaterialMaxPrinciple` | Uniform Ḣ¹ bound | Discharged on the finite-support, uniform-ℓ∞-coefficient class (§10.56); lifted to every strong-`L²` Galerkin limit with uniform `Ḣ¹` bound via §10.167 |
 | `BKMCriterionS2` | Ḣˢ bootstrap for `s ∈ (1, 2]` | Discharged on the same class (§10.57) and derived from Galerkin dynamics via a Kato–Ponce + advection-cancellation + Gronwall chain (§10.87) |
 | `SqgEvolutionAxioms` | Mean + L² conservation + Riesz-transform velocity | Real content, discharged for the zero solution and for every finite-support weak solution (§10.58) |
 
@@ -219,11 +219,31 @@ class, regularity is unconditional:
     - **§10.158.A/B `θLimOfLp` + `mFourierCoeff_θLimOfLp`** — concrete
       `θ_lim : ℝ → Lp ℂ 2` operator for `HasFourierSynthesis` via
       pointwise Fourier synthesis of an `lp`-valued per-mode limit.
+- **MMP off the finite-Fourier-support class (post-v0.4.39, §10.167).**
+  Extends §10.56 from the finite-support + uniform-ℓ∞ class to every
+  strong-`L²` Galerkin limit with a uniform `Ḣ¹` bound, via lower-
+  semicontinuity of `hsSeminormSq` under strong-`L²` convergence.
+    - **§10.167.A `hsSeminormSq_le_of_L2_limit_uniform_bound`** — pure
+      Fourier-side LSC lemma. Strong-`L²` convergence + per-`n` weighted
+      summability + uniform `Ḣˢ` bound ⇒ weighted family on the limit
+      is summable and the bound transfers. Proof via per-mode Fourier
+      convergence (§10.141) + `tendsto_finset_sum` +
+      `summable_of_sum_le` / `Real.tsum_le_of_sum_le` from mathlib.
+    - **§10.167.B `MaterialMaxPrinciple.of_L2_limit_uniform_H1`** —
+      MMP for `θ` realized as pointwise-in-`t` strong-`L²` limit of a
+      sequence with uniform `Ḣ¹` bound.
+    - **§10.167.C `MaterialMaxPrinciple.of_aubinLions_uniform_H1`** —
+      specialization to `HasAubinLionsExtraction`, consuming the
+      §10.139 extraction witness + a uniform `Ḣ¹` bound on the Galerkin
+      states `galerkinToLp (sqgBox n) (α n t)`. Produces MMP for
+      `ext.θ_lim` with no additional analytic axiom.
 
 ## What is *not* proven
 
-- Unconditional discharge of `MaterialMaxPrinciple.hOnePropagation` and
-  `BKMCriterionS2.hsPropagationS2` outside the finite-support class.
+- Unconditional discharge of `BKMCriterionS2.hsPropagationS2` outside
+  the finite-support class.  (`MaterialMaxPrinciple.hOnePropagation`
+  now lifts off finite-support via §10.167, modulo a uniform `Ḣ¹`
+  bound on the Galerkin approximation supplied by the caller.)
 - The fractional Sobolev bootstrap for `s > 2` (requires Kato–Ponce-type
   estimates on `𝕋²` that are not yet in mathlib).
 - The remaining Item 1 classical analytical inputs, each consumed by
