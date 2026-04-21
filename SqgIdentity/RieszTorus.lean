@@ -22706,4 +22706,59 @@ noncomputable def HasSqgGalerkinHsClosure.ofZero (s : ℝ) :
   E₀ := 0
   hE₀ := fun n => (zeroGalerkin_trigPolyEnergyHs_zero s n 0).le
 
+/-! ### §11.11 Zero-paraproduct Kato-Ponce witness
+
+Since `paraproduct` and `paraRemainder` are both defined as the zero
+operator (Phase 7 placeholders), `HasKatoPonceProductBound s 0` holds
+trivially.  This demonstrates that the `HasKatoPonceProductBound`
+hypothesis is instantiable without additional analytical work on the
+stubs.
+
+**In actual SQG application**, once Phase 7 replaces `paraproduct` /
+`paraRemainder` with the true Littlewood–Paley sums, a non-trivial
+`HasKatoPonceProductBound s C` witness is required (classical PDE
+content, ~1500-2000 LOC of paraproduct analysis). -/
+
+/-- **Trivial Kato-Ponce product bound** on the zero-paraproduct stub.
+Uses `hsSeminormSq_of_zero` (§?) to reduce the LHS to 0; RHS is
+non-negative. -/
+noncomputable def HasKatoPonceProductBound.ofZeroStubs (s : ℝ) :
+    HasKatoPonceProductBound s 0 where
+  bound := by
+    intro f g normF normG hF hG
+    -- paraproduct = 0 and paraRemainder = 0 by definition, so LHS = 0.
+    unfold paraproduct paraRemainder
+    rw [hsSeminormSq_of_zero, hsSeminormSq_of_zero]
+    -- Goal: 0 + 0 ≤ 0^2 * (normG^2 * hsSeminormSq s f + normF^2 * hsSeminormSq s g)
+    simp
+    -- RHS ≥ 0 after simp reduces 0^2 = 0 and 0 * ... = 0
+    -- remaining is 0 ≤ 0 which is rfl
+
+/-- **Trivial Kato-Ponce commutator bound** on the zero-remainder stub. -/
+noncomputable def HasKatoPonceCommutatorBound.ofZeroStubs (s : ℝ) :
+    HasKatoPonceCommutatorBound s 0 where
+  bound := by
+    intro f g gradNormF gradNormG hF hG
+    unfold paraRemainder
+    rw [hsSeminormSq_of_zero]
+    simp
+
+/-- **Trivial paraproduct Ḣˢ bound** on the zero stub. -/
+noncomputable def HasParaproductHsBound.ofZeroStub (s : ℝ) :
+    HasParaproductHsBound s 0 where
+  bound := by
+    intro f g
+    unfold paraproduct
+    rw [hsSeminormSq_of_zero]
+    simp
+
+/-- **Trivial paraproduct remainder Ḣˢ bound** on the zero stub. -/
+noncomputable def HasParaRemainderHsBound.ofZeroStub (s : ℝ) :
+    HasParaRemainderHsBound s 0 where
+  bound := by
+    intro f g
+    unfold paraRemainder
+    rw [hsSeminormSq_of_zero]
+    simp
+
 end SqgIdentity
