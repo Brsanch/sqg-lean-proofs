@@ -140,9 +140,11 @@ uniform `Ḣ¹` bound on the Galerkin approximation, with no additional
 analytic axiom.  The uniform `Ḣ¹` bound is the classical regularity
 input supplied by Galerkin energy theory.
 
-### Theorem 3 capstone on the Aubin–Lions limit (§10.169 / §10.170)
+### Theorem 3 capstone on the Aubin–Lions limit (§10.169 – §10.171)
 Composes §10.167 + §10.168 into a single theorem delivering the
-conditional Theorem 3 conclusion on the `L²`-limit class:
+conditional Theorem 3 conclusion on the `L²`-limit class, and
+packages it with the §10.148 `SqgSolution` producer into an end-to-
+end capstone:
 
 - **§10.169 `sqg_regularity_of_aubinLions_uniform_Hs`** — for every
   `s ∈ [0, 2]`, a uniform `Ḣˢ` bound on `ext.θ_lim t` follows from
@@ -153,6 +155,15 @@ conditional Theorem 3 conclusion on the `L²`-limit class:
   unconditional zero-datum instance of §10.169 on
   `HasAubinLionsExtraction.ofZero`.  Exercises the full composition
   end-to-end.
+- **§10.171 `sqg_solution_and_regularity_via_RouteB_uniform_Hs`** —
+  the end-to-end headline.  From a `HasAubinLionsExtraction`
+  witness, per-level Galerkin energy conservation, a velocity
+  witness, smooth initial data, and the uniform `Ḣˢ` bounds,
+  delivers both a genuine `SqgSolution` **and** the Theorem 3
+  regularity conclusion `∀ s ∈ [0, 2], ∃ M', ∀ t ≥ 0,
+  hsSeminormSq s (sol.θ t) ≤ M'` on its `θ`-field.  This is the
+  maximally-closed form of Theorem 3 reachable from the current
+  infrastructure.
 
 ### ~~4. `BKMCriterionS2.hsPropagationS2` off the finite-Fourier-support class~~ ✓ Closed post-v0.4.39 (structural)
 Closed by §10.168 (commit `10ea042`).  Parallel to Item 3 via the

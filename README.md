@@ -261,6 +261,13 @@ class, regularity is unconditional:
   **§10.170** exercises the composition unconditionally on the zero
   Aubin–Lions extraction (`HasAubinLionsExtraction.ofZero`), giving
   `sqg_regularity_of_aubinLions_ofZero`.
+  **§10.171 `sqg_solution_and_regularity_via_RouteB_uniform_Hs`** —
+  end-to-end capstone combining §10.148 (`SqgSolution` producer)
+  with §10.169 (Theorem 3 on the limit).  From an Aubin–Lions
+  extraction + per-level energy conservation + velocity witness +
+  smooth initial data + uniform `Ḣˢ` bounds, produces both a genuine
+  `SqgSolution` on `𝕋²` and the full Theorem 3 regularity conclusion
+  on `s ∈ [0, 2]` for that solution.
 
 ## What is *not* proven
 
