@@ -19769,127 +19769,97 @@ theorem galerkinExtend_mode_lipschitz_of_ODE_bound
     (C := M) hCont hDeriv hBound t ⟨hst, le_refl t⟩
   exact h
 
-/-! ### §10.153.C Monolithic composition of §10.153.A + §10.153.B
+-- **§10.153.C attempts continue to hit isDefEq loops** during
+-- elaboration of the composed §10.153.A + §10.153.B bound, even in
+-- the existential `∃ L, ...` form.  `sqgBox` is already
+-- file-scoped-irreducible via §10.147's `attribute [local irreducible]
+-- sqgBox` (leaked through the ambient `SqgIdentity` namespace), so
+-- the unfolding loop is not coming from `sqgBox` itself.  Likely
+-- culprits are nested `galerkinExtend (sqgBox _) (α _ _) _` /
+-- `galerkinRHS (sqgBox _) _ _` applications under the
+-- `GalerkinRHSHsNegSqBound S c 2 K` unfolding, which exercises
+-- `DecidableEq (↥(sqgBox _))` synthesis across the two
+-- `∀ τ ∈ Set.Ico s t, ‖...‖ ≤ M` sub-proofs.  Bumping heartbeats
+-- to 800k (and previously 1.6M) does not resolve the loop.
+--
+-- §10.153.A + §10.153.B remain standalone building blocks that a
+-- Lean caller can compose with `HasModeLipschitzFamily.ofSqgGalerkinBounds`
+-- (§10.152) to produce `HasModeLipschitzFamily` witnesses on a
+-- case-by-case basis; the monolithic wrapper is deferred pending
+-- targeted elaborator-friendly refactoring of the `galerkinRHS` call.
 
-Produces the `(L, hL_nonneg, hL_holds)` data consumed by
-`HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152) from a uniform
-`H⁻²` bound + the Galerkin ODE hypotheses, via:
+/-! ### §10.154 Coefficient-injectivity bridge for `HasFourierSynthesis`
 
-* `L m := 0` on `m = 0` (the zero mode is not in `sqgBox n`, so the
-  Galerkin difference is identically `0`);
-* `L m := √K · Λ²(m)` on `m ≠ 0`, bounded by §10.153.A and integrated
-  by §10.153.B.
+The mathlib Fourier orthonormal basis `mFourierBasis` is a Hilbert basis
+on `L²(𝕋ᵈ)`; its representation `mFourierBasis.repr` is a continuous
+linear equivalence, hence injective.  Via the bridge
+`mFourierBasis_repr f m = mFourierCoeff f m` (§10.47-level), this
+translates to: two `Lp ℂ 2` elements with matching Fourier coefficients
+at every mode are equal.
 
-The previous `§10.153.C` attempt produced a `HasModeLipschitzFamily`
-structure directly and hit persistent isDefEq loops (>1.6M heartbeats)
-during struct-field elaboration on `modeCoeff`/`modeBound`.  This
-version returns an **existential triple** so the elaborator does not
-have to unify struct fields across the `m = 0` vs `m ≠ 0` and
-`s ≤ t` vs `t ≤ s` cases; the caller composes with §10.152 at a
-single use-site.  The `sqgBox` irreducibility guard is also applied
-locally to prevent the `sqgBox`-unfolding loop identified in the
-v0.4.38 diagnostic workflow. -/
+Using this bridge, the `init_eq` field of `HasFourierSynthesis per θ`
+is derivable from the more elementary initial-coefficient match
+`per.b m 0 = mFourierCoeff θ m`.  This reduces the `HasFourierSynthesis`
+constructor workload (Target #2) from "identify `θ_lim 0` with `θ` at
+the `Lp` level" to "match coefficients at `t = 0`" — a coefficient-
+level check the caller typically has for free from the initial data.
 
-section Sec10153C
+The remaining content of Target #2 (construction of `θ_lim` for
+`t > 0` + strong-`L²` convergence of the extracted Galerkin sequence
+to `θ_lim`) still requires classical Fourier synthesis + Parseval +
+Fatou + dominated convergence on `ℓ²(ℤ²)`; §10.154 isolates the
+coefficient-injectivity reduction as a reusable building block. -/
 
-attribute [local irreducible] sqgBox
+/-- **§10.154.A  Lp elements are determined by their Fourier coefficients.**
+Two elements of `Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))` with
+matching Fourier coefficients at every mode are equal.  Proof via
+injectivity of `mFourierBasis.repr` and the
+`mFourierBasis_repr ↔ mFourierCoeff` bridge. -/
+theorem Lp_eq_of_mFourierCoeff_eq
+    (f g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (h : ∀ m : Fin 2 → ℤ, mFourierCoeff f m = mFourierCoeff g m) :
+    f = g := by
+  apply mFourierBasis.repr.injective
+  ext m
+  rw [mFourierBasis_repr, mFourierBasis_repr]
+  exact h m
 
-set_option maxHeartbeats 800000 in
-/-- **§10.153.C** Per-mode Lipschitz constant for the uniform-`H⁻²`
-SQG Galerkin family, in existential form consumable by §10.152.
-Composes §10.153.A (per-mode upper bound on `galerkinRHS`) with
-§10.153.B (MVT on the per-mode trajectory) across the
-`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split. -/
-theorem sqgGalerkin_modeLipschitz_from_UniformH2
-    [DecidableEq (Fin 2 → ℤ)]
-    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
-    (K : ℝ) (hK : 0 ≤ K)
-    (hH2 : UniformGalerkinRHSHsNegSqBound α 2 K)
-    (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ m : Fin 2 → ℤ,
-      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
-        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
-        (Set.Ici τ) τ)
-    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
-      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
-        (Set.Icc s t)) :
-    ∃ L : (Fin 2 → ℤ) → ℝ,
-      (∀ m, 0 ≤ L m) ∧
-      ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → 0 ≤ t →
-        ‖galerkinExtend (sqgBox n) (α n t) m
-          - galerkinExtend (sqgBox n) (α n s) m‖
-          ≤ L m * |t - s| := by
-  refine ⟨fun m => if m = 0 then 0 else Real.sqrt K * fracDerivSymbol 2 m,
-    ?hNN, ?hHolds⟩
-  case hNN =>
+/-- **§10.154.B  `HasFourierSynthesis.ofPerModeLimit` constructor.**
+Assembles `HasFourierSynthesis per θ` from a synthesis witness `θ_lim`
+with `per.b`-matching coefficients at every `t ≥ 0`, an initial-
+coefficient match `per.b m 0 = mFourierCoeff θ m`, and strong-`L²`
+convergence along the extracted subsequence.  The initial-time
+equality `θ_lim 0 = θ` is derived internally via §10.154.A, removing
+it from what the caller must supply.
+
+This constructor realises the coefficient-injectivity reduction of
+Target #2: the remaining analytical content of `HasFourierSynthesis`
+is factored into exactly (i) the synthesis witness `θ_lim` + its
+coefficient match, and (ii) strong-`L²` convergence — both of which
+are the Parseval + dominated-convergence content classically derived
+from per-mode convergence + uniform `ℓ²` control. -/
+noncomputable def HasFourierSynthesis.ofPerModeLimit
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hInit_b : ∀ m : Fin 2 → ℤ, per.b m 0 = mFourierCoeff θ m)
+    (θ_lim : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (h_coeff : ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+      mFourierCoeff (θ_lim t) m = per.b m t)
+    (h_L2 : ∀ (t : ℝ), 0 ≤ t →
+      Filter.Tendsto
+        (fun k : ℕ =>
+          ∫ x, ‖galerkinToLp (sqgBox (per.nsub k)) (α (per.nsub k) t) x
+                - θ_lim t x‖ ^ 2)
+        Filter.atTop (nhds 0)) :
+    HasFourierSynthesis per θ where
+  θ_lim := θ_lim
+  init_eq := by
+    apply Lp_eq_of_mFourierCoeff_eq
     intro m
-    by_cases hm : m = 0
-    · simp [hm]
-    · simp only [hm, if_false]
-      exact mul_nonneg (Real.sqrt_nonneg _)
-        (le_of_lt (fracDerivSymbol_pos 2 hm))
-  case hHolds =>
-    intro n m s t hs ht
-    by_cases hm : m = 0
-    · -- Zero-mode case: both endpoints vanish via `zero_not_mem_sqgBox`.
-      subst hm
-      have h0_nm : (0 : Fin 2 → ℤ) ∉ sqgBox n := zero_not_mem_sqgBox n
-      have h_t : galerkinExtend (sqgBox n) (α n t) (0 : Fin 2 → ℤ) = 0 :=
-        galerkinExtend_apply_of_not_mem _ _ h0_nm
-      have h_s : galerkinExtend (sqgBox n) (α n s) (0 : Fin 2 → ℤ) = 0 :=
-        galerkinExtend_apply_of_not_mem _ _ h0_nm
-      simp [h_t, h_s]
-    · -- Non-zero mode: compose §10.153.A + §10.153.B.
-      simp only [hm, if_false]
-      have hMnn : 0 ≤ Real.sqrt K * fracDerivSymbol 2 m :=
-        mul_nonneg (Real.sqrt_nonneg _)
-          (le_of_lt (fracDerivSymbol_pos 2 hm))
-      rcases le_total s t with hst | hts
-      · -- Forward direction s ≤ t.
-        have h_abs : |t - s| = t - s := abs_of_nonneg (sub_nonneg.mpr hst)
-        rw [h_abs]
-        have h_bound : ∀ τ ∈ Set.Ico s t,
-            ‖galerkinRHS (sqgBox n)
-              (galerkinExtend (sqgBox n) (α n τ)) m‖
-              ≤ Real.sqrt K * fracDerivSymbol 2 m := by
-          intro τ hτ
-          exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
-            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans hs hτ.1)) hm
-        have h_deriv_local : ∀ τ ∈ Set.Ico s t,
-            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
-              (galerkinRHS (sqgBox n)
-                (galerkinExtend (sqgBox n) (α n τ)) m)
-              (Set.Ici τ) τ := fun τ hτ =>
-          hDeriv n τ (le_trans hs hτ.1) m
-        exact galerkinExtend_mode_lipschitz_of_ODE_bound
-          (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hst
-          h_deriv_local (hCont n m s t hs hst) h_bound
-      · -- Reverse direction t ≤ s; apply the MVT with (t, s) and
-        -- flip the norm.
-        have h_abs : |t - s| = s - t := abs_of_nonpos (sub_nonpos.mpr hts)
-        rw [h_abs]
-        have h_bound : ∀ τ ∈ Set.Ico t s,
-            ‖galerkinRHS (sqgBox n)
-              (galerkinExtend (sqgBox n) (α n τ)) m‖
-              ≤ Real.sqrt K * fracDerivSymbol 2 m := by
-          intro τ hτ
-          exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
-            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans ht hτ.1)) hm
-        have h_deriv_local : ∀ τ ∈ Set.Ico t s,
-            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
-              (galerkinRHS (sqgBox n)
-                (galerkinExtend (sqgBox n) (α n τ)) m)
-              (Set.Ici τ) τ := fun τ hτ =>
-          hDeriv n τ (le_trans ht hτ.1) m
-        have h_mvt : ‖galerkinExtend (sqgBox n) (α n s) m
-            - galerkinExtend (sqgBox n) (α n t) m‖
-            ≤ Real.sqrt K * fracDerivSymbol 2 m * (s - t) :=
-          galerkinExtend_mode_lipschitz_of_ODE_bound
-            (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hts
-            h_deriv_local (hCont n m t s ht hts) h_bound
-        rw [norm_sub_rev]
-        exact h_mvt
-
-end Sec10153C
+    rw [h_coeff m 0 le_rfl, hInit_b m]
+  mFourierCoeff_eq := h_coeff
+  tendsto_L2 := h_L2
 
 /-! ### §10.156 Item 1 structural capstone
 
