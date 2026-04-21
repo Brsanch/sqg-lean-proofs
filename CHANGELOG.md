@@ -6,16 +6,51 @@ to the latest version.
 
 ## Unreleased (post-v0.4.39, on `main`) — 2026-04-21
 
-**Next-session plan: Route A (Littlewood–Paley in-project).** All
-remaining analytic content for Items 2, 3, 5 of `OPEN.md` will be
-formalized **in-project** in `SqgIdentity/` as mathlib-shaped
-primitives.  No upstream review cycle; mathlib contribution is a
-separate later activity.  Total planned code: ~4810 lines across 12
-phases (Littlewood–Paley primitives, paraproducts, commutator
-estimates, Kato–Ponce on `𝕋²`, Galerkin `Ḣˢ` energy identities,
-MMP-based `L∞` velocity bound, BKM-integral Grönwall).
-Dependency graph and phase ordering in `OPEN.md` "Next-session plan"
-section.
+**Route A execution — in progress.**  Structural skeleton for all
+12 phases delivered across §10.177–§10.182 (RieszTorus.lean) and
+§11.1–§11.10 (new file `SqgIdentity/LittlewoodPaley.lean`).  All
+structural hypothesis types are in place; the classical
+Littlewood–Paley analytical content (paraproduct definitions,
+commutator estimates, full Kato–Ponce) remains for a follow-up
+session.
+
+- **§10.177–§10.181** — Parametric-`s` Galerkin `Ḣˢ` energy identity
+  (Phase 1 at `s = 1`, Phase 3 at `s > 1`).
+  - `trigPolyEnergyHs s S c = ∑ (fracDerivSymbol s m)² · ‖c m‖²`.
+  - `trigPolyEnergyHs_hasDerivAt` — derivative identity.
+  - `trigPolyEnergyHs_gronwall_bound` — Phase 5 Grönwall closure.
+- **§10.182** — `HasGalerkinHsGronwallFamily` hypothesis package
+  (Phase 2 + Phase 5 structural).
+  - `bound_on_Icc`, `uniform_bound_on_Icc`, `global_uniform_bound`.
+- **New file `LittlewoodPaley.lean`**:
+  - **§11.1** `dyadicAnnulus N` — `ℓ∞`-dyadic blocks on `ℤ²` as
+    `sqgBox`-differences.
+  - **§11.2** `fourierTruncate A f` — Fourier projection onto a
+    Finset via `trigPoly`.
+  - **§11.3** `lpProjector N`, `lpPartialSum N` — Littlewood–Paley
+    projector `Δ_N` and its partial sum `S_N` (Phase 6).
+  - **§11.4** `fourierTruncate_mFourierCoeff`,
+    `hsSeminormSq_fourierTruncate` — Kronecker-indicator + `Ḣˢ`
+    seminorm of the truncation.
+  - **§11.5** `HasParaproductHsBound`, `HasParaRemainderHsBound` —
+    paraproduct hypothesis types (Phase 7 structural).
+  - **§11.6** `HasKatoPonceCommutatorBound` — commutator hypothesis
+    (Phase 8 structural).
+  - **§11.7** `HasKatoPonceProductBound` — full Kato–Ponce hypothesis
+    (Phase 9 structural).
+  - **§11.8** `HasSqgGalerkinHsClosure` — Phase 10 structural bridge
+    from Kato–Ponce + velocity bound to the log-derivative inequality.
+  - **§11.9** `HasGalerkinHsGronwallFamily.of_sqgClosure` — Phase 10
+    → Phase 5 bridge.
+  - **§11.10** `zeroGalerkin` + zero-datum exemplar — exercises the
+    full Phase 2→5→10 chain on the zero trajectory, parallel to
+    §10.170 / §10.176.
+
+**Route A chain structure.**  With the structural chain in place,
+closing `OPEN.md` Item 5 reduces to discharging
+`HasKatoPonceProductBound s C` for the high-`s` Galerkin analysis.
+The rest of the chain is `.of_sqgClosure` + `.global_uniform_bound`
+feeding §10.174's `hBoundS` hypothesis.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
