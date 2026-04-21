@@ -24502,4 +24502,23 @@ theorem summable_one_div_nat_rpow_at_two_s_sub_one
   rw [Real.summable_one_div_nat_rpow]
   linarith
 
+/-- **§11.26.B — Coordinate absolute value bounded by lattice norm.**
+For every index `j`, `|(n j : ℝ)| ≤ latticeNorm n`.  Follows from
+`sq_le_latticeNorm_sq` (componentwise square bound) by taking sqrt. -/
+lemma abs_coord_le_latticeNorm {d : Type*} [Fintype d]
+    (n : d → ℤ) (j : d) :
+    |(n j : ℝ)| ≤ latticeNorm n := by
+  have h_sq := sq_le_latticeNorm_sq n j
+  have h_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
+  rw [show |(n j : ℝ)| = Real.sqrt ((n j : ℝ) ^ 2) from (Real.sqrt_sq_eq_abs _).symm]
+  calc Real.sqrt ((n j : ℝ) ^ 2)
+      ≤ Real.sqrt ((latticeNorm n) ^ 2) := Real.sqrt_le_sqrt h_sq
+    _ = latticeNorm n := Real.sqrt_sq h_nn
+
+/-- **§11.26.B₂ — `ℓ∞` ≤ `ℓ²` on `Fin 2 → ℤ`.**  The maximum of
+`|m 0|` and `|m 1|` is bounded by `latticeNorm m`. -/
+lemma max_abs_coord_le_latticeNorm (m : Fin 2 → ℤ) :
+    max (|(m 0 : ℝ)|) (|(m 1 : ℝ)|) ≤ latticeNorm m :=
+  max_le (abs_coord_le_latticeNorm m 0) (abs_coord_le_latticeNorm m 1)
+
 end SqgIdentity
