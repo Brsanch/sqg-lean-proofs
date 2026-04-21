@@ -6,6 +6,17 @@ to the latest version.
 
 ## Unreleased (post-v0.4.39, on `main`) — 2026-04-21
 
+**Next-session plan: Route A (Littlewood–Paley in-project).** All
+remaining analytic content for Items 2, 3, 5 of `OPEN.md` will be
+formalized **in-project** in `SqgIdentity/` as mathlib-shaped
+primitives.  No upstream review cycle; mathlib contribution is a
+separate later activity.  Total planned code: ~4810 lines across 12
+phases (Littlewood–Paley primitives, paraproducts, commutator
+estimates, Kato–Ponce on `𝕋²`, Galerkin `Ḣˢ` energy identities,
+MMP-based `L∞` velocity bound, BKM-integral Grönwall).
+Dependency graph and phase ordering in `OPEN.md` "Next-session plan"
+section.
+
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
 

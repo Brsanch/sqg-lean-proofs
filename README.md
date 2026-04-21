@@ -315,9 +315,30 @@ class, regularity is unconditional:
   `BKMCriterionHighFreq.hsPropagationHighFreq` now lift off the
   finite-support class (via §10.167 and §10.173) given uniform `Ḣˢ`
   bounds on the Galerkin approximation, supplied by the caller.
-  Producing those bounds at high `s` requires either a mathlib
-  Kato–Ponce contribution or an in-tree local version specialised
-  to the torus Fourier multiplier setting (§10.174 `hBoundS`).
+
+### Planned work: Route A (in-project Littlewood–Paley)
+
+The next phase of development will formalize the remaining classical
+SQG analytic content **in-project** in `SqgIdentity/` as mathlib-
+shaped primitives.  Dependency graph, LOC estimates, and phase order
+are documented in [`OPEN.md`](./OPEN.md) "Next-session plan" section.
+
+- **Phases 1–5** (~2410 LOC): Galerkin `Ḣˢ` energy identities for
+  `s ∈ [1, 2]`, MMP-based `‖∇u_n‖_{L∞}` bound, BKM-integral Grönwall.
+  Discharges `OPEN.md` Items 2 and 3 unconditionally from classical
+  SQG content (still conditional on global regularity for uniform
+  `∀ t ≥ 0`; unconditional on bounded `[0, T]` for smooth data).
+- **Phases 6–10** (~2400 LOC): Littlewood–Paley on `𝕋²` (dyadic
+  projectors `Δ_N`), paraproduct calculus `T_f g` + `R(f, g)`,
+  commutator `[Jˢ, f] · ∇g` estimate, full Kato–Ponce
+  `‖Jˢ(fg)‖_{L^p}`, SQG application for `s > 2`.  Discharges
+  `OPEN.md` Item 5.
+- **Phase 11** (~300 LOC): structural wrappers, zero-datum,
+  docs.
+- **Phase 12**: CI iteration overhead (~20%).
+
+Total: ~4810 lines over ~12–15 agent-hours, spread across ~10–15
+CI-gated sessions.
 - The remaining Item 1 classical analytical inputs, each consumed by
   the v0.4.39 structural constructors as a precisely-typed, named
   hypothesis:

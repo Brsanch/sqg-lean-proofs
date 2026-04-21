@@ -288,6 +288,75 @@ closed** in current code:
   `SolomonB14D3/sqg-lean-proofs` slug), so once the user re-enables
   sync, future tags will archive correctly into the canonical chain.
 
+## Next-session plan — Route A (Littlewood–Paley in-project)
+
+Decided 2026-04-21 late evening.  All remaining analytic content
+(Items 2, 3, 5) written **in-project** in `SqgIdentity/` as mathlib-
+shaped primitives.  No upstream review cycle; mathlib contribution
+is a separate later activity.
+
+### LOC mapping (~4810 lines total, ~12-15 agent-hours)
+
+| Phase | Target | LOC | Deliverable |
+|---|---|---|---|
+| 1 | Galerkin `Ḣ¹` energy identity + commutator (Item 2) | ~800 | `d/dt ‖θ_n‖²_{Ḣ¹}` + int-by-parts on finite-support |
+| 2 | MMP → `‖∇u_n‖_{L∞}` bound + Grönwall (Item 2) | ~450 | Uniform `Ḣ¹` bound on Galerkin |
+| 3 | Parametric-`s` energy identity (Item 3) | ~300 | Same structure as Phase 1, `s ∈ (1, 2]` |
+| 4 | Hölder + Sobolev `L^p` on `𝕋²` | ~400 | Prereq for Phase 5 |
+| 5 | BKM integral hypothesis + Grönwall (Item 3) | ~350 | Uniform `Ḣˢ` bound on Galerkin, `s ∈ (1, 2]` |
+| 6 | Littlewood–Paley on `𝕋²`: dyadic projectors `Δ_N` | ~700 | New file `SqgIdentity/LittlewoodPaley.lean` |
+| 7 | Paraproduct `T_f g`, remainder `R(f,g)` | ~600 | Continue LP file |
+| 8 | Commutator `[Jˢ, f]·∇g` estimate | ~500 | Core of Kato–Ponce |
+| 9 | Full Kato–Ponce `‖Jˢ(fg)‖_{L^p}` (Item 5) | ~400 | Consumable by downstream |
+| 10 | SQG flux application + `s > 2` bootstrap | ~200 | Extends §10.174 to unconditional |
+| 11 | Structural hypothesis wrappers, zero-datum, docs | ~300 | `HasBKMIntegral`, zero-datum, CHANGELOG |
+| 12 | CI iteration overhead (~20%) | ~800 | Expected from §10.172 pattern |
+
+### Dependency graph
+
+```
+Phase 1 (Ḣ¹ identity) ──────────────┐
+                                    ├─→ Phase 2 (Item 2 closure)
+Phase 3 (param-s identity) ─────────┤
+                                    ├─→ Phase 5 (Item 3 closure, s≤2)
+Phase 4 (L^p on 𝕋²) ────────────────┘
+                                         │
+Phase 6 (Δ_N projectors) ───────────┐    │
+Phase 7 (paraproducts) ─────────────┤    │
+                                    ├─→ Phase 9 (Kato–Ponce)
+Phase 8 (commutator) ───────────────┘         │
+                                              ├─→ Phase 10 (Item 5 closure, s>2)
+                                         ← Phases 4, 5 (L^p + BKM)
+```
+
+### Order of attack
+
+1. **Phase 6** first (Littlewood–Paley primitives) — unblocks both
+   the commutator chain and future SQG work.  Write in
+   `SqgIdentity/LittlewoodPaley.lean`.
+2. Phases 7, 8, 9 build on Phase 6.
+3. **Phase 1** in parallel — the Galerkin `Ḣ¹` identity is
+   independent of Littlewood–Paley (just chain rule under finite sum).
+4. Phases 2, 3 follow Phase 1.
+5. Phase 4 (`L^p` on `𝕋²`) needed before Phase 5.  Check mathlib
+   — much may already exist via `MeasureTheory.Lp`.
+6. Phases 5, 10 are the closing capstones for Items 3 and 5.
+7. Phase 11 wraps structural hypothesis types + documentation.
+
+### Mathlib gaps to expect
+
+- `Lᵖ(𝕋²)`: mathlib has `Lp` generically but torus-specific
+  interpolation and Sobolev embedding lemmas may need local versions.
+- Littlewood-Paley: not in mathlib yet; write from scratch using
+  `mFourierBasis` + dyadic cutoffs.
+- Fractional Leibniz: exactly what we're adding.
+
+### Session entry points for future agent
+
+- **Start a session with**: "continue Route A, start Phase 6 (Littlewood-Paley primitives)".
+- **Or**: "continue Route A, Item 2 first (Galerkin Ḣ¹ energy identity)".
+- Read `memory/plan_route_A_item_5.md` for the full dependency map.
+
 ## Protocol
 
 - One item per tagged release where practical. No compound changes.
