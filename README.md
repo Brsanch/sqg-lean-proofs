@@ -19,8 +19,8 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 22,800 lines of Lean 4 source in the
-`RieszTorus` module (over 23,500 lines project-wide), with **zero
+The formalization comprises over 25,100 lines of Lean 4 source in the
+`RieszTorus` module (over 25,800 lines project-wide), with **zero
 `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
@@ -349,15 +349,49 @@ instance doesn't export across files).
   chain: `lpProjector_vanishes_off_annulus`, `fourierTruncate_zero`,
   `lpProjector_zero`, `hsSeminormSq_lpProjector_zero`,
   `hsSeminormSq_fourierTruncate_zero`.
+- **§11.17–§11.24** (~900 LOC): Concrete finite-Fourier-support
+  product theory.  `sumSet`, `modeConvolution`, `trigPolyProduct`
+  with closed-form Fourier coefficients (§11.17); Parseval +
+  Cauchy–Schwarz pointwise bounds (§11.18); Peetre lattice
+  inequality + seminorm on a trig polynomial (§11.19); concrete
+  tame support-dependent Kato–Ponce bound (§11.20);
+  `HasTrigPolyKatoPonceBound` structure (§11.21); Young's
+  ℓ¹×ℓ² → ℓ² on `modeConvolution` (§11.22); ℓ¹ → `Ḣˢ`
+  Cauchy–Schwarz bridge (§11.23); uniform-in-support L² product
+  bound (§11.24).
+- **§11.25** (~400 LOC): Banach-algebra `Ḣˢ` product bound.
+  §11.25.A–D + C₂ (Peetre-weighted Young blocks + sqrt-Peetre);
+  §11.25.E full `‖fg‖²_{Ḣˢ} ≤ 2^{2s}·(C_s(A)+C_s(B))·‖f‖²·‖g‖²`
+  support-dependent assembly; §11.25.F support-INDEPENDENT form
+  parametric on `HasLatticeZetaBound s C`; §11.25.G
+  `HasTrigPolyBanachAlgebraBound` structure + `.of_latticeZeta`
+  constructor; §11.25.H₁/H₂ zero-coefficient exemplars; §11.25.I
+  `HasLatticeZetaBound.mono`.
+- **§11.26** (~340 LOC): **Concrete `HasLatticeZetaBound s
+  (latticeZetaConst s)` for every `s > 1`, unconditional.**
+  §11.26.A 1D p-series prep; §11.26.B/B₂ coord → lattice norm;
+  §11.26.C/C₁/C₂/C₃ annular shells on `ℤ²`; §11.26.D `|shell k| ≤ 8k + 4`;
+  §11.26.E `∑_{m ∈ shell k} ‖m‖^{-2s} ≤ (8k+4)·k^{-2s}`;
+  §11.26.F₁/F₂ `latticeZetaConst s := 8·ζ(2s-1) + 4·ζ(2s)`;
+  §11.26.G `shellOf m := max(|m 0|.toNat, |m 1|.toNat)` +
+  positivity, membership, and pairwise-disjointness of shells;
+  §11.26.H shell-partition of any finite `A ⊆ ℤ²\{0}` + disjoint
+  `Finset.sum_biUnion` + `Real.rpow_add` exponent split + finite-
+  to-tsum bridge via `Summable.sum_le_tsum`.  Composed with §11.25.F/G,
+  this gives a **concrete support-independent Banach-algebra `Ḣˢ`
+  product bound with explicit constant** `2^{2s}·(2·latticeZetaConst s)`.
 
-**What remains for unconditional Item 5 closure:** a concrete witness
-of `HasKatoPonceProductBound s C` for arbitrary `s > 2` (classical
-Littlewood–Paley + paraproduct content ~1500–2000 LOC — paraproduct
-`T_f g` and remainder `R(f, g)` defined via `lpProjector` + partial
-sum + `L²`-convergence, then the three classical bounds).  Once
-supplied, the structural chain composes through
-`HasSqgGalerkinHsClosure` → `HasGalerkinHsGronwallFamily` →
-`.global_uniform_bound` feeding §10.174's `hBoundS` hypothesis.
+**What remains for unconditional Item 5 closure:**
+- **Phase 10 wiring via commutator Kato–Ponce** (~200 LOC).
+  Classical SQG analysis uses the COMMUTATOR form `‖[Jˢ, u·∇]θ‖_{L²}
+  ≤ C·(‖∇u‖_{L∞}·‖θ‖_{Ḣˢ} + ‖u‖_{Ḣˢ}·‖∇θ‖_{L∞})` (§11.6), needing
+  L∞-Sobolev embedding `Ḣˢ ⊂ L∞` for `s > d/2 = 1`.  §11.25.E/F/G +
+  §11.26.H provide the support-independent Banach-algebra bound with
+  concrete constant — a stepping stone; the commutator estimate
+  remains.
+- **§10.174 `hBoundS` discharge** (~50 LOC).  Once the uniform Galerkin
+  `Ḣˢ` bound is assembled from the commutator chain, feed it into
+  the full-range Theorem 3 capstone.
 - The remaining Item 1 classical analytical inputs, each consumed by
   the v0.4.39 structural constructors as a precisely-typed, named
   hypothesis:
