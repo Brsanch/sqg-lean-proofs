@@ -21387,4 +21387,33 @@ theorem sqg_regularity_of_aubinLions_uniform_Hs
     (MaterialMaxPrinciple.of_aubinLions_uniform_H1 ext M₁ hBoundOne)
     (BKMCriterionS2.of_aubinLions_uniform_Hs ext Ms hBoundS)
 
+/-! ### §10.170 Zero-datum instance of §10.169
+
+Concrete exercise of the §10.169 capstone on the zero Aubin–Lions
+extraction (`HasAubinLionsExtraction.ofZero`).  Every uniform bound
+is `0`.  Confirms the composition `§10.167.C + §10.168.B +
+sqg_regularity_via_s2_bootstrap` is instantiable. -/
+
+/-- **§10.170  Theorem 3 on the zero Aubin–Lions extraction.**
+
+Unconditional application of §10.169 to
+`HasAubinLionsExtraction.ofZero`.  The uniform `Ḣ¹` and `Ḣˢ` bounds
+on the (identically zero) Galerkin family are trivially `0`, and the
+produced `Ḣˢ` bound on the limit is also `0`. -/
+theorem sqg_regularity_of_aubinLions_ofZero :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((HasAubinLionsExtraction.ofZero).θ_lim t) ≤ M' := by
+  refine sqg_regularity_of_aubinLions_uniform_Hs (θ := 0)
+    (α := fun _ _ _ => (0 : ℂ)) HasAubinLionsExtraction.ofZero 0 (fun _ => 0)
+    ?_ ?_
+  · intro _ _ _
+    -- `hsSeminormSq 1 (galerkinToLp ... (fun _ _ _ => 0) _ _) = 0 ≤ 0`.
+    have hZeroFn : ∀ n : ℕ,
+        ((fun _ _ _ => (0 : ℂ)) : ∀ k, ℝ → (↥(sqgBox k) → ℂ)) n
+          = fun _ _ => (0 : ↥(sqgBox n) → ℂ) := fun n => rfl
+    simp [hsSeminormSq, galerkinToLp_zero]
+  · intro _ _ _ _ _ _
+    simp [hsSeminormSq, galerkinToLp_zero]
+
 end SqgIdentity
