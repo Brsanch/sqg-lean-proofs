@@ -24651,4 +24651,37 @@ lemma card_annularShell_le (k : ℕ) :
     linarith
   linarith [h_each 0, h_each 1]
 
+/-- **§11.26.E — Shell-sum bound.**  For `k ≥ 1` and `s > 0`:
+`∑_{m ∈ annularShell k} ‖m‖^{-2s} ≤ (8k + 4) · k^{-2s}`.  Combines
+`latticeNorm_ge_of_mem_annularShell` (`‖m‖ ≥ k`) with the cardinality
+bound (`|shell| ≤ 8k + 4`).  Sum over `k ≥ 1`: `(8k+4) · k^{-2s} =
+8 k^{1-2s} + 4 k^{-2s}`, both summable for `s > 1` via
+`Real.summable_one_div_nat_rpow`. -/
+lemma sum_annularShell_rpow_le {s : ℝ} (hs_pos : 0 < s) {k : ℕ} (hk : 1 ≤ k) :
+    ∑ m ∈ annularShell k, (latticeNorm m) ^ (-(2 * s))
+      ≤ ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) := by
+  have h_k_pos : 0 < (k : ℝ) := by exact_mod_cast hk
+  have h_k_nn : 0 ≤ (k : ℝ) := le_of_lt h_k_pos
+  have h_2s_nn : 0 ≤ 2 * s := by linarith
+  -- Pointwise bound: for m ∈ shell k, (latticeNorm m)^{-2s} ≤ k^{-2s}
+  have h_pointwise : ∀ m ∈ annularShell k,
+      (latticeNorm m) ^ (-(2 * s)) ≤ ((k : ℝ) ^ (-(2 * s))) := by
+    intros m hm
+    have h_lb : (k : ℝ) ≤ latticeNorm m := latticeNorm_ge_of_mem_annularShell k m hm
+    have h_m_pos : 0 < latticeNorm m := lt_of_lt_of_le h_k_pos h_lb
+    -- latticeNorm m ≥ k > 0, so (latticeNorm m)^{2s} ≥ k^{2s}, hence
+    -- (latticeNorm m)^{-2s} = 1/(latticeNorm m)^{2s} ≤ 1/k^{2s} = k^{-2s}
+    rw [Real.rpow_neg h_k_nn, Real.rpow_neg (le_of_lt h_m_pos)]
+    apply inv_anti₀ (Real.rpow_pos_of_pos h_k_pos _)
+    exact Real.rpow_le_rpow h_k_nn h_lb h_2s_nn
+  -- Sum over shell.
+  calc ∑ m ∈ annularShell k, (latticeNorm m) ^ (-(2 * s))
+      ≤ ∑ _ ∈ annularShell k, ((k : ℝ) ^ (-(2 * s))) := Finset.sum_le_sum h_pointwise
+    _ = (annularShell k).card * ((k : ℝ) ^ (-(2 * s))) := by
+        rw [Finset.sum_const, nsmul_eq_mul]
+    _ ≤ ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) := by
+        apply mul_le_mul_of_nonneg_right
+        · exact_mod_cast card_annularShell_le k
+        · exact Real.rpow_nonneg h_k_nn _
+
 end SqgIdentity
