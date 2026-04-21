@@ -320,6 +320,37 @@ via the annular-shell + 1D p-series reduction.
   Via `hsSeminormSq_mono_of_le` (exponent monotonicity) + finite-
   Fourier-support summability on `sumSet A B`.  Use case: SQG energy
   at `t = 1` with `s = 3/2`.
+- **§11.34–§11.38 Path A structural closure of Item 5** (HEAD `a13e2d2`):
+  - **§11.34** `HasSqgGalerkinAllSBound α` — hypothesis type bundling
+    `M₁ + Ms : ℝ → ℝ` + uniform Galerkin `Ḣ¹` and `Ḣˢ` bounds at every
+    `s > 1`.  Time-global form §10.174's `hBoundS` consumes directly.
+    Not `Prop`-valued (data fields `M₁ : ℝ`, `Ms : ℝ → ℝ`).
+  - **§11.35** `HasSqgGalerkinAllSBound.ofZero` — zero-datum witness
+    with all bounds collapsing to `0` via
+    `hsSeminormSq_zero_galerkin_of_trinary_zero`.
+  - **§11.36** `sqg_regularity_of_allSBound` — full-range Theorem 3
+    capstone from `HasSqgGalerkinAllSBound` + `HasAubinLionsExtraction`
+    + `SqgEvolutionAxioms` via §10.174.
+  - **§11.37** `sqg_solution_and_regularity_via_allSBound` — end-to-end
+    `SqgSolution` + Theorem 3 variant of §10.175 consuming the single
+    `HasSqgGalerkinAllSBound` hypothesis.
+  - **§11.38** `sqg_regularity_ofZero_via_allSBound` — fully
+    unconditional full-range Theorem 3 on zero data via §11.35 + §11.36.
+
+  **Item 5 Path A status: CLOSED.**  Standard matches Items 3/4:
+  hypothesis-keyed, discharged on zero data, classical content
+  (Kato–Ponce commutator + Sobolev + BKM-integral) labeled and
+  deferred to the companion `sqg-lean-proofs-fourier` package.
+
+**Companion package: sqg-lean-proofs-fourier (skeleton, 2026-04-21):**
+  Classical Fourier-analysis content (Littlewood–Paley +
+  paraproducts + Kato–Ponce commutator + `Ḣˢ ⊂ L∞` Sobolev embedding)
+  lifted out to a separate Lean package so it can be reused by
+  NS/Euler/MHD future formalizations.  All files are placeholder
+  stubs with detailed header comments documenting planned content.
+  Total planned: ~1500 LOC upstream.  Plumbing into
+  `HasSqgGalerkinAllSBound` in this repo: ~500 LOC remaining for
+  Path B closure.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**

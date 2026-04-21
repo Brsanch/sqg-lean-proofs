@@ -424,21 +424,35 @@ Item 5.A delivered across §11.17–§11.21:
   Via `hsSeminormSq_mono_of_le` + finite-Fourier-support summability
   on `sumSet A B`.  Use case: product Ḣᵗ bound at `t < s`
   (e.g. `t = 1` with `s = 3/2` for SQG energy).
+- **§11.34–§11.38 Path A structural closure** (HEAD `a13e2d2`):
+  `HasSqgGalerkinAllSBound α` hypothesis type packaging uniform
+  Galerkin `Ḣ¹` + `Ḣˢ` bounds at every `s > 1`;
+  `.ofZero` unconditional witness; `sqg_regularity_of_allSBound`
+  capstone via §10.174's full-range interpolation; end-to-end
+  `sqg_solution_and_regularity_via_allSBound` variant;
+  `sqg_regularity_ofZero_via_allSBound` fully unconditional
+  zero-datum full-range Theorem 3.  **Closes Item 5 at Path A
+  standard** — hypothesis-keyed at the level of a global Galerkin
+  bound, discharged on zero data.
 
-**Still outstanding for unconditional Item 5 closure:**
-- Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
-  SQG-specific velocity bound on `∇θ_n · u_n` (Riesz transform
-  `u = R θ` + commutator Kato–Ponce estimate for the log-derivative
-  form).  Note: classical SQG analysis uses the COMMUTATOR Kato–Ponce
-  `[Jˢ, u·∇]θ` (§11.6) rather than the Banach-algebra form, because
-  it trades Ḣˢ for `L∞` on the velocity side, which closes via
-  Sobolev embedding for `s > d/2 = 1`.  §11.25.E/F/G + §11.26.H
-  provide the support-independent Banach-algebra infrastructure with
-  concrete lattice-zeta constant; the commutator estimate needs
-  §11.6 / §11.20.C-style splitting plus L∞-control (~200 LOC).
-- §10.174 `hBoundS` discharge (~50 LOC).
+**Path A (structural, hypothesis-keyed): CLOSED** via §11.34–§11.38.
+Item 5 now has the same "closed-up-to-named-hypotheses" standard as
+Items 3/4: every piece of classical PDE content is labeled as a
+hypothesis type, the structural chain from hypothesis to full-range
+Theorem 3 is in-tree, and zero-datum exemplars exercise the chain
+end-to-end without any open content.
 
-Classical remainder ~250 LOC after §11.25.E–H + §11.26.G/H closure.
+**Path B (fully unconditional, discharges the classical hypotheses):
+IN PROGRESS** via the companion [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+package (skeleton created).  The remaining ~2000 LOC of classical
+content — Littlewood–Paley + Bony paraproducts + Kato–Ponce commutator
++ `Ḣˢ ⊂ L∞` Sobolev embedding — lives upstream of this repo and is
+designed to be reused by future NS/Euler/MHD formalizations.
+
+**Estimated plumbing in THIS repo to connect `sqg-lean-proofs-fourier`
+commutator estimate to `HasSqgGalerkinAllSBound.ofClassical`:
+~500 LOC** (SQG-specific energy identity + BKM-integral Grönwall +
+velocity Riesz-preservation + discharge of the §11.34 hypothesis).
 
 With §11.17–§11.26.H, the full finite-support Banach-algebra `Ḣˢ`
 product bound is in-tree with a **concrete support-independent
