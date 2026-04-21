@@ -21400,8 +21400,6 @@ Unconditional application of §10.169 to
 `HasAubinLionsExtraction.ofZero`.  The uniform `Ḣ¹` and `Ḣˢ` bounds
 on the (identically zero) Galerkin family are trivially `0`, and the
 produced `Ḣˢ` bound on the limit is also `0`. -/
-set_option diagnostics true in
-set_option diagnostics.threshold 100 in
 theorem sqg_regularity_of_aubinLions_ofZero :
     ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
       ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t →
@@ -21411,12 +21409,15 @@ theorem sqg_regularity_of_aubinLions_ofZero :
         (((fun _ _ _ => (0 : ℂ)) : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) n t)) ≤ (0 : ℝ) := by
     intro n t _
     rw [zero_trinary_apply_eq_zero, galerkinToLp_zero, hsSeminormSq_of_zero]
+    exact le_refl 0
   have hBoundS : ∀ (n : ℕ) (t : ℝ), 0 ≤ t → ∀ s : ℝ, 1 < s → s ≤ 2 →
       hsSeminormSq s (galerkinToLp (sqgBox n)
         (((fun _ _ _ => (0 : ℂ)) : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) n t))
         ≤ ((fun _ : ℝ => (0 : ℝ)) s) := by
     intro n t _ s _ _
+    show hsSeminormSq s _ ≤ (0 : ℝ)
     rw [zero_trinary_apply_eq_zero, galerkinToLp_zero, hsSeminormSq_of_zero]
+    exact le_refl 0
   exact sqg_regularity_of_aubinLions_uniform_Hs (θ := 0)
     (α := fun _ _ _ => (0 : ℂ))
     HasAubinLionsExtraction.ofZero (0 : ℝ) (fun _ : ℝ => (0 : ℝ))
