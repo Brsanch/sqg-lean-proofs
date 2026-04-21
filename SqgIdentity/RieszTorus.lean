@@ -24580,4 +24580,70 @@ lemma annularShell_zero : annularShell 0 = ∅ := by
   rw [Finset.mem_Icc, Nat.cast_zero, neg_zero] at h
   exact le_antisymm h.2 h.1
 
+/-- **§11.26.D — Cardinality bound: `|shell k| ≤ 8k + 4`.**
+
+Bound via the union-of-filters decomposition:
+`annularShell k ⊆ {m | |m 0| = k} ∪ {m | |m 1| = k}` in the piFinset.
+Each side has cardinality `≤ 2 · (2k+1) = 4k+2` via
+`Fintype.card_filter_piFinset_eq_of_mem` + `abs_eq`-split into
+`m i = k` and `m i = -k`.  Sum: `(4k+2) + (4k+2) = 8k+4`.
+
+Tight bound (`8k` exact) requires inclusion-exclusion; the loose
+`8k+4` bound suffices for lattice zeta summability at `s > 1`. -/
+lemma card_annularShell_le (k : ℕ) :
+    (annularShell k).card ≤ 8 * k + 4 := by
+  classical
+  unfold annularShell
+  -- Step 1: drop m ≠ 0 (enlarges set)
+  have h_sub :
+      (Finset.filter (fun m : Fin 2 → ℤ => m ≠ 0 ∧ (|m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ)))
+        (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card
+      ≤ (Finset.filter (fun m : Fin 2 → ℤ => |m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ))
+          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card := by
+    apply Finset.card_le_card
+    intro m hm
+    simp only [Finset.mem_filter] at hm ⊢
+    exact ⟨hm.1, hm.2.2⟩
+  refine le_trans h_sub ?_
+  -- Step 2: split (P ∨ Q) filter via filter_or
+  rw [Finset.filter_or]
+  refine le_trans (Finset.card_union_le _ _) ?_
+  -- Step 3: each sub-filter ≤ 4k+2
+  have h_each : ∀ (i : Fin 2),
+      (Finset.filter (fun m : Fin 2 → ℤ => |m i| = (k : ℤ))
+        (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card
+        ≤ 4 * k + 2 := by
+    intro i
+    -- |m i| = k ↔ m i = k ∨ m i = -k (since k ≥ 0)
+    have h_filter_split :
+        Finset.filter (fun m : Fin 2 → ℤ => |m i| = (k : ℤ))
+          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))
+        = Finset.filter (fun m : Fin 2 → ℤ => m i = (k : ℤ) ∨ m i = -(k : ℤ))
+          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) := by
+      apply Finset.filter_congr
+      intros m _
+      rw [abs_eq (by positivity : (0 : ℤ) ≤ (k : ℤ))]
+    rw [h_filter_split, Finset.filter_or]
+    refine le_trans (Finset.card_union_le _ _) ?_
+    -- Each inner (m i = a) filter: card ≤ 2k+1 via card_filter_piFinset_eq_of_mem
+    have h_card_pt : ∀ a : ℤ,
+        (Finset.filter (fun m : Fin 2 → ℤ => m i = a)
+          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card
+          ≤ 2 * k + 1 := by
+      intro a
+      by_cases ha : a ∈ Finset.Icc (-(k : ℤ)) (k : ℤ)
+      · rw [Fintype.card_filter_piFinset_eq_of_mem
+          (s := fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) i ha]
+        rw [Finset.prod_const]
+        have h_erase_card : ((Finset.univ : Finset (Fin 2)).erase i).card = 1 := by
+          rw [Finset.card_erase_of_mem (Finset.mem_univ i), Fintype.card_fin]
+        rw [h_erase_card, pow_one, Int.card_Icc]
+        omega
+      · rw [Fintype.filter_piFinset_of_notMem _ _ _ ha, Finset.card_empty]
+        omega
+    have h_k := h_card_pt (k : ℤ)
+    have h_neg_k := h_card_pt (-(k : ℤ))
+    linarith
+  linarith [h_each 0, h_each 1]
+
 end SqgIdentity
