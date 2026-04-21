@@ -20182,9 +20182,10 @@ noncomputable def lpOfSummableSqNorm
     (hSum : Summable fun m : Fin 2 → ℤ => ‖b m‖ ^ 2) :
     lp (fun _ : Fin 2 → ℤ => ℂ) 2 := by
   refine ⟨b, ?_⟩
-  have hp : (0 : ℝ) < (2 : ℝ≥0∞).toReal := by norm_num
+  have hp : (0 : ℝ) < (2 : ENNReal).toReal := by
+    rw [ENNReal.toReal_ofNat]; norm_num
   rw [memℓp_gen_iff hp]
-  simpa using hSum
+  simpa [ENNReal.toReal_ofNat] using hSum
 
 /-- **§10.158.D  `lpOfSummableSqNorm` coefficient recovery.** -/
 theorem lpOfSummableSqNorm_coeff
