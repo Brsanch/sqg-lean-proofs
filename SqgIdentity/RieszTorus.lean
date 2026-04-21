@@ -25144,6 +25144,118 @@ theorem hsSeminormSq_trigPolyProduct_le_latticeZeta_interp
   have h_prod := (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A B cf cg hA hB
   exact le_trans h_mono h_prod
 
+/-! ### §11.34 Parametric-`s` global Galerkin `Ḣˢ` bound hypothesis
+
+Packages a time-global uniform `Ḣˢ` Galerkin bound `Ms(s)` across
+every `s > 1` into a single hypothesis consumable by §10.174's
+`hBoundS`.  Complements §11.8's `HasSqgGalerkinHsClosure` (which is
+local-in-time via Grönwall) with the `∀ t ≥ 0` form §10.174 expects.
+
+**Relationship to §11.8:** `HasSqgGalerkinHsClosure s α` gives
+`|∂_t E| ≤ K · |E|` on `[0, T]`, yielding `E(t) ≤ E₀ · exp(K·T)` —
+T-dependent.  For §10.174's global `hBoundS`, we need `E(t) ≤ Ms s`
+uniform in `t`, which requires either strict conservation (K = 0,
+the zero-data case) or BKM-integral finiteness.  This structure
+abstracts that global bound directly. -/
+
+/-- **§11.34 — Parametric-`s` global uniform Galerkin `Ḣˢ` bound.**
+Packages the uniform-in-`n`-and-`t` `Ḣˢ` bound at every `s > 1`. -/
+structure HasSqgGalerkinAllSBound
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) : Prop where
+  M₁ : ℝ
+  hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+    hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁
+  Ms : ℝ → ℝ
+  hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+    hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s
+
+/-! ### §11.35 Zero-datum witness of `HasSqgGalerkinAllSBound`
+
+The zero Galerkin trajectory trivially satisfies the global uniform
+`Ḣˢ` bound at every `s > 1` with `M₁ = 0, Ms s = 0`.  Parallels
+§10.176 but packaged as a `HasSqgGalerkinAllSBound` witness. -/
+
+/-- **§11.35 — Zero-datum `HasSqgGalerkinAllSBound` witness.** -/
+theorem HasSqgGalerkinAllSBound.ofZero :
+    HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) where
+  M₁ := 0
+  hBoundOne := fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le
+  Ms := fun _ => 0
+  hBoundS := fun n t _ s _ =>
+    (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le
+
+/-! ### §11.36 Full-range Theorem 3 from `HasSqgGalerkinAllSBound`
+
+Structural capstone: given a `HasSqgGalerkinAllSBound α` hypothesis
++ an Aubin-Lions extraction + `SqgEvolutionAxioms` on the limit,
+the full-range Theorem 3 conclusion follows via §10.174.
+This is the "Path A" structural closure of Item 5: hypothesis-
+keyed at the level of a global Galerkin `Ḣˢ` bound, which
+discharges unconditionally on zero data (§11.35) and classically
+via commutator Kato–Ponce + BKM-integral + Grönwall for general
+data (the remaining Path B classical content). -/
+
+/-- **§11.36 — Full-range Theorem 3 via `HasSqgGalerkinAllSBound`.** -/
+theorem sqg_regularity_of_allSBound
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hAllS : HasSqgGalerkinAllSBound α)
+    (hE : SqgEvolutionAxioms ext.θ_lim) :
+    ∀ s : ℝ, 0 ≤ s →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (ext.θ_lim t) ≤ M' :=
+  sqg_regularity_of_aubinLions_via_interpolation
+    ext hAllS.M₁ hAllS.Ms hAllS.hBoundOne hAllS.hBoundS hE
+
+/-! ### §11.37 End-to-end `SqgSolution` + Theorem 3 via
+`HasSqgGalerkinAllSBound`
+
+Parallel to §10.175 but packaged with the single
+`HasSqgGalerkinAllSBound` hypothesis covering both `M₁` and `Ms`. -/
+
+/-- **§11.37 — End-to-end via `HasSqgGalerkinAllSBound`.** -/
+theorem sqg_solution_and_regularity_via_allSBound
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (ext.θ_lim 0) n‖ ^ 2))
+    (hAllS : HasSqgGalerkinAllSBound α) :
+    ∃ sol : SqgSolution, sol.θ = ext.θ_lim ∧
+      ∀ s : ℝ, 0 ≤ s →
+        ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (sol.θ t) ≤ M' :=
+  sqg_solution_and_regularity_via_RouteB_interpolation
+    ext hLevel hu hSmooth hAllS.M₁ hAllS.Ms hAllS.hBoundOne hAllS.hBoundS
+
+/-! ### §11.38 Unconditional zero-datum end-to-end full-range Theorem 3
+
+Composes §11.35 (zero `HasSqgGalerkinAllSBound`) with §11.36 on the
+zero Aubin–Lions extraction.  Delivers a fully unconditional form
+of Theorem 3 on the zero solution, at every `s ≥ 0`, from zero
+classical content via the Path A structural chain. -/
+
+/-- **§11.38 — Unconditional full-range Theorem 3 on zero data
+via `HasSqgGalerkinAllSBound`.** -/
+theorem sqg_regularity_ofZero_via_allSBound :
+    ∀ s : ℝ, 0 ≤ s →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((HasAubinLionsExtraction.ofZero).θ_lim t) ≤ M' := by
+  have hE : SqgEvolutionAxioms (HasAubinLionsExtraction.ofZero).θ_lim :=
+    SqgEvolutionAxioms.of_identically_zero
+      (HasAubinLionsExtraction.ofZero).θ_lim
+      (fun _ => rfl)
+  exact sqg_regularity_of_allSBound (θ := 0)
+    (α := fun _ _ _ => (0 : ℂ))
+    HasAubinLionsExtraction.ofZero
+    HasSqgGalerkinAllSBound.ofZero
+    hE
+
 /-! ### §11.29 Monotone constant form
 
 For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`, the Banach-algebra bound
