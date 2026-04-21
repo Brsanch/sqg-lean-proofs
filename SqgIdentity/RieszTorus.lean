@@ -23433,4 +23433,180 @@ noncomputable def HasTrigPolyKatoPonceBound.of_peetre
             push_cast
             ring
 
+/-! ### §11.22 Young's ℓ¹ × ℓ² → ℓ² on `modeConvolution`
+
+The finite-lattice version of Young's convolution inequality:
+  `∑_n |modeConv(A, B, cf, cg)(n)|² ≤ (∑_a |cf a|)² · (∑_b |cg b|²)`
+
+This is support-independent in the ℓ¹ norm of `cf`: the RHS does not
+carry the `(A ×ˢ B).card` factor of §11.20.  Combined with the ℓ¹
+Cauchy–Schwarz bound `(∑ |cf a|)² ≤ C_s · ‖f‖²_{H^s}` (for `s > d/2`,
+via lattice summability of `∑ ⟨m⟩^{-2s}`), this delivers the genuinely
+uniform-in-support Kato–Ponce bound.  This section proves the Young
+half; the Cauchy–Schwarz half is §11.23. -/
+
+/-- **§11.22.A — Triangle bound on `modeConvolution`.** -/
+private lemma modeConvolution_norm_le_sum_abs
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    ‖modeConvolution A B cf cg n‖
+      ≤ ∑ p ∈ A ×ˢ B,
+          (if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0) := by
+  rw [modeConvolution_eq_prod_sum]
+  refine le_trans (norm_sum_le _ _) ?_
+  apply Finset.sum_le_sum
+  intros p _
+  split_ifs with h
+  · rw [norm_mul]
+  · rw [norm_zero]
+
+/-- **§11.22.B — Weighted Cauchy–Schwarz on the indicator sum.**
+`(∑ χ · |cf|·|cg|)² ≤ (∑ χ · |cf|) · (∑ χ · |cf|·|cg|²)`.
+Applies `Finset.sum_mul_sq_le_sq_mul_sq` with `F = χ · √|cf|` and
+`G = χ · √|cf|·|cg|`. -/
+private lemma sum_pair_indicator_sq_le_cs
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0) ^ 2
+      ≤ (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n then ‖cf p.1‖ else 0)
+          * (∑ p ∈ A ×ˢ B,
+              if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0) := by
+  set F : (Fin 2 → ℤ) × (Fin 2 → ℤ) → ℝ := fun p =>
+    if p.1 + p.2 = n then Real.sqrt ‖cf p.1‖ else 0 with hF_def
+  set G : (Fin 2 → ℤ) × (Fin 2 → ℤ) → ℝ := fun p =>
+    if p.1 + p.2 = n then Real.sqrt ‖cf p.1‖ * ‖cg p.2‖ else 0 with hG_def
+  have h_FG : ∀ p, F p * G p
+      = if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0 := by
+    intro p
+    simp only [hF_def, hG_def]
+    split_ifs
+    · rw [mul_mul_mul_comm, Real.mul_self_sqrt (norm_nonneg _)]
+    · ring
+  have h_F_sq : ∀ p, F p ^ 2
+      = if p.1 + p.2 = n then ‖cf p.1‖ else 0 := by
+    intro p
+    simp only [hF_def]
+    split_ifs
+    · rw [Real.sq_sqrt (norm_nonneg _)]
+    · ring
+  have h_G_sq : ∀ p, G p ^ 2
+      = if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0 := by
+    intro p
+    simp only [hG_def]
+    split_ifs
+    · rw [mul_pow, Real.sq_sqrt (norm_nonneg _)]
+    · ring
+  have hCS := Finset.sum_mul_sq_le_sq_mul_sq (A ×ˢ B) F G
+  rw [Finset.sum_congr rfl (fun p _ => h_FG p),
+      Finset.sum_congr rfl (fun p _ => h_F_sq p),
+      Finset.sum_congr rfl (fun p _ => h_G_sq p)] at hCS
+  exact hCS
+
+/-- **§11.22.C — First factor bound.** Sum of `χ(a+b=n) · ‖cf a‖`
+across `A ×ˢ B` is bounded by `∑_{a ∈ A} ‖cf a‖` (independent of `n`). -/
+private lemma sum_pair_indicator_first_le_ℓ1
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n then ‖cf p.1‖ else 0)
+      ≤ ∑ a ∈ A, ‖cf a‖ := by
+  calc ∑ p ∈ A ×ˢ B, (if p.1 + p.2 = n then ‖cf p.1‖ else 0)
+      = ∑ a ∈ A, ∑ b ∈ B, (if a + b = n then ‖cf a‖ else 0) := by
+          rw [Finset.sum_product]
+    _ ≤ ∑ a ∈ A, ‖cf a‖ := by
+          apply Finset.sum_le_sum
+          intros a _
+          -- Inner sum: ∑ b ∈ B, χ(b = n - a) · ‖cf a‖ = ‖cf a‖ · (at most 1).
+          have h_cond : ∀ b, (a + b = n) ↔ (b = n - a) := fun b => by
+            constructor
+            · intro h; linarith
+            · intro h; linarith
+          have h_eq : ∀ b ∈ B, (if a + b = n then ‖cf a‖ else 0)
+              = if b = n - a then ‖cf a‖ else 0 := fun b _ => by
+            rw [show (a + b = n) = (b = n - a) from propext (h_cond b)]
+          rw [Finset.sum_congr rfl h_eq]
+          rw [Finset.sum_ite_eq' B (n - a) (fun _ => ‖cf a‖)]
+          split_ifs
+          · rfl
+          · exact norm_nonneg _
+
+/-- **§11.22.D — Inner-sum swap via §11.20.A pattern.**
+`∑ n ∈ sumSet, ∑ p, χ(p.1+p.2=n) · X(p) = ∑ p, X(p)`.
+Specialized form used below. -/
+private lemma sum_sumSet_pair_cfcg_reorder
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B, ∑ p ∈ A ×ˢ B,
+        (if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0)
+      = ∑ p ∈ A ×ˢ B, ‖cf p.1‖ * ‖cg p.2‖ ^ 2 :=
+  sum_sumSet_pair_reorder A B (fun p => ‖cf p.1‖ * ‖cg p.2‖ ^ 2)
+
+/-- **§11.22.E — Young's ℓ¹ × ℓ² → ℓ² on `modeConvolution`.**
+`∑_{n ∈ sumSet} ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖)² · (∑_b ‖cg b‖²)`. -/
+theorem hsSeminormSq_zero_trigPolyProduct_le_young
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖) ^ 2 * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+  -- Step 1: Pointwise bound via triangle + CS.
+  have h_pointwise : ∀ n ∈ sumSet A B,
+      ‖modeConvolution A B cf cg n‖ ^ 2
+        ≤ (∑ a ∈ A, ‖cf a‖)
+            * (∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0) := by
+    intros n _
+    have h_tri := modeConvolution_norm_le_sum_abs A B cf cg n
+    have h_tri_sq : ‖modeConvolution A B cf cg n‖ ^ 2
+        ≤ (∑ p ∈ A ×ˢ B,
+            if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0) ^ 2 :=
+      pow_le_pow_left₀ (norm_nonneg _) h_tri 2
+    have h_cs := sum_pair_indicator_sq_le_cs A B cf cg n
+    have h_first_bound := sum_pair_indicator_first_le_ℓ1 A B cf n
+    have h_second_nn : 0 ≤ ∑ p ∈ A ×ˢ B,
+        (if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0) :=
+      Finset.sum_nonneg (fun p _ => by
+        split_ifs
+        · exact mul_nonneg (norm_nonneg _) (sq_nonneg _)
+        · exact le_refl _)
+    calc ‖modeConvolution A B cf cg n‖ ^ 2
+        ≤ (∑ p ∈ A ×ˢ B,
+            if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0) ^ 2 := h_tri_sq
+      _ ≤ (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n then ‖cf p.1‖ else 0)
+            * (∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0) := h_cs
+      _ ≤ (∑ a ∈ A, ‖cf a‖)
+            * (∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0) :=
+            mul_le_mul_of_nonneg_right h_first_bound h_second_nn
+  -- Step 2: Sum over n ∈ sumSet A B.
+  have h_sum := Finset.sum_le_sum h_pointwise
+  -- Step 3: Factor (∑ ‖cf‖) out + apply sum reorder (§11.22.D).
+  have h_factor :
+      ∑ n ∈ sumSet A B, (∑ a ∈ A, ‖cf a‖) *
+          (∑ p ∈ A ×ˢ B,
+              if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0)
+        = (∑ a ∈ A, ‖cf a‖) *
+            ∑ p ∈ A ×ˢ B, ‖cf p.1‖ * ‖cg p.2‖ ^ 2 := by
+    rw [← Finset.mul_sum]
+    congr 1
+    exact sum_sumSet_pair_cfcg_reorder A B cf cg
+  rw [h_factor] at h_sum
+  -- Step 4: Factor the product sum.
+  have h_factor_prod :
+      ∑ p ∈ A ×ˢ B, ‖cf p.1‖ * ‖cg p.2‖ ^ 2
+        = (∑ a ∈ A, ‖cf a‖) * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+    calc ∑ p ∈ A ×ˢ B, ‖cf p.1‖ * ‖cg p.2‖ ^ 2
+        = ∑ a ∈ A, ∑ b ∈ B, ‖cf a‖ * ‖cg b‖ ^ 2 := by
+              rw [Finset.sum_product]
+      _ = ∑ a ∈ A, ‖cf a‖ * ∑ b ∈ B, ‖cg b‖ ^ 2 := by
+              apply Finset.sum_congr rfl
+              intros a _
+              rw [← Finset.mul_sum]
+      _ = (∑ a ∈ A, ‖cf a‖) * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+              rw [← Finset.sum_mul]
+  rw [h_factor_prod] at h_sum
+  calc ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖) *
+          ((∑ a ∈ A, ‖cf a‖) * (∑ b ∈ B, ‖cg b‖ ^ 2)) := h_sum
+    _ = (∑ a ∈ A, ‖cf a‖) ^ 2 * (∑ b ∈ B, ‖cg b‖ ^ 2) := by ring
+
 end SqgIdentity
