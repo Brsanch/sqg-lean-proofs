@@ -20981,4 +20981,66 @@ theorem sqgGalerkin_hExtract_witness
   rw [h_fn]
   exact hb m t ht
 
+/-! ### §10.166 Per-mode discharges of §10.153.C's `hDeriv` / `hCont`
+
+§10.166 extracts §10.153.C's restricted `hDeriv` and `hCont` hypotheses
+from the whole-trajectory derivative produced by §10.116.  The
+projection to coordinate `⟨m, hm⟩ : ↥(sqgBox n)` uses mathlib's
+`hasDerivWithinAt_pi` and `continuousOn_pi`.
+
+The definitional identity
+`galerkinVectorField (sqgBox n) c ⟨m, hm⟩
+  = galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) c) m`
+(line 13737 `rfl`) bridges the whole-vector-field form to the
+`galerkinRHS`-against-`galerkinExtend` form §10.153.C expects.
+
+With these discharges, §10.153.C's hypotheses are entirely consumable
+from a §10.116 trajectory at every `m ∈ sqgBox n`; leakage modes
+(handled internally by §10.153.C, see line 19920ff) need no extra data. -/
+
+/-- **§10.166.A  `hDeriv` discharge.**  Given the whole-trajectory
+derivative of §10.116, project to the per-mode form §10.153.C demands:
+for each `m ∈ sqgBox n` and each `τ ≥ 0`,
+`σ ↦ galerkinExtend (sqgBox n) (α n σ) m` has derivative
+`galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m` at `τ`
+on `Set.Ici τ`. -/
+theorem sqgGalerkin_hDeriv_of_galerkinVectorField
+    [DecidableEq (Fin 2 → ℤ)]
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hα : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ →
+      HasDerivWithinAt (α n) (galerkinVectorField (sqgBox n) (α n τ))
+        (Set.Ici (0 : ℝ)) τ)
+    (n : ℕ) (τ : ℝ) (hτ : 0 ≤ τ) (m : Fin 2 → ℤ) (hm : m ∈ sqgBox n) :
+    HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+      (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+      (Set.Ici τ) τ := by
+  have h_pi := hasDerivWithinAt_pi.mp (hα n τ hτ) ⟨m, hm⟩
+  have h_fn : (fun σ => α n σ ⟨m, hm⟩) = fun σ => galerkinExtend (sqgBox n) (α n σ) m := by
+    funext σ; exact (galerkinExtend_apply_of_mem _ _ hm).symm
+  have h_vf : galerkinVectorField (sqgBox n) (α n τ) ⟨m, hm⟩
+      = galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m := rfl
+  rw [h_fn, h_vf] at h_pi
+  exact h_pi.mono (Set.Ici_subset_Ici.mpr hτ)
+
+/-- **§10.166.B  `hCont` discharge.**  Given the whole-trajectory
+derivative of §10.116 (which gives continuity on `Ici 0`), project and
+restrict to obtain the `ContinuousOn ... (Icc s t)` form §10.153.C
+demands. -/
+theorem sqgGalerkin_hCont_of_galerkinVectorField
+    [DecidableEq (Fin 2 → ℤ)]
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hα : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ →
+      HasDerivWithinAt (α n) (galerkinVectorField (sqgBox n) (α n τ))
+        (Set.Ici (0 : ℝ)) τ)
+    (n : ℕ) (m : Fin 2 → ℤ) (hm : m ∈ sqgBox n) (s t : ℝ) (hs : 0 ≤ s) (hst : s ≤ t) :
+    ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m) (Set.Icc s t) := by
+  have hα_cont : ContinuousOn (α n) (Set.Ici (0 : ℝ)) := fun τ hτ =>
+    (hα n τ hτ).continuousWithinAt
+  have h_coord : ContinuousOn (fun σ => α n σ ⟨m, hm⟩) (Set.Ici (0 : ℝ)) :=
+    continuousOn_pi.mp hα_cont ⟨m, hm⟩
+  have h_fn : (fun σ => α n σ ⟨m, hm⟩) = fun σ => galerkinExtend (sqgBox n) (α n σ) m := by
+    funext σ; exact (galerkinExtend_apply_of_mem _ _ hm).symm
+  rw [h_fn] at h_coord
+  exact h_coord.mono (fun x hx => le_trans hs hx.1)
+
 end SqgIdentity
