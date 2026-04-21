@@ -25159,9 +25159,11 @@ the zero-data case) or BKM-integral finiteness.  This structure
 abstracts that global bound directly. -/
 
 /-- **§11.34 — Parametric-`s` global uniform Galerkin `Ḣˢ` bound.**
-Packages the uniform-in-`n`-and-`t` `Ḣˢ` bound at every `s > 1`. -/
+Packages the uniform-in-`n`-and-`t` `Ḣˢ` bound at every `s > 1`.
+
+Not `Prop`-valued: `M₁ : ℝ` and `Ms : ℝ → ℝ` are data fields. -/
 structure HasSqgGalerkinAllSBound
-    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) : Prop where
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
   M₁ : ℝ
   hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
     hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁
@@ -25176,7 +25178,7 @@ The zero Galerkin trajectory trivially satisfies the global uniform
 §10.176 but packaged as a `HasSqgGalerkinAllSBound` witness. -/
 
 /-- **§11.35 — Zero-datum `HasSqgGalerkinAllSBound` witness.** -/
-theorem HasSqgGalerkinAllSBound.ofZero :
+noncomputable def HasSqgGalerkinAllSBound.ofZero :
     HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) where
   M₁ := 0
   hBoundOne := fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le
