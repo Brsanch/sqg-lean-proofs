@@ -177,13 +177,39 @@ concrete trig-poly Kato–Ponce delivered across §11.17–§11.21
 
 **Still outstanding for unconditional Item 5.A closure:**
 - Global lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞`
-  for `s > 1` (~100 LOC).
+  for `s > 1` (~150 LOC).
 - `HasTrigPolyKatoPonceBound → HasSqgGalerkinHsClosure` bridge via
   SQG velocity `u_n = R θ_n` (Riesz transform) + gradient `∇θ_n`
   (~200 LOC).
 - §10.174 `hBoundS` discharge (~50 LOC).
 
-Classical remainder ~350 LOC.
+Classical remainder ~400 LOC.
+
+- **§11.25.F** `hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra`
+  — **support-independent Banach-algebra `Ḣˢ` bound.**  Parametrises
+  §11.25.E on a uniform lattice-zeta bound:
+  `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · 2C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
+  for `s ≥ 1`, `0 ∉ A`, `0 ∉ B`, `HasLatticeZetaBound s C`.  Proof:
+  compose §11.25.E with the per-finset hypothesis `C_s(A) ≤ C` and
+  `C_s(B) ≤ C` via `linarith` on `C_s(A) + C_s(B) ≤ 2C`, then
+  `mul_le_mul_of_nonneg_left` + `ring`.  §11.25.F₁
+  `HasLatticeZetaBound (s C : ℝ) : Prop` structure bundles the
+  uniform finite-sum bound as a `Prop` hypothesis; concrete witness
+  for `s > 1` via global lattice zeta summability remains open.
+- **§11.25.G + §11.25.H** — hypothesis structure + zero-coefficient
+  exemplar.
+  - **§11.25.G₁** `HasTrigPolyBanachAlgebraBound (s C : ℝ) : Prop`
+    structure: bundles `‖fg‖²_{Ḣˢ} ≤ C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}` as
+    a `Prop` for every `A, B ⊆ ℤ² \ {0}` finite.  Parallel to §11.21
+    `HasTrigPolyKatoPonceBound` but Banach-algebra form rather than
+    Leibniz split form.
+  - **§11.25.G** `HasTrigPolyBanachAlgebraBound.of_latticeZeta` —
+    constructor from `HasLatticeZetaBound s C_z` + `s ≥ 1` to
+    `HasTrigPolyBanachAlgebraBound s (2^{2s} · 2C_z)` via §11.25.F.
+  - **§11.25.H** `hsSeminormSq_trigPolyProduct_zero_le_banach_algebra`
+    — zero-coefficient exemplar.  When `cf = 0`,
+    `trigPolyProduct_zero_left` + `hsSeminormSq_of_zero` give `LHS = 0`,
+    RHS ≥ 0 at any `C ≥ 0`.  Structural sanity check.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**

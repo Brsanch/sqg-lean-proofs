@@ -331,22 +331,49 @@ Item 5.A delivered across §11.17–§11.21:
   into `C_s(·) · hsSeminormSq`.  Helper lemma §11.25.E₁
   `fracDerivSymbol_mul_modeConvolution_norm_le_sqrt_peetre` isolates
   the pointwise sqrt-Peetre bound (linear form).
+- §11.25.F `hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra`:
+  **Support-independent Banach-algebra bound** —
+  `HasLatticeZetaBound s C`-parametrised form of §11.25.E:
+  `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · 2C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
+  for `s ≥ 1`, `0 ∉ A`, `0 ∉ B`.  Composes §11.25.E with
+  `C_s(A) + C_s(B) ≤ 2C` via linarith + ring.  §11.25.F₁
+  `HasLatticeZetaBound (s C : ℝ) : Prop` structure: uniform
+  `∑_{a ∈ A} ‖a‖^{-2s} ≤ C` for every `A ⊆ ℤ² \ {0}` finite.
+  Concrete witness requires global summability on `ℤ² \ {0}` for
+  `s > d/2 = 1` (standard 2D real-analysis fact; deferred).
+- §11.25.G `HasTrigPolyBanachAlgebraBound s C` — hypothesis structure
+  parallel to §11.21 `HasTrigPolyKatoPonceBound` but in Banach-algebra
+  form `C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`.  §11.25.G
+  `HasTrigPolyBanachAlgebraBound.of_latticeZeta` concrete constructor:
+  `HasLatticeZetaBound s C_z` + `s ≥ 1` → instance at `C = 2^{2s} · 2C_z`.
+- §11.25.H `hsSeminormSq_trigPolyProduct_zero_le_banach_algebra` —
+  zero-coefficient exemplar: `cf = 0` ⟹ `trigPolyProduct = 0` ⟹ bound
+  trivially holds at any `C ≥ 0`.  Structural witness.
 
 **Still outstanding for unconditional Item 5 closure:**
 - Global lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
-  `s > d/2 = 1` on `𝕋²` (standard 2D real-analysis fact; ~100 LOC).
-  Promotes §11.25.E's support-dependent `C_s(A) + C_s(B)` to a
-  support-INDEPENDENT absolute constant for `A, B = sqgBox n`.
+  `s > d/2 = 1` on `𝕋²` (standard 2D real-analysis fact; ~150 LOC).
+  Provides concrete `HasLatticeZetaBound s C` witness, discharging
+  §11.25.G's remaining hypothesis.
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
   SQG-specific velocity bound on `∇θ_n · u_n` (Riesz transform
-  `u = R θ` + gradient estimate; ~200 LOC).
+  `u = R θ` + commutator Kato–Ponce estimate for the log-derivative
+  form).  Note: classical SQG analysis uses the COMMUTATOR Kato–Ponce
+  `[Jˢ, u·∇]θ` (§11.6) rather than the Banach-algebra form, because
+  it trades Ḣˢ for `L∞` on the velocity side, which closes via
+  Sobolev embedding for `s > d/2 = 1`.  §11.25.E/F/G provide the
+  support-independent Banach-algebra infrastructure; the commutator
+  estimate needs §11.6 / §11.20.C-style splitting plus L∞-control
+  (~200 LOC).
 - §10.174 `hBoundS` discharge (~50 LOC).
 
-Classical remainder ~350 LOC after §11.25.E closure.
+Classical remainder ~400 LOC after §11.25.E–H closure.
 
-With §11.17–§11.25.E, the full finite-support Banach-algebra `Ḣˢ`
-product bound is in-tree.  Next step: lift to support-independent
-via global lattice zeta summability + Phase 10 wiring.
+With §11.17–§11.25.H, the full finite-support Banach-algebra `Ḣˢ`
+product bound is in-tree, plus the `HasTrigPolyBanachAlgebraBound`
+hypothesis structure and its zero-coefficient exemplar.  Next steps:
+(i) concrete lattice zeta witness for `HasLatticeZetaBound s C`;
+(ii) Phase 10 wiring via §11.6 commutator + L∞ Sobolev embedding.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:
