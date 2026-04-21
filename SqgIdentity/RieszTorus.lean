@@ -24568,15 +24568,16 @@ lemma latticeNorm_ge_of_mem_annularShell (k : ℕ) (m : Fin 2 → ℤ)
 /-- **§11.26.C₃ — Shell at level `0` is empty.** -/
 lemma annularShell_zero : annularShell 0 = ∅ := by
   unfold annularShell
-  ext m
-  simp only [Finset.mem_filter, Fintype.mem_piFinset, Finset.mem_Icc,
-    Finset.not_mem_empty, iff_false]
-  rintro ⟨h_Icc, h_ne, h_eq⟩
+  apply Finset.eq_empty_of_forall_notMem
+  intros m hm
+  rw [Finset.mem_filter, Fintype.mem_piFinset] at hm
+  obtain ⟨h_Icc, h_ne, _⟩ := hm
   apply h_ne
   funext i
   have h := h_Icc i
-  push_cast at h
-  interval_cases (m i)
-  all_goals rfl
+  rw [Finset.mem_Icc] at h
+  have h_pos : -(↑(0 : ℕ) : ℤ) ≤ m i := h.1
+  have h_upper : m i ≤ ↑(0 : ℕ) := h.2
+  omega
 
 end SqgIdentity
