@@ -22377,7 +22377,7 @@ classical case where the BKM integral is finite). -/
 /-- **Phase 2/5 input package** for a single Galerkin level. -/
 structure HasGalerkinHsGronwallLevel
     (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
-    (α : ℝ → (↥S → ℂ)) : Prop where
+    (α : ℝ → (↥S → ℂ)) where
   hDeriv : ∀ t, HasDerivAt α (galerkinVectorField S (α t)) t
   /-- `K` is the (nominally time-integrable) velocity control constant. -/
   K : ℝ
@@ -22441,7 +22441,7 @@ theorem HasGalerkinHsGronwallLevel.bound_on_Icc
 /-- **Uniform-across-levels Phase 2 input package** for the Galerkin
 family indexed by `n : ℕ`. -/
 structure HasGalerkinHsGronwallFamily
-    (s : ℝ) (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) : Prop where
+    (s : ℝ) (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
   level : ∀ n : ℕ, HasGalerkinHsGronwallLevel s (α n)
   /-- Uniform-in-`n` velocity control and initial-data bounds. -/
   K_uniform : ℝ
