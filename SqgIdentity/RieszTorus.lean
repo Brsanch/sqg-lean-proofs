@@ -21254,4 +21254,90 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
   · intro k t ht
     exact hBound (ext.nsub k) t ht
 
+/-! ### §10.168 `BKMCriterionS2` off the finite-Fourier-support class
+
+Item 4 of `OPEN.md`.  Parallel companion to §10.167: lifts §10.57
+(`BKMCriterionS2.of_finite_support_uniform`) from the finite-Fourier-
+support + uniform-ℓ∞ class to the strong-`L²` limit class via the same
+LSC mechanism.  §10.167.A is generic in `s`, so the `Ḣ¹` → `Ḣ²` step
+there applies verbatim at every `s ∈ (1, 2]`.
+
+The `BKMCriterionS2.hsPropagationS2` field asks for a `Ḣˢ` uniform
+bound given a `Ḣ¹` uniform bound on `θ`.  On the `L²`-limit class we
+get the `Ḣˢ` bound directly from a uniform `Ḣˢ` bound on the Galerkin
+approximation, so the `Ḣ¹` hypothesis is unused.  The caller supplies
+`Ms : ℝ → ℝ` — the `Ḣˢ` bound as a function of `s ∈ (1, 2]`.
+
+### §10.168.A BKM discharge from an `L²`-limit sequence with uniform
+`Ḣˢ` control
+
+The minimum hypotheses for BKM to propagate to the limit:
+
+* `hConv` — pointwise-in-`t` strong-`L²` convergence `fₙ(t) → θ(t)`.
+* `hSumm_fn` — per-`n`-per-`t`-per-`s` summability of the weighted
+  Fourier family on `fₙ`.
+* `hBound` — uniform-in-`n`-and-`t` `Ḣˢ` bound on `fₙ` at every
+  `s ∈ (1, 2]`. -/
+theorem BKMCriterionS2.of_L2_limit_uniform_Hs
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (fₙ : ℕ → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hConv : ∀ t : ℝ, 0 ≤ t →
+      Filter.Tendsto (fun n => ∫ x, ‖fₙ n t x - θ t x‖ ^ 2)
+        Filter.atTop (nhds 0))
+    (Ms : ℝ → ℝ)
+    (hSumm_fn : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s → s ≤ 2 →
+      Summable (fun m : Fin 2 → ℤ =>
+        (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n t) m‖ ^ 2))
+    (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s → s ≤ 2 →
+      hsSeminormSq s (fₙ n t) ≤ Ms s) :
+    BKMCriterionS2 θ where
+  hsPropagationS2 := fun _ s hs1 hs2 =>
+    ⟨Ms s, fun t ht =>
+      (hsSeminormSq_le_of_L2_limit_uniform_bound (s := s) (M := Ms s)
+        (hConv t ht)
+        (fun n => hSumm_fn n t ht s hs1 hs2)
+        (fun n => hBound n t ht s hs1 hs2)).2⟩
+
+/-! ### §10.168.B `BKMCriterionS2` for the Aubin–Lions limit
+
+Specializes §10.168.A to `HasAubinLionsExtraction`.  Summability of the
+weighted family comes for free from the finite Fourier support of each
+Galerkin state via `hsSeminormSq_summable_of_finite_support`. -/
+
+/-- **Auxiliary: weighted `Ḣˢ` Fourier family of a `galerkinToLp` state
+is summable at every `s`.**  Parametric `s` companion to
+§10.167's `hsSeminormSq_one_summable_galerkinToLp`. -/
+theorem hsSeminormSq_summable_galerkinToLp
+    (s : ℝ) (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) :
+    Summable (fun m : Fin 2 → ℤ =>
+      (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) m‖ ^ 2) :=
+  hsSeminormSq_summable_of_finite_support s (galerkinToLp S c) S
+    (fun m hm => mFourierCoeff_galerkinToLp_eq_zero_of_not_mem S c hm)
+
+/-- **§10.168.B  BKM discharge for the Aubin–Lions limit.**
+
+Consumes a `HasAubinLionsExtraction` witness plus a uniform-in-`n`-
+and-`t` `Ḣˢ` bound on the Galerkin states at every `s ∈ (1, 2]`, and
+produces `BKMCriterionS2 (ext.θ_lim)` via §10.168.A.  Same DecidableEq
+auto-synthesis pattern as §10.167.C (no explicit instance binder). -/
+theorem BKMCriterionS2.of_aubinLions_uniform_Hs
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (Ms : ℝ → ℝ)
+    (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s → s ≤ 2 →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    BKMCriterionS2 ext.θ_lim := by
+  refine BKMCriterionS2.of_L2_limit_uniform_Hs (θ := ext.θ_lim)
+    (fₙ := fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+    ?_ Ms ?_ ?_
+  · intro t ht
+    exact ext.tendsto_L2 t ht
+  · intro k t _ s _ _
+    exact hsSeminormSq_summable_galerkinToLp s
+      (sqgBox (ext.nsub k)) (α (ext.nsub k) t)
+  · intro k t ht s hs1 hs2
+    exact hBound (ext.nsub k) t ht s hs1 hs2
+
 end SqgIdentity
