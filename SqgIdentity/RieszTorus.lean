@@ -24697,13 +24697,15 @@ biUnion + partial-sum ≤ tsum bookkeeping; see §11.26.F next-session
 entry).  Infrastructure in-tree for downstream use. -/
 
 /-- **§11.26.F₁ — Lattice-zeta constant `latticeZetaConst s`.**
-Tsum of the shell-bounded series: `8·ζ(2s-1) + 4·ζ(2s)` where ζ is
-the Riemann zeta function (sum from n = 1).  For `s > 1`, this is
-finite and provides a uniform upper bound on `∑_{a ∈ A} ‖a‖^{-2s}`
-for every finite `A ⊆ ℤ² \ {0}` (proof deferred). -/
+Tsum of the shell-bounded series: `8·ζ(2s-1) + 4·ζ(2s)` over `k : ℕ`.
+The `k = 0` terms vanish (since `1/0^p = 0` for `p > 0`), so this
+matches the Riemann zeta summation from `k = 1`.  For `s > 1`, both
+tsums are finite via `Real.summable_one_div_nat_rpow` and this
+provides a uniform upper bound on `∑_{a ∈ A} ‖a‖^{-2s}` for every
+finite `A ⊆ ℤ² \ {0}` (see §11.26.H). -/
 noncomputable def latticeZetaConst (s : ℝ) : ℝ :=
-  8 * ∑' (n : ℕ), 1 / ((n + 1 : ℝ) ^ (2 * s - 1)) +
-  4 * ∑' (n : ℕ), 1 / ((n + 1 : ℝ) ^ (2 * s))
+  8 * ∑' (k : ℕ), 1 / ((k : ℝ) ^ (2 * s - 1)) +
+  4 * ∑' (k : ℕ), 1 / ((k : ℝ) ^ (2 * s))
 
 /-- **§11.26.F₂ — `latticeZetaConst s ≥ 0`.** -/
 lemma latticeZetaConst_nonneg (s : ℝ) : 0 ≤ latticeZetaConst s := by
@@ -24711,13 +24713,218 @@ lemma latticeZetaConst_nonneg (s : ℝ) : 0 ≤ latticeZetaConst s := by
   apply add_nonneg
   · apply mul_nonneg (by norm_num : (0 : ℝ) ≤ 8)
     apply tsum_nonneg
-    intros n
+    intros k
     apply div_nonneg (by norm_num : (0 : ℝ) ≤ 1)
-    exact Real.rpow_nonneg (by positivity) _
+    exact Real.rpow_nonneg (Nat.cast_nonneg _) _
   · apply mul_nonneg (by norm_num : (0 : ℝ) ≤ 4)
     apply tsum_nonneg
-    intros n
+    intros k
     apply div_nonneg (by norm_num : (0 : ℝ) ≤ 1)
-    exact Real.rpow_nonneg (by positivity) _
+    exact Real.rpow_nonneg (Nat.cast_nonneg _) _
+
+/-! ### §11.26.G Shell-index preliminaries
+
+The `ℓ∞`-radius `shellOf m := max(|m 0|.toNat, |m 1|.toNat)` gives
+the annular-shell level of `m ≠ 0`.  Three facts for the main bound:
+1. `shellOf m ≥ 1` for `m ≠ 0` (§11.26.G₁).
+2. `m ∈ annularShell (shellOf m)` for `m ≠ 0` (§11.26.G₂).
+3. Distinct shells are disjoint (§11.26.G₃). -/
+
+/-- **§11.26.G — Shell-index function.** -/
+def shellOf (m : Fin 2 → ℤ) : ℕ := max (|m 0|).toNat (|m 1|).toNat
+
+/-- **§11.26.G₁ — Positivity of `shellOf` on nonzero lattice points.** -/
+lemma shellOf_pos_of_ne_zero (m : Fin 2 → ℤ) (hm : m ≠ 0) :
+    1 ≤ shellOf m := by
+  unfold shellOf
+  by_cases h0 : m 0 = 0
+  · by_cases h1 : m 1 = 0
+    · exact absurd (funext fun i => by fin_cases i <;> [exact h0; exact h1]) hm
+    · have ha : 0 < |m 1| := abs_pos.mpr h1
+      have hb : 1 ≤ (|m 1|).toNat := by omega
+      exact le_trans hb (le_max_right _ _)
+  · have ha : 0 < |m 0| := abs_pos.mpr h0
+    have hb : 1 ≤ (|m 0|).toNat := by omega
+    exact le_trans hb (le_max_left _ _)
+
+/-- **§11.26.G₂ — Each `m ≠ 0` lies in `annularShell (shellOf m)`.** -/
+lemma mem_annularShell_shellOf (m : Fin 2 → ℤ) (hm : m ≠ 0) :
+    m ∈ annularShell (shellOf m) := by
+  rw [mem_annularShell_iff]
+  refine ⟨?_, hm, ?_⟩
+  · intro i
+    fin_cases i
+    · have h_cast : ((|m 0|).toNat : ℤ) = |m 0| :=
+        Int.toNat_of_nonneg (abs_nonneg _)
+      have h_le : (|m 0|).toNat ≤ shellOf m := le_max_left _ _
+      calc |m 0| = ((|m 0|).toNat : ℤ) := h_cast.symm
+        _ ≤ ((shellOf m : ℕ) : ℤ) := by exact_mod_cast h_le
+    · have h_cast : ((|m 1|).toNat : ℤ) = |m 1| :=
+        Int.toNat_of_nonneg (abs_nonneg _)
+      have h_le : (|m 1|).toNat ≤ shellOf m := le_max_right _ _
+      calc |m 1| = ((|m 1|).toNat : ℤ) := h_cast.symm
+        _ ≤ ((shellOf m : ℕ) : ℤ) := by exact_mod_cast h_le
+  · rcases max_choice (|m 0|).toNat (|m 1|).toNat with h | h
+    · left
+      have h_cast : ((|m 0|).toNat : ℤ) = |m 0| :=
+        Int.toNat_of_nonneg (abs_nonneg _)
+      unfold shellOf
+      calc |m 0| = ((|m 0|).toNat : ℤ) := h_cast.symm
+        _ = ((max (|m 0|).toNat (|m 1|).toNat : ℕ) : ℤ) := by
+            exact_mod_cast h.symm
+    · right
+      have h_cast : ((|m 1|).toNat : ℤ) = |m 1| :=
+        Int.toNat_of_nonneg (abs_nonneg _)
+      unfold shellOf
+      calc |m 1| = ((|m 1|).toNat : ℤ) := h_cast.symm
+        _ = ((max (|m 0|).toNat (|m 1|).toNat : ℕ) : ℤ) := by
+            exact_mod_cast h.symm
+
+/-- **§11.26.G₃ — Annular shells at distinct indices are disjoint.** -/
+lemma annularShell_disjoint {k₁ k₂ : ℕ} (hne : k₁ ≠ k₂) :
+    Disjoint (annularShell k₁) (annularShell k₂) := by
+  rw [Finset.disjoint_left]
+  intros m hm1 hm2
+  rw [mem_annularShell_iff] at hm1 hm2
+  obtain ⟨h_Icc1, _, h_max1⟩ := hm1
+  obtain ⟨h_Icc2, _, h_max2⟩ := hm2
+  apply hne
+  have h1_0 : |m 0| ≤ (k₁ : ℤ) := h_Icc1 0
+  have h1_1 : |m 1| ≤ (k₁ : ℤ) := h_Icc1 1
+  have h2_0 : |m 0| ≤ (k₂ : ℤ) := h_Icc2 0
+  have h2_1 : |m 1| ≤ (k₂ : ℤ) := h_Icc2 1
+  rcases h_max1 with h₁ | h₁ <;> rcases h_max2 with h₂ | h₂ <;>
+    · have h_int : (k₁ : ℤ) = (k₂ : ℤ) := by omega
+      exact_mod_cast h_int
+
+/-! ### §11.26.H Concrete lattice-zeta bound
+
+Unconditional witness of `HasLatticeZetaBound s (latticeZetaConst s)`
+for `s > 1`.  Partition any finite `A ⊆ ℤ² \ {0}` by `shellOf`,
+decompose via disjoint `biUnion`, bound each shell sum via §11.26.E,
+then bridge the finite shell sum to the `tsum` defining
+`latticeZetaConst` via `Summable.sum_le_tsum` on the two p-series. -/
+
+/-- **§11.26.H — Concrete `HasLatticeZetaBound s (latticeZetaConst s)`
+for `s > 1`.**  This closes the lattice-zeta leg of Route A Item 5.A
+(§11.25.F/F₁/G/G₁ composed with this witness gives the full
+support-independent Banach-algebra `Ḣˢ` bound). -/
+theorem hasLatticeZetaBound_latticeZetaConst {s : ℝ} (hs : 1 < s) :
+    HasLatticeZetaBound s (latticeZetaConst s) := by
+  refine ⟨latticeZetaConst_nonneg s, ?_⟩
+  classical
+  intros A hA0
+  -- Index set: image of A under shellOf.
+  set K : Finset ℕ := A.image shellOf with hK_def
+  -- Step 1 (cover): A ⊆ K.biUnion annularShell
+  have h_sub : A ⊆ K.biUnion annularShell := by
+    intros m hm
+    have hm_ne : m ≠ 0 := fun h => hA0 (h ▸ hm)
+    rw [Finset.mem_biUnion]
+    exact ⟨shellOf m, Finset.mem_image.mpr ⟨m, hm, rfl⟩,
+      mem_annularShell_shellOf m hm_ne⟩
+  -- Step 2: extend sum to biUnion (non-neg summands).
+  have h_nn_term : ∀ a : Fin 2 → ℤ, 0 ≤ (latticeNorm a) ^ (-(2 * s)) :=
+    fun a => Real.rpow_nonneg (latticeNorm_nonneg a) _
+  have h_ext : ∑ a ∈ A, (latticeNorm a) ^ (-(2 * s))
+      ≤ ∑ a ∈ K.biUnion annularShell, (latticeNorm a) ^ (-(2 * s)) :=
+    Finset.sum_le_sum_of_subset_of_nonneg h_sub
+      (fun a _ _ => h_nn_term a)
+  -- Step 3: decompose biUnion via pairwise-disjoint shells.
+  have h_pairwise : (↑K : Set ℕ).PairwiseDisjoint annularShell :=
+    fun _ _ _ _ hne => annularShell_disjoint hne
+  have h_biUnion :
+      ∑ a ∈ K.biUnion annularShell, (latticeNorm a) ^ (-(2 * s))
+        = ∑ k ∈ K, ∑ a ∈ annularShell k, (latticeNorm a) ^ (-(2 * s)) :=
+    Finset.sum_biUnion h_pairwise
+  rw [h_biUnion] at h_ext
+  -- Step 4: k ≥ 1 for k ∈ K.
+  have h_k_pos : ∀ k ∈ K, 1 ≤ k := by
+    intros k hk
+    rw [hK_def, Finset.mem_image] at hk
+    obtain ⟨m, hm, rfl⟩ := hk
+    exact shellOf_pos_of_ne_zero m (fun h => hA0 (h ▸ hm))
+  -- Step 5: per-shell bound via §11.26.E.
+  have h_shell_bd : ∀ k ∈ K,
+      ∑ a ∈ annularShell k, (latticeNorm a) ^ (-(2 * s))
+        ≤ ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) :=
+    fun k hk => sum_annularShell_rpow_le (by linarith : (0 : ℝ) < s)
+      (h_k_pos k hk)
+  have h_shell_sum :
+      ∑ k ∈ K, ∑ a ∈ annularShell k, (latticeNorm a) ^ (-(2 * s))
+        ≤ ∑ k ∈ K, ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) :=
+    Finset.sum_le_sum h_shell_bd
+  -- Step 6: algebraic split (8k+4)·k^{-2s} = 8·k^{1-2s} + 4·k^{-2s}.
+  have h_term_split : ∀ k ∈ K,
+      ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s)))
+        = 8 * ((k : ℝ) ^ (1 - 2 * s)) + 4 * ((k : ℝ) ^ (-(2 * s))) := by
+    intros k hk
+    have hk_pos : (0 : ℝ) < k := by exact_mod_cast h_k_pos k hk
+    have h_rpow : (k : ℝ) ^ (1 - 2 * s) = (k : ℝ) * (k : ℝ) ^ (-(2 * s)) := by
+      rw [show (1 - 2 * s) = (1 : ℝ) + (-(2 * s)) from by ring,
+          Real.rpow_add hk_pos, Real.rpow_one]
+    push_cast
+    rw [h_rpow]
+    ring
+  have h_split_sum :
+      ∑ k ∈ K, ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s)))
+        = 8 * (∑ k ∈ K, ((k : ℝ) ^ (1 - 2 * s)))
+          + 4 * (∑ k ∈ K, ((k : ℝ) ^ (-(2 * s)))) := by
+    calc ∑ k ∈ K, ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s)))
+        = ∑ k ∈ K, (8 * ((k : ℝ) ^ (1 - 2 * s))
+            + 4 * ((k : ℝ) ^ (-(2 * s)))) := Finset.sum_congr rfl h_term_split
+      _ = (∑ k ∈ K, 8 * ((k : ℝ) ^ (1 - 2 * s)))
+            + (∑ k ∈ K, 4 * ((k : ℝ) ^ (-(2 * s)))) := Finset.sum_add_distrib
+      _ = 8 * (∑ k ∈ K, ((k : ℝ) ^ (1 - 2 * s)))
+            + 4 * (∑ k ∈ K, ((k : ℝ) ^ (-(2 * s)))) := by
+            rw [← Finset.mul_sum, ← Finset.mul_sum]
+  -- Step 7: bridge (k:ℝ)^p form to 1/(k:ℝ)^p form on K.
+  have h_rw1 : ∀ k ∈ K,
+      ((k : ℝ) ^ (1 - 2 * s)) = 1 / ((k : ℝ) ^ (2 * s - 1)) := by
+    intros k hk
+    have hk_pos : (0 : ℝ) < k := by exact_mod_cast h_k_pos k hk
+    rw [show (1 - 2 * s) = -(2 * s - 1) from by ring,
+        Real.rpow_neg (le_of_lt hk_pos), inv_eq_one_div]
+  have h_rw2 : ∀ k ∈ K,
+      ((k : ℝ) ^ (-(2 * s))) = 1 / ((k : ℝ) ^ (2 * s)) := by
+    intros k hk
+    have hk_pos : (0 : ℝ) < k := by exact_mod_cast h_k_pos k hk
+    rw [Real.rpow_neg (le_of_lt hk_pos), inv_eq_one_div]
+  have h_sum_eq1 : ∑ k ∈ K, ((k : ℝ) ^ (1 - 2 * s))
+      = ∑ k ∈ K, 1 / ((k : ℝ) ^ (2 * s - 1)) :=
+    Finset.sum_congr rfl h_rw1
+  have h_sum_eq2 : ∑ k ∈ K, ((k : ℝ) ^ (-(2 * s)))
+      = ∑ k ∈ K, 1 / ((k : ℝ) ^ (2 * s)) :=
+    Finset.sum_congr rfl h_rw2
+  -- Step 8: finite sums bounded by tsum via summability.
+  have h_summ1 : Summable (fun k : ℕ => 1 / ((k : ℝ) ^ (2 * s - 1))) := by
+    rw [Real.summable_one_div_nat_rpow]; linarith
+  have h_summ2 : Summable (fun k : ℕ => 1 / ((k : ℝ) ^ (2 * s))) := by
+    rw [Real.summable_one_div_nat_rpow]; linarith
+  have h_nn_f1 : ∀ k : ℕ, 0 ≤ 1 / ((k : ℝ) ^ (2 * s - 1)) := fun k =>
+    div_nonneg zero_le_one (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+  have h_nn_f2 : ∀ k : ℕ, 0 ≤ 1 / ((k : ℝ) ^ (2 * s)) := fun k =>
+    div_nonneg zero_le_one (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+  have h_tsum1 : ∑ k ∈ K, 1 / ((k : ℝ) ^ (2 * s - 1))
+      ≤ ∑' (k : ℕ), 1 / ((k : ℝ) ^ (2 * s - 1)) :=
+    h_summ1.sum_le_tsum K (fun k _ => h_nn_f1 k)
+  have h_tsum2 : ∑ k ∈ K, 1 / ((k : ℝ) ^ (2 * s))
+      ≤ ∑' (k : ℕ), 1 / ((k : ℝ) ^ (2 * s)) :=
+    h_summ2.sum_le_tsum K (fun k _ => h_nn_f2 k)
+  -- Step 9: assemble.
+  calc ∑ a ∈ A, (latticeNorm a) ^ (-(2 * s))
+      ≤ ∑ k ∈ K, ∑ a ∈ annularShell k, (latticeNorm a) ^ (-(2 * s)) := h_ext
+    _ ≤ ∑ k ∈ K, ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) := h_shell_sum
+    _ = 8 * (∑ k ∈ K, ((k : ℝ) ^ (1 - 2 * s)))
+        + 4 * (∑ k ∈ K, ((k : ℝ) ^ (-(2 * s)))) := h_split_sum
+    _ = 8 * (∑ k ∈ K, 1 / ((k : ℝ) ^ (2 * s - 1)))
+        + 4 * (∑ k ∈ K, 1 / ((k : ℝ) ^ (2 * s))) := by
+          rw [h_sum_eq1, h_sum_eq2]
+    _ ≤ 8 * (∑' (k : ℕ), 1 / ((k : ℝ) ^ (2 * s - 1)))
+        + 4 * (∑' (k : ℕ), 1 / ((k : ℝ) ^ (2 * s))) := by
+          apply add_le_add
+          · exact mul_le_mul_of_nonneg_left h_tsum1 (by norm_num : (0 : ℝ) ≤ 8)
+          · exact mul_le_mul_of_nonneg_left h_tsum2 (by norm_num : (0 : ℝ) ≤ 4)
+    _ = latticeZetaConst s := by unfold latticeZetaConst
 
 end SqgIdentity
