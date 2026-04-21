@@ -59,27 +59,46 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
   `h_L2` (L²-integral Tendsto, the hypothesis of §10.159.C) into a
   pure ℓ²-tsum Tendsto on per-mode coefficient differences.  Zero
   `Lp`-coercion bookkeeping remains downstream.
+- **§10.163 `tsum_sq_sub_tendsto_zero_of_tight`** (commit `80ed516`)
+  — pure-ℓ² Vitali convergence.  Per-mode pointwise convergence
+  `f k i → g i` plus uniform ℓ²-tail tightness on squared differences
+  + summability of each `‖f k · - g‖²` gives `∑' i, ‖f k i - g i‖² → 0`.
+  Free of SQG-specifics.
+- **§10.164 `HasFourierSynthesis.ofTight`** (commit `7703930`) —
+  tight-family capstone.  Given `HasPerModeLimit` + `hSum` + summability
+  of coefficient differences + uniform ℓ²-tail tightness on differences,
+  constructs `HasFourierSynthesis per θ` with zero `Lp`-coercion exposure
+  to the caller.  Composes §10.162 + §10.163 +
+  `HasPerModeLimit.tendsto_modeCoeff`.
 
-**Remaining Item 1 analytical work (3 inputs, down from 4):**
+**Remaining Item 1 analytical work (2 inputs, down from 4):**
 
-1. **Strong-`L²` convergence** of the extracted Galerkin sequence to
-   `θLimOfSummable` (the `h_L2` input of §10.159.C).  §10.160–§10.162
-   have reduced this to the pure ℓ² statement
-   `Tendsto (fun k => ∑' m, ‖galerkinExtend_(nsub k) t m - per.b m t‖²)
-    atTop (𝓝 0)`
-   with no `Lp` coercions in sight.  What's left is a Vitali-style
-   tight-family ℓ² convergence argument: per-mode convergence (from
-   `HasPerModeLimit`) + tightness of the coefficient family (uniform
-   tail control, which a `H^s` bound with `s > 0` would supply) ⇒
-   `∑' m, ‖·‖² → 0`.  The general-ℓ² Vitali lemma can live in a free-
-   standing form (no SQG-specifics) and is ~100 line in Lean.
+1. ~~**Strong-`L²` convergence**~~ — ✓ **closed down to elementary
+   tightness** via §10.164.  `h_L2` of §10.159.C is no longer a
+   user-facing hypothesis; callers of `HasFourierSynthesis.ofTight`
+   supply only ℓ²-level data (summability + tightness of the per-mode
+   coefficient differences).  The tightness itself would be discharged
+   from a uniform `H^s` bound with `s > 0` — a standard Rellich-style
+   compactness statement that SQG Galerkin trajectories satisfy.
 2. **Classical Arzelà–Ascoli + Cantor diagonal extraction** (the
    `hExtract` input of §10.155.B).  Mathlib has
    `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
    (Fin 2 → ℤ)`; ~300-line assembly.
 3. **`hDeriv` / `hCont` / `hH2` discharges** for §10.153.C from
    §10.116's Galerkin ODE + §10.138's `H⁻²` bound via per-mode
-   derivative projection.
+   derivative projection.  **Structural question flagged (2026-04-21):**
+   §10.153.C universally quantifies `hDeriv` over all
+   `m : Fin 2 → ℤ`; for leakage modes `m ∉ sqgBox n ∪ {0}` the LHS is
+   the constant-zero function so `HasDerivWithinAt` forces the value
+   `galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m = 0`.
+   But `galerkinRHS` is only known in-tree to vanish on radial shells
+   (`galerkinRHS_eq_zero_of_isRadialShell`, line 11159); `sqgBox n` is
+   not radial.  Resolution options: (a) restrict §10.153.C's
+   `m`-quantification to `sqgBox n ∪ {0}` and match the downstream
+   consumer's use; (b) prove `galerkinRHS` vanishes at leakage modes
+   for the specific `α` from §10.116 via convolution-symmetry
+   cancellation on the `sqgBox n` support.  Needs a scoping decision
+   before the discharge can be drafted.
 
 Route B infrastructure now delivers `SQG Galerkin data →
 HasModeLipschitzFamily → HasPerModeLimit → HasFourierSynthesis →
