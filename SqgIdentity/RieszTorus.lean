@@ -21532,11 +21532,11 @@ lemma fin_two_CS_complex_real_sq (z₀ z₁ : ℂ) (a₀ a₁ : ℝ) :
     simp [Complex.add_im, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im]
   have h_norm_sq : ‖z₀ * ((a₀ : ℝ) : ℂ) + z₁ * ((a₁ : ℝ) : ℂ)‖ ^ 2 =
       (z₀.re * a₀ + z₁.re * a₁) ^ 2 + (z₀.im * a₀ + z₁.im * a₁) ^ 2 := by
-    rw [Complex.sq_abs, Complex.normSq_apply, h_re, h_im]
+    rw [Complex.sq_norm, Complex.normSq_apply, h_re, h_im]; ring
   have h_z0 : ‖z₀‖ ^ 2 = z₀.re ^ 2 + z₀.im ^ 2 := by
-    rw [Complex.sq_abs, Complex.normSq_apply]
+    rw [Complex.sq_norm, Complex.normSq_apply]; ring
   have h_z1 : ‖z₁‖ ^ 2 = z₁.re ^ 2 + z₁.im ^ 2 := by
-    rw [Complex.sq_abs, Complex.normSq_apply]
+    rw [Complex.sq_norm, Complex.normSq_apply]; ring
   rw [h_norm_sq, h_z0, h_z1]
   nlinarith [fin_two_CS_real_sq z₀.re z₁.re a₀ a₁,
              fin_two_CS_real_sq z₀.im z₁.im a₀ a₁,
@@ -21586,11 +21586,11 @@ lemma galerkinKKernel_norm_le_latticeNorm (ℓ m : Fin 2 → ℤ) :
       I * (sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ)) := by
     intro j
     unfold derivSymbol
-    have h_sub : (((m - ℓ) j : ℤ) : ℝ) = (m j : ℝ) - (ℓ j : ℝ) := by
-      simp [Pi.sub_apply, Int.cast_sub]
-    rw [show ((((m - ℓ) j : ℤ) : ℝ) : ℂ) =
-         (((m j : ℝ)) : ℂ) - (((ℓ j : ℝ)) : ℂ) from by
-           rw [h_sub]; push_cast; ring]
+    have h_pi : ((m - ℓ) j : ℤ) = m j - ℓ j := Pi.sub_apply m ℓ j
+    have h_cast : ((((m - ℓ) j : ℤ) : ℝ) : ℂ) =
+                  (((m j : ℝ)) : ℂ) - (((ℓ j : ℝ)) : ℂ) := by
+      rw [h_pi]; push_cast; ring
+    rw [h_cast]
     ring
   have h_expand :
       ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ) =
@@ -21721,24 +21721,32 @@ theorem galerkinRHS_norm_le_latticeNorm_mul_l2_sum
         · rw [if_neg hmℓ, galerkinExtend_apply_of_not_mem _ _ hmℓ, norm_zero,
               pow_two, mul_zero]
       rw [h_filter_eq]
-      -- Reindex ℓ ↦ m - ℓ: the filter is mapped to itself (involution).
-      have h_bij : (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
-                    ‖galerkinExtend S c (m - ℓ)‖ ^ 2) =
-                   ∑ k ∈ S.filter (fun k => m - k ∈ S),
-                    ‖galerkinExtend S c k‖ ^ 2 := by
-        apply Finset.sum_nbij' (fun ℓ _ => m - ℓ) (fun k _ => m - k)
-        · intros ℓ hℓ
-          rw [Finset.mem_filter] at hℓ ⊢
-          refine ⟨hℓ.2, ?_⟩
-          rwa [sub_sub_cancel]
-        · intros k hk
-          rw [Finset.mem_filter] at hk ⊢
-          refine ⟨hk.2, ?_⟩
-          rwa [sub_sub_cancel]
-        · intros ℓ _; rw [sub_sub_cancel]
-        · intros k _; rw [sub_sub_cancel]
-        · intros ℓ _; rfl
-      rw [h_bij]
+      -- Reindex ℓ ↦ m - ℓ via Finset.sum_image.  The image of
+      -- `S.filter (fun ℓ => m - ℓ ∈ S)` under `ℓ ↦ m - ℓ` is the same filter
+      -- (since the map is involutive).
+      have h_sub_inj : ∀ ℓ₁ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ∀ ℓ₂ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          (fun ℓ : Fin 2 → ℤ => m - ℓ) ℓ₁ = (fun ℓ => m - ℓ) ℓ₂ → ℓ₁ = ℓ₂ := by
+        intros ℓ₁ _ ℓ₂ _ heq
+        exact sub_left_cancel heq
+      have h_image_eq : (S.filter (fun ℓ => m - ℓ ∈ S)).image (fun ℓ => m - ℓ) =
+          S.filter (fun k => m - k ∈ S) := by
+        ext x
+        simp only [Finset.mem_image, Finset.mem_filter]
+        constructor
+        · rintro ⟨ℓ, ⟨hℓ, hmℓ⟩, rfl⟩
+          refine ⟨hmℓ, ?_⟩
+          rw [sub_sub_cancel]; exact hℓ
+        · rintro ⟨hxS, hmx⟩
+          refine ⟨m - x, ⟨hmx, ?_⟩, ?_⟩
+          · rw [sub_sub_cancel]; exact hxS
+          · exact sub_sub_cancel m x
+      have h_sum_img : ∑ ℓ ∈ (S.filter (fun ℓ => m - ℓ ∈ S)).image (fun ℓ => m - ℓ),
+          ‖galerkinExtend S c ℓ‖ ^ 2 =
+          ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖galerkinExtend S c (m - ℓ)‖ ^ 2 :=
+        Finset.sum_image h_sub_inj
+      rw [← h_sum_img, h_image_eq]
       -- Bound: ∑_{filter} ‖galerkinExtend S c k‖² ≤ ∑_{S} ‖galerkinExtend S c k‖²
       --      = ∑_{n : ↥S} ‖c n‖² (by h_first above).
       calc ∑ k ∈ S.filter (fun k => m - k ∈ S), ‖galerkinExtend S c k‖ ^ 2
