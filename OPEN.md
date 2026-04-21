@@ -372,33 +372,45 @@ Item 5.A delivered across §11.17–§11.21:
   for `k ≥ 1`, `s > 0` via pointwise `(‖m‖)^{-2s} ≤ k^{-2s}` +
   cardinality bound + `mul_le_mul_of_nonneg_right`.
 - §11.26.F₁/F₂ `latticeZetaConst s`, `latticeZetaConst_nonneg` —
-  the candidate uniform constant `8·ζ(2s-1) + 4·ζ(2s)` (tsum form)
-  and its nonnegativity.
+  the uniform constant `8·ζ(2s-1) + 4·ζ(2s)` (tsum in `(k:ℝ)` form,
+  `k=0` terms vanish) and its nonnegativity.
+- §11.26.G `shellOf m := max(|m 0|.toNat, |m 1|.toNat)` — `ℓ∞`-radius
+  shell-index function.  §11.26.G₁ `shellOf_pos_of_ne_zero`,
+  §11.26.G₂ `mem_annularShell_shellOf` (`m ≠ 0` sits in shell
+  `shellOf m`), §11.26.G₃ `annularShell_disjoint` (distinct shells
+  disjoint).
+- §11.26.H `hasLatticeZetaBound_latticeZetaConst` — **full unconditional
+  `HasLatticeZetaBound s (latticeZetaConst s)` for `s > 1`.**  Partition
+  any finite `A ⊆ ℤ² \ {0}` by `shellOf`, decompose sum via disjoint
+  `Finset.sum_biUnion` over `A.image shellOf`, bound each shell via
+  §11.26.E, split `(8k+4)·k^{-2s} = 8·k^{1-2s} + 4·k^{-2s}` via
+  `Real.rpow_add` (`1 = 1 + (-(2s)) · k` combinatorics), bridge finite
+  sum to `tsum` via `Summable.sum_le_tsum` on the two p-series
+  (`Real.summable_one_div_nat_rpow.mpr (by linarith)` at `p = 2s-1`
+  and `p = 2s`).  **This closes the lattice-zeta leg of Route A
+  Item 5.A unconditionally.**
 
 **Still outstanding for unconditional Item 5 closure:**
-- Full `HasLatticeZetaBound s (latticeZetaConst s)` proof (~80 LOC):
-  shell-partition of arbitrary `A ⊆ ℤ² \ {0}` via `shellOf a`, disjoint
-  `biUnion` decomposition, partial-sum ≤ tsum via
-  `sum_le_tsum` + `summable_one_div_nat_rpow` summability witness.
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
   SQG-specific velocity bound on `∇θ_n · u_n` (Riesz transform
   `u = R θ` + commutator Kato–Ponce estimate for the log-derivative
   form).  Note: classical SQG analysis uses the COMMUTATOR Kato–Ponce
   `[Jˢ, u·∇]θ` (§11.6) rather than the Banach-algebra form, because
   it trades Ḣˢ for `L∞` on the velocity side, which closes via
-  Sobolev embedding for `s > d/2 = 1`.  §11.25.E/F/G provide the
-  support-independent Banach-algebra infrastructure; the commutator
-  estimate needs §11.6 / §11.20.C-style splitting plus L∞-control
-  (~200 LOC).
+  Sobolev embedding for `s > d/2 = 1`.  §11.25.E/F/G + §11.26.H
+  provide the support-independent Banach-algebra infrastructure with
+  concrete lattice-zeta constant; the commutator estimate needs
+  §11.6 / §11.20.C-style splitting plus L∞-control (~200 LOC).
 - §10.174 `hBoundS` discharge (~50 LOC).
 
-Classical remainder ~400 LOC after §11.25.E–H closure.
+Classical remainder ~250 LOC after §11.25.E–H + §11.26.G/H closure.
 
-With §11.17–§11.25.H, the full finite-support Banach-algebra `Ḣˢ`
-product bound is in-tree, plus the `HasTrigPolyBanachAlgebraBound`
-hypothesis structure and its zero-coefficient exemplar.  Next steps:
-(i) concrete lattice zeta witness for `HasLatticeZetaBound s C`;
-(ii) Phase 10 wiring via §11.6 commutator + L∞ Sobolev embedding.
+With §11.17–§11.26.H, the full finite-support Banach-algebra `Ḣˢ`
+product bound is in-tree with a **concrete support-independent
+constant** `2^{2s}·(2·latticeZetaConst s)` for `s > 1`, plus the
+`HasTrigPolyBanachAlgebraBound` hypothesis structure and its
+zero-coefficient exemplar.  Next step: Phase 10 wiring via §11.6
+commutator + L∞ Sobolev embedding.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:
