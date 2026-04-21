@@ -299,20 +299,41 @@ Item 5.A delivered across §11.17–§11.21:
   global zeta `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s}` which is finite for
   `s > d/2 = 1`.  For the SQG Galerkin at `A = sqgBox n`, this is
   uniform in `n`.
+- §11.25.A–D + C₂: **Building blocks for the Banach-algebra `Ḣˢ`
+  product bound.**
+  - §11.25.A₁–A₂ `sumSet_symm`, `modeConvolution_symm`: commutativity
+    of the Minkowski sum and the mode convolution in their two factors.
+  - §11.25.B `hsSeminormSq_zero_trigPolyProduct_le_young_symm`:
+    symmetric Young bound `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · (∑_b ‖cg b‖)²`
+    via §11.22 applied to swapped factors (ℓ² × ℓ¹ direction).
+  - §11.25.C `young_peetre_weighted_left`: Peetre-weighted Young on
+    `T_1'(n) = ∑_{a+b=n} σ_s(a)·‖cf a‖·‖cg b‖`:
+    `∑_n T_1'(n)² ≤ hsSeminormSq s (trigPoly A cf) · (∑_b ‖cg b‖)²`
+    via complex embedding into §11.25.B.
+  - §11.25.C₂ `fracDerivSymbol_add_le_sqrt`: linear-form (sqrt) Peetre
+    inequality: `σ_s(a+b) ≤ √(2^{2s-1}) · (σ_s a + σ_s b)` for `s ≥ 1`.
+    From squared Peetre §11.19.C + subadditivity + Real.sqrt_le_sqrt.
+  - §11.25.D `young_peetre_weighted_right`: dual of §11.25.C, applying
+    §11.22 (ℓ¹ × ℓ² direction) to `T_2'(n)`:
+    `∑_n T_2'(n)² ≤ (∑_a ‖cf a‖)² · hsSeminormSq s (trigPoly B cg)`.
 
-**Still outstanding for unconditional Item 5 closure:** global lattice
+**Still outstanding for unconditional Item 5 closure:** §11.25.E
+Banach-algebra `Ḣˢ` product bound — assembled by combining §11.25.C
+(weighted Young left) + §11.25.D (weighted Young right) + §11.25.C₂
+(sqrt-Peetre) + §11.23 (CS bridge) via pointwise bound
+`(σ_s n)² · ‖modeConv‖² ≤ 2^{2s} · (T_1'² + T_2'²)`.  Target:
+  `‖fg‖²_{Ḣˢ} ≤ 2^{2s} · (C_s(A) + C_s(B)) · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`
+for `0 ∉ A`, `0 ∉ B`, `s ≥ 1`; ~150 LOC.  Then: global lattice
 zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for `s > 1`
-(needed for truly uniform-in-`n` bound); Peetre-weighted version of
-the uniform bound (`Ḣˢ` rather than `L²` on the product), combining
-§11.24 + §11.19.C; wiring into `HasSqgGalerkinHsClosure` Phase 10
-bridge via the SQG-specific velocity bound on `∇θ_n · u_n` and the
-§10.174 `hBoundS` discharge.  Classical remainder ~400–600 LOC.
+(standard); wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge
+via the SQG-specific velocity bound on `∇θ_n · u_n` and the §10.174
+`hBoundS` discharge.  Classical remainder ~250–400 LOC.
 
-With §11.17–§11.24, closing Item 5 now reduces to the lattice zeta
-summability (a standard real-analysis fact) + Peetre-weighted
-upgrade of §11.24 + the SQG-specific Riesz-transform velocity bound.
-The structural chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound
-(feeding §10.174's `hBoundS`) is in-tree.
+With §11.17–§11.25.A–D + C₂, all the Young + Cauchy–Schwarz +
+sqrt-Peetre building blocks are in-tree.  Assembly into §11.25.E
+Banach-algebra form is the natural next step.  The structural
+chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound (feeding
+§10.174's `hBoundS`) is in-tree.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:

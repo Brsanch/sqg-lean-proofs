@@ -126,6 +126,23 @@ concrete trig-poly Kato–Ponce delivered across §11.17–§11.21
   constant `C_s(A)` is bounded by the global lattice zeta
   `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s}` (finite for `s > d/2 = 1`), giving
   uniform-in-`n` L² product bound on the Galerkin dynamics.
+- **§11.25.A–D + C₂** building blocks for the Banach-algebra Ḣˢ
+  product bound:
+  - `sumSet_symm`, `modeConvolution_symm`: commutativity of the
+    Minkowski sum and the mode convolution (§11.25.A).
+  - `hsSeminormSq_zero_trigPolyProduct_le_young_symm`: symmetric
+    Young bound `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · (∑_b ‖cg b‖)²`
+    via §11.22 on swapped factors (§11.25.B).
+  - `young_peetre_weighted_left`: weighted Young
+    `∑_n T_1'(n)² ≤ hsSeminormSq s (trigPoly A cf) · (∑_b ‖cg b‖)²`
+    via complex embedding of the real nonneg Peetre-weighted
+    sequences into ℂ, then applying §11.25.B (§11.25.C).
+  - `fracDerivSymbol_add_le_sqrt`: linear-form (sqrt) Peetre
+    `σ_s(a+b) ≤ √(2^(2s-1)) · (σ_s a + σ_s b)` for `s ≥ 1`, from
+    squared Peetre §11.19.C + subadditivity + Real.sqrt monotonicity
+    (§11.25.C₂).
+  - `young_peetre_weighted_right`: dual of §11.25.C via §11.22
+    (ℓ¹ × ℓ² direction) on `T_2'` (§11.25.D).
 
 **Still outstanding for unconditional Item 5.A closure:** global
 lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
