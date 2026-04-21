@@ -244,10 +244,48 @@ and §11.1–§11.10 (all inline in `RieszTorus.lean`):
 - §11.9: `HasGalerkinHsGronwallFamily.of_sqgClosure` — Phase 10 → 5.
 - §11.10: Zero-datum exemplar (Phase 11).
 
-With this chain, closing Item 5 reduces to supplying a
-`HasKatoPonceProductBound s C` witness (classical content).  The
-structural chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound
-(feeding §10.174's `hBoundS`) is in-tree.
+**Route A execution — Item 5.A concrete content (post-commit `a7e9376`,
+2026-04-21 late afternoon):** First concrete classical content toward
+Item 5.A delivered across §11.17–§11.21:
+
+- §11.17: `sumSet`, `modeConvolution`, `trigPolyProduct` + closed-form
+  Fourier-coefficient formula.  Foundation for pointwise multiplication
+  on finite-Fourier-support data via the Fourier convolution formula
+  `(fg)̂(n) = ∑_{a+b=n} f̂(a)·ĝ(b)`.  Avoids the general `Lp`-not-a-ring
+  issue by working directly with trig-poly representations.
+- §11.18: Parseval identity `hsSeminormSq_trigPolyProduct` reducing the
+  tsum `Ḣˢ` seminorm to a finite sum over `sumSet A B`, plus Cauchy–
+  Schwarz pointwise bound on `|modeConvolution|²` via
+  `Finset.sum_mul_sq_le_sq_mul_sq`.
+- §11.19: Peetre lattice inequality `‖a+b‖^s ≤ 2^{s-1}·(‖a‖^s + ‖b‖^s)`
+  for `s ≥ 1` via `NNReal.rpow_add_le_mul_rpow_add_rpow` +
+  `latticeNorm_add_le` triangle, plus the `(σ_s(·))²` specialization.
+  §11.19.D `hsSeminormSq_trigPoly` — direct finite-sum formula for
+  seminorm on a trig polynomial.
+- §11.20: **Concrete tame Kato–Ponce bound** on `trigPolyProduct`
+  (support-dependent):
+  `‖fg‖²_{Ḣˢ} ≤ (A ×ˢ B).card · 2^{2s-1} · (E_s^{cf}·N^{cg} + N^{cf}·E_s^{cg})`
+  where `E_s = ∑ σ_s² ‖c‖²` and `N = ∑ ‖c‖²`.  First concrete trig-poly
+  Kato–Ponce in-tree.  The `(A ×ˢ B).card` factor is the coarse
+  Cauchy–Schwarz constant; a uniform (in support) bound requires Young
+  `ℓ¹ × ℓ² → ℓ²` plus `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability for `s > d/2 = 1`,
+  deferred.
+- §11.21: **`HasTrigPolyKatoPonceBound`** hypothesis structure bounding
+  `hsSeminormSq s (trigPolyProduct A B cf cg)` in Leibniz-split form.
+  `HasTrigPolyKatoPonceBound.of_peetre` delivers a concrete instance
+  at `C = 2^{2s-1}` for any `s ≥ 1` via §11.20.C.
+
+**Still outstanding for unconditional Item 5 closure:** uniform-in-support
+bound (Young `ℓ¹ × ℓ² → ℓ²` + `∑ ⟨m⟩^{-2s}` summability); structural
+bridge from `HasTrigPolyKatoPonceBound` to `HasSqgGalerkinHsClosure`
+(Phase 10) via SQG-specific velocity bound on `∇θ_n · u_n`; wiring into
+§10.174's `hBoundS` hypothesis.  Classical Kato–Ponce bound remains
+~1000–1500 LOC; Phase 10 bridge remains ~500 LOC.
+
+With §11.17–§11.21, closing Item 5 now reduces to supplying the uniform
+refinement of the Peetre-based support-dependent bound.  The structural
+chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound (feeding §10.174's
+`hBoundS`) is in-tree.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:
