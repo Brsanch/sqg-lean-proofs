@@ -22387,11 +22387,12 @@ structure HasGalerkinHsGronwallLevel
   E₀ : ℝ
   hE₀ : trigPolyEnergyHs s S (α 0) ≤ E₀
 
-/-- **Bound on a compact interval** extracted from the level package. -/
+/-- **Bound on a compact interval** extracted from the level package.
+Requires `0 ≤ h.K` so that `exp(K·t)` is monotone in `t`. -/
 theorem HasGalerkinHsGronwallLevel.bound_on_Icc
     (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
     {α : ℝ → (↥S → ℂ)} (h : HasGalerkinHsGronwallLevel s α)
-    (T : ℝ) (hT : 0 ≤ T) :
+    (hK_nn : 0 ≤ h.K) (T : ℝ) (hT : 0 ≤ T) :
     ∀ t ∈ Set.Icc (0 : ℝ) T,
       hsSeminormSq s (galerkinToLp S (α t)) ≤ h.E₀ * Real.exp (h.K * T) := by
   intro t ht
@@ -22405,38 +22406,17 @@ theorem HasGalerkinHsGronwallLevel.bound_on_Icc
   have h3 : trigPolyEnergyHs s S (α 0) ≤ h.E₀ := h.hE₀
   have h4 : 0 ≤ Real.exp (h.K * t) := (Real.exp_pos _).le
   have h5 : Real.exp (h.K * t) ≤ Real.exp (h.K * T) := by
-    by_cases hK : 0 ≤ h.K
-    · apply Real.exp_le_exp.mpr
-      exact mul_le_mul_of_nonneg_left ht.2 hK
-    · -- If K < 0, exp(K·t) ≤ exp(0) = 1 ≤ exp(K·T)? No — if K<0, exp(K·T) < 1.
-      -- Use exp(K·t) ≤ exp(K·0) = 1 when K < 0 isn't right either.
-      -- Fallback: just use exp(K·t) ≤ max(1, exp(K·T)). Safer: just use
-      -- the simpler `t ≤ T` path uniformly via replacement of `K` by `|K|`.
-      -- Since the lemma consumers will supply K ≥ 0, we can simply take
-      -- this branch trivially: if K < 0, replace by K := max K 0 upstream.
-      -- For now: establish via `Real.exp_mono` with `K·t ≤ K·T` fallback.
-      push_neg at hK
-      have : h.K * T ≤ h.K * t := by
-        have hKle : h.K ≤ 0 := hK.le
-        nlinarith [ht.1, ht.2]
-      exact Real.exp_le_exp.mpr this
+    apply Real.exp_le_exp.mpr
+    exact mul_le_mul_of_nonneg_left ht.2 hK_nn
+  have hE₀_nn : 0 ≤ h.E₀ :=
+    le_trans (trigPolyEnergyHs_nonneg s _) h3
   calc hsSeminormSq s (galerkinToLp S (α t))
       ≤ hsSeminormSq s (galerkinToLp S (α 0)) * Real.exp (h.K * t) := h1
     _ = trigPolyEnergyHs s S (α 0) * Real.exp (h.K * t) := by rw [h2]
     _ ≤ h.E₀ * Real.exp (h.K * t) := by
         apply mul_le_mul_of_nonneg_right h3 h4
     _ ≤ h.E₀ * Real.exp (h.K * T) := by
-        by_cases hK : 0 ≤ h.K
-        · apply mul_le_mul_of_nonneg_left h5
-          calc 0 ≤ trigPolyEnergyHs s S (α 0) := trigPolyEnergyHs_nonneg s _
-            _ ≤ h.E₀ := h3
-        · -- In the K < 0 case, exp(K·T) ≥ exp(K·t), so the direction
-          -- flips. Caller-side assumption K ≥ 0 makes this path dead.
-          -- For a uniformly-finite bound, stay in the hK branch.
-          push_neg at hK
-          apply mul_le_mul_of_nonneg_left h5
-          calc 0 ≤ trigPolyEnergyHs s S (α 0) := trigPolyEnergyHs_nonneg s _
-            _ ≤ h.E₀ := h3
+        apply mul_le_mul_of_nonneg_left h5 hE₀_nn
 
 /-- **Uniform-across-levels Phase 2 input package** for the Galerkin
 family indexed by `n : ℕ`. -/
@@ -22450,17 +22430,20 @@ structure HasGalerkinHsGronwallFamily
   hE₀_uniform : ∀ n : ℕ, (level n).E₀ = E₀_uniform
 
 /-- **Phase 2 closure (s = 1) / Phase 5 closure (s ∈ (1, 2] or s > 1)**:
-From a uniform-in-`n` Grönwall family, extract a time-uniform `Ḣˢ`
-bound across the Galerkin family, on any compact `[0, T]` interval. -/
+From a uniform-in-`n` Grönwall family with `0 ≤ K_uniform`, extract a
+time-uniform `Ḣˢ` bound across the Galerkin family on any compact
+`[0, T]` interval. -/
 theorem HasGalerkinHsGronwallFamily.uniform_bound_on_Icc
     (s : ℝ) {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (h : HasGalerkinHsGronwallFamily s α)
+    (hK_nn : 0 ≤ h.K_uniform)
     (T : ℝ) (hT : 0 ≤ T) :
     ∀ n : ℕ, ∀ t ∈ Set.Icc (0 : ℝ) T,
       hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))
         ≤ h.E₀_uniform * Real.exp (h.K_uniform * T) := by
   intro n t ht
-  have hBound := (h.level n).bound_on_Icc s T hT t ht
+  have hKn_nn : 0 ≤ (h.level n).K := by rw [h.hK_uniform n]; exact hK_nn
+  have hBound := (h.level n).bound_on_Icc s hKn_nn T hT t ht
   rw [h.hE₀_uniform n, h.hK_uniform n] at hBound
   exact hBound
 
@@ -22477,6 +22460,6 @@ theorem HasGalerkinHsGronwallFamily.global_uniform_bound
       hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ M := by
   refine ⟨h.E₀_uniform * Real.exp (h.K_uniform * T), ?_⟩
   intro n t ht0 htT
-  exact h.uniform_bound_on_Icc s T hT n t ⟨ht0, htT⟩
+  exact h.uniform_bound_on_Icc s hK_nn T hT n t ⟨ht0, htT⟩
 
 end SqgIdentity
