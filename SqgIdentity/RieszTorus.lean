@@ -21877,4 +21877,86 @@ theorem sqgGalerkin_modeLipschitz_from_l2_conservation
       (mul_nonneg hM₂_nn (latticeNorm_nonneg m))
       (abs_nonneg _)
 
+/-! ### §10.172.E `HasModeLipschitzFamily` from `L²` conservation (structured)
+
+Wires §10.172.D into `HasModeLipschitzFamily.ofSqgGalerkinBounds`
+(§10.152), producing a full `HasModeLipschitzFamily α` structure from
+the equality form of Galerkin `L²` conservation (§10.97).  The
+`L²`-bound form required by §10.172.D follows from the equality form
+via `sum_sq_fourierRestrict_le_L2Sq` (§10.119 Parseval bound). -/
+
+/-- **`HasModeLipschitzFamily` from `L²` conservation alone.**
+Composes §10.172.D with §10.152's `HasModeLipschitzFamily.ofSqgGalerkinBounds`
+via the `sum_sq_fourierRestrict_le_L2Sq` Parseval bridge.  Produces a
+per-mode Lipschitz family with `modeLipschitz m = (∫ ‖θ₀‖²) · latticeNorm m`,
+uniform in `n`.
+
+This is the **Item 1 analytical closure**: combined with §10.165's
+`sqgGalerkin_hExtract_witness` and §10.155.B's
+`HasPerModeLimit.ofModeLipschitzFamily`, it discharges Item 1's
+remaining `hH2` hypothesis structurally, using only classical
+`L²`-conservation + the ODE hypotheses supplied by §10.116. -/
+noncomputable def HasModeLipschitzFamily.ofSqgGalerkin_l2_conservation
+    [DecidableEq (Fin 2 → ℤ)]
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hEnergy : ∀ n t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ₀ m‖ ^ 2)
+    (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ (m : Fin 2 → ℤ), m ∈ sqgBox n →
+      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+        (Set.Ici τ) τ)
+    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ), m ∈ sqgBox n → ∀ (s t : ℝ), 0 ≤ s → s ≤ t →
+      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (Set.Icc s t)) :
+    HasModeLipschitzFamily α :=
+  HasModeLipschitzFamily.ofSqgGalerkinBounds θ₀ hEnergy
+    (fun m => (∫ x, ‖θ₀ x‖ ^ 2) * latticeNorm m)
+    (fun m => mul_nonneg
+      (integral_nonneg (fun _ => sq_nonneg _))
+      (latticeNorm_nonneg m))
+    (fun n m s t hs ht =>
+      sqgGalerkin_modeLipschitz_from_l2_conservation θ₀
+        (fun n' t' ht' => (hEnergy n' t' ht').le.trans
+          (sum_sq_fourierRestrict_le_L2Sq n' θ₀))
+        hDeriv hCont n m s t hs ht)
+
+/-! ### §10.172.F Item 1 capstone — `HasPerModeLimit` from `L²` conservation
+
+Composes §10.172.E with §10.165 (`sqgGalerkin_hExtract_witness`) and
+§10.155.B (`HasPerModeLimit.ofModeLipschitzFamily`) into a single
+existence theorem: from Galerkin `L²` conservation + the ODE
+hypotheses supplied by §10.116, produce a `HasPerModeLimit α` witness
+**unconditionally** (no `hH2` hypothesis).
+
+This is the **maximally-closed form** of Item 1 reachable from the
+current infrastructure: the remaining step to a full `SqgSolution`
+(the `HasFourierSynthesis` construction) is handled separately by
+§10.159 (`ofSummable`) or §10.164 (`ofTight`), both of which reduce
+the synthesis step to elementary tightness/summability hypotheses. -/
+
+/-- **§10.172.F Item 1 capstone: `HasPerModeLimit` from `L²` conservation.**
+Unconditional production of the per-mode limit structure from the
+Galerkin `L²` conservation hypothesis, closing Item 1's `hH2`-style
+analytic gap. -/
+noncomputable def HasPerModeLimit.ofSqgGalerkin_l2_conservation
+    [DecidableEq (Fin 2 → ℤ)]
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hEnergy : ∀ n t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖fourierRestrict n θ₀ m‖ ^ 2)
+    (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ (m : Fin 2 → ℤ), m ∈ sqgBox n →
+      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+        (Set.Ici τ) τ)
+    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ), m ∈ sqgBox n → ∀ (s t : ℝ), 0 ≤ s → s ≤ t →
+      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (Set.Icc s t)) :
+    HasPerModeLimit α :=
+  let lip := HasModeLipschitzFamily.ofSqgGalerkin_l2_conservation
+    θ₀ hEnergy hDeriv hCont
+  HasPerModeLimit.ofModeLipschitzFamily lip (sqgGalerkin_hExtract_witness lip)
+
 end SqgIdentity
