@@ -249,6 +249,15 @@ class, regularity is unconditional:
       §10.167, both `MaterialMaxPrinciple` and `BKMCriterionS2` lift
       off the finite-support class from uniform `Ḣˢ` control on the
       Galerkin approximation alone.
+- **Theorem 3 on the Aubin–Lions limit (post-v0.4.39, §10.169).**
+  Capstone composition of §10.167.C + §10.168.B +
+  `sqg_regularity_via_s2_bootstrap`.  Delivers the conditional
+  Theorem 3 conclusion `∀ s ∈ [0, 2], ∃ M', ∀ t ≥ 0,
+  hsSeminormSq s (ext.θ_lim t) ≤ M'` from exactly the uniform-in-
+  `n`-and-`t` `Ḣˢ` bounds on the Galerkin approximation at `s = 1`
+  and `s ∈ (1, 2]`.  No finite-support restriction on `θ_lim`; no
+  axiom beyond mathlib.  This is the maximally-closed form of
+  Theorem 3 reachable from the current infrastructure.
 
 ## What is *not* proven
 
