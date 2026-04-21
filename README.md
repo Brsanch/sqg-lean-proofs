@@ -185,6 +185,40 @@ class, regularity is unconditional:
   Capstone `exists_sqgSolution_via_RouteB_from_perModeLimit_synthesis`
   (§10.156) produces an `SqgSolution` from the per-mode limit +
   Fourier synthesis data directly.
+- **Item 1 three-target structural closure (v0.4.39).** All three
+  remaining Item 1 analytical targets from v0.4.38 now have in-tree
+  Lean constructors, reducing their content to named, precisely-
+  typed classical-analysis hypotheses.
+    - **§10.153.C `sqgGalerkin_modeLipschitz_from_UniformH2`** —
+      Target #3 monolithic closure.  Composes §10.153.A + §10.153.B
+      across `m = 0` / `m ≠ 0` and `s ≤ t` / `t ≤ s` splits into an
+      existential `(L, hL_nn, hL_holds)` triple consumable by §10.152.
+      Closed after a 6-retry diagnostic iteration that broke a
+      `DecidableEq (Fin 2 → ℤ)` synthesis loop via
+      `attribute [local irreducible] GalerkinRHSHsNegSqBound` plus
+      dropping the `Uniform` wrapper from the signature.
+    - **§10.154 coefficient-injectivity bridge + `HasFourierSynthesis.ofPerModeLimit`**
+      — Target #2 structural constructor.  `Lp_eq_of_mFourierCoeff_eq`
+      (§10.154.A) establishes that two `Lp ℂ 2` elements with matching
+      Fourier coefficients are equal (via `mFourierBasis.repr.injective`).
+      `HasFourierSynthesis.ofPerModeLimit` (§10.154.B) assembles
+      `HasFourierSynthesis per θ` from a synthesis witness + initial
+      coefficient match + strong-`L²` convergence.
+    - **§10.155 `HasPerModeLimit.ofModeLipschitzFamily`** — Target #1
+      structural reduction.  Takes a classical Arzelà–Ascoli + Cantor
+      diagonal extraction witness and produces `HasPerModeLimit α`
+      from `HasModeLipschitzFamily α`, via the
+      `modeCoeff_eq_galerkinExtend` bridge lemma (§10.155.A).
+- **Concrete Fourier synthesis operator (v0.4.39, §10.157–§10.158).**
+  Not just a structural reduction: an in-tree construction from
+  ℓ²-summable coefficient sequences to `Lp ℂ 2` elements.
+    - **§10.157 `fourierSynthesisLp`** — lifts `b ∈ ℓ²(ℤ²)` to the
+      corresponding `L²(𝕋²)` element via mathlib's
+      `mFourierBasis.repr.symm`.  `mFourierCoeff_fourierSynthesisLp`
+      proves the Fourier coefficients of the synthesis recover `b`.
+    - **§10.158.A/B `θLimOfLp` + `mFourierCoeff_θLimOfLp`** — concrete
+      `θ_lim : ℝ → Lp ℂ 2` operator for `HasFourierSynthesis` via
+      pointwise Fourier synthesis of an `lp`-valued per-mode limit.
 
 ## What is *not* proven
 
@@ -192,22 +226,23 @@ class, regularity is unconditional:
   `BKMCriterionS2.hsPropagationS2` outside the finite-support class.
 - The fractional Sobolev bootstrap for `s > 2` (requires Kato–Ponce-type
   estimates on `𝕋²` that are not yet in mathlib).
-- The three named Lean construction targets for non-zero
-  `HasAubinLionsExtraction` (item 1 analytical closure). Each is a
-  precisely-typed Lean theorem signature, not a vague
-  "mathlib-scale infrastructure" dependency:
-    1. **`HasPerModeLimit.ofModeLipschitzFamily`** — mode-wise
-       Arzelà–Ascoli on `[0, T]` + Cantor diagonal across
-       `ℤ² \ {0}`. Consumes `HasModeLipschitzFamily` (§10.149)
-       delivered by §10.152.
-    2. **`HasFourierSynthesis.ofPerModeLimit`** — Parseval + Fatou +
-       dominated convergence on `ℓ²(ℤ²)` producing the `Lp`-valued
-       limit with strong-`L²` convergence. Consumes `HasPerModeLimit`
-       (§10.150).
-    3. **Per-mode Lipschitz `L m` for §10.152** — FTC closure of the
-       per-mode Lipschitz constant from §10.138's `H⁻²` bound +
-       §10.116's Galerkin ODE. §10.153.A + §10.153.B supply the
-       building blocks; the monolithic wrapper is deferred.
+- The remaining Item 1 classical analytical inputs, each consumed by
+  the v0.4.39 structural constructors as a precisely-typed, named
+  hypothesis:
+    1. The **classical Arzelà–Ascoli + Cantor diagonal extraction
+       witness** (the `hExtract` input of
+       `HasPerModeLimit.ofModeLipschitzFamily`, §10.155.B).
+       Mathlib has `BoundedContinuousFunction.arzelaAscoli` +
+       `Denumerable (Fin 2 → ℤ)`.
+    2. The **strong-`L²` convergence** of the extracted Galerkin
+       sequence to the constructed `θ_lim` (the `h_L2` input of
+       `HasFourierSynthesis.ofPerModeLimit` / `.ofSummable`,
+       §10.154.B / §10.159.C).  Parseval + Fatou + dominated
+       convergence on `ℓ²(ℤ²)`.
+    3. The **per-mode ODE / continuity / H⁻² bound discharges** for
+       §10.153.C's `hDeriv` / `hCont` / `hH2` hypotheses from
+       §10.116's Galerkin trajectory + §10.138's `H⁻²` bound, via
+       coordinate projection of the ODE derivative.
 - A concrete `HasBumpToIndicatorSequence` witness (§10.135)
   constructed from mathlib's `ContDiffBump` infrastructure, to close
   item 6 analytically rather than only structurally.
