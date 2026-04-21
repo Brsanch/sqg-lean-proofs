@@ -20724,4 +20724,249 @@ theorem cantor_diagonal_complex
   rw [h_eq_shift] at hShifted
   exact (Filter.tendsto_add_atTop_iff_nat i).mp hShifted
 
+/-! ### §10.165.C Rational-time subsequence for `HasModeLipschitzFamily`
+
+Apply §10.165.B to the countable family `(m, q) ↦ lip.modeCoeff · q m`
+indexed by `(Fin 2 → ℤ) × ℚ` via `Encodable`.  Time is clipped to
+`max 0 q` to preserve row boundedness (the `modeBound` bound only holds
+for `t ≥ 0`).  At each `q ≥ 0` with `q` rational, `max 0 q = q`, so the
+extracted subsequence converges at every such `(m, q)`. -/
+
+/-- **§10.165.C  Rational-time subsequence.**  Given
+`HasModeLipschitzFamily α`, produce a strictly-monotone `nsub : ℕ → ℕ`
+and a limit `b_rat : (Fin 2 → ℤ) → ℚ → ℂ` such that
+`lip.modeCoeff (nsub k) (q : ℝ) m → b_rat m q` for every mode `m` and
+every non-negative rational `q`. -/
+theorem exists_rationalSubseq_tendsto
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (lip : HasModeLipschitzFamily α) :
+    ∃ nsub : ℕ → ℕ, StrictMono nsub ∧
+      ∃ b_rat : (Fin 2 → ℤ) → ℚ → ℂ, ∀ (m : Fin 2 → ℤ) (q : ℚ), 0 ≤ q →
+        Filter.Tendsto
+          (fun k : ℕ => lip.modeCoeff (nsub k) (q : ℝ) m)
+          Filter.atTop (nhds (b_rat m q)) := by
+  classical
+  -- Decode index k : ℕ as pair (m, q) : (Fin 2 → ℤ) × ℚ via Encodable.
+  let decodePair : ℕ → (Fin 2 → ℤ) × ℚ := fun k =>
+    (Encodable.decode (α := (Fin 2 → ℤ) × ℚ) k).getD ((fun _ => (0 : ℤ)), 0)
+  -- Clip the rational time to max 0 to ensure row boundedness.
+  let s : ℕ → ℕ → ℂ := fun k n =>
+    lip.modeCoeff n (max 0 ((decodePair k).2 : ℝ)) (decodePair k).1
+  have hs : ∀ k : ℕ, ∃ M : ℝ, ∀ n : ℕ, ‖s k n‖ ≤ M := fun k =>
+    ⟨lip.modeBound (max 0 ((decodePair k).2 : ℝ)),
+     fun n => lip.modeBound_holds n _ _ (le_max_left _ _)⟩
+  obtain ⟨nsub, hmono, L, hL⟩ := cantor_diagonal_complex s hs
+  refine ⟨nsub, hmono, fun m q => L (Encodable.encode (m, q)), ?_⟩
+  intro m q hq
+  have hdec : decodePair (Encodable.encode (m, q)) = (m, q) := by
+    show (Encodable.decode (α := (Fin 2 → ℤ) × ℚ)
+            (Encodable.encode (m, q))).getD _ = (m, q)
+    rw [Encodable.encodek]
+    rfl
+  have hq_cast : (0 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq
+  have h_rw : ∀ n, s (Encodable.encode (m, q)) n = lip.modeCoeff n (q : ℝ) m := by
+    intro n
+    show lip.modeCoeff n
+          (max 0 ((decodePair (Encodable.encode (m, q))).2 : ℝ))
+          (decodePair (Encodable.encode (m, q))).1
+        = lip.modeCoeff n (q : ℝ) m
+    rw [hdec]
+    show lip.modeCoeff n (max 0 ((q : ℚ) : ℝ)) m = lip.modeCoeff n (q : ℝ) m
+    rw [max_eq_right hq_cast]
+  have h_fn : (fun k : ℕ => s (Encodable.encode (m, q)) (nsub k)) =
+      fun k => lip.modeCoeff (nsub k) (q : ℝ) m := by
+    funext k; exact h_rw (nsub k)
+  have := hL (Encodable.encode (m, q))
+  rw [h_fn] at this
+  exact this
+
+/-! ### §10.165.D Extension of convergence from rational to real times
+
+The rational-time subsequence of §10.165.C extends to every real time
+`t ≥ 0` via the uniform Lipschitz-in-time bound of
+`HasModeLipschitzFamily`.  The key argument is a standard three-term
+bound: for any `t ≥ 0`, pick a rational `q ≥ 0` close to `t`; then
+`|lip.modeCoeff (nsub j) t m - lip.modeCoeff (nsub k) t m|`
+  `≤ L|t - q| + |lip.modeCoeff (nsub j) q m - lip.modeCoeff (nsub k) q m| + L|q - t|`
+with the middle term Cauchy (by rational convergence) and the outer two
+small by rational approximation.  So the sequence is Cauchy in `ℂ`,
+hence converges. -/
+
+/-- **§10.165.D  Convergence at real `t ≥ 0` from rational convergence.**
+Given the rational-time subseq from §10.165.C and the uniform Lipschitz
+bound of `HasModeLipschitzFamily`, extend the limit to every real
+`t ≥ 0`. -/
+theorem exists_realLimit_of_rationalSubseq
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (lip : HasModeLipschitzFamily α)
+    {nsub : ℕ → ℕ} (_hmono : StrictMono nsub)
+    {b_rat : (Fin 2 → ℤ) → ℚ → ℂ}
+    (hRat : ∀ (m : Fin 2 → ℤ) (q : ℚ), 0 ≤ q →
+      Filter.Tendsto
+        (fun k : ℕ => lip.modeCoeff (nsub k) (q : ℝ) m)
+        Filter.atTop (nhds (b_rat m q))) :
+    ∃ b : (Fin 2 → ℤ) → ℝ → ℂ, ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+      Filter.Tendsto
+        (fun k : ℕ => lip.modeCoeff (nsub k) t m)
+        Filter.atTop (nhds (b m t)) := by
+  classical
+  -- For each (m, t) with t ≥ 0, show the sequence is Cauchy.
+  have hCauchy : ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+      CauchySeq (fun k : ℕ => lip.modeCoeff (nsub k) t m) := by
+    intro m t ht
+    rw [Metric.cauchySeq_iff]
+    intro ε hε
+    set L := lip.modeLipschitz m with hLdef
+    have hL_nn : 0 ≤ L := lip.modeLipschitz_nonneg m
+    -- Pick a rational q ≥ 0 close to t (distance < ε / (4 * (L + 1))).
+    have h4L_pos : 0 < 4 * (L + 1) := by positivity
+    have h_ε_over : 0 < ε / (4 * (L + 1)) := div_pos hε h4L_pos
+    -- ℚ is dense in ℝ: find q ∈ ℚ with |t - q| < ε / (4L+4).
+    obtain ⟨q, hq_close⟩ :
+        ∃ q : ℚ, |t - (q : ℝ)| < ε / (4 * (L + 1)) := by
+      obtain ⟨q, hq1, hq2⟩ :=
+        exists_rat_btwn (sub_lt_self t h_ε_over : t - ε / (4 * (L + 1)) < t)
+      refine ⟨q, ?_⟩
+      rw [abs_sub_lt_iff]
+      -- hq1 : t - ε/(4L+4) < q, hq2 : q < t
+      -- Want: t - q < ε/(4L+4) and -(t - q) < ε/(4L+4)
+      -- i.e., q < t + ε/(4L+4) (from hq2 as q < t < t + ε/(4L+4))
+      -- and q > t - ε/(4L+4)  (from hq1)
+      refine ⟨?_, ?_⟩
+      · -- t - q < ε/(4L+4): from hq1
+        linarith
+      · -- (q : ℝ) - t < ε/(4L+4): from hq2 we have q < t, so q - t < 0 < ε/(4L+4)
+        linarith
+    -- Clip q to non-negative.
+    set q' : ℚ := max 0 q with hq'_def
+    have hq'_nn : 0 ≤ q' := le_max_left _ _
+    have hq'_close : |t - (q' : ℝ)| < ε / (4 * (L + 1)) := by
+      by_cases hq_sign : 0 ≤ q
+      · -- q' = q
+        have : q' = q := max_eq_right hq_sign
+        rw [this]
+        exact hq_close
+      · -- q' = 0, so |t - 0| = t.  We have q < 0 ≤ t, so t < t - q < ε/(4L+4) via |t - q| < _.
+        have hq_neg : q < 0 := lt_of_not_ge hq_sign
+        have h0 : q' = 0 := max_eq_left (le_of_lt hq_neg)
+        rw [h0]
+        show |t - (0 : ℚ)| < ε / (4 * (L + 1))
+        have : ((0 : ℚ) : ℝ) = 0 := by norm_cast
+        rw [this, sub_zero]
+        have ht_abs : |t| = t := abs_of_nonneg ht
+        rw [ht_abs]
+        -- Now t < ε/(4L+4).  From |t - q| < ε/(4L+4) and q < 0:
+        -- t - q < ε/(4L+4) (from |t - q| < _, and t ≥ 0 > q means t - q ≥ 0)
+        -- Since q < 0, -q > 0, so t < t + (-q) = t - q < ε/(4L+4).
+        have h_tq : t - (q : ℝ) < ε / (4 * (L + 1)) := by
+          have := hq_close
+          rw [abs_sub_lt_iff] at this
+          exact this.1
+        have hq_real_neg : ((q : ℚ) : ℝ) < 0 := by exact_mod_cast hq_neg
+        linarith
+    -- From hRat at (m, q'), sequence converges, hence Cauchy.
+    have hRat_mq := hRat m q' hq'_nn
+    rw [Metric.tendsto_atTop] at hRat_mq
+    obtain ⟨N, hN⟩ := hRat_mq (ε / 4) (by linarith)
+    refine ⟨N, fun j hj k hk => ?_⟩
+    -- Triangle inequality: split through q'.
+    have h_triangle :
+        dist (lip.modeCoeff (nsub j) t m) (lip.modeCoeff (nsub k) t m)
+          ≤ dist (lip.modeCoeff (nsub j) t m)
+              (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m)
+            + dist (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m)
+                (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m)
+            + dist (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m)
+                (lip.modeCoeff (nsub k) t m) := by
+      have := dist_triangle4 (lip.modeCoeff (nsub j) t m)
+        (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m)
+        (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m)
+        (lip.modeCoeff (nsub k) t m)
+      linarith
+    -- Bound each piece.
+    have hq'_cast : (0 : ℝ) ≤ ((q' : ℚ) : ℝ) := by exact_mod_cast hq'_nn
+    have h1 : dist (lip.modeCoeff (nsub j) t m)
+                (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m)
+              ≤ L * |t - ((q' : ℚ) : ℝ)| := by
+      rw [dist_eq_norm]
+      exact lip.modeLipschitz_holds (nsub j) m _ _ hq'_cast ht
+    have h3 : dist (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m)
+                (lip.modeCoeff (nsub k) t m)
+              ≤ L * |((q' : ℚ) : ℝ) - t| := by
+      rw [dist_eq_norm]
+      exact lip.modeLipschitz_holds (nsub k) m _ _ ht hq'_cast
+    have habs_sym : |((q' : ℚ) : ℝ) - t| = |t - ((q' : ℚ) : ℝ)| := by
+      rw [abs_sub_comm]
+    rw [habs_sym] at h3
+    -- The middle term: convergence + triangle.
+    have h2 : dist (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m)
+                (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m) < ε / 2 := by
+      have hj_dist := hN j hj
+      have hk_dist := hN k hk
+      calc dist (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m)
+                (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m)
+          ≤ dist (lip.modeCoeff (nsub j) ((q' : ℚ) : ℝ) m) (b_rat m q')
+            + dist (b_rat m q') (lip.modeCoeff (nsub k) ((q' : ℚ) : ℝ) m) :=
+            dist_triangle _ _ _
+        _ < ε / 4 + ε / 4 := by
+            have := hj_dist
+            have := hk_dist
+            rw [dist_comm _ (b_rat m q')] at hk_dist
+            linarith
+        _ = ε / 2 := by ring
+    -- Combine.  Bound: L * |t - q'| < ε/4 via |t - q'| < ε/(4(L+1)) and L ≤ L+1.
+    have hL_bound : L * |t - ((q' : ℚ) : ℝ)| < ε / 4 := by
+      have h_abs_nn : 0 ≤ |t - ((q' : ℚ) : ℝ)| := abs_nonneg _
+      have hL1_pos : (0 : ℝ) < L + 1 := by linarith
+      have step1 : L * |t - ((q' : ℚ) : ℝ)| ≤ (L + 1) * |t - ((q' : ℚ) : ℝ)| :=
+        mul_le_mul_of_nonneg_right (by linarith) h_abs_nn
+      have step2 : (L + 1) * |t - ((q' : ℚ) : ℝ)| < (L + 1) * (ε / (4 * (L + 1))) :=
+        (mul_lt_mul_left hL1_pos).mpr hq'_close
+      have step3 : (L + 1) * (ε / (4 * (L + 1))) = ε / 4 := by
+        field_simp
+      linarith
+    calc dist (lip.modeCoeff (nsub j) t m) (lip.modeCoeff (nsub k) t m)
+        ≤ _ := h_triangle
+      _ ≤ L * |t - ((q' : ℚ) : ℝ)| + ε / 2 + L * |t - ((q' : ℚ) : ℝ)| := by linarith
+      _ < ε / 4 + ε / 2 + ε / 4 := by linarith
+      _ = ε := by ring
+  -- Define b m t := limit of the Cauchy sequence.
+  choose b hb using fun (m : Fin 2 → ℤ) (t : ℝ) (ht : 0 ≤ t) =>
+    cauchySeq_tendsto_of_complete (hCauchy m t ht)
+  refine ⟨fun m t => if h : 0 ≤ t then b m t h else 0, ?_⟩
+  intro m t ht
+  simp only [dif_pos ht]
+  exact hb m t ht
+
+/-! ### §10.165 `hExtract` witness -/
+
+/-- **§10.165  `hExtract` witness for §10.155.B.**  Given
+`HasModeLipschitzFamily α`, produce the classical Arzelà–Ascoli +
+Cantor diagonal extraction witness demanded by §10.155.B: a
+strictly-monotone `nsub : ℕ → ℕ` with per-mode pointwise convergence
+at every `t ≥ 0`. -/
+theorem sqgGalerkin_hExtract_witness
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (lip : HasModeLipschitzFamily α) :
+    ∃ (nsub : ℕ → ℕ), StrictMono nsub ∧
+      ∃ b : (Fin 2 → ℤ) → ℝ → ℂ,
+        ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+          Filter.Tendsto
+            (fun k : ℕ =>
+              galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m)
+            Filter.atTop (nhds (b m t)) := by
+  obtain ⟨nsub, hmono, b_rat, hRat⟩ := exists_rationalSubseq_tendsto lip
+  obtain ⟨b, hb⟩ := exists_realLimit_of_rationalSubseq lip hmono hRat
+  refine ⟨nsub, hmono, b, ?_⟩
+  intro m t ht
+  -- Bridge via §10.155.A: lip.modeCoeff = galerkinExtend.
+  have h_eq : ∀ k,
+      galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m = lip.modeCoeff (nsub k) t m :=
+    fun k => (HasModeLipschitzFamily.modeCoeff_eq_galerkinExtend lip (nsub k) t m).symm
+  have h_fn : (fun k : ℕ => galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m) =
+      fun k => lip.modeCoeff (nsub k) t m := by
+    funext k; exact h_eq k
+  rw [h_fn]
+  exact hb m t ht
+
 end SqgIdentity
