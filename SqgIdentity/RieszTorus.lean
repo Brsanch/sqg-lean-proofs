@@ -22329,7 +22329,10 @@ theorem trigPolyEnergyHs_gronwall_bound
       HasDerivWithinAt (fun t => trigPolyEnergyHs s S (α t))
         (deriv (fun t => trigPolyEnergyHs s S (α t)) x) (Set.Ici x) x := by
     intros x _
-    exact (trigPolyEnergyHs_hasDerivAt s α hα x).hasDerivWithinAt
+    have h := (trigPolyEnergyHs_hasDerivAt s α hα x).hasDerivWithinAt
+              (s := Set.Ici x)
+    have hd := (trigPolyEnergyHs_hasDerivAt s α hα x).deriv
+    rw [hd]; exact h
   have hE_cont : ContinuousOn (fun t => trigPolyEnergyHs s S (α t))
                     (Set.Icc 0 T) :=
     (trigPolyEnergyHs_continuous s α hα).continuousOn
