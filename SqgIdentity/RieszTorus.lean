@@ -21198,6 +21198,30 @@ discharge on each level, this delivers MMP for the infinite-support
 limit from a single `Ḣ¹` bound hypothesis on the Galerkin
 approximation. -/
 
+/-- **Auxiliary: `galerkinToLp` has vanishing Fourier coefficients off
+its support `S`.**  Direct consequence of `mFourierCoeff_galerkinToLp`
+and `galerkinExtend_apply_of_not_mem`.  Exposed separately to short-
+circuit elaboration in §10.167.C (otherwise the `by rw [...]` body
+triggers a deep `whnf` unfolding loop inside the `of_L2_limit` field
+of the consumer). -/
+theorem mFourierCoeff_galerkinToLp_eq_zero_of_not_mem
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {m : Fin 2 → ℤ} (hm : m ∉ S) :
+    mFourierCoeff (galerkinToLp S c) m = 0 := by
+  rw [mFourierCoeff_galerkinToLp, galerkinExtend_apply_of_not_mem _ _ hm]
+
+/-- **Auxiliary: weighted `Ḣ¹` Fourier family of a `galerkinToLp` state
+is summable.**  Derives summability from `hsSeminormSq_summable_of_finite_support`
+using the support witness above.  Packaged as a standalone lemma so
+that §10.167.C is a plain term-level composition of named results. -/
+theorem hsSeminormSq_one_summable_galerkinToLp
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) :
+    Summable (fun m : Fin 2 → ℤ =>
+      (fracDerivSymbol 1 m) ^ 2 * ‖mFourierCoeff (galerkinToLp S c) m‖ ^ 2) :=
+  hsSeminormSq_summable_of_finite_support 1 (galerkinToLp S c) S
+    (fun m hm => mFourierCoeff_galerkinToLp_eq_zero_of_not_mem S c hm)
+
 /-- **§10.167.C  MMP discharge for the Aubin–Lions limit.**
 
 Consumes a `HasAubinLionsExtraction` witness plus a uniform-in-`n`-and-
@@ -21215,15 +21239,9 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     MaterialMaxPrinciple ext.θ_lim :=
   MaterialMaxPrinciple.of_L2_limit_uniform_H1 ext.θ_lim
     (fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
-    (fun t ht => ext.tendsto_L2 t ht)
-    M
-    (fun k t ht =>
-      hsSeminormSq_summable_of_finite_support 1
-        (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
-        (sqgBox (ext.nsub k))
-        (fun n hn => by
-          rw [mFourierCoeff_galerkinToLp,
-              galerkinExtend_apply_of_not_mem _ _ hn]))
+    (fun t ht => ext.tendsto_L2 t ht) M
+    (fun k t _ => hsSeminormSq_one_summable_galerkinToLp
+      (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
     (fun k t ht => hBound (ext.nsub k) t ht)
 
 end SqgIdentity
