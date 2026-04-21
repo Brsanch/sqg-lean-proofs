@@ -21402,7 +21402,8 @@ theorem hsSeminormSq_zero_galerkin_of_trinary_zero
     (s : ℝ) (n : ℕ) (t : ℝ) :
     hsSeminormSq s (galerkinToLp (sqgBox n)
       (((fun _ _ _ => (0 : ℂ)) : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) n t)) = 0 := by
-  rw [zero_trinary_apply_eq_zero, galerkinToLp_zero, hsSeminormSq_of_zero]
+  rw [zero_trinary_apply_eq_zero, galerkinToLp_zero]
+  exact hsSeminormSq_of_zero s
 
 /-- **§10.170  Theorem 3 on the zero Aubin–Lions extraction.**
 
