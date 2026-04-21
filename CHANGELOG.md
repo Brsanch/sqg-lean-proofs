@@ -309,6 +309,11 @@ via the annular-shell + 1D p-series reduction.
   Composition of §11.24 with §11.26.H.  On the SQG Galerkin at
   `A = sqgBox n`, delivers the uniform-in-`n` `L² × Ḣˢ → L²` product
   bound needed for the energy estimate chain.
+- **§11.32** `l2_trigPolyProduct_le_latticeZeta_symm` — symmetric form
+  of §11.31 with Ḣˢ control on the SECOND factor:
+  `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · latticeZetaConst s · ‖g‖²_{Ḣˢ}`
+  for `s > 1`, `0 ∉ B`.  Via §11.25.B (swapped Young) + §11.30 on `B`.
+  Completes `L² × Ḣˢ → L²` in both factor directions.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**

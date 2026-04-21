@@ -413,6 +413,11 @@ Item 5.A delivered across §11.17–§11.21:
   Composition of §11.24 (uniform-in-support) with §11.26.H.  Delivers
   the uniform-in-`n` `L² × Ḣˢ → L²` product bound on the SQG Galerkin
   at `A = sqgBox n`.
+- §11.32 `l2_trigPolyProduct_le_latticeZeta_symm` — **symmetric form
+  of §11.31** with Ḣˢ control on the SECOND factor:
+  `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · latticeZetaConst s · ‖g‖²_{Ḣˢ}`
+  for `s > 1`, `0 ∉ B`.  Via §11.25.B (swapped Young) + §11.30 on B.
+  Completes `L² × Ḣˢ → L²` in both directions.
 
 **Still outstanding for unconditional Item 5 closure:**
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
