@@ -258,6 +258,9 @@ class, regularity is unconditional:
   and `s ∈ (1, 2]`.  No finite-support restriction on `θ_lim`; no
   axiom beyond mathlib.  This is the maximally-closed form of
   Theorem 3 reachable from the current infrastructure.
+  **§10.170** exercises the composition unconditionally on the zero
+  Aubin–Lions extraction (`HasAubinLionsExtraction.ofZero`), giving
+  `sqg_regularity_of_aubinLions_ofZero`.
 
 ## What is *not* proven
 

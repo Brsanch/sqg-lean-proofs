@@ -140,6 +140,20 @@ uniform `Ḣ¹` bound on the Galerkin approximation, with no additional
 analytic axiom.  The uniform `Ḣ¹` bound is the classical regularity
 input supplied by Galerkin energy theory.
 
+### Theorem 3 capstone on the Aubin–Lions limit (§10.169 / §10.170)
+Composes §10.167 + §10.168 into a single theorem delivering the
+conditional Theorem 3 conclusion on the `L²`-limit class:
+
+- **§10.169 `sqg_regularity_of_aubinLions_uniform_Hs`** — for every
+  `s ∈ [0, 2]`, a uniform `Ḣˢ` bound on `ext.θ_lim t` follows from
+  uniform `Ḣˢ` bounds on the Galerkin states at `s = 1` and
+  `s ∈ (1, 2]`.  No finite-support restriction on `θ_lim`; no axiom
+  beyond mathlib.
+- **§10.170 `sqg_regularity_of_aubinLions_ofZero`** —
+  unconditional zero-datum instance of §10.169 on
+  `HasAubinLionsExtraction.ofZero`.  Exercises the full composition
+  end-to-end.
+
 ### ~~4. `BKMCriterionS2.hsPropagationS2` off the finite-Fourier-support class~~ ✓ Closed post-v0.4.39 (structural)
 Closed by §10.168 (commit `10ea042`).  Parallel to Item 3 via the
 same `hsSeminormSq_le_of_L2_limit_uniform_bound` LSC lemma at
