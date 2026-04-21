@@ -21240,9 +21240,9 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
       hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M) :
     MaterialMaxPrinciple ext.θ_lim := by
-  set fₙ : ℕ → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
-    fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) with hfₙ
-  refine MaterialMaxPrinciple.of_L2_limit_uniform_H1 ext.θ_lim fₙ ?_ M ?_ ?_
+  refine MaterialMaxPrinciple.of_L2_limit_uniform_H1 (θ := ext.θ_lim)
+    (fₙ := fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+    ?_ M ?_ ?_
   · intro t ht
     exact ext.tendsto_L2 t ht
   · intro k t _
