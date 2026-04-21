@@ -21450,7 +21450,6 @@ uniform `Ḣˢ` bounds.**
 Delivers an `SqgSolution` whose `θ`-field equals `ext.θ_lim` and
 satisfies the Theorem 3 regularity conclusion on `s ∈ [0, 2]`. -/
 theorem sqg_solution_and_regularity_via_RouteB_uniform_Hs
-    [DecidableEq (Fin 2 → ℤ)]
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (ext : HasAubinLionsExtraction θ α)
