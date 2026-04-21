@@ -23875,6 +23875,53 @@ private theorem young_peetre_weighted_left
   rw [h_rhs_cf, h_rhs_cg] at h_young
   exact h_young
 
+/-- **§11.25.C₂ — Linear-form (sqrt) Peetre inequality.**  Taking
+square roots in §11.19.C:
+  `σ_s(a+b) ≤ √(2^{2s-1}) · (σ_s a + σ_s b)` for `s ≥ 1`. -/
+lemma fracDerivSymbol_add_le_sqrt
+    {s : ℝ} (hs : 1 ≤ s) (a b : Fin 2 → ℤ) :
+    fracDerivSymbol s (a + b)
+      ≤ Real.sqrt (2 ^ (2 * s - 1))
+          * (fracDerivSymbol s a + fracDerivSymbol s b) := by
+  have h_sq := fracDerivSymbol_sq_add_le hs a b
+  have ha_nn := fracDerivSymbol_nonneg s a
+  have hb_nn := fracDerivSymbol_nonneg s b
+  have h_lhs_nn := fracDerivSymbol_nonneg s (a + b)
+  have h_sum_nn : 0 ≤ fracDerivSymbol s a + fracDerivSymbol s b := add_nonneg ha_nn hb_nn
+  -- (σ_s a)² + (σ_s b)² ≤ (σ_s a + σ_s b)²
+  have h_subadd : (fracDerivSymbol s a) ^ 2 + (fracDerivSymbol s b) ^ 2
+      ≤ (fracDerivSymbol s a + fracDerivSymbol s b) ^ 2 := by
+    nlinarith [mul_nonneg ha_nn hb_nn]
+  have h_pow_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s - 1) :=
+    Real.rpow_nonneg (by norm_num) _
+  -- (σ_s(a+b))² ≤ 2^{2s-1} · (σ_s a + σ_s b)²
+  have h_combined : (fracDerivSymbol s (a + b)) ^ 2
+      ≤ 2 ^ (2 * s - 1) * (fracDerivSymbol s a + fracDerivSymbol s b) ^ 2 := by
+    calc (fracDerivSymbol s (a + b)) ^ 2
+        ≤ 2 ^ (2 * s - 1) *
+            ((fracDerivSymbol s a) ^ 2 + (fracDerivSymbol s b) ^ 2) := h_sq
+      _ ≤ 2 ^ (2 * s - 1) *
+            (fracDerivSymbol s a + fracDerivSymbol s b) ^ 2 :=
+          mul_le_mul_of_nonneg_left h_subadd h_pow_nn
+  -- Take sqrt on both sides.
+  have h_rhs_sq :
+      (Real.sqrt (2 ^ (2 * s - 1))
+          * (fracDerivSymbol s a + fracDerivSymbol s b)) ^ 2
+        = 2 ^ (2 * s - 1) * (fracDerivSymbol s a + fracDerivSymbol s b) ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt h_pow_nn]
+  have h_rhs_nn :
+      0 ≤ Real.sqrt (2 ^ (2 * s - 1))
+            * (fracDerivSymbol s a + fracDerivSymbol s b) :=
+    mul_nonneg (Real.sqrt_nonneg _) h_sum_nn
+  have h_sq_cmp :
+      (fracDerivSymbol s (a + b)) ^ 2
+        ≤ (Real.sqrt (2 ^ (2 * s - 1))
+            * (fracDerivSymbol s a + fracDerivSymbol s b)) ^ 2 := by
+    rw [h_rhs_sq]; exact h_combined
+  have h_sqrt_mono := Real.sqrt_le_sqrt h_sq_cmp
+  rw [Real.sqrt_sq h_lhs_nn, Real.sqrt_sq h_rhs_nn] at h_sqrt_mono
+  exact h_sqrt_mono
+
 /-- **§11.25.D — Peetre-weighted Young (second-factor weight on `cg`).**
 Symmetric form of §11.25.C via §11.22 direction (`ℓ¹ × ℓ²`). -/
 private theorem young_peetre_weighted_right
