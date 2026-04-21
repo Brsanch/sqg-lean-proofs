@@ -91,6 +91,95 @@ noncomputable def fourierTruncate
     Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
   trigPoly A (fun m => mFourierCoeff f m)
 
+/-- **Fourier coefficients of a truncation.** Kronecker-indicator of `A`
+applied to `f̂`. -/
+theorem fourierTruncate_mFourierCoeff
+    [DecidableEq (Fin 2 → ℤ)]
+    (A : Finset (Fin 2 → ℤ))
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) (m : Fin 2 → ℤ) :
+    mFourierCoeff (fourierTruncate A f) m
+      = if m ∈ A then mFourierCoeff f m else 0 := by
+  unfold fourierTruncate
+  exact mFourierCoeff_trigPoly A _ m
+
+/-- **Fourier coefficient of a truncation at an in-set mode.** -/
+lemma fourierTruncate_mFourierCoeff_of_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    (A : Finset (Fin 2 → ℤ))
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    {m : Fin 2 → ℤ} (hm : m ∈ A) :
+    mFourierCoeff (fourierTruncate A f) m = mFourierCoeff f m := by
+  rw [fourierTruncate_mFourierCoeff, if_pos hm]
+
+/-- **Fourier coefficient of a truncation at an out-of-set mode is zero.** -/
+lemma fourierTruncate_mFourierCoeff_of_not_mem
+    [DecidableEq (Fin 2 → ℤ)]
+    (A : Finset (Fin 2 → ℤ))
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    {m : Fin 2 → ℤ} (hm : m ∉ A) :
+    mFourierCoeff (fourierTruncate A f) m = 0 := by
+  rw [fourierTruncate_mFourierCoeff, if_neg hm]
+
+/-- **`Ḣˢ` seminorm of a truncation = weighted ℓ² norm on `A`.** -/
+theorem hsSeminormSq_fourierTruncate
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A : Finset (Fin 2 → ℤ))
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    hsSeminormSq s (fourierTruncate A f)
+      = ∑ m ∈ A, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := by
+  unfold hsSeminormSq
+  -- Collapse tsum to finite sum via `fourierTruncate_mFourierCoeff_of_not_mem`.
+  have hZeroOff : ∀ n ∉ A,
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (fourierTruncate A f) n‖ ^ 2 = 0 := by
+    intros n hn
+    rw [fourierTruncate_mFourierCoeff_of_not_mem A f hn, norm_zero]; ring
+  rw [tsum_eq_sum (s := A) (fun n hn => hZeroOff n hn)]
+  apply Finset.sum_congr rfl
+  intros m hm
+  rw [fourierTruncate_mFourierCoeff_of_mem A f hm]
+
+/-- **`Ḣˢ` seminorm of a truncation, viewed as a weighted finite sum.**
+This is a specialization of `hsSeminormSq_fourierTruncate` that names
+the sum explicitly for downstream use. -/
+theorem hsSeminormSq_fourierTruncate_eq_finiteSum
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A : Finset (Fin 2 → ℤ))
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    hsSeminormSq s (fourierTruncate A f)
+      = ∑ m ∈ A, (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 :=
+  hsSeminormSq_fourierTruncate s A f
+
+/-- **Truncation is nonneg-contractive in `Ḣˢ`.** `Ḣˢ` seminorm of the
+truncation is nonneg (trivial since it's a sum of nonneg terms). -/
+lemma hsSeminormSq_fourierTruncate_nonneg
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A : Finset (Fin 2 → ℤ))
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    0 ≤ hsSeminormSq s (fourierTruncate A f) := by
+  rw [hsSeminormSq_fourierTruncate]
+  exact Finset.sum_nonneg (fun m _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+
+/-- **Dyadic projector Fourier coefficients.** -/
+theorem lpProjector_mFourierCoeff
+    [DecidableEq (Fin 2 → ℤ)]
+    (N : ℕ) (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (m : Fin 2 → ℤ) :
+    mFourierCoeff (lpProjector N f) m
+      = if m ∈ dyadicAnnulus N then mFourierCoeff f m else 0 := by
+  unfold lpProjector
+  exact fourierTruncate_mFourierCoeff _ f m
+
+/-- **`Ḣˢ` seminorm of `Δ_N f`.** -/
+theorem hsSeminormSq_lpProjector
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (N : ℕ)
+    (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    hsSeminormSq s (lpProjector N f)
+      = ∑ m ∈ dyadicAnnulus N,
+          (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff f m‖ ^ 2 := by
+  unfold lpProjector
+  exact hsSeminormSq_fourierTruncate s _ f
+
 /-! ### §11.3 Littlewood–Paley dyadic projector `Δ_N`
 
 `lpProjector N f := fourierTruncate (dyadicAnnulus N) f`. -/
