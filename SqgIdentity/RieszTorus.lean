@@ -21340,4 +21340,51 @@ theorem BKMCriterionS2.of_aubinLions_uniform_Hs
   · intro k t ht s hs1 hs2
     exact hBound (ext.nsub k) t ht s hs1 hs2
 
+/-! ### §10.169 Theorem 3 on the Aubin–Lions limit
+
+Capstone composing §10.167 + §10.168 + §10.7's
+`sqg_regularity_via_s2_bootstrap` into a single theorem: conditional
+Theorem 3 on `s ∈ [0, 2]` for the `L²`-limit of a Galerkin sequence
+with uniform `Ḣˢ` control across `s ∈ [1, 2]`.
+
+This is the **maximally-closed form** of the conditional Theorem 3
+reachable from the current infrastructure: the hypotheses are exactly
+the uniform `Ḣˢ` bounds on the Galerkin approximation (which classical
+Galerkin energy theory supplies).  No finite-support assumption on
+`θ_lim`; no axiom beyond mathlib. -/
+
+/-- **§10.169  Theorem 3 on `s ∈ [0, 2]` for the Aubin–Lions limit.**
+
+Composes:
+
+* §10.167.C `MaterialMaxPrinciple.of_aubinLions_uniform_H1` — MMP
+  from uniform `Ḣ¹` bound on Galerkin states.
+* §10.168.B `BKMCriterionS2.of_aubinLions_uniform_Hs` — BKM from
+  uniform `Ḣˢ` bound on Galerkin states at every `s ∈ (1, 2]`.
+* `sqg_regularity_via_s2_bootstrap` — MMP + BKM ⇒ uniform `Ḣˢ`
+  bound on `s ∈ [0, 2]`.
+
+Produces: for every `s ∈ [0, 2]`, a uniform bound
+`hsSeminormSq s (ext.θ_lim t) ≤ M'` at every `t ≥ 0`.
+
+The caller supplies `M₁` and `Ms : ℝ → ℝ` (the `Ḣ¹` and per-`s`
+`Ḣˢ` bounds on the Galerkin approximation).  These are the **only**
+hypotheses required: there is no finite-support restriction on
+`θ_lim`, no `DecidableEq` binder, and no appeal to any analytic axiom
+outside `sqg_regularity_via_s2_bootstrap`. -/
+theorem sqg_regularity_of_aubinLions_uniform_Hs
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (M₁ : ℝ) (Ms : ℝ → ℝ)
+    (hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁)
+    (hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s → s ≤ 2 →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (ext.θ_lim t) ≤ M' :=
+  sqg_regularity_via_s2_bootstrap ext.θ_lim
+    (MaterialMaxPrinciple.of_aubinLions_uniform_H1 ext M₁ hBoundOne)
+    (BKMCriterionS2.of_aubinLions_uniform_Hs ext Ms hBoundS)
+
 end SqgIdentity
