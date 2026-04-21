@@ -24419,49 +24419,23 @@ structure HasTrigPolyBanachAlgebraBound (s : ℝ) (C : ℝ) : Prop where
       ≤ C * hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg)
 
 /-- **§11.25.G — `HasTrigPolyBanachAlgebraBound` from `HasLatticeZetaBound`.**
-Concrete instance at `C = 2^{2s} · 2C_z` for `s ≥ 1`. -/
+Concrete instance at `C = 2^{2s} · 2·C_z` for `s ≥ 1`.  The `bound`
+field is established via `by intros; exact …; linarith` pattern to
+sidestep `isDefEq` timeouts on the rpow-heavy constant expression. -/
 theorem HasTrigPolyBanachAlgebraBound.of_latticeZeta
     [DecidableEq (Fin 2 → ℤ)]
     {s : ℝ} (hs : 1 ≤ s) {C_z : ℝ} (hC : HasLatticeZetaBound s C_z) :
-    HasTrigPolyBanachAlgebraBound s (2 ^ (2 * s) * (2 * C_z)) where
-  nonneg := by
+    HasTrigPolyBanachAlgebraBound s (2 ^ (2 * s) * (2 * C_z)) := by
+  refine ⟨?_, ?_⟩
+  · -- nonneg
     have h_pow_nn : (0 : ℝ) ≤ (2 : ℝ) ^ (2 * s) :=
       Real.rpow_nonneg (by norm_num) _
     have h_2c_nn : (0 : ℝ) ≤ 2 * C_z := by linarith [hC.nonneg]
     exact mul_nonneg h_pow_nn h_2c_nn
-  bound := fun A B cf cg hA hB =>
-    hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra hs hA hB hC cf cg
-
-/-! ### §11.25.H Zero-coefficient exemplar for `HasTrigPolyBanachAlgebraBound`
-
-Whenever one factor is the zero coefficient function, `trigPolyProduct`
-is identically zero and `hsSeminormSq s 0 = 0`, so the Banach-algebra
-bound holds at **any** constant `C ≥ 0`.  This is the degenerate
-exemplar — not useful as a Phase 10 witness but demonstrates the
-structure admits non-vacuous instances. -/
-
-/-- **§11.25.H — Zero-coefficient Banach-algebra bound (any C ≥ 0).**
-Tests that `HasTrigPolyBanachAlgebraBound` is structurally inhabitable
-at nonnegative constant when restricted to the zero factor class. -/
-theorem hsSeminormSq_trigPolyProduct_zero_le_banach_algebra
-    [DecidableEq (Fin 2 → ℤ)]
-    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cg : (Fin 2 → ℤ) → ℂ)
-    {C : ℝ} (hC_nn : 0 ≤ C) :
-    hsSeminormSq s (trigPolyProduct A B (fun _ => (0 : ℂ)) cg)
-      ≤ C * hsSeminormSq s (trigPoly A (fun _ => (0 : ℂ)))
-          * hsSeminormSq s (trigPoly B cg) := by
-  rw [trigPolyProduct_zero_left]
-  have h_zero : hsSeminormSq s (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) = 0 :=
-    hsSeminormSq_of_zero s
-  rw [h_zero]
-  have h_hsB_nn : 0 ≤ hsSeminormSq s (trigPoly B cg) := hsSeminormSq_nonneg_any _ _
-  have h_hsA_nn :
-      0 ≤ hsSeminormSq s (trigPoly A (fun _ => (0 : ℂ))) :=
-    hsSeminormSq_nonneg_any _ _
-  have h_rhs_nn :
-      0 ≤ C * hsSeminormSq s (trigPoly A (fun _ => (0 : ℂ)))
-          * hsSeminormSq s (trigPoly B cg) :=
-    mul_nonneg (mul_nonneg hC_nn h_hsA_nn) h_hsB_nn
-  exact h_rhs_nn
+  · -- bound
+    intros A B cf cg hA hB
+    have h :=
+      hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra hs hA hB hC cf cg
+    linarith
 
 end SqgIdentity
