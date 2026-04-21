@@ -24991,6 +24991,41 @@ theorem hsSeminormSq_trigPolyProduct_self_le {s : ℝ} (hs : 1 < s)
     _ = (2 ^ (2 * s) * (2 * latticeZetaConst s))
           * (hsSeminormSq s (trigPoly A cf)) ^ 2 := by ring
 
+/-! ### §11.30 Unconditional `ℓ¹ → Ḣˢ` Cauchy–Schwarz bound (`s > 1`)
+
+Direct composition of §11.23 (`ℓ¹` Cauchy–Schwarz with lattice weight)
+and §11.26.H (concrete `HasLatticeZetaBound`) gives an unconditional
+bound
+
+  `(∑_a ‖cf a‖)² ≤ latticeZetaConst s · hsSeminormSq s (trigPoly A cf)`
+
+for `s > 1`, `0 ∉ A`.  This is the Fourier-side form of the classical
+Sobolev embedding `Ḣˢ ⊂ L∞` on `𝕋²` for `s > d/2 = 1`: the `ℓ¹`
+coefficient norm bounds the `L∞` norm of the trig polynomial
+(`|trigPoly A cf (x)| ≤ ∑_a ‖cf a‖`), and this lemma bounds the
+`ℓ¹` coefficient norm by the `Ḣˢ` seminorm with an explicit
+(uniform-in-support) constant. -/
+
+/-- **§11.30 — Unconditional `ℓ¹` Cauchy–Schwarz bound on trig polys.**
+For `s > 1`, `0 ∉ A`: `(∑_a ‖cf a‖)² ≤ latticeZetaConst s · ‖f‖²_{Ḣˢ}`
+where `f = trigPoly A cf`.  Composition of §11.23.A with §11.26.H. -/
+theorem sum_norm_sq_le_latticeZeta_mul_hsSeminormSq
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 < s) {A : Finset (Fin 2 → ℤ)}
+    (hA : (0 : Fin 2 → ℤ) ∉ A) (cf : (Fin 2 → ℤ) → ℂ) :
+    (∑ a ∈ A, ‖cf a‖) ^ 2
+      ≤ latticeZetaConst s * hsSeminormSq s (trigPoly A cf) := by
+  have h_cs := sum_norm_sq_le_latticeWeight_mul_hsSeminormSq
+    hA (by linarith : (0 : ℝ) < s) cf
+  have h_zeta := (hasLatticeZetaBound_latticeZetaConst hs).bound A hA
+  have h_seminorm_nn : 0 ≤ hsSeminormSq s (trigPoly A cf) :=
+    hsSeminormSq_nonneg_any _ _
+  calc (∑ a ∈ A, ‖cf a‖) ^ 2
+      ≤ (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf) := h_cs
+    _ ≤ latticeZetaConst s * hsSeminormSq s (trigPoly A cf) :=
+        mul_le_mul_of_nonneg_right h_zeta h_seminorm_nn
+
 /-! ### §11.29 Monotone constant form
 
 For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`, the Banach-algebra bound
