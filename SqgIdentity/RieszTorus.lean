@@ -25114,9 +25114,14 @@ seminorm controlled by the factors' `Ḣˢ` seminorms at a lower
 regularity `t`, e.g. `t = 1` with `s = 3/2` for SQG energy. -/
 
 /-- **§11.33 — Banach-algebra `Ḣᵗ` bound for `t ∈ [0, s]`, `s > 1`.**
-  Interpolation of §11.27 via `hsSeminormSq_mono_of_le`.  -/
+  Interpolation of §11.27 via `hsSeminormSq_mono_of_le`.
+
+  **Note:** `[DecidableEq (Fin 2 → ℤ)]` is OMITTED from the signature
+  (uses the structure's default `decidablePiFintype`), matching the
+  diagnostic pattern codified in §11.25.G — an explicit class parameter
+  creates a fresh `inst✝` that mismatches the structure field's
+  default-synthesized instance, triggering an `isDefEq`/`whnf` timeout. -/
 theorem hsSeminormSq_trigPolyProduct_le_latticeZeta_interp
-    [DecidableEq (Fin 2 → ℤ)]
     {s t : ℝ} (hs : 1 < s) (hts : t ≤ s)
     {A B : Finset (Fin 2 → ℤ)}
     (hA : (0 : Fin 2 → ℤ) ∉ A) (hB : (0 : Fin 2 → ℤ) ∉ B)
@@ -25125,6 +25130,7 @@ theorem hsSeminormSq_trigPolyProduct_le_latticeZeta_interp
       ≤ (2 ^ (2 * s) * (2 * latticeZetaConst s))
           * hsSeminormSq s (trigPoly A cf)
           * hsSeminormSq s (trigPoly B cg) := by
+  classical
   -- Summability at s via finite-support of trigPolyProduct on sumSet A B.
   have h_supp : ∀ n ∉ sumSet A B,
       mFourierCoeff (trigPolyProduct A B cf cg) n = 0 :=
