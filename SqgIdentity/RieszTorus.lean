@@ -19769,22 +19769,127 @@ theorem galerkinExtend_mode_lipschitz_of_ODE_bound
     (C := M) hCont hDeriv hBound t ⟨hst, le_refl t⟩
   exact h
 
--- **§10.153.C omitted** — the monolithic
--- `HasModeLipschitzFamily.ofSqgGalerkinH2Bound` constructor hit
--- persistent isDefEq loops during elaboration (identified by
--- `set_option diagnostics true`: repeated unfolding of nested
--- `galerkinExtend (sqgBox _) (α _ _) _` sub-expressions under
--- case-split × s-t sign × hypothesis-application products).
--- Bumping `maxHeartbeats` to 1.6M did not resolve the loop.
---
--- Until a dedicated session addresses the elaborator friction,
--- §10.153.A (`galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero`) and
--- §10.153.B (`galerkinExtend_mode_lipschitz_of_ODE_bound`) remain
--- standalone building blocks that manual callers can compose with
--- `HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152) to produce
--- `HasModeLipschitzFamily` witnesses on a case-by-case basis.  The
--- remaining structural gap is the monolithic constructor; its
--- mathematical content is fully captured by A + B + §10.152.
+/-! ### §10.153.C Monolithic composition of §10.153.A + §10.153.B
+
+Produces the `(L, hL_nonneg, hL_holds)` data consumed by
+`HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152) from a uniform
+`H⁻²` bound + the Galerkin ODE hypotheses, via:
+
+* `L m := 0` on `m = 0` (the zero mode is not in `sqgBox n`, so the
+  Galerkin difference is identically `0`);
+* `L m := √K · Λ²(m)` on `m ≠ 0`, bounded by §10.153.A and integrated
+  by §10.153.B.
+
+The previous `§10.153.C` attempt produced a `HasModeLipschitzFamily`
+structure directly and hit persistent isDefEq loops (>1.6M heartbeats)
+during struct-field elaboration on `modeCoeff`/`modeBound`.  This
+version returns an **existential triple** so the elaborator does not
+have to unify struct fields across the `m = 0` vs `m ≠ 0` and
+`s ≤ t` vs `t ≤ s` cases; the caller composes with §10.152 at a
+single use-site.  The `sqgBox` irreducibility guard is also applied
+locally to prevent the `sqgBox`-unfolding loop identified in the
+v0.4.38 diagnostic workflow. -/
+
+section Sec10153C
+
+attribute [local irreducible] sqgBox
+
+set_option maxHeartbeats 800000 in
+/-- **§10.153.C** Per-mode Lipschitz constant for the uniform-`H⁻²`
+SQG Galerkin family, in existential form consumable by §10.152.
+Composes §10.153.A (per-mode upper bound on `galerkinRHS`) with
+§10.153.B (MVT on the per-mode trajectory) across the
+`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split. -/
+theorem sqgGalerkin_modeLipschitz_from_UniformH2
+    [DecidableEq (Fin 2 → ℤ)]
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (K : ℝ) (hK : 0 ≤ K)
+    (hH2 : UniformGalerkinRHSHsNegSqBound α 2 K)
+    (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ m : Fin 2 → ℤ,
+      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+        (Set.Ici τ) τ)
+    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → s ≤ t →
+      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (Set.Icc s t)) :
+    ∃ L : (Fin 2 → ℤ) → ℝ,
+      (∀ m, 0 ≤ L m) ∧
+      ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → 0 ≤ t →
+        ‖galerkinExtend (sqgBox n) (α n t) m
+          - galerkinExtend (sqgBox n) (α n s) m‖
+          ≤ L m * |t - s| := by
+  refine ⟨fun m => if m = 0 then 0 else Real.sqrt K * fracDerivSymbol 2 m,
+    ?hNN, ?hHolds⟩
+  case hNN =>
+    intro m
+    by_cases hm : m = 0
+    · simp [hm]
+    · simp only [hm, if_false]
+      exact mul_nonneg (Real.sqrt_nonneg _)
+        (le_of_lt (fracDerivSymbol_pos 2 hm))
+  case hHolds =>
+    intro n m s t hs ht
+    by_cases hm : m = 0
+    · -- Zero-mode case: both endpoints vanish via `zero_not_mem_sqgBox`.
+      subst hm
+      have h0_nm : (0 : Fin 2 → ℤ) ∉ sqgBox n := zero_not_mem_sqgBox n
+      have h_t : galerkinExtend (sqgBox n) (α n t) (0 : Fin 2 → ℤ) = 0 :=
+        galerkinExtend_apply_of_not_mem _ _ h0_nm
+      have h_s : galerkinExtend (sqgBox n) (α n s) (0 : Fin 2 → ℤ) = 0 :=
+        galerkinExtend_apply_of_not_mem _ _ h0_nm
+      simp [h_t, h_s]
+    · -- Non-zero mode: compose §10.153.A + §10.153.B.
+      simp only [hm, if_false]
+      have hMnn : 0 ≤ Real.sqrt K * fracDerivSymbol 2 m :=
+        mul_nonneg (Real.sqrt_nonneg _)
+          (le_of_lt (fracDerivSymbol_pos 2 hm))
+      rcases le_total s t with hst | hts
+      · -- Forward direction s ≤ t.
+        have h_abs : |t - s| = t - s := abs_of_nonneg (sub_nonneg.mpr hst)
+        rw [h_abs]
+        have h_bound : ∀ τ ∈ Set.Ico s t,
+            ‖galerkinRHS (sqgBox n)
+              (galerkinExtend (sqgBox n) (α n τ)) m‖
+              ≤ Real.sqrt K * fracDerivSymbol 2 m := by
+          intro τ hτ
+          exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans hs hτ.1)) hm
+        have h_deriv_local : ∀ τ ∈ Set.Ico s t,
+            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+              (galerkinRHS (sqgBox n)
+                (galerkinExtend (sqgBox n) (α n τ)) m)
+              (Set.Ici τ) τ := fun τ hτ =>
+          hDeriv n τ (le_trans hs hτ.1) m
+        exact galerkinExtend_mode_lipschitz_of_ODE_bound
+          (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hst
+          h_deriv_local (hCont n m s t hs hst) h_bound
+      · -- Reverse direction t ≤ s; apply the MVT with (t, s) and
+        -- flip the norm.
+        have h_abs : |t - s| = s - t := abs_of_nonpos (sub_nonpos.mpr hts)
+        rw [h_abs]
+        have h_bound : ∀ τ ∈ Set.Ico t s,
+            ‖galerkinRHS (sqgBox n)
+              (galerkinExtend (sqgBox n) (α n τ)) m‖
+              ≤ Real.sqrt K * fracDerivSymbol 2 m := by
+          intro τ hτ
+          exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
+            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans ht hτ.1)) hm
+        have h_deriv_local : ∀ τ ∈ Set.Ico t s,
+            HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+              (galerkinRHS (sqgBox n)
+                (galerkinExtend (sqgBox n) (α n τ)) m)
+              (Set.Ici τ) τ := fun τ hτ =>
+          hDeriv n τ (le_trans ht hτ.1) m
+        have h_mvt : ‖galerkinExtend (sqgBox n) (α n s) m
+            - galerkinExtend (sqgBox n) (α n t) m‖
+            ≤ Real.sqrt K * fracDerivSymbol 2 m * (s - t) :=
+          galerkinExtend_mode_lipschitz_of_ODE_bound
+            (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hts
+            h_deriv_local (hCont n m t s ht hts) h_bound
+        rw [norm_sub_rev]
+        exact h_mvt
+
+end Sec10153C
 
 /-! ### §10.156 Item 1 structural capstone
 
