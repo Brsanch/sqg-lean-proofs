@@ -19,8 +19,8 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 21,000 lines of Lean 4 source in the
-`RieszTorus` module (over 21,500 lines project-wide), with **zero
+The formalization comprises over 22,000 lines of Lean 4 source in the
+`RieszTorus` module (over 22,500 lines project-wide), with **zero
 `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
@@ -268,15 +268,56 @@ class, regularity is unconditional:
   smooth initial data + uniform `Ḣˢ` bounds, produces both a genuine
   `SqgSolution` on `𝕋²` and the full Theorem 3 regularity conclusion
   on `s ∈ [0, 2]` for that solution.
+- **Item 1 `hH2` structural closure (post-v0.4.39, §10.172).**
+  The final Item 1 analytic input — the uniform `H⁻²` bound on
+  `galerkinRHS` — is **discharged structurally** without passing
+  through any Sobolev product bilinear estimate.  §10.172.A–F
+  use the divergence-free structure `σ(ℓ) · ℓ = 0` on the SQG
+  velocity symbol + Young's inequality on the finite Fourier
+  convolution to produce the pointwise bound
+  `‖galerkinRHS S c m‖ ≤ latticeNorm m · ∑_{n ∈ ↥S} ‖c n‖²`.
+  Combined with §10.97's `L²` conservation, this yields a per-mode
+  Lipschitz constant `L(m) = ‖θ₀‖²_{L²} · latticeNorm m` uniform in
+  the Galerkin level `n`.  The capstone
+  `HasPerModeLimit.ofSqgGalerkin_l2_conservation` (§10.172.F) then
+  produces a `HasPerModeLimit α` **unconditionally** from Galerkin
+  `L²` conservation + ODE hypotheses, completing the Item 1 chain
+  down to the `HasFourierSynthesis` step.  Crucially: the standard
+  Aubin-Lions uniform `H⁻²` bound via `L² × L² → H⁻¹` bilinear
+  **fails** on `𝕋²` due to the log-divergence of `∑_{m≠0} |m|⁻²`
+  in 2D; §10.172 sidesteps this entirely by never passing through
+  a Sobolev product estimate.
+- **Full-range Theorem 3 via `BKMCriterionHighFreq`
+  (post-v0.4.39, §10.173–§10.175).**  Lifts the `s ≤ 2` restriction
+  of §10.168/§10.169/§10.171 to the full Sobolev scale `s ≥ 0`.
+  §10.167.A's LSC lemma is generic in `s`, so the high-frequency
+  generalization is structural:
+    - **§10.173.A/B `BKMCriterionHighFreq.of_L2_limit_uniform_Hs_all_s`
+      / `.of_aubinLions_uniform_Hs_all_s`** — generic-`s` BKM from
+      uniform `Ḣˢ` bounds at every `s > 1`.
+    - **§10.174 `sqg_regularity_of_aubinLions_via_interpolation`** —
+      full-range Theorem 3.  Composes §10.167.C + §10.173.B +
+      `sqg_regularity_via_interpolation`.  Delivers uniform `Ḣˢ`
+      bounds on every `s ≥ 0` given uniform Galerkin `Ḣˢ` bounds at
+      `s = 1` and every `s > 1` plus `SqgEvolutionAxioms`.
+    - **§10.175 `sqg_solution_and_regularity_via_RouteB_interpolation`**
+      — end-to-end full-range capstone.  Parallel to §10.171 but
+      covers every `s ≥ 0`.  Resolves `OPEN.md` Item 5's
+      infrastructure gap: the structural chain is now uniform across
+      the full Sobolev scale.
 
 ## What is *not* proven
 
-- The fractional Sobolev bootstrap for `s > 2` (requires Kato–Ponce-type
-  estimates on `𝕋²` that are not yet in mathlib).  Both
+- The classical Kato–Ponce fractional Leibniz estimate on `𝕋²` that
+  would **discharge** the high-`s` Galerkin `Ḣˢ` bound hypothesis
+  consumed by §10.174 / §10.175.  Both
   `MaterialMaxPrinciple.hOnePropagation` and
-  `BKMCriterionS2.hsPropagationS2` now lift off the finite-support
-  class (via §10.167 and §10.168) given uniform `Ḣˢ` bounds on the
-  Galerkin approximation, supplied by the caller.
+  `BKMCriterionHighFreq.hsPropagationHighFreq` now lift off the
+  finite-support class (via §10.167 and §10.173) given uniform `Ḣˢ`
+  bounds on the Galerkin approximation, supplied by the caller.
+  Producing those bounds at high `s` requires either a mathlib
+  Kato–Ponce contribution or an in-tree local version specialised
+  to the torus Fourier multiplier setting (§10.174 `hBoundS`).
 - The remaining Item 1 classical analytical inputs, each consumed by
   the v0.4.39 structural constructors as a precisely-typed, named
   hypothesis:

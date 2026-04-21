@@ -22101,4 +22101,31 @@ theorem sqg_solution_and_regularity_via_RouteB_interpolation
   exact sqg_regularity_of_aubinLions_via_interpolation
     ext M₁ Ms hBoundOne hBoundS sol.solvesSqgEvolution s hs0
 
+/-! ### §10.176 Zero-datum instance of §10.174 (full-range)
+
+Unconditional application of §10.174 to
+`HasAubinLionsExtraction.ofZero`.  All uniform bounds collapse to `0`,
+and `SqgEvolutionAxioms` on the zero trajectory is in-tree.
+Parallel to §10.170 but covers every `s ≥ 0`, not just `s ∈ [0, 2]`. -/
+
+/-- **§10.176 Theorem 3 on the zero Aubin–Lions extraction (full range).**
+Exercises the §10.174 composition end-to-end on the zero datum.
+Both `Ḣ¹` and `Ḣˢ` bounds on the Galerkin family are `0`.
+`SqgEvolutionAxioms` on the zero trajectory comes from
+`SqgEvolutionAxioms.of_identically_zero`. -/
+theorem sqg_regularity_of_aubinLions_ofZero_interpolation :
+    ∀ s : ℝ, 0 ≤ s →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t →
+        hsSeminormSq s ((HasAubinLionsExtraction.ofZero).θ_lim t) ≤ M' := by
+  have hE : SqgEvolutionAxioms (HasAubinLionsExtraction.ofZero).θ_lim :=
+    SqgEvolutionAxioms.of_identically_zero
+      (HasAubinLionsExtraction.ofZero).θ_lim
+      (fun _ => rfl)
+  exact sqg_regularity_of_aubinLions_via_interpolation (θ := 0)
+    (α := fun _ _ _ => (0 : ℂ))
+    HasAubinLionsExtraction.ofZero (0 : ℝ) (fun _ : ℝ => (0 : ℝ))
+    (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
+    (fun n t _ s _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
+    hE
+
 end SqgIdentity

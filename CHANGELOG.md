@@ -6,6 +6,38 @@ to the latest version.
 
 ## Unreleased (post-v0.4.39, on `main`) — 2026-04-21
 
+**Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
+— §10.173–§10.175.**
+
+Lifts the `s ≤ 2` restriction of §10.168/§10.169/§10.171 to the
+full Sobolev scale `s ≥ 0`:
+
+- **§10.173.A** `BKMCriterionHighFreq.of_L2_limit_uniform_Hs_all_s` —
+  generic-`s` variant of §10.168.A.  Uses §10.167.A's LSC lemma
+  (already generic in `s`) to derive `BKMCriterionHighFreq θ` from
+  uniform `Ḣˢ` bounds on the `L²`-limit sequence at **every** `s > 1`
+  (not just `s ∈ (1, 2]`).
+- **§10.173.B** `BKMCriterionHighFreq.of_aubinLions_uniform_Hs_all_s`
+  — Aubin–Lions specialisation.  Summability comes for free from
+  `hsSeminormSq_summable_galerkinToLp` (finite-support Fourier).
+- **§10.174** `sqg_regularity_of_aubinLions_via_interpolation` —
+  full-range Theorem 3 capstone.  Composes §10.167.C + §10.173.B +
+  `sqg_regularity_via_interpolation`.  Delivers
+  `∀ s ≥ 0, ∃ M', ∀ t ≥ 0, hsSeminormSq s (ext.θ_lim t) ≤ M'`
+  given uniform `Ḣˢ` bounds on Galerkin at `s = 1` and every `s > 1`
+  plus `SqgEvolutionAxioms` on the limit.
+- **§10.175** `sqg_solution_and_regularity_via_RouteB_interpolation`
+  — end-to-end full-range capstone.  Parallel to §10.171 but covers
+  every `s ≥ 0`.
+
+**Impact on `OPEN.md` Item 5 (Ḣˢ bootstrap for `s > 2`):** the
+**infrastructure** is now in-tree.  What remains is discharging the
+high-`s` Galerkin `Ḣˢ` bound hypothesis, which classically requires
+Kato–Ponce / fractional Leibniz on `𝕋²` — either via a mathlib
+contribution or an in-tree local version.  The structural chain is
+now uniform across the full Sobolev scale, so the classical PDE
+content is isolated as a single named hypothesis.
+
 **Item 1 `hH2` closure — §10.172 (divergence-free pointwise bound).**
 
 Item 1's last remaining analytic input (`hH2`, the uniform `H⁻²`

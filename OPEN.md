@@ -206,11 +206,25 @@ analytic axiom, so long as the caller supplies uniform `Ḣˢ` bounds on
 the Galerkin approximation for `s ∈ [1, 2]`.
 
 ### 5. Ḣˢ bootstrap for `s > 2`
-Blocked upstream on a mathlib Kato–Ponce fractional Leibniz estimate
-on `𝕋ᵈ`. Two phases:
-- **5.A** Contribute Kato–Ponce estimates to mathlib.
-- **5.B** Once 5.A merges, extend `sqg_regularity_via_s2_bootstrap`
-  to `s > 2`.
+**Infrastructure extension now in-tree (post-v0.4.39):** §10.173.A/B
+and §10.174 provide the structural extension path via
+`BKMCriterionHighFreq` (the generic-`s` variant covering `s > 1`,
+replacing the `s ≤ 2`-restricted `BKMCriterionS2`).  §10.174
+`sqg_regularity_of_aubinLions_via_interpolation` delivers Theorem 3
+on the full range `s ≥ 0` given uniform `Ḣˢ` Galerkin bounds at every
+`s > 1`.  §10.175
+`sqg_solution_and_regularity_via_RouteB_interpolation` is the
+end-to-end full-range capstone.
+
+**Still outstanding:** the actual classical Kato–Ponce fractional
+Leibniz estimate on `𝕋²` that would **discharge** the high-`s`
+Galerkin `Ḣˢ` bound hypothesis.  Two phases remain:
+- **5.A** Contribute Kato–Ponce estimates to mathlib, OR supply an
+  in-tree local version specialised to the torus Fourier multiplier
+  setting.
+- **5.B** Once 5.A delivers, discharge the §10.174 `hBoundS` hypothesis
+  unconditionally for smooth initial data (local-in-time) and for
+  the conditional-on-BKM-integral (global-in-time) setting.
 Target release: **v0.5.0**.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
