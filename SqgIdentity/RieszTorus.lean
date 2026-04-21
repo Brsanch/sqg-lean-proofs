@@ -19791,19 +19791,21 @@ if CI fails, the log will list the specific declaration(s) unfolded
 in the millions — the actual loop culprit — allowing a targeted
 `attribute [local irreducible]` fix. -/
 
+-- Second diagnostic retry: `classical` alone was insufficient to
+-- break the DecidableEq synthesis loop (identified by the first
+-- diagnostic run, commit 0d1b4b8: Int.decEq ↦ 70k,
+-- Multiset.decidableForallMultiset ↦ 55k, val ↦ 263k).  Adding
+-- `GalerkinRHSHsNegSqBound` + `UniformGalerkinRHSHsNegSqBound` as
+-- locally irreducible to prevent the predicate unfolding from
+-- re-triggering the ∑'/Summable decidability chain, and keeping
+-- diagnostics on to see what changed.
+attribute [local irreducible] GalerkinRHSHsNegSqBound
+attribute [local irreducible] UniformGalerkinRHSHsNegSqBound
+
 set_option maxHeartbeats 400000 in
--- Diagnostic (v0.4.39) identified the loop as DecidableEq-instance
--- synthesis on `Fin 2 → ℤ` / `↥(sqgBox _)` via `Int.decEq ↦ 70k`,
--- `Multiset.decidableForallMultiset ↦ 55k`, `dite ↦ 155k`, rather than
--- `sqgBox` or `galerkinExtend` unfolding (those hit only 1.9k).  Fix:
--- `classical` at the top of the tactic proof pins `Classical.decEq` as
--- the primary `DecidableEq (Fin 2 → ℤ)` instance, bypassing the
--- computable reduction chain through `Int.decEq` / `List.rec`.
-/-- **§10.153.C** Per-mode Lipschitz constant for the uniform-`H⁻²`
-SQG Galerkin family, in existential form consumable by §10.152.
-Composes §10.153.A (per-mode upper bound on `galerkinRHS`) with
-§10.153.B (MVT on the per-mode trajectory) across the
-`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split. -/
+set_option diagnostics true in
+set_option diagnostics.threshold 100 in
+/-- **§10.153.C (diagnostic retry 2)** Per-mode Lipschitz constant. -/
 theorem sqgGalerkin_modeLipschitz_from_UniformH2
     [DecidableEq (Fin 2 → ℤ)]
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
