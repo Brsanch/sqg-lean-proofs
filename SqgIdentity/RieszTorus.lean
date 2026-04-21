@@ -19769,10 +19769,14 @@ theorem galerkinExtend_mode_lipschitz_of_ODE_bound
     (C := M) hCont hDeriv hBound t ⟨hst, le_refl t⟩
   exact h
 
+set_option maxHeartbeats 1600000 in
 /-- **§10.153.C** `HasModeLipschitzFamily` from uniform `H⁻²` bound +
 per-mode Galerkin ODE.  Combines §10.152 (§10.123-based modeBound)
 with §10.153.A (H⁻² → per-mode bound) + §10.153.B (MVT) to produce
-`L m := Real.sqrt K * fracDerivSymbol 2 m` concretely. -/
+`L m := Real.sqrt K * fracDerivSymbol 2 m` concretely.  Heartbeats
+raised because the term elaborates many nested `galerkinExtend (sqgBox n)
+(α n σ) m` sub-expressions per sub-goal (case-splits × branches × hypothesis
+applications). -/
 noncomputable def HasModeLipschitzFamily.ofSqgGalerkinH2Bound
     [DecidableEq (Fin 2 → ℤ)]
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
