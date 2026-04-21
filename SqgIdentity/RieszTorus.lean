@@ -22758,4 +22758,43 @@ noncomputable def HasParaRemainderHsBound.ofZeroStub (s : ℝ) :
     rw [hsSeminormSq_of_zero]
     simp
 
+/-! ### §11.12 Phase 10 capstone — structural chain from closure to
+uniform bound
+
+Composes `HasSqgGalerkinHsClosure` + ODE witness (Phase 10) via
+`HasGalerkinHsGronwallFamily.of_sqgClosure` (§11.9) to produce the
+compact-interval uniform `Ḣˢ` bound on the Galerkin family.  This is
+the direct feed into §10.174's `hBoundS` hypothesis. -/
+
+/-- **Phase 10 capstone**: from `HasSqgGalerkinHsClosure` + ODE
+witnesses, extract a single-scalar uniform `Ḣˢ` bound on `[0, T]`. -/
+theorem HasSqgGalerkinHsClosure.uniform_bound
+    (s : ℝ) {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (h : HasSqgGalerkinHsClosure s α)
+    (hODE : ∀ n : ℕ, ∀ t : ℝ,
+      HasDerivAt (α n) (galerkinVectorField (sqgBox n) (α n t)) t)
+    (T : ℝ) (hT : 0 ≤ T) :
+    ∃ M : ℝ, ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → t ≤ T →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ M :=
+  (HasGalerkinHsGronwallFamily.of_sqgClosure s h hODE).global_uniform_bound
+    s h.hK_nn T hT
+
+/-! ### §11.13 Zero-datum exemplar — Phase 10 → Phase 5 uniform bound -/
+
+/-- **Zero-datum Phase 10 uniform bound.** Exercises §11.12 on the
+zero Galerkin trajectory. -/
+theorem HasSqgGalerkinHsClosure.uniform_bound_ofZero
+    (s : ℝ) (T : ℝ) (hT : 0 ≤ T) :
+    ∃ M : ℝ, ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → t ≤ T →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (zeroGalerkin n t)) ≤ M := by
+  refine ⟨0, ?_⟩
+  intro n t _ _
+  rw [show galerkinToLp (sqgBox n) (zeroGalerkin n t)
+        = galerkinToLp (sqgBox n) 0 from by unfold zeroGalerkin; rfl]
+  -- galerkinToLp S 0 = 0 (zero coefficients give zero trig poly)
+  have : galerkinToLp (sqgBox n) (0 : ↥(sqgBox n) → ℂ) = 0 := by
+    unfold galerkinToLp trigPoly galerkinExtend
+    simp
+  rw [this, hsSeminormSq_of_zero]
+
 end SqgIdentity
