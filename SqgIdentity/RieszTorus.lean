@@ -20112,4 +20112,39 @@ theorem exists_sqgSolution_via_RouteB_from_perModeLimit_synthesis
   exists_sqgSolution_via_RouteB_from_galerkin_energy
     (HasAubinLionsExtraction.ofPerModeLimit per syn) hLevel hu hSmooth
 
+/-! ### §10.157 Fourier synthesis from ℓ²-summable coefficients
+
+Mathlib's `mFourierBasis` is a `HilbertBasis (Fin 2 → ℤ) ℂ` on
+`L²(𝕋²)`; its representation map `mFourierBasis.repr` is a linear
+isometry equivalence into `lp (fun _ : Fin 2 → ℤ => ℂ) 2`.  Its inverse
+gives the Fourier-synthesis map: from an ℓ²-summable coefficient
+sequence, construct the corresponding `Lp` element.
+
+§10.157 supplies the concrete `θ_lim t` operator that discharges the
+`θ_lim` input of `HasFourierSynthesis.ofPerModeLimit` (§10.154.B), as
+long as the per-mode limit `per.b · t` is ℓ²-summable at every `t ≥ 0`
+(which follows from the uniform `L²` bound on the Galerkin sequence +
+Fatou on `ℓ²(ℤ²)`). -/
+
+/-- **§10.157.A  Fourier synthesis `Lp` element from an ℓ² sequence.**
+Lifts `b ∈ ℓ²(ℤ²)` to the corresponding `L²(𝕋²)` element via
+`mFourierBasis.repr.symm`. -/
+noncomputable def fourierSynthesisLp
+    (b : lp (fun _ : Fin 2 → ℤ => ℂ) 2) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  mFourierBasis.repr.symm b
+
+/-- **§10.157.B  Fourier coefficients of the Fourier synthesis recover
+the input sequence.**  `mFourierCoeff (fourierSynthesisLp b) m = b m`
+for every mode `m`. -/
+theorem mFourierCoeff_fourierSynthesisLp
+    (b : lp (fun _ : Fin 2 → ℤ => ℂ) 2) (m : Fin 2 → ℤ) :
+    mFourierCoeff (fourierSynthesisLp b) m = b m := by
+  have h_repr : mFourierBasis.repr (fourierSynthesisLp b) = b := by
+    unfold fourierSynthesisLp
+    exact LinearIsometryEquiv.apply_symm_apply _ _
+  have := congrArg (fun (v : lp (fun _ : Fin 2 → ℤ => ℂ) 2) => v m) h_repr
+  simp only [mFourierBasis_repr] at this
+  exact this
+
 end SqgIdentity
