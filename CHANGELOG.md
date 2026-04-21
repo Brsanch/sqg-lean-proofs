@@ -256,18 +256,29 @@ via the annular-shell + 1D p-series reduction.
 - **§11.26.E** `sum_annularShell_rpow_le` — shell-sum bound
   `∑_{m ∈ shell k} ‖m‖^{-2s} ≤ (8k+4) · k^{-2s}` via pointwise monotonicity
   of `x ↦ x^{-2s}` (`inv_anti₀` + `Real.rpow_neg`) + cardinality.
-- **§11.26.F₁** `latticeZetaConst s := 8·∑'(n+1)^{-(2s-1)} + 4·∑'(n+1)^{-2s}`
-  — the candidate uniform constant (tsum form).
+- **§11.26.F₁** `latticeZetaConst s := 8·∑'(k:ℕ), 1/(k:ℝ)^{2s-1} +
+  4·∑'(k:ℕ), 1/(k:ℝ)^{2s}` — the uniform constant (tsum in `(k:ℝ)` form;
+  `k=0` terms vanish since `1/0^p = 0` for `p > 0`).
 - **§11.26.F₂** `latticeZetaConst_nonneg` — nonnegativity via
   `tsum_nonneg` + `div_nonneg` + `Real.rpow_nonneg`.
-
-**Remaining for unconditional Item 5.A closure via concrete lattice zeta:**
-- §11.26.F main proof: `HasLatticeZetaBound s (latticeZetaConst s)`
-  for `s > 1`.  Requires: (i) `shellOf m : ℕ := max (|m 0|).toNat
-  (|m 1|).toNat` + proofs `m ∈ shell (shellOf m)` for m ≠ 0; (ii)
-  shell-partition of arbitrary `A ⊆ ℤ² \ {0}` as disjoint biUnion;
-  (iii) sum decomposition via `Finset.sum_biUnion`; (iv) partial-sum
-  ≤ tsum bridge.  ~80 LOC.
+- **§11.26.G** `shellOf m := max (|m 0|).toNat (|m 1|).toNat` —
+  `ℓ∞`-radius shell-index function.  §11.26.G₁ `shellOf_pos_of_ne_zero`
+  (`m ≠ 0 ⇒ shellOf m ≥ 1`), §11.26.G₂ `mem_annularShell_shellOf`
+  (`m ≠ 0 ⇒ m ∈ annularShell (shellOf m)`), §11.26.G₃
+  `annularShell_disjoint` (distinct shells are pairwise disjoint).
+- **§11.26.H** `hasLatticeZetaBound_latticeZetaConst` — **full
+  unconditional `HasLatticeZetaBound s (latticeZetaConst s)` for
+  `s > 1`.**  Partition any finite `A ⊆ ℤ² \ {0}` by `shellOf`,
+  decompose sum via `Finset.sum_biUnion` over `A.image shellOf`
+  with disjoint shells (§11.26.G₃), bound each shell via §11.26.E,
+  split `(8k+4)·k^{-2s} = 8·k^{1-2s} + 4·k^{-2s}` via `Real.rpow_add`
+  with `1 = 1 + (-(2s))` exponent decomposition, bridge finite sum
+  to `tsum` via `Summable.sum_le_tsum` on the two p-series
+  (`Real.summable_one_div_nat_rpow.mpr (by linarith)` at `p = 2s-1`
+  and `p = 2s`).  **Closes the lattice-zeta leg of Route A Item 5.A
+  unconditionally.**  Composed with §11.25.F/G/G₁ gives the
+  support-independent Banach-algebra Ḣˢ product bound with concrete
+  constant `2^{2s}·(2·latticeZetaConst s)`.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
