@@ -287,6 +287,28 @@ via the annular-shell + 1D p-series reduction.
   with zero open hypotheses**.  §11.27.A
   `hasTrigPolyBanachAlgebraBound_of_gt_one_zero_left` — zero-coefficient
   exemplar sanity check.
+- **§11.28** `hsSeminormSq_trigPolyProduct_self_le` — self-product
+  specialization of §11.27 for Gronwall-energy estimates:
+  `‖f²‖²_{Ḣˢ} ≤ 2^{2s}·(2·latticeZetaConst s)·(‖f‖²_{Ḣˢ})²` for `s > 1`,
+  `0 ∉ A`.  Natural form for quadratic nonlinearities.
+- **§11.29** `hasTrigPolyBanachAlgebraBound_of_gt_one_mono` —
+  monotonicity of the concrete Banach-algebra constant in `C`.
+  For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`,
+  `HasTrigPolyBanachAlgebraBound s C` holds.  Unifies constants across
+  multi-term estimates.
+- **§11.30** `sum_norm_sq_le_latticeZeta_mul_hsSeminormSq` —
+  **unconditional `ℓ¹ → Ḣˢ` Cauchy–Schwarz bound for `s > 1`,
+  `0 ∉ A`:**
+  `(∑_a ‖cf a‖)² ≤ latticeZetaConst s · hsSeminormSq s (trigPoly A cf)`.
+  Fourier-side form of the classical Sobolev embedding
+  `Ḣˢ ⊂ L∞` on `𝕋²` for `s > d/2 = 1`, with explicit
+  uniform-in-support constant.  Composition of §11.23.A with §11.26.H.
+- **§11.31** `l2_trigPolyProduct_le_latticeZeta` — **unconditional
+  uniform `L²` product bound for `s > 1`, `0 ∉ A`:**
+  `∑_n ‖modeConv(n)‖² ≤ latticeZetaConst s · ‖f‖²_{Ḣˢ} · (∑_b ‖cg b‖²)`.
+  Composition of §11.24 with §11.26.H.  On the SQG Galerkin at
+  `A = sqgBox n`, delivers the uniform-in-`n` `L² × Ḣˢ → L²` product
+  bound needed for the energy estimate chain.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**

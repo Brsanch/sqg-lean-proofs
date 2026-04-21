@@ -394,6 +394,25 @@ Item 5.A delivered across §11.17–§11.21:
   for every `s > 1`.**  One-line composition of §11.25.G `.of_latticeZeta`
   with §11.26.H.  First Banach-algebra product bound in-tree with zero
   open hypotheses.  §11.27.A `_zero_left` exemplar on the zero factor.
+- §11.28 `hsSeminormSq_trigPolyProduct_self_le` — self-product
+  specialization of §11.27 for `f = g`: `‖f²‖²_{Ḣˢ} ≤
+  2^{2s}·(2·latticeZetaConst s)·(‖f‖²_{Ḣˢ})²`.  Gronwall-energy form.
+- §11.29 `hasTrigPolyBanachAlgebraBound_of_gt_one_mono` — monotone-
+  constant form: for any `C ≥ 2^{2s}·(2·latticeZetaConst s)`,
+  `HasTrigPolyBanachAlgebraBound s C` holds.  Unifies constants in
+  multi-term estimates.
+- §11.30 `sum_norm_sq_le_latticeZeta_mul_hsSeminormSq` — **unconditional
+  `ℓ¹ → Ḣˢ` Cauchy–Schwarz bound for `s > 1`, `0 ∉ A`:**
+  `(∑_a ‖cf a‖)² ≤ latticeZetaConst s · hsSeminormSq s (trigPoly A cf)`.
+  Fourier-side form of `Ḣˢ ⊂ L∞` Sobolev embedding for `s > d/2 = 1`
+  on `𝕋²`, with concrete constant.  Composition of §11.23.A with
+  §11.26.H.
+- §11.31 `l2_trigPolyProduct_le_latticeZeta` — **unconditional uniform
+  `L²` product bound for `s > 1`, `0 ∉ A`:**
+  `∑_n ‖modeConv(n)‖² ≤ latticeZetaConst s · ‖f‖²_{Ḣˢ} · (∑_b ‖cg b‖²)`.
+  Composition of §11.24 (uniform-in-support) with §11.26.H.  Delivers
+  the uniform-in-`n` `L² × Ḣˢ → L²` product bound on the SQG Galerkin
+  at `A = sqgBox n`.
 
 **Still outstanding for unconditional Item 5 closure:**
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
