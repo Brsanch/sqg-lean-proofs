@@ -24967,4 +24967,61 @@ theorem hasTrigPolyBanachAlgebraBound_of_gt_one_zero_left
           * hsSeminormSq s (trigPoly B cg) := by
   exact (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A B _ cg hA hB
 
+/-! ### §11.28 Self-product specialization
+
+When `A = B` and `cf = cg`, §11.27 reduces to a bound on the Ḣˢ norm
+of the self-square `‖f²‖²_{Ḣˢ} ≤ C · (‖f‖²_{Ḣˢ})²`.  This is the
+natural form used in Gronwall energy estimates for quadratic
+nonlinearities (e.g., Burgers `∂_t θ + θ · ∂_x θ = 0`). -/
+
+/-- **§11.28 — Self-product Banach-algebra bound.**
+For `s > 1` and `0 ∉ A`:
+  `‖f²‖²_{Ḣˢ} ≤ 2^{2s}·(2·latticeZetaConst s) · (‖f‖²_{Ḣˢ})²`
+where `f = trigPoly A cf` and `f² = trigPolyProduct A A cf cf`. -/
+theorem hsSeminormSq_trigPolyProduct_self_le {s : ℝ} (hs : 1 < s)
+    (A : Finset (Fin 2 → ℤ)) (cf : (Fin 2 → ℤ) → ℂ)
+    (hA : (0 : Fin 2 → ℤ) ∉ A) :
+    hsSeminormSq s (trigPolyProduct A A cf cf)
+      ≤ (2 ^ (2 * s) * (2 * latticeZetaConst s))
+          * (hsSeminormSq s (trigPoly A cf)) ^ 2 := by
+  have h := (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A A cf cf hA hA
+  calc hsSeminormSq s (trigPolyProduct A A cf cf)
+      ≤ (2 ^ (2 * s) * (2 * latticeZetaConst s))
+          * hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly A cf) := h
+    _ = (2 ^ (2 * s) * (2 * latticeZetaConst s))
+          * (hsSeminormSq s (trigPoly A cf)) ^ 2 := by ring
+
+/-! ### §11.29 Monotone constant form
+
+For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`, the Banach-algebra bound
+holds with constant `C`.  Useful for unifying constants across multiple
+terms. -/
+
+/-- **§11.29 — Monotonicity of the concrete Banach-algebra constant.**
+If `C ≥ 2^{2s}·(2·latticeZetaConst s)`, then
+`HasTrigPolyBanachAlgebraBound s C` holds.  Built from §11.27 +
+monotonicity of the bound structure. -/
+theorem hasTrigPolyBanachAlgebraBound_of_gt_one_mono
+    {s : ℝ} (hs : 1 < s) {C : ℝ}
+    (hC : 2 ^ (2 * s) * (2 * latticeZetaConst s) ≤ C) :
+    HasTrigPolyBanachAlgebraBound s C where
+  nonneg := le_trans
+    (mul_nonneg (Real.rpow_nonneg (by norm_num : (0 : ℝ) ≤ 2) _)
+      (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) (latticeZetaConst_nonneg s))) hC
+  bound := by
+    intros A B cf cg hA hB
+    have h := (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A B cf cg hA hB
+    have h_nnA : 0 ≤ hsSeminormSq s (trigPoly A cf) := hsSeminormSq_nonneg_any _ _
+    have h_nnB : 0 ≤ hsSeminormSq s (trigPoly B cg) := hsSeminormSq_nonneg_any _ _
+    have h_prod_nn : 0 ≤ hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg) :=
+      mul_nonneg h_nnA h_nnB
+    calc hsSeminormSq s (trigPolyProduct A B cf cg)
+        ≤ (2 ^ (2 * s) * (2 * latticeZetaConst s))
+            * hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg) := h
+      _ = (2 ^ (2 * s) * (2 * latticeZetaConst s))
+            * (hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg)) := by ring
+      _ ≤ C * (hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg)) :=
+          mul_le_mul_of_nonneg_right hC h_prod_nn
+      _ = C * hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg) := by ring
+
 end SqgIdentity

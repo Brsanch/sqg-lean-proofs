@@ -389,6 +389,11 @@ Item 5.A delivered across §11.17–§11.21:
   (`Real.summable_one_div_nat_rpow.mpr (by linarith)` at `p = 2s-1`
   and `p = 2s`).  **This closes the lattice-zeta leg of Route A
   Item 5.A unconditionally.**
+- §11.27 `hasTrigPolyBanachAlgebraBound_of_gt_one` — **fully
+  unconditional `HasTrigPolyBanachAlgebraBound s (2^{2s}·(2·latticeZetaConst s))`
+  for every `s > 1`.**  One-line composition of §11.25.G `.of_latticeZeta`
+  with §11.26.H.  First Banach-algebra product bound in-tree with zero
+  open hypotheses.  §11.27.A `_zero_left` exemplar on the zero factor.
 
 **Still outstanding for unconditional Item 5 closure:**
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
