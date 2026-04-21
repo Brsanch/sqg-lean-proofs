@@ -227,6 +227,28 @@ Galerkin `Ḣˢ` bound hypothesis.  Two phases remain:
   the conditional-on-BKM-integral (global-in-time) setting.
 Target release: **v0.5.0**.
 
+**Route A execution (post-commit `d8346b0`, in progress):** Structural
+skeleton for the Kato–Ponce chain delivered across §10.177–§10.182
+and §11.1–§11.10 (all inline in `RieszTorus.lean`):
+
+- §10.177–§10.181: Parametric-`s` Galerkin `Ḣˢ` energy identity,
+  Grönwall bound (Phase 1 + Phase 3 + Phase 5 structural).
+- §10.182: `HasGalerkinHsGronwallFamily` hypothesis package
+  (Phase 2 + Phase 5).
+- §11.1–§11.4: Dyadic annuli, `fourierTruncate`, `lpProjector`,
+  `lpPartialSum`, Fourier-coefficient / seminorm computations
+  (Phase 6).
+- §11.5–§11.7: Paraproduct + remainder + commutator + full
+  Kato–Ponce hypothesis types (Phase 7 + 8 + 9 structural).
+- §11.8: `HasSqgGalerkinHsClosure` — Phase 10 structural bridge.
+- §11.9: `HasGalerkinHsGronwallFamily.of_sqgClosure` — Phase 10 → 5.
+- §11.10: Zero-datum exemplar (Phase 11).
+
+With this chain, closing Item 5 reduces to supplying a
+`HasKatoPonceProductBound s C` witness (classical content).  The
+structural chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound
+(feeding §10.174's `hBoundS`) is in-tree.
+
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:
 `IsSqgWeakSolution.of_timeTest_of_bumpSeq` lifts
