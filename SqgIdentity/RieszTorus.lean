@@ -25049,7 +25049,8 @@ theorem l2_trigPolyProduct_le_latticeZeta
     ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
       ≤ latticeZetaConst s * hsSeminormSq s (trigPoly A cf)
           * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
-  have h_u := l2_trigPolyProduct_le_uniform hA (by linarith : (0 : ℝ) < s) cf cg
+  have h_u := l2_trigPolyProduct_le_uniform (A := A) (B := B) hA
+    (by linarith : (0 : ℝ) < s) cf cg
   have h_zeta := (hasLatticeZetaBound_latticeZetaConst hs).bound A hA
   have h_seminorm_nn : 0 ≤ hsSeminormSq s (trigPoly A cf) :=
     hsSeminormSq_nonneg_any _ _
