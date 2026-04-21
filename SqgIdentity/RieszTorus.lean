@@ -19959,6 +19959,88 @@ noncomputable def HasFourierSynthesis.ofPerModeLimit
   mFourierCoeff_eq := h_coeff
   tendsto_L2 := h_L2
 
+/-! ### §10.155 `HasPerModeLimit` from `HasModeLipschitzFamily`
+(Arzelà–Ascoli + Cantor diagonal reduction)
+
+For each fixed mode `m`, `HasModeLipschitzFamily α` (§10.149) gives the
+per-mode sequence `t ↦ galerkinExtend (sqgBox n) (α n t) m` which is:
+
+* uniformly bounded by `lip.modeBound t` on forward time;
+* uniformly `lip.modeLipschitz m`-Lipschitz on forward time;
+
+hence uniformly equicontinuous on every compact `[0, T]`.  Classical
+Arzelà–Ascoli applied mode-wise on `[0, T]` + Cantor diagonal across
+enumerated modes (`Denumerable (Fin 2 → ℤ)`) + truncation `T = 1, 2, ...`
+extracts a single subsequence `nsub : ℕ → ℕ` with pointwise convergence
+at every mode and every `t ≥ 0` — the output of `HasPerModeLimit`
+(§10.150).
+
+§10.155 factors this step into:
+
+* **§10.155.A** `HasModeLipschitzFamily.modeCoeff_eq_galerkinExtend` —
+  bridge lemma identifying the abstract `lip.modeCoeff` field with the
+  concrete `galerkinExtend` form used throughout the chain.
+* **§10.155.B** `HasPerModeLimit.ofModeLipschitzFamily` — constructor
+  that takes a classical Arzelà–Ascoli + Cantor diagonal extraction
+  witness and produces `HasPerModeLimit α`.
+
+The extraction witness itself (in terms of `galerkinExtend`-shaped
+sequences) is the remaining Item 1 Target #1 classical-analysis step;
+§10.155.B reduces that step to a single named, precisely-typed
+existential hypothesis.  With §10.152 + §10.155.B + §10.154.B + §10.156,
+Item 1's Route B analytical chain is factored into exactly three named
+classical theorem signatures (Arzelà–Ascoli extraction, Fourier synthesis
+existence + L² convergence, per-mode Lipschitz constant).
+-/
+
+/-- **§10.155.A  Bridge lemma: `lip.modeCoeff` = `galerkinExtend` on any
+`HasModeLipschitzFamily` instance.**  By the `modeCoeff_eq`/`modeCoeff_off`
+fields, `lip.modeCoeff` agrees with the canonical `galerkinExtend` on and
+off `sqgBox n`.  Gives a rewrite between the two forms used in
+`HasPerModeLimit.ofModeLipschitzFamily`. -/
+theorem HasModeLipschitzFamily.modeCoeff_eq_galerkinExtend
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (lip : HasModeLipschitzFamily α)
+    (n : ℕ) (t : ℝ) (m : Fin 2 → ℤ) :
+    lip.modeCoeff n t m = galerkinExtend (sqgBox n) (α n t) m := by
+  by_cases hm : m ∈ sqgBox n
+  · rw [lip.modeCoeff_eq n t m hm, galerkinExtend_apply_of_mem _ _ hm]
+  · rw [lip.modeCoeff_off n t m hm,
+        galerkinExtend_apply_of_not_mem _ _ hm]
+
+/-- **§10.155.B  `HasPerModeLimit.ofModeLipschitzFamily` constructor.**
+Assembles `HasPerModeLimit α` from `HasModeLipschitzFamily α` +
+a classical Arzelà–Ascoli + Cantor diagonal extraction witness
+`(nsub, b)`.  The witness asserts that the `galerkinExtend`-valued
+per-mode sequence converges pointwise-in-`t` at every mode
+`m ∈ Fin 2 → ℤ` and every `t ≥ 0`.
+
+This is the structural reduction of Target #1: given the
+`HasModeLipschitzFamily` data (which supplies the equicontinuity
+and uniform-boundedness hypotheses of Arzelà–Ascoli), the remaining
+analytical step is reduced to producing the extraction witness.
+Mathlib's `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
+(Fin 2 → ℤ)` + diagonal-across-enumerations supplies this classically.
+-/
+theorem HasPerModeLimit.ofModeLipschitzFamily
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (_lip : HasModeLipschitzFamily α)
+    (hExtract :
+      ∃ (nsub : ℕ → ℕ), StrictMono nsub ∧
+        ∃ b : (Fin 2 → ℤ) → ℝ → ℂ,
+          ∀ (m : Fin 2 → ℤ) (t : ℝ), 0 ≤ t →
+            Filter.Tendsto
+              (fun k : ℕ =>
+                galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m)
+              Filter.atTop (nhds (b m t))) :
+    HasPerModeLimit α := by
+  obtain ⟨nsub, hmono, b, hTendsto⟩ := hExtract
+  exact
+    { nsub := nsub
+      strictMono := hmono
+      b := b
+      tendsto_modeCoeff := hTendsto }
+
 /-! ### §10.156 Item 1 structural capstone
 
 Composes the full Route B chain into a single existence theorem for
