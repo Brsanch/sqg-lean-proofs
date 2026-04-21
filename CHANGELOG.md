@@ -220,6 +220,14 @@ Classical remainder ~400 LOC.
     theorem signature.  Default synthesis picks `decidablePiFintype`
     uniformly at every use site, matching the structure's field.
     CI green at commit `364f711`.
+- **§11.25.H** `hsSeminormSq_trigPolyProduct_zero_left` +
+  `hsSeminormSq_trigPolyProduct_zero_right` — zero-coefficient
+  exemplars showing the trig-poly product has zero Ḣˢ seminorm when
+  either factor's coefficient sequence is zero.  Direct corollaries
+  of `trigPolyProduct_zero_left` / `_zero_right` (zero-product
+  identity) + `hsSeminormSq_of_zero` (zero function has zero Ḣˢ
+  seminorm).  Uses default `decidablePiFintype` (no class parameter)
+  to avoid the instance-mismatch pattern diagnosed in §11.25.G.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
