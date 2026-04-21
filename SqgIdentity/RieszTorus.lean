@@ -23456,9 +23456,10 @@ private lemma modeConvolution_norm_le_sum_abs
   refine le_trans (norm_sum_le _ _) ?_
   apply Finset.sum_le_sum
   intros p _
-  split_ifs with h
-  · rw [norm_mul]
-  · rw [norm_zero]
+  by_cases h : p.1 + p.2 = n
+  · rw [if_pos h, if_pos h, norm_mul]
+  · rw [if_neg h, if_neg h, norm_zero]
+    exact le_refl _
 
 /-- **§11.22.B — Weighted Cauchy–Schwarz on the indicator sum.**
 `(∑ χ · |cf|·|cg|)² ≤ (∑ χ · |cf|) · (∑ χ · |cf|·|cg|²)`.
@@ -23479,23 +23480,24 @@ private lemma sum_pair_indicator_sq_le_cs
       = if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ else 0 := by
     intro p
     simp only [hF_def, hG_def]
-    split_ifs
-    · rw [mul_mul_mul_comm, Real.mul_self_sqrt (norm_nonneg _)]
-    · ring
+    by_cases h : p.1 + p.2 = n
+    · rw [if_pos h, if_pos h, if_pos h]
+      rw [← mul_assoc, Real.mul_self_sqrt (norm_nonneg _)]
+    · rw [if_neg h, if_neg h, if_neg h]; ring
   have h_F_sq : ∀ p, F p ^ 2
       = if p.1 + p.2 = n then ‖cf p.1‖ else 0 := by
     intro p
     simp only [hF_def]
-    split_ifs
-    · rw [Real.sq_sqrt (norm_nonneg _)]
-    · ring
+    by_cases h : p.1 + p.2 = n
+    · rw [if_pos h, if_pos h, Real.sq_sqrt (norm_nonneg _)]
+    · rw [if_neg h, if_neg h]; ring
   have h_G_sq : ∀ p, G p ^ 2
       = if p.1 + p.2 = n then ‖cf p.1‖ * ‖cg p.2‖ ^ 2 else 0 := by
     intro p
     simp only [hG_def]
-    split_ifs
-    · rw [mul_pow, Real.sq_sqrt (norm_nonneg _)]
-    · ring
+    by_cases h : p.1 + p.2 = n
+    · rw [if_pos h, if_pos h, mul_pow, Real.sq_sqrt (norm_nonneg _)]
+    · rw [if_neg h, if_neg h]; ring
   have hCS := Finset.sum_mul_sq_le_sq_mul_sq (A ×ˢ B) F G
   rw [Finset.sum_congr rfl (fun p _ => h_FG p),
       Finset.sum_congr rfl (fun p _ => h_F_sq p),
@@ -23515,19 +23517,38 @@ private lemma sum_pair_indicator_first_le_ℓ1
     _ ≤ ∑ a ∈ A, ‖cf a‖ := by
           apply Finset.sum_le_sum
           intros a _
-          -- Inner sum: ∑ b ∈ B, χ(b = n - a) · ‖cf a‖ = ‖cf a‖ · (at most 1).
-          have h_cond : ∀ b, (a + b = n) ↔ (b = n - a) := fun b => by
-            constructor
-            · intro h; linarith
-            · intro h; linarith
-          have h_eq : ∀ b ∈ B, (if a + b = n then ‖cf a‖ else 0)
-              = if b = n - a then ‖cf a‖ else 0 := fun b _ => by
-            rw [show (a + b = n) = (b = n - a) from propext (h_cond b)]
-          rw [Finset.sum_congr rfl h_eq]
-          rw [Finset.sum_ite_eq' B (n - a) (fun _ => ‖cf a‖)]
-          split_ifs
-          · rfl
-          · exact norm_nonneg _
+          -- Inner sum: ∑ b ∈ B, if a + b = n then ‖cf a‖ else 0 ≤ ‖cf a‖.
+          -- Either n - a ∈ B (one term contributes ‖cf a‖) or no term contributes.
+          by_cases hb : n - a ∈ B
+          · -- Express the sum by isolating the unique b = n - a term.
+            have h_inner : ∑ b ∈ B, (if a + b = n then ‖cf a‖ else 0) = ‖cf a‖ := by
+              rw [Finset.sum_eq_single (n - a)]
+              · have : a + (n - a) = n := by abel
+                rw [if_pos this]
+              · intros b hb_mem hb_ne
+                have h_not : ¬ (a + b = n) := by
+                  intro h_eq
+                  have : b = n - a := by
+                    have : a + b - a = n - a := by rw [h_eq]
+                    rwa [add_comm a b, add_sub_cancel_right] at this
+                  exact hb_ne this
+                rw [if_neg h_not]
+              · intros h_nm; exact absurd hb h_nm
+            rw [h_inner]
+          · -- All terms are zero.
+            have h_inner : ∑ b ∈ B, (if a + b = n then ‖cf a‖ else 0) = 0 := by
+              apply Finset.sum_eq_zero
+              intros b hb_mem
+              have h_not : ¬ (a + b = n) := by
+                intro h_eq
+                apply hb
+                have : b = n - a := by
+                  have : a + b - a = n - a := by rw [h_eq]
+                  rwa [add_comm a b, add_sub_cancel_right] at this
+                rw [← this]; exact hb_mem
+              rw [if_neg h_not]
+            rw [h_inner]
+            exact norm_nonneg _
 
 /-- **§11.22.D — Inner-sum swap via §11.20.A pattern.**
 `∑ n ∈ sumSet, ∑ p, χ(p.1+p.2=n) · X(p) = ∑ p, X(p)`.
