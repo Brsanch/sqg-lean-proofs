@@ -22720,19 +22720,16 @@ stubs.
 content, ~1500-2000 LOC of paraproduct analysis). -/
 
 /-- **Trivial Kato-Ponce product bound** on the zero-paraproduct stub.
-Uses `hsSeminormSq_of_zero` (§?) to reduce the LHS to 0; RHS is
-non-negative. -/
+Uses `hsSeminormSq_of_zero` to reduce the LHS to 0; RHS is non-negative. -/
 noncomputable def HasKatoPonceProductBound.ofZeroStubs (s : ℝ) :
     HasKatoPonceProductBound s 0 where
   bound := by
     intro f g normF normG hF hG
-    -- paraproduct = 0 and paraRemainder = 0 by definition, so LHS = 0.
+    -- paraproduct = 0 and paraRemainder = 0 by definition; both
+    -- occurrences of `hsSeminormSq s 0` collapse at once via simp.
     unfold paraproduct paraRemainder
-    rw [hsSeminormSq_of_zero, hsSeminormSq_of_zero]
-    -- Goal: 0 + 0 ≤ 0^2 * (normG^2 * hsSeminormSq s f + normF^2 * hsSeminormSq s g)
+    rw [hsSeminormSq_of_zero]
     simp
-    -- RHS ≥ 0 after simp reduces 0^2 = 0 and 0 * ... = 0
-    -- remaining is 0 ≤ 0 which is rfl
 
 /-- **Trivial Kato-Ponce commutator bound** on the zero-remainder stub. -/
 noncomputable def HasKatoPonceCommutatorBound.ofZeroStubs (s : ℝ) :
