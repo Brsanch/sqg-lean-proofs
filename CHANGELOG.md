@@ -52,6 +52,54 @@ closing `OPEN.md` Item 5 reduces to discharging
 The rest of the chain is `.of_sqgClosure` + `.global_uniform_bound`
 feeding §10.174's `hBoundS` hypothesis.
 
+**Route A Item 5.A — concrete classical content begun.**  First
+concrete trig-poly Kato–Ponce delivered across §11.17–§11.21
+(inline in `RieszTorus.lean`):
+
+- **§11.17** `sumSet`, `modeConvolution`, `trigPolyProduct` — finite-
+  Fourier-support pointwise product via the Fourier convolution
+  formula `(fg)̂(n) = ∑_{a+b=n} f̂(a)·ĝ(b)`.  Closed-form
+  Fourier-coefficient formula (`mFourierCoeff_trigPolyProduct`) +
+  zero-factor lemmas.  Avoids `Lp`-not-a-ring by working on trig-poly
+  representations directly.
+- **§11.18** `hsSeminormSq_trigPolyProduct` (Parseval identity
+  reducing the tsum `Ḣˢ` seminorm to a finite sum over `sumSet A B`)
+  + `modeConvolution_normSq_le_card_mul_sum` (pointwise Cauchy–
+  Schwarz bound on `|modeConvolution|²` via
+  `Finset.sum_mul_sq_le_sq_mul_sq`).
+- **§11.19** Peetre lattice inequality:
+  - `latticeNorm_add_rpow_le` — `‖a+b‖^s ≤ 2^{s-1}·(‖a‖^s + ‖b‖^s)`
+    for `s ≥ 1` via `NNReal.rpow_add_le_mul_rpow_add_rpow` +
+    `latticeNorm_add_le`.
+  - `fracDerivSymbol_sq_eq_latticeNorm_rpow` — uniform expansion
+    `(σ_s x)² = ‖x‖^{2s}` handling `x = 0` via `Real.zero_rpow`.
+  - `fracDerivSymbol_sq_add_le` — Peetre on the `fracDerivSymbol`
+    squared.
+  - `hsSeminormSq_trigPoly` — direct finite-sum formula for `Ḣˢ`
+    seminorm on a trig polynomial.
+- **§11.20** `hsSeminormSq_trigPolyProduct_le_kato_ponce` —
+  **concrete tame Kato–Ponce bound** (support-dependent):
+  `‖fg‖²_{Ḣˢ} ≤ (A ×ˢ B).card · 2^{2s-1} · (E_s^{cf}·N^{cg} + N^{cf}·E_s^{cg})`
+  where `E_s = ∑_a σ_s² ‖c_a‖²` and `N = ∑_a ‖c_a‖²`.  Proof
+  combines §11.18.C (Cauchy–Schwarz on `modeConv`) with §11.19.C
+  (Peetre on `σ_s(a+b)²`), sum reorder across `sumSet A B × (A ×ˢ B)`
+  (§11.20.A), and product-sum factorization via `Finset.sum_product`
+  + `Finset.mul_sum`/`Finset.sum_mul`.
+- **§11.21** `HasTrigPolyKatoPonceBound` — hypothesis structure
+  bounding `hsSeminormSq s (trigPolyProduct A B cf cg)` in Leibniz
+  split form, parallel to `HasKatoPonceProductBound` but keyed on
+  `trigPolyProduct` rather than the paraproduct stubs.
+  `HasTrigPolyKatoPonceBound.of_peetre` delivers a concrete instance
+  at `C = 2^{2s-1}` from §11.20.C.
+
+**Still outstanding for unconditional Item 5.A closure:** uniform-
+in-support bound (removing the `(A ×ˢ B).card` factor) via Young
+`ℓ¹ × ℓ² → ℓ²` + `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability for `s > d/2 = 1`;
+structural bridge from `HasTrigPolyKatoPonceBound` to
+`HasSqgGalerkinHsClosure` via the SQG-specific velocity bound on
+`∇θ_n · u_n`; wiring into §10.174's `hBoundS` hypothesis.  Classical
+remainder ~1000–1500 LOC.
+
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
 
