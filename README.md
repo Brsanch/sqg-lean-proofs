@@ -19,8 +19,8 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 22,100 lines of Lean 4 source in the
-`RieszTorus` module (over 22,600 lines project-wide), with **zero
+The formalization comprises over 22,800 lines of Lean 4 source in the
+`RieszTorus` module (over 23,500 lines project-wide), with **zero
 `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
@@ -318,32 +318,46 @@ class, regularity is unconditional:
 
 ### Planned work: Route A (in-project Littlewood–Paley)
 
-**Status: structural skeleton delivered.** All 12 phases of Route A
-have structural content in `RieszTorus.lean` (§10.177–§10.182 and
-§11.1–§11.10, inline because the local `rieszTorusMeasureSpace`
+**Status: structural skeleton delivered and CI-green.** All 12 phases
+of Route A have structural content in `RieszTorus.lean` (§10.177–§10.182
+and §11.1–§11.16, inline because the local `rieszTorusMeasureSpace`
 instance doesn't export across files).
 
 - **Phases 1 + 3** (§10.177–§10.181, ~220 LOC): Parametric-`s`
   Galerkin `Ḣˢ` energy identity + Grönwall bound.
 - **Phases 2 + 5** (§10.182, ~120 LOC): `HasGalerkinHsGronwallFamily`
-  hypothesis package + uniform-across-levels bound extraction.
+  hypothesis package + uniform-across-levels bound extraction
+  (`bound_on_Icc`, `uniform_bound_on_Icc`, `global_uniform_bound`).
 - **Phase 6** (§11.1–§11.4, ~140 LOC): Littlewood–Paley primitives
   (`dyadicAnnulus N`, `fourierTruncate`, `lpProjector`, `lpPartialSum`,
-  Fourier-coefficient + seminorm computations).
+  Fourier-coefficient + `Ḣˢ`-seminorm computations).
 - **Phases 7–9** (§11.5–§11.7, ~50 LOC): Paraproduct, remainder,
-  commutator, full Kato–Ponce hypothesis types (structural).
+  commutator, full Kato–Ponce hypothesis types (structural placeholders
+  with zero paraproduct/remainder stubs).
 - **Phase 10** (§11.8–§11.9, ~40 LOC): `HasSqgGalerkinHsClosure`
   structural bridge + `HasGalerkinHsGronwallFamily.of_sqgClosure`
   Phase 10 → Phase 5 bridge.
-- **Phase 11** (§11.10, ~40 LOC): Zero-datum exemplar.
-- **Phase 12**: CI iteration overhead.
+- **Phase 11** (§11.10, §11.13, ~60 LOC): Zero-datum exemplar for the
+  Galerkin trajectory + `HasSqgGalerkinHsClosure.ofZero`.
+- **§11.11** (~55 LOC): Trivial Kato–Ponce witnesses on the zero
+  paraproduct stubs (`HasKatoPonceProductBound.ofZeroStubs`, etc.) —
+  demonstrates hypothesis types are instantiable at `C = 0`.
+- **§11.12** (~20 LOC): Phase 10 capstone
+  `HasSqgGalerkinHsClosure.uniform_bound` — single-scalar uniform `Ḣˢ`
+  bound on `[0, T]` feeding §10.174's `hBoundS` directly.
+- **§11.14–§11.16** (~50 LOC): Auxiliary lemmas for the paraproduct
+  chain: `lpProjector_vanishes_off_annulus`, `fourierTruncate_zero`,
+  `lpProjector_zero`, `hsSeminormSq_lpProjector_zero`,
+  `hsSeminormSq_fourierTruncate_zero`.
 
 **What remains for unconditional Item 5 closure:** a concrete witness
-of `HasKatoPonceProductBound s C` (classical Littlewood–Paley +
-paraproduct content ~1500–2000 LOC).  Once supplied, the structural
-chain composes through `HasSqgGalerkinHsClosure` →
-`HasGalerkinHsGronwallFamily` → `.global_uniform_bound` feeding
-§10.174's `hBoundS` hypothesis.
+of `HasKatoPonceProductBound s C` for arbitrary `s > 2` (classical
+Littlewood–Paley + paraproduct content ~1500–2000 LOC — paraproduct
+`T_f g` and remainder `R(f, g)` defined via `lpProjector` + partial
+sum + `L²`-convergence, then the three classical bounds).  Once
+supplied, the structural chain composes through
+`HasSqgGalerkinHsClosure` → `HasGalerkinHsGronwallFamily` →
+`.global_uniform_bound` feeding §10.174's `hBoundS` hypothesis.
 - The remaining Item 1 classical analytical inputs, each consumed by
   the v0.4.39 structural constructors as a precisely-typed, named
   hypothesis:
