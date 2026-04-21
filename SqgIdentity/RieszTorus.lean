@@ -22793,4 +22793,55 @@ theorem HasSqgGalerkinHsClosure.uniform_bound_ofZero
         = galerkinToLp (sqgBox n) 0 from by unfold zeroGalerkin; rfl]
   rw [galerkinToLp_zero, hsSeminormSq_of_zero]
 
+/-! ### §11.14 Low-frequency vanishing of `lpProjector` truncations
+
+For any `m ∉ dyadicAnnulus N`, the `Δ_N` projection's `m`-mode is 0.
+This is the direct consequence of `fourierTruncate_mFourierCoeff_of_not_mem`. -/
+
+lemma lpProjector_vanishes_off_annulus
+    [DecidableEq (Fin 2 → ℤ)]
+    (N : ℕ) (f : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    {m : Fin 2 → ℤ} (hm : m ∉ dyadicAnnulus N) :
+    mFourierCoeff (lpProjector N f) m = 0 := by
+  unfold lpProjector
+  exact fourierTruncate_mFourierCoeff_of_not_mem _ f hm
+
+/-! ### §11.15 Zero-function preservation
+
+`fourierTruncate A 0 = 0`, `lpProjector N 0 = 0`. -/
+
+lemma fourierTruncate_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    (A : Finset (Fin 2 → ℤ)) :
+    fourierTruncate A (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) = 0 := by
+  unfold fourierTruncate trigPoly
+  apply Finset.sum_eq_zero
+  intros n _
+  -- mFourierCoeff of the zero Lp element is zero; we can use mFourierCoeff_zero
+  rw [mFourierCoeff_zero]
+  simp
+
+lemma lpProjector_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    (N : ℕ) :
+    lpProjector N (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) = 0 := by
+  unfold lpProjector
+  exact fourierTruncate_zero _
+
+/-! ### §11.16 Hs-seminorm vanishing under dyadic projection on zero
+
+Direct specializations used by the zero-datum Kato-Ponce chain. -/
+
+lemma hsSeminormSq_lpProjector_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (N : ℕ) :
+    hsSeminormSq s (lpProjector N (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) = 0 := by
+  rw [lpProjector_zero, hsSeminormSq_of_zero]
+
+lemma hsSeminormSq_fourierTruncate_zero
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A : Finset (Fin 2 → ℤ)) :
+    hsSeminormSq s (fourierTruncate A (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) = 0 := by
+  rw [fourierTruncate_zero, hsSeminormSq_of_zero]
+
 end SqgIdentity
