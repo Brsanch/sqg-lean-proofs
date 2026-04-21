@@ -116,10 +116,29 @@ Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →
 §10.94 Duhamel chain via `intervalIntegral.integral_eq_sub_of_hasDeriv_right_of_le`.
 Headline: `exists_sqgSolution_strong_of_galerkin_realSym`.
 
-### 3. `MaterialMaxPrinciple.hOnePropagation` off the finite-Fourier-support class
-Extend §10.56's MMP discharge to solutions with infinite Fourier
-support. Route via the §10.135 limit + lower-semicontinuity of the
-Ḣ¹ seminorm. Target release: **v0.4.38**.
+### ~~3. `MaterialMaxPrinciple.hOnePropagation` off the finite-Fourier-support class~~ ✓ Closed post-v0.4.39 (structural)
+Closed by §10.167 (commit `bc420d5`).  Route implemented as the
+lower-semicontinuity of `hsSeminormSq` under strong-`L²` convergence:
+
+- **§10.167.A** `hsSeminormSq_le_of_L2_limit_uniform_bound` — pure
+  Fourier-side LSC lemma.  Strong-`L²` convergence `fₙ → g` + uniform
+  `Ḣˢ` bound on the sequence + per-`n` weighted summability ⇒
+  weighted `Ḣˢ` family on `g` is summable and `hsSeminormSq s g ≤ M`.
+  Proof: per-mode Fourier convergence (§10.141) + finite-sum
+  continuity (`tendsto_finset_sum`) + `summable_of_sum_le` /
+  `Real.tsum_le_of_sum_le` from mathlib.
+- **§10.167.B** `MaterialMaxPrinciple.of_L2_limit_uniform_H1` — MMP
+  for any `θ` realised as a pointwise-in-`t` strong-`L²` limit of a
+  sequence with uniform `Ḣ¹` bound and per-state summability.
+- **§10.167.C** `MaterialMaxPrinciple.of_aubinLions_uniform_H1` —
+  specialisation to `HasAubinLionsExtraction`.  Consumes the §10.139
+  extraction witness plus a uniform `Ḣ¹` bound on the Galerkin states
+  `galerkinToLp (sqgBox n) (α n t)`; produces MMP for `ext.θ_lim`.
+
+With these, MMP off the finite-support class follows from a single
+uniform `Ḣ¹` bound on the Galerkin approximation, with no additional
+analytic axiom.  The uniform `Ḣ¹` bound is the classical regularity
+input supplied by Galerkin energy theory.
 
 ### 4. `BKMCriterionS2.hsPropagationS2` off the finite-Fourier-support class
 Parallel to item 3 for the BKM criterion. Extends §10.57. Target
