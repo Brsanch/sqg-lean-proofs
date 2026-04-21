@@ -21222,6 +21222,13 @@ theorem hsSeminormSq_one_summable_galerkinToLp
   hsSeminormSq_summable_of_finite_support 1 (galerkinToLp S c) S
     (fun m hm => mFourierCoeff_galerkinToLp_eq_zero_of_not_mem S c hm)
 
+section AubinLionsMMP
+/-- Local irreducibility on `sqgBox` prevents `whnf` from unfolding the
+finite-set definition during elaboration of §10.167.C; same diagnostic
+pattern as v0.4.38's §10.153.C closure (see
+`memory/feedback_lean_diagnostic_workflow.md`). -/
+attribute [local irreducible] sqgBox
+
 /-- **§10.167.C  MMP discharge for the Aubin–Lions limit.**
 
 Consumes a `HasAubinLionsExtraction` witness plus a uniform-in-`n`-and-
@@ -21243,5 +21250,7 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     (fun k t _ => hsSeminormSq_one_summable_galerkinToLp
       (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
     (fun k t ht => hBound (ext.nsub k) t ht)
+
+end AubinLionsMMP
 
 end SqgIdentity
