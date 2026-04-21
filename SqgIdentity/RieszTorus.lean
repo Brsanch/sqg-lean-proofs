@@ -23781,4 +23781,98 @@ theorem hsSeminormSq_zero_trigPolyProduct_le_young_symm
     _ ≤ (∑ b ∈ B, ‖cg b‖) ^ 2 * (∑ a ∈ A, ‖cf a‖ ^ 2) := h_young
     _ = (∑ a ∈ A, ‖cf a‖ ^ 2) * (∑ b ∈ B, ‖cg b‖) ^ 2 := h_rhs
 
+/-! ### §11.25.C Peetre-weighted Young via complex embedding
+
+For the Peetre-weighted sub-convolution
+`T_1'(n) = ∑_{a+b=n} σ_s(a) · ‖cf(a)‖ · ‖cg(b)‖`,
+Young's inequality (§11.25.B direction) delivers:
+  `∑_n T_1'(n)² ≤ hsSeminormSq s (trigPoly A cf) · (∑_b ‖cg b‖)²`.
+
+The proof embeds the real nonneg weighted sequences into `ℂ` via
+`Complex.ofReal`, reducing to §11.25.B on the embedded data. -/
+
+/-- **§11.25.C — Peetre-weighted Young (first-factor weight on `cf`).** -/
+private theorem young_peetre_weighted_left
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B,
+      (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+        then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0) ^ 2
+      ≤ (∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+          * (∑ b ∈ B, ‖cg b‖) ^ 2 := by
+  -- Embed the real nonneg weighted factors into ℂ.
+  set wcf : (Fin 2 → ℤ) → ℂ := fun a =>
+    ((fracDerivSymbol s a * ‖cf a‖ : ℝ) : ℂ) with hwcf_def
+  set acg : (Fin 2 → ℤ) → ℂ := fun b => ((‖cg b‖ : ℝ) : ℂ) with hacg_def
+  have h_wcf_nn : ∀ a, 0 ≤ fracDerivSymbol s a * ‖cf a‖ :=
+    fun a => mul_nonneg (fracDerivSymbol_nonneg _ _) (norm_nonneg _)
+  have h_wcf_norm : ∀ a, ‖wcf a‖ = fracDerivSymbol s a * ‖cf a‖ := by
+    intro a
+    simp only [hwcf_def, Complex.norm_real, Real.norm_eq_abs]
+    exact abs_of_nonneg (h_wcf_nn a)
+  have h_acg_norm : ∀ b, ‖acg b‖ = ‖cg b‖ := by
+    intro b
+    simp only [hacg_def, Complex.norm_real, Real.norm_eq_abs]
+    exact abs_of_nonneg (norm_nonneg _)
+  -- modeConv A B wcf acg n is real nonneg.
+  have h_modeConv_eq : ∀ n,
+      modeConvolution A B wcf acg n
+        = ((∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+            then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0 : ℝ) : ℂ) := by
+    intro n
+    rw [modeConvolution_eq_prod_sum]
+    rw [show ((∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+        then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0 : ℝ) : ℂ)
+        = ∑ p ∈ A ×ˢ B, ((if p.1 + p.2 = n
+          then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0 : ℝ) : ℂ) from by
+      push_cast; rfl]
+    apply Finset.sum_congr rfl
+    intros p _
+    simp only [hwcf_def, hacg_def]
+    by_cases hp : p.1 + p.2 = n
+    · rw [if_pos hp, if_pos hp]
+      push_cast; ring
+    · rw [if_neg hp, if_neg hp]
+      push_cast; rfl
+  have h_sum_nn : ∀ n, 0 ≤ ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+      then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0 := by
+    intro n
+    apply Finset.sum_nonneg
+    intros p _
+    split_ifs
+    · exact mul_nonneg (h_wcf_nn _) (norm_nonneg _)
+    · exact le_refl _
+  have h_norm_eq : ∀ n,
+      ‖modeConvolution A B wcf acg n‖
+        = ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+          then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0 := by
+    intro n
+    rw [h_modeConv_eq n, Complex.norm_real, Real.norm_eq_abs,
+        abs_of_nonneg (h_sum_nn n)]
+  -- Apply §11.25.B.
+  have h_young := hsSeminormSq_zero_trigPolyProduct_le_young_symm A B wcf acg
+  -- Transform LHS of h_young using h_norm_eq.
+  have h_lhs_eq :
+      (∑ n ∈ sumSet A B, ‖modeConvolution A B wcf acg n‖ ^ 2)
+        = ∑ n ∈ sumSet A B, (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+            then fracDerivSymbol s p.1 * ‖cf p.1‖ * ‖cg p.2‖ else 0) ^ 2 := by
+    apply Finset.sum_congr rfl
+    intros n _
+    rw [h_norm_eq n]
+  rw [h_lhs_eq] at h_young
+  -- Transform RHS of h_young using h_wcf_norm, h_acg_norm.
+  have h_rhs_cf :
+      (∑ a ∈ A, ‖wcf a‖ ^ 2)
+        = ∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2 := by
+    apply Finset.sum_congr rfl
+    intros a _
+    rw [h_wcf_norm a, mul_pow]
+  have h_rhs_cg :
+      (∑ b ∈ B, ‖acg b‖) = ∑ b ∈ B, ‖cg b‖ := by
+    apply Finset.sum_congr rfl
+    intros b _
+    rw [h_acg_norm b]
+  rw [h_rhs_cf, h_rhs_cg] at h_young
+  exact h_young
+
 end SqgIdentity
