@@ -24467,4 +24467,17 @@ theorem hsSeminormSq_trigPolyProduct_zero_right
   rw [trigPolyProduct_zero_right]
   exact hsSeminormSq_of_zero s
 
+/-! ### §11.25.I Monotonicity of `HasLatticeZetaBound` in the constant
+
+Utility lemma: if `HasLatticeZetaBound s C` holds and `C ≤ C'`, then
+`HasLatticeZetaBound s C'` also holds.  Useful for combining witnesses
+from different sources. -/
+
+/-- **§11.25.I — Monotonicity of `HasLatticeZetaBound` in C.** -/
+theorem HasLatticeZetaBound.mono
+    {s : ℝ} {C C' : ℝ} (hC : HasLatticeZetaBound s C) (hCC' : C ≤ C') :
+    HasLatticeZetaBound s C' where
+  nonneg := le_trans hC.nonneg hCC'
+  bound := fun A hA => le_trans (hC.bound A hA) hCC'
+
 end SqgIdentity
