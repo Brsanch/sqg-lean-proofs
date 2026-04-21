@@ -21422,4 +21422,59 @@ theorem sqg_regularity_of_aubinLions_ofZero :
     (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
     (fun n t _ s _ _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
 
+/-! ### §10.171 End-to-end capstone: `SqgSolution` + Theorem 3
+
+Composes the two §10.169 + §10.148 capstones into a single end-to-end
+theorem:  from a `HasAubinLionsExtraction` witness plus the classical
+uniform `Ḣˢ` bounds on the Galerkin approximation, produce both a
+genuine `SqgSolution` (§10.148 headline) and the `Ḣˢ` regularity
+conclusion on its `θ`-field (§10.169).
+
+This is the maximally-closed end-to-end form.  With this capstone, a
+caller who supplies:
+
+* an Aubin–Lions extraction witness;
+* Galerkin `L²` conservation at every level (automatic from §10.97 in
+  the canonical construction);
+* a velocity witness for the limit;
+* smooth initial data;
+* uniform-in-`n`-and-`t` `Ḣˢ` bounds on the Galerkin states at `s = 1`
+  and `s ∈ (1, 2]`
+
+obtains both a genuine SQG solution on `𝕋²` and the full conditional
+Theorem 3 conclusion on `s ∈ [0, 2]` for that solution. -/
+
+/-- **§10.171  End-to-end SQG + Theorem 3 from Aubin–Lions +
+uniform `Ḣˢ` bounds.**
+
+Delivers an `SqgSolution` whose `θ`-field equals `ext.θ_lim` and
+satisfies the Theorem 3 regularity conclusion on `s ∈ [0, 2]`. -/
+theorem sqg_solution_and_regularity_via_RouteB_uniform_Hs
+    [DecidableEq (Fin 2 → ℤ)]
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (ext.θ_lim 0) n‖ ^ 2))
+    (M₁ : ℝ) (Ms : ℝ → ℝ)
+    (hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁)
+    (hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s → s ≤ 2 →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    ∃ sol : SqgSolution, sol.θ = ext.θ_lim ∧
+      ∀ s : ℝ, 0 ≤ s → s ≤ 2 →
+        ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (sol.θ t) ≤ M' := by
+  obtain ⟨sol, hsol⟩ :=
+    exists_sqgSolution_via_RouteB_from_galerkin_energy ext hLevel hu hSmooth
+  refine ⟨sol, hsol, ?_⟩
+  intro s hs0 hs2
+  rw [hsol]
+  exact sqg_regularity_of_aubinLions_uniform_Hs ext M₁ Ms hBoundOne hBoundS s hs0 hs2
+
 end SqgIdentity
