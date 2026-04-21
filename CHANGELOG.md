@@ -91,14 +91,34 @@ concrete trig-poly Kato–Ponce delivered across §11.17–§11.21
   `trigPolyProduct` rather than the paraproduct stubs.
   `HasTrigPolyKatoPonceBound.of_peetre` delivers a concrete instance
   at `C = 2^{2s-1}` from §11.20.C.
+- **§11.22** `hsSeminormSq_zero_trigPolyProduct_le_young` — finite-
+  lattice Young's `ℓ¹ × ℓ² → ℓ²` on `modeConvolution`:
+  `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖)² · (∑_b ‖cg b‖²)`.
+  Support-INDEPENDENT on the RHS (no `(A ×ˢ B).card` factor).
+  Sub-lemmas:
+  - `modeConvolution_norm_le_sum_abs` — triangle bound (§11.22.A).
+  - `sum_pair_indicator_sq_le_cs` — weighted Cauchy–Schwarz on the
+    indicator sum with `F = χ · √‖cf‖`, `G = χ · √‖cf‖ · ‖cg‖` via
+    `Finset.sum_mul_sq_le_sq_mul_sq` (§11.22.B).
+  - `sum_pair_indicator_first_le_ℓ1` — first-factor bound
+    `∑_{(a,b), a+b=n} ‖cf a‖ ≤ ∑_a ‖cf a‖` via `Finset.sum_product`
+    + `Finset.sum_eq_single (n - a)` pinning `b = n - a`, with
+    `add_sub_cancel_right` + `add_comm` for the vector-additive-group
+    algebra (§11.22.C).
+  - `sum_sumSet_pair_cfcg_reorder` — specialization of §11.20.A
+    sum-reorder for Young (§11.22.D).
+  - Final assembly via `Finset.sum_product` + `Finset.mul_sum` +
+    `Finset.sum_mul` to factor `∑ p, ‖cf p.1‖·‖cg p.2‖²` as
+    `(∑ a, ‖cf a‖)·(∑ b, ‖cg b‖²)` (§11.22.E).
 
-**Still outstanding for unconditional Item 5.A closure:** uniform-
-in-support bound (removing the `(A ×ˢ B).card` factor) via Young
-`ℓ¹ × ℓ² → ℓ²` + `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability for `s > d/2 = 1`;
-structural bridge from `HasTrigPolyKatoPonceBound` to
-`HasSqgGalerkinHsClosure` via the SQG-specific velocity bound on
-`∇θ_n · u_n`; wiring into §10.174's `hBoundS` hypothesis.  Classical
-remainder ~1000–1500 LOC.
+**Still outstanding for unconditional Item 5.A closure:** Cauchy–
+Schwarz bridge `(∑_a ‖cf a‖)² ≤ C_s · hsSeminormSq s (trigPoly A cf)`
+for `s > d/2 = 1` (requires `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability,
+§11.23); combination of §11.22 + §11.23 into the uniform-in-support
+Kato–Ponce bound (§11.24); structural bridge from
+`HasTrigPolyKatoPonceBound` to `HasSqgGalerkinHsClosure` via the
+SQG-specific velocity bound on `∇θ_n · u_n`; wiring into §10.174's
+`hBoundS` hypothesis.  Classical remainder ~500–800 LOC.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**

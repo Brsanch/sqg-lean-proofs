@@ -274,17 +274,28 @@ Item 5.A delivered across §11.17–§11.21:
   `hsSeminormSq s (trigPolyProduct A B cf cg)` in Leibniz-split form.
   `HasTrigPolyKatoPonceBound.of_peetre` delivers a concrete instance
   at `C = 2^{2s-1}` for any `s ≥ 1` via §11.20.C.
+- §11.22: **Young's `ℓ¹ × ℓ² → ℓ²`** on `modeConvolution`.
+  Finite-lattice convolution bound:
+  `∑_{n ∈ sumSet A B} ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖)² · (∑_b ‖cg b‖²)`.
+  Support-INDEPENDENT (no `(A ×ˢ B).card` factor on the RHS).
+  Proof: triangle bound (§11.22.A) + weighted Cauchy–Schwarz via
+  `Finset.sum_mul_sq_le_sq_mul_sq` with `F = χ · √‖cf‖`,
+  `G = χ · √‖cf‖ · ‖cg‖` (§11.22.B) + first-factor bound
+  `∑_{(a,b), a+b=n} ‖cf a‖ ≤ ∑_a ‖cf a‖` via `sum_eq_single` pinning
+  `b = n - a` (§11.22.C) + sum reorder (§11.22.D) + product-sum
+  factorization (§11.22.E).
 
-**Still outstanding for unconditional Item 5 closure:** uniform-in-support
-bound (Young `ℓ¹ × ℓ² → ℓ²` + `∑ ⟨m⟩^{-2s}` summability); structural
-bridge from `HasTrigPolyKatoPonceBound` to `HasSqgGalerkinHsClosure`
-(Phase 10) via SQG-specific velocity bound on `∇θ_n · u_n`; wiring into
-§10.174's `hBoundS` hypothesis.  Classical Kato–Ponce bound remains
-~1000–1500 LOC; Phase 10 bridge remains ~500 LOC.
+**Still outstanding for unconditional Item 5 closure:** Cauchy–Schwarz
+bridge `(∑_a ‖cf a‖)² ≤ C_s · hsSeminormSq s (trigPoly A cf)` for
+`s > d/2 = 1` (requires `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability, §11.23);
+combination of §11.22 + §11.23 into the uniform-in-support Kato–Ponce
+bound (§11.24); wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge.
+Classical remainder ~500–800 LOC.
 
-With §11.17–§11.21, closing Item 5 now reduces to supplying the uniform
-refinement of the Peetre-based support-dependent bound.  The structural
-chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound (feeding §10.174's
+With §11.17–§11.22, closing Item 5 now reduces to supplying the
+ℓ¹ → Ḣˢ bridge (Cauchy–Schwarz + lattice `∑ ‖m‖^{-2s}` summability)
+and the SQG-specific velocity bound.  The structural chain from
+Kato-Ponce to uniform `Ḣˢ` Galerkin bound (feeding §10.174's
 `hBoundS`) is in-tree.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
