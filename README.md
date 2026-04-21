@@ -68,7 +68,7 @@ axiomatic footprint is inspectable.
 |---|---|---|
 | `FracSobolevCalculus` | Mode-wise Ḣˢ monotonicity | Discharged unconditionally (`ofMathlib`) |
 | `MaterialMaxPrinciple` | Uniform Ḣ¹ bound | Discharged on the finite-support, uniform-ℓ∞-coefficient class (§10.56); lifted to every strong-`L²` Galerkin limit with uniform `Ḣ¹` bound via §10.167 |
-| `BKMCriterionS2` | Ḣˢ bootstrap for `s ∈ (1, 2]` | Discharged on the same class (§10.57) and derived from Galerkin dynamics via a Kato–Ponce + advection-cancellation + Gronwall chain (§10.87) |
+| `BKMCriterionS2` | Ḣˢ bootstrap for `s ∈ (1, 2]` | Discharged on the same class (§10.57) and derived from Galerkin dynamics via a Kato–Ponce + advection-cancellation + Gronwall chain (§10.87); lifted to every strong-`L²` Galerkin limit with uniform `Ḣˢ` bound via §10.168 |
 | `SqgEvolutionAxioms` | Mean + L² conservation + Riesz-transform velocity | Real content, discharged for the zero solution and for every finite-support weak solution (§10.58) |
 
 **Capstones.** On the finite-Fourier-support, real-coefficient, uniform-ℓ∞
@@ -237,15 +237,27 @@ class, regularity is unconditional:
       §10.139 extraction witness + a uniform `Ḣ¹` bound on the Galerkin
       states `galerkinToLp (sqgBox n) (α n t)`. Produces MMP for
       `ext.θ_lim` with no additional analytic axiom.
+- **BKM off the finite-Fourier-support class (post-v0.4.39, §10.168).**
+  Parallel to §10.167 for `BKMCriterionS2`.  Same LSC mechanism at
+  every `s ∈ (1, 2]`, so the BKM structure's internal `Ḣ¹` hypothesis
+  is vacuous.
+    - **§10.168.A `BKMCriterionS2.of_L2_limit_uniform_Hs`** — BKM from
+      an `L²`-limit sequence with per-`s` uniform `Ḣˢ` bound on the
+      sequence.
+    - **§10.168.B `BKMCriterionS2.of_aubinLions_uniform_Hs`** —
+      specialization to `HasAubinLionsExtraction`.  Together with
+      §10.167, both `MaterialMaxPrinciple` and `BKMCriterionS2` lift
+      off the finite-support class from uniform `Ḣˢ` control on the
+      Galerkin approximation alone.
 
 ## What is *not* proven
 
-- Unconditional discharge of `BKMCriterionS2.hsPropagationS2` outside
-  the finite-support class.  (`MaterialMaxPrinciple.hOnePropagation`
-  now lifts off finite-support via §10.167, modulo a uniform `Ḣ¹`
-  bound on the Galerkin approximation supplied by the caller.)
 - The fractional Sobolev bootstrap for `s > 2` (requires Kato–Ponce-type
-  estimates on `𝕋²` that are not yet in mathlib).
+  estimates on `𝕋²` that are not yet in mathlib).  Both
+  `MaterialMaxPrinciple.hOnePropagation` and
+  `BKMCriterionS2.hsPropagationS2` now lift off the finite-support
+  class (via §10.167 and §10.168) given uniform `Ḣˢ` bounds on the
+  Galerkin approximation, supplied by the caller.
 - The remaining Item 1 classical analytical inputs, each consumed by
   the v0.4.39 structural constructors as a precisely-typed, named
   hypothesis:

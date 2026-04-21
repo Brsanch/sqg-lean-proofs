@@ -140,9 +140,27 @@ uniform `Ḣ¹` bound on the Galerkin approximation, with no additional
 analytic axiom.  The uniform `Ḣ¹` bound is the classical regularity
 input supplied by Galerkin energy theory.
 
-### 4. `BKMCriterionS2.hsPropagationS2` off the finite-Fourier-support class
-Parallel to item 3 for the BKM criterion. Extends §10.57. Target
-release: **v0.4.39**.
+### ~~4. `BKMCriterionS2.hsPropagationS2` off the finite-Fourier-support class~~ ✓ Closed post-v0.4.39 (structural)
+Closed by §10.168 (commit `10ea042`).  Parallel to Item 3 via the
+same `hsSeminormSq_le_of_L2_limit_uniform_bound` LSC lemma at
+every `s ∈ (1, 2]`:
+
+- **§10.168.A** `BKMCriterionS2.of_L2_limit_uniform_Hs` — BKM from an
+  `L²`-limit sequence with uniform-in-`n`-and-`t` `Ḣˢ` bound at each
+  `s ∈ (1, 2]`.  The `Ḣ¹` hypothesis inside `hsPropagationS2` is
+  unused: §10.167.A applied at each `s` discharges the `Ḣˢ` bound on
+  the limit directly.
+- **§10.168.B** `BKMCriterionS2.of_aubinLions_uniform_Hs` —
+  specialisation to `HasAubinLionsExtraction`.  Consumes the §10.139
+  extraction witness plus a uniform `Ḣˢ` bound on the Galerkin states
+  at every `s ∈ (1, 2]`; produces `BKMCriterionS2 (ext.θ_lim)`.
+- **`hsSeminormSq_summable_galerkinToLp`** — parametric-`s` companion
+  to §10.167's `hsSeminormSq_one_summable_galerkinToLp`.
+
+Together with §10.167, both `MaterialMaxPrinciple` and
+`BKMCriterionS2` lift off the finite-support class with no additional
+analytic axiom, so long as the caller supplies uniform `Ḣˢ` bounds on
+the Galerkin approximation for `s ∈ [1, 2]`.
 
 ### 5. Ḣˢ bootstrap for `s > 2`
 Blocked upstream on a mathlib Kato–Ponce fractional Leibniz estimate
