@@ -25105,6 +25105,39 @@ theorem l2_trigPolyProduct_le_latticeZeta_symm
     _ = (∑ a ∈ A, ‖cf a‖ ^ 2) * latticeZetaConst s
           * hsSeminormSq s (trigPoly B cg) := by ring
 
+/-! ### §11.33 Ḣᵗ interpolation form of the Banach-algebra bound
+
+The §11.27 bound at exponent `s > 1` implies a Ḣᵗ bound at every
+`t ∈ [0, s]` via `hsSeminormSq_mono_of_le` (monotonicity in the
+exponent).  Useful when the consumer needs the product's `Ḣᵗ`
+seminorm controlled by the factors' `Ḣˢ` seminorms at a lower
+regularity `t`, e.g. `t = 1` with `s = 3/2` for SQG energy. -/
+
+/-- **§11.33 — Banach-algebra `Ḣᵗ` bound for `t ∈ [0, s]`, `s > 1`.**
+  Interpolation of §11.27 via `hsSeminormSq_mono_of_le`.  -/
+theorem hsSeminormSq_trigPolyProduct_le_latticeZeta_interp
+    [DecidableEq (Fin 2 → ℤ)]
+    {s t : ℝ} (hs : 1 < s) (hts : t ≤ s)
+    {A B : Finset (Fin 2 → ℤ)}
+    (hA : (0 : Fin 2 → ℤ) ∉ A) (hB : (0 : Fin 2 → ℤ) ∉ B)
+    (cf cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq t (trigPolyProduct A B cf cg)
+      ≤ (2 ^ (2 * s) * (2 * latticeZetaConst s))
+          * hsSeminormSq s (trigPoly A cf)
+          * hsSeminormSq s (trigPoly B cg) := by
+  -- Summability at s via finite-support of trigPolyProduct on sumSet A B.
+  have h_supp : ∀ n ∉ sumSet A B,
+      mFourierCoeff (trigPolyProduct A B cf cg) n = 0 :=
+    fun n hn => mFourierCoeff_trigPolyProduct_eq_zero_of_not_mem hn
+  have h_summable_s : Summable (fun n : Fin 2 → ℤ =>
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (trigPolyProduct A B cf cg) n‖ ^ 2) :=
+    hsSeminormSq_summable_of_finite_support s _ (sumSet A B) h_supp
+  have h_mono : hsSeminormSq t (trigPolyProduct A B cf cg)
+      ≤ hsSeminormSq s (trigPolyProduct A B cf cg) :=
+    hsSeminormSq_mono_of_le hts _ h_summable_s
+  have h_prod := (hasTrigPolyBanachAlgebraBound_of_gt_one hs).bound A B cf cg hA hB
+  linarith
+
 /-! ### §11.29 Monotone constant form
 
 For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`, the Banach-algebra bound
