@@ -21229,10 +21229,13 @@ Consumes a `HasAubinLionsExtraction` witness plus a uniform-in-`n`-and-
 and produces `MaterialMaxPrinciple (ext.θ_lim)` via §10.167.B.  The
 pointwise-in-`t` strong-`L²` convergence comes from `ext.tendsto_L2`.
 
-Proof is tactic-mode with `refine` to pin the goal shape, avoiding the
-whnf loop that term-mode elaboration hits on this application. -/
+No explicit `[DecidableEq (Fin 2 → ℤ)]` binder: the previous attempts
+introduced one, which caused an instance-synthesis mismatch with
+`ext.tendsto_L2` (whose `galerkinToLp` calls invoke the auto-synthesized
+`Fintype.decidablePiFintype` instance).  Auto-synthesis is used
+uniformly throughout this theorem so all `galerkinToLp` applications
+agree on the DecidableEq instance. -/
 theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
-    [DecidableEq (Fin 2 → ℤ)]
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (ext : HasAubinLionsExtraction θ α)
@@ -21244,16 +21247,11 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     (fₙ := fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
     ?_ M ?_ ?_
   · intro t ht
-    show Filter.Tendsto (fun n : ℕ => ∫ x, ‖(galerkinToLp (sqgBox (ext.nsub n))
-        (α (ext.nsub n) t)) x - (ext.θ_lim t) x‖ ^ 2) Filter.atTop (nhds 0)
     exact ext.tendsto_L2 t ht
   · intro k t _
-    show Summable (fun m : Fin 2 → ℤ => (fracDerivSymbol 1 m) ^ 2 *
-      ‖mFourierCoeff (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t)) m‖ ^ 2)
     exact hsSeminormSq_one_summable_galerkinToLp
       (sqgBox (ext.nsub k)) (α (ext.nsub k) t)
   · intro k t ht
-    show hsSeminormSq 1 (galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t)) ≤ M
     exact hBound (ext.nsub k) t ht
 
 end SqgIdentity
