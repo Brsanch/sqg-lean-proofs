@@ -20401,4 +20401,77 @@ theorem tendsto_integral_norm_sq_galerkin_sub_θLim_of_tsum
   refine (h_tsum t ht).congr (fun k => ?_)
   exact (integral_norm_sq_galerkin_sub_θLim_eq_tsum per hSum k t ht).symm
 
+/-! ### §10.163 Pure ℓ² Vitali convergence — tight-family convergence
+
+§10.162 reduced the `h_L2` input of §10.159.C to a per-mode ℓ² Tendsto
+statement.  §10.163 is the general-ℓ² Vitali lemma that closes that
+Tendsto from two elementary ingredients:
+
+* **Per-mode convergence**: `f k i → g i` pointwise in `k` at each `i`.
+* **Uniform ℓ²-tail tightness on the differences**: for every `ε > 0`
+  there is a finite `F : Finset ι` such that the tail of the
+  squared-difference ℓ² sum is `≤ ε` **uniformly in `k`**.
+
+Together these imply `∑' i, ‖f k i - g i‖² → 0` as `k → ∞`.  The proof
+splits the full tsum at `F` using `Summable.sum_add_tsum_subtype_compl`,
+bounds the finite part via `tendsto_finset_sum` on pointwise convergence,
+and bounds the tail by the tightness hypothesis.
+
+The statement is free of SQG-specifics so the lemma lives in the pure
+ℓ² layer.  §10.164 below specialises it back to the Galerkin setting. -/
+
+/-- **§10.163  Vitali ℓ² convergence on squared differences.**  Per-mode
+pointwise convergence `f k · → g` plus uniform ℓ²-tail tightness on the
+squared differences (ε-Finset `F` bounding the tail ≤ ε for every `k`)
+plus summability of each squared-difference family gives
+`∑' i, ‖f k i - g i‖² → 0` as `k → ∞`. -/
+theorem tsum_sq_sub_tendsto_zero_of_tight
+    {ι : Type*} {f : ℕ → ι → ℂ} {g : ι → ℂ}
+    (h_ptw : ∀ i, Filter.Tendsto (fun k => f k i) Filter.atTop (nhds (g i)))
+    (h_sum_diff : ∀ k, Summable fun i => ‖f k i - g i‖ ^ 2)
+    (h_tight : ∀ ε : ℝ, 0 < ε → ∃ F : Finset ι, ∀ k : ℕ,
+      (∑' i : { i // i ∉ F }, ‖f k i.val - g i.val‖ ^ 2) ≤ ε) :
+    Filter.Tendsto (fun k : ℕ => ∑' i, ‖f k i - g i‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  have hε2 : (0 : ℝ) < ε / 2 := by linarith
+  obtain ⟨F, hF⟩ := h_tight (ε / 2) hε2
+  -- Per-mode squared differences tend to 0.
+  have h_sq_ptw : ∀ i : ι,
+      Filter.Tendsto (fun k => ‖f k i - g i‖ ^ 2) Filter.atTop (nhds 0) := by
+    intro i
+    have h1 : Filter.Tendsto (fun k => f k i - g i) Filter.atTop (nhds 0) := by
+      simpa using (h_ptw i).sub_const (g i)
+    have h2 : Filter.Tendsto (fun k => ‖f k i - g i‖) Filter.atTop (nhds (0 : ℝ)) := by
+      simpa [norm_zero] using h1.norm
+    simpa using h2.pow 2
+  -- Finite sum of squared differences tends to 0.
+  have h_sum_fin : Filter.Tendsto
+      (fun k : ℕ => ∑ i ∈ F, ‖f k i - g i‖ ^ 2) Filter.atTop (nhds 0) := by
+    have := tendsto_finset_sum F (fun i (_ : i ∈ F) => h_sq_ptw i)
+    simpa using this
+  -- Extract `N` beyond which the finite sum is `< ε/2`.
+  obtain ⟨N, hN⟩ := Metric.tendsto_atTop.mp h_sum_fin (ε / 2) hε2
+  refine ⟨N, fun k hk => ?_⟩
+  -- Split the full tsum at `F`.
+  have hsplit : (∑' i, ‖f k i - g i‖ ^ 2) =
+      (∑ i ∈ F, ‖f k i - g i‖ ^ 2) +
+      ∑' i : { i // i ∉ F }, ‖f k i.val - g i.val‖ ^ 2 :=
+    ((h_sum_diff k).sum_add_tsum_subtype_compl F).symm
+  -- Non-negativity of the various pieces.
+  have h_total_nonneg : (0 : ℝ) ≤ ∑' i, ‖f k i - g i‖ ^ 2 :=
+    tsum_nonneg (fun _ => sq_nonneg _)
+  have h_fin_nonneg : (0 : ℝ) ≤ ∑ i ∈ F, ‖f k i - g i‖ ^ 2 :=
+    Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+  -- Bound the finite part by `ε/2`.
+  have h_fin_bound : ∑ i ∈ F, ‖f k i - g i‖ ^ 2 < ε / 2 := by
+    have := hN k hk
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg h_fin_nonneg] at this
+    exact this
+  -- Combine.
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg h_total_nonneg, hsplit]
+  have h_tail_bound : (∑' i : { i // i ∉ F }, ‖f k i.val - g i.val‖ ^ 2) ≤ ε / 2 := hF k
+  linarith
+
 end SqgIdentity
