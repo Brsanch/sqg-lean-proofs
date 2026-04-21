@@ -32,12 +32,37 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
 - **§10.158.A/B `θLimOfLp` + `mFourierCoeff_θLimOfLp`** — concrete
   `θ_lim` operator for `HasFourierSynthesis` from an `lp`-valued
   per-mode limit function.
+- **§10.156 Item 1 structural capstone** — consumes `per` + `syn`
+  witnesses + the wiring §10.139–§10.152 packaged and produces the
+  full `SqgSolution` extraction.
 
-**Remaining Item 1 analytical work:**
+**Post-tag additions (on `main`, not in the v0.4.39 tag):**
+
+- **§10.158.C/D `lpOfSummableSqNorm` + `lpOfSummableSqNorm_coeff`** —
+  **closes the `Memℓp 2 ↔ Summable (‖·‖²)` bridge** internally via
+  mathlib's `memℓp_gen_iff`.  (Prior "§10.158.C guess was wrong"
+  remark is obsolete — the second attempt on `memℓp_gen_iff` lands.)
+- **§10.159 `HasFourierSynthesis.ofSummable`** — top-level Target #2
+  constructor that composes §10.154.B + §10.157 + §10.158 into a
+  single API taking `per`, an `Lp` witness, an initial coefficient
+  match, an ℓ²-summability datum, and a strong-`L²` convergence
+  datum.  The caller never supplies an `Lp`-valued witness directly.
+- **§10.160 `integral_norm_sq_sub_eq_tsum_sq_mFourierCoeff_sub`**
+  (commit `8a5f87b`) — first-pass attempt at Parseval on a
+  difference.  **Currently breaks CI** (unsolved goals near line
+  20320); blocks the strong-`L²` convergence discharge.
+- **§10.161 `integral_norm_sq_galerkin_sub_θLim_eq_tsum`** (commit
+  `b35e5a5`) — stacks `rw [integral_norm_sq_sub_eq_...]` onto §10.160
+  and inherits the breakage.
+
+**Remaining Item 1 analytical work (3 inputs, down from 4):**
 
 1. **Strong-`L²` convergence** of the extracted Galerkin sequence to
-   `θLimOfLp` (the `h_L2` input of §10.154.B).  Parseval on the
-   difference + Fatou + DCT on `ℓ²(ℤ²)`.
+   `θLimOfSummable` (the `h_L2` input of §10.159.C).  The §10.160
+   + §10.161 Parseval-on-difference approach is the right plan; just
+   needs the unsolved-goals fix on §10.160 (likely a tighter rewrite
+   on the `Lp.coeFn_sub` a.e. step near line 20321), then Fatou + DCT
+   on `ℓ²(ℤ²)` composes the rest.
 2. **Classical Arzelà–Ascoli + Cantor diagonal extraction** (the
    `hExtract` input of §10.155.B).  Mathlib has
    `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
@@ -45,14 +70,12 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
 3. **`hDeriv` / `hCont` / `hH2` discharges** for §10.153.C from
    §10.116's Galerkin ODE + §10.138's `H⁻²` bound via per-mode
    derivative projection.
-4. **`Memℓp 2 ↔ Summable (‖·‖²)` bridge** — elementary mathlib lookup
-   for the correct lemma name (§10.158.C guess was wrong; deferred).
 
 Route B infrastructure now delivers `SQG Galerkin data →
 HasModeLipschitzFamily → HasPerModeLimit → HasFourierSynthesis →
-HasAubinLionsExtraction → SqgSolution`, plus the concrete
-Fourier-synthesis operator.  Only genuine mathlib-scale classical
-analysis remains.
+HasAubinLionsExtraction → SqgSolution`, plus concrete Fourier
+synthesis (§10.157) and the `ofSummable` top-level constructor
+(§10.159).  Only genuine mathlib-scale classical analysis remains.
 
 ### ~~2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132~~ ✓ Closed in v0.4.33
 Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →
