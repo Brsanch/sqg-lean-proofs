@@ -23459,7 +23459,6 @@ private lemma modeConvolution_norm_le_sum_abs
   by_cases h : p.1 + p.2 = n
   · rw [if_pos h, if_pos h, norm_mul]
   · rw [if_neg h, if_neg h, norm_zero]
-    exact le_refl _
 
 /-- **§11.22.B — Weighted Cauchy–Schwarz on the indicator sum.**
 `(∑ χ · |cf|·|cg|)² ≤ (∑ χ · |cf|) · (∑ χ · |cf|·|cg|²)`.
