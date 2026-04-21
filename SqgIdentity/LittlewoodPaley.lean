@@ -28,6 +28,7 @@ This matches `sqgBox` (which uses `ℓ∞`-balls) and makes `Δ_N` a
 namespace SqgIdentity
 
 open Complex Finset MeasureTheory
+open UnitAddTorus
 
 /-! ### §11.1 Dyadic annuli on `ℤ²` -/
 
