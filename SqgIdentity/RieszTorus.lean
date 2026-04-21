@@ -20552,4 +20552,176 @@ theorem exists_convergent_subseq_of_bounded_complex
   obtain ⟨L, _hL, φ, hφ, htends⟩ := tendsto_subseq_of_bounded hB hIn
   exact ⟨φ, hφ, L, htends⟩
 
+/-! ### §10.165.B Cantor diagonal for a countable family of bounded ℂ-sequences
+
+Given a countable family `s : ℕ → ℕ → ℂ` with each row `s i · `
+uniformly bounded, classical Cantor diagonal across `i` produces one
+strictly-monotone extractor `nsub : ℕ → ℕ` such that `s i ∘ nsub`
+converges for every `i`.
+
+**Construction.**  Build stages `Φ : ℕ → (ℕ → ℕ)` with `Φ 0` the BW
+extractor for `s 0` and `Φ (i+1) = Φ i ∘ ψ_{i+1}` where `ψ_{i+1}` is the
+BW extractor of `s (i+1) ∘ Φ i`.  The diagonal `nsub k := Φ k k` is
+strictly monotone (each `ψ_j` is strictly monotone, so the stage
+compositions preserve strict order on the diagonal), and for every `i`,
+the tail `{nsub k : k ≥ i}` is a reindexing of `Φ i` through a
+strictly-monotone function, so inherits convergence at row `i`. -/
+
+/-- **§10.165.B  Cantor diagonal.**  Given a countable family `s i : ℕ → ℂ`
+of uniformly-bounded complex sequences, produce one subsequence extractor
+`nsub : ℕ → ℕ` with pointwise convergence along every row `i`. -/
+theorem cantor_diagonal_complex
+    (s : ℕ → ℕ → ℂ)
+    (hs : ∀ i : ℕ, ∃ M : ℝ, ∀ n : ℕ, ‖s i n‖ ≤ M) :
+    ∃ nsub : ℕ → ℕ, StrictMono nsub ∧
+      ∃ L : ℕ → ℂ, ∀ i : ℕ,
+        Filter.Tendsto (fun k : ℕ => s i (nsub k)) Filter.atTop (nhds (L i)) := by
+  classical
+  -- Helper: pick a BW extractor packaged as a strict-mono function + limit.
+  let bwPick : ∀ (σ : ℕ → ℂ) (_ : ∃ M, ∀ n, ‖σ n‖ ≤ M),
+      { p : (ℕ → ℕ) × ℂ //
+        StrictMono p.1 ∧ Filter.Tendsto (fun k => σ (p.1 k)) Filter.atTop (nhds p.2) } :=
+    fun σ hσ => Classical.indefiniteDescription _ (by
+      obtain ⟨M, hM⟩ := hσ
+      obtain ⟨φ, hφ, L, hL⟩ := exists_convergent_subseq_of_bounded_complex M hM
+      exact ⟨(φ, L), hφ, hL⟩)
+  -- Define the stages recursively.  `stage i = (Φ_i, L_i)` with `Φ_i` strictMono,
+  -- `Filter.Tendsto (s i ∘ Φ_i) atTop (𝓝 L_i)`, and `Φ_(i+1) = Φ_i ∘ ψ_(i+1)`
+  -- for `ψ_(i+1)` the BW extractor of `s (i+1) ∘ Φ_i`.
+  let Φ : ℕ → ℕ → ℕ := fun i => Nat.rec
+      ((bwPick (s 0) (hs 0)).val.1)
+      (fun j prev =>
+        prev ∘ (bwPick (fun k => s (j + 1) (prev k))
+          (by obtain ⟨M, hM⟩ := hs (j + 1); exact ⟨M, fun n => hM (prev n)⟩)).val.1)
+      i
+  let L : ℕ → ℂ := fun i => Nat.rec
+      ((bwPick (s 0) (hs 0)).val.2)
+      (fun j prev => (bwPick (fun k => s (j + 1) (Φ j k))
+        (by obtain ⟨M, hM⟩ := hs (j + 1); exact ⟨M, fun n => hM (Φ j n)⟩)).val.2)
+      i
+  -- Each Φ i is strictly monotone.
+  have hΦ_mono : ∀ i, StrictMono (Φ i) := by
+    intro i
+    induction i with
+    | zero => exact (bwPick (s 0) (hs 0)).property.1
+    | succ j ih =>
+      refine ih.comp ?_
+      exact (bwPick (fun k => s (j + 1) (Φ j k))
+        (by obtain ⟨M, hM⟩ := hs (j + 1); exact ⟨M, fun n => hM (Φ j n)⟩)).property.1
+  -- Stage 0 convergence.
+  have hΦ0_tendsto : Filter.Tendsto (fun k => s 0 (Φ 0 k)) Filter.atTop (nhds (L 0)) :=
+    (bwPick (s 0) (hs 0)).property.2
+  -- Stage (i+1) convergence.
+  have hΦsucc_tendsto : ∀ i,
+      Filter.Tendsto (fun k => s (i + 1) (Φ (i + 1) k)) Filter.atTop (nhds (L (i + 1))) := by
+    intro i
+    -- By construction, Φ (i + 1) k = Φ i (ψ_(i+1) k) where ψ_(i+1) is the BW extractor.
+    -- And L (i + 1) = limit of s (i+1) ∘ Φ i ∘ ψ_(i+1).
+    exact (bwPick (fun k => s (i + 1) (Φ i k))
+      (by obtain ⟨M, hM⟩ := hs (i + 1); exact ⟨M, fun n => hM (Φ i n)⟩)).property.2
+  -- Consecutive stages: Φ (i+1) = Φ i ∘ ψ for some strictMono ψ.
+  have hΦ_factor : ∀ i, ∃ ψ : ℕ → ℕ, StrictMono ψ ∧ Φ (i + 1) = Φ i ∘ ψ := by
+    intro i
+    refine ⟨(bwPick (fun k => s (i + 1) (Φ i k))
+      (by obtain ⟨M, hM⟩ := hs (i + 1); exact ⟨M, fun n => hM (Φ i n)⟩)).val.1,
+      (bwPick (fun k => s (i + 1) (Φ i k))
+        (by obtain ⟨M, hM⟩ := hs (i + 1); exact ⟨M, fun n => hM (Φ i n)⟩)).property.1, rfl⟩
+  -- Chain: for k ≥ i, Φ k = Φ i ∘ (some strictMono ψ), via induction on (k - i).
+  have hΦ_chain : ∀ i k, ∃ ψ : ℕ → ℕ, StrictMono ψ ∧ Φ (i + k) = Φ i ∘ ψ := by
+    intro i k
+    induction k with
+    | zero => exact ⟨id, strictMono_id, rfl⟩
+    | succ j ih =>
+      obtain ⟨ψ, hψ_mono, hψ_eq⟩ := ih
+      obtain ⟨ψ', hψ'_mono, hψ'_eq⟩ := hΦ_factor (i + j)
+      refine ⟨ψ ∘ ψ', hψ_mono.comp hψ'_mono, ?_⟩
+      show Φ (i + (j + 1)) = Φ i ∘ (ψ ∘ ψ')
+      have heq : i + (j + 1) = (i + j) + 1 := by ring
+      rw [heq, hψ'_eq, ← Function.comp_assoc, ← hψ_eq]
+  -- Diagonal.
+  let nsub : ℕ → ℕ := fun k => Φ k k
+  -- Strict monotonicity.
+  have hnsub_mono : StrictMono nsub := by
+    intro a b hab
+    show Φ a a < Φ b b
+    obtain ⟨ψ, hψ_mono, hψ_eq⟩ := hΦ_chain a (b - a)
+    have heq : a + (b - a) = b := Nat.add_sub_of_le (le_of_lt hab)
+    rw [heq] at hψ_eq
+    rw [hψ_eq]
+    show Φ a a < Φ a (ψ b)
+    apply hΦ_mono a
+    have hψ_ge : b ≤ ψ b := hψ_mono.id_le b
+    exact lt_of_lt_of_le hab hψ_ge
+  refine ⟨nsub, hnsub_mono, L, ?_⟩
+  intro i
+  -- Convergence at row i: tail of nsub (from index ≥ i) is a strictMono
+  -- reindexing of Φ i.  Build μ : ℕ → ℕ so that nsub (i + j) = Φ i (μ j)
+  -- with μ strictMono, then conclude via Tendsto.comp.
+  -- Concretely: for each j, hΦ_chain i j gives ψ_j strictMono with
+  -- Φ (i + j) = Φ i ∘ ψ_j, so nsub (i + j) = Φ i (ψ_j (i + j)).
+  -- Set μ j := ψ_j (i + j) and prove μ strictMono.
+  -- The ψ_j's here are chosen via `Classical.choose`; since hΦ_chain's output
+  -- is pulled from a specific term, consistency across j requires care.
+  -- Cleaner: use the concrete `ψ : ℕ → (ℕ → ℕ)` built into the recursion.
+  --
+  -- Define ψ i (j) := the "increment extractor" at stage (i + j → i + j + 1).
+  let ψinc : ℕ → ℕ → ℕ := fun j =>
+    (bwPick (fun k => s (j + 1) (Φ j k))
+      (by obtain ⟨M, hM⟩ := hs (j + 1); exact ⟨M, fun n => hM (Φ j n)⟩)).val.1
+  -- By construction, Φ (j + 1) = Φ j ∘ ψinc j.
+  have hψinc_mono : ∀ j, StrictMono (ψinc j) := fun j =>
+    (bwPick (fun k => s (j + 1) (Φ j k))
+      (by obtain ⟨M, hM⟩ := hs (j + 1); exact ⟨M, fun n => hM (Φ j n)⟩)).property.1
+  have hΦ_succ_eq : ∀ j, Φ (j + 1) = Φ j ∘ ψinc j := fun _ => rfl
+  -- θ i j : the composition of ψinc i, ψinc (i+1), ..., ψinc (i+j-1).
+  let θ : ℕ → ℕ → ℕ := fun j => Nat.rec (id : ℕ → ℕ)
+    (fun k prev => prev ∘ ψinc (i + k)) j
+  have hθ_mono : ∀ j, StrictMono (θ j) := by
+    intro j
+    induction j with
+    | zero => exact strictMono_id
+    | succ k ih => exact ih.comp (hψinc_mono (i + k))
+  have hΦ_ij_eq : ∀ j, Φ (i + j) = Φ i ∘ θ j := by
+    intro j
+    induction j with
+    | zero => show Φ (i + 0) = Φ i ∘ id; simp
+    | succ k ih =>
+      show Φ (i + (k + 1)) = Φ i ∘ (θ k ∘ ψinc (i + k))
+      have heq : i + (k + 1) = (i + k) + 1 := by ring
+      rw [heq, hΦ_succ_eq (i + k), ← Function.comp_assoc, ← ih]
+  -- μ j := θ j (i + j).  Then nsub (i + j) = Φ i (μ j), and μ is strictMono.
+  let μ : ℕ → ℕ := fun j => θ j (i + j)
+  have hθ_succ_apply : ∀ k x, θ (k + 1) x = θ k (ψinc (i + k) x) := fun _ _ => rfl
+  have hμ_mono : StrictMono μ := by
+    apply strictMono_nat_of_lt_succ
+    intro k
+    show θ k (i + k) < θ (k + 1) (i + (k + 1))
+    rw [hθ_succ_apply k (i + (k + 1))]
+    apply hθ_mono k
+    -- Need i + k < ψinc (i + k) (i + (k + 1))
+    have hψ_ge : i + (k + 1) ≤ ψinc (i + k) (i + (k + 1)) :=
+      (hψinc_mono (i + k)).id_le _
+    exact lt_of_lt_of_le (Nat.lt_add_one (i + k) |>.trans_le (le_refl _)) hψ_ge
+  -- nsub (i + j) = Φ i (μ j): follows from Φ (i + j) = Φ i ∘ θ j.
+  have hnsub_eq : ∀ j, nsub (i + j) = Φ i (μ j) := fun j =>
+    congrArg (· (i + j)) (hΦ_ij_eq j)
+  -- Stage-i convergence.
+  have hΦi_tendsto : Filter.Tendsto (fun k => s i (Φ i k)) Filter.atTop (nhds (L i)) := by
+    cases i with
+    | zero => exact hΦ0_tendsto
+    | succ j => exact hΦsucc_tendsto j
+  -- `fun j => s i (nsub (i + j)) = fun j => s i (Φ i (μ j))` converges to L i.
+  have hShifted : Filter.Tendsto (fun j => s i (nsub (i + j))) Filter.atTop (nhds (L i)) := by
+    have h_eq : (fun j => s i (nsub (i + j))) = (fun k => s i (Φ i k)) ∘ μ := by
+      funext j; exact congrArg (s i) (hnsub_eq j)
+    rw [h_eq]
+    exact hΦi_tendsto.comp hμ_mono.tendsto_atTop
+  -- Shift back via `tendsto_add_atTop_iff_nat`: `(fun j => f (i + j)) → L ↔ f → L`.
+  have h_eq_shift : (fun j : ℕ => s i (nsub (i + j))) =
+      (fun k : ℕ => s i (nsub k)) ∘ (· + i) := by
+    funext j; show s i (nsub (i + j)) = s i (nsub (j + i))
+    rw [Nat.add_comm]
+  rw [h_eq_shift] at hShifted
+  exact (tendsto_add_atTop_iff_nat i).mp hShifted
+
 end SqgIdentity
