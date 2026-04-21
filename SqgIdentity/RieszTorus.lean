@@ -23720,4 +23720,65 @@ theorem l2_trigPolyProduct_le_uniform
           * hsSeminormSq s (trigPoly A cf)
           * (∑ b ∈ B, ‖cg b‖ ^ 2) := by ring
 
+/-! ### §11.25 Symmetry of `modeConvolution` + symmetric Young
+
+The mode convolution is commutative in its two factors:
+`modeConvolution A B cf cg n = modeConvolution B A cg cf n`.
+Combined with `sumSet A B = sumSet B A`, this symmetry lets us apply
+§11.22 with factors swapped to get the symmetric Young direction:
+`∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · (∑_b ‖cg b‖)²`. -/
+
+/-- **§11.25.A₁ — `sumSet` is symmetric.** -/
+lemma sumSet_symm
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) :
+    sumSet A B = sumSet B A := by
+  ext n
+  rw [mem_sumSet_iff, mem_sumSet_iff]
+  constructor
+  · rintro ⟨a, ha, b, hb, hsum⟩
+    exact ⟨b, hb, a, ha, by rw [← hsum]; abel⟩
+  · rintro ⟨b, hb, a, ha, hsum⟩
+    exact ⟨a, ha, b, hb, by rw [← hsum]; abel⟩
+
+/-- **§11.25.A₂ — `modeConvolution` is commutative in its factors.** -/
+lemma modeConvolution_symm
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    modeConvolution A B cf cg n = modeConvolution B A cg cf n := by
+  unfold modeConvolution
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intros b _
+  apply Finset.sum_congr rfl
+  intros a _
+  by_cases h : a + b = n
+  · rw [if_pos h, if_pos (show b + a = n from by rw [add_comm]; exact h)]
+    ring
+  · rw [if_neg h, if_neg (show ¬ (b + a = n) from fun h' => h (by rw [add_comm]; exact h'))]
+
+/-- **§11.25.B — Symmetric Young on `modeConvolution`.**  Apply §11.22
+with the roles of `cf` and `cg` swapped (plus §11.25.A symmetries). -/
+theorem hsSeminormSq_zero_trigPolyProduct_le_young_symm
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖ ^ 2) * (∑ b ∈ B, ‖cg b‖) ^ 2 := by
+  -- Reduce to §11.22 applied to (B, A, cg, cf).
+  have h_young := hsSeminormSq_zero_trigPolyProduct_le_young B A cg cf
+  -- Transform the LHS via symmetries.
+  have h_lhs : ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      = ∑ n ∈ sumSet B A, ‖modeConvolution B A cg cf n‖ ^ 2 := by
+    rw [sumSet_symm A B]
+    apply Finset.sum_congr rfl
+    intros n _
+    rw [modeConvolution_symm A B cf cg n]
+  -- Transform the RHS to match §11.25.B's target form.
+  have h_rhs : (∑ b ∈ B, ‖cg b‖) ^ 2 * (∑ a ∈ A, ‖cf a‖ ^ 2)
+      = (∑ a ∈ A, ‖cf a‖ ^ 2) * (∑ b ∈ B, ‖cg b‖) ^ 2 := by ring
+  calc ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      = ∑ n ∈ sumSet B A, ‖modeConvolution B A cg cf n‖ ^ 2 := h_lhs
+    _ ≤ (∑ b ∈ B, ‖cg b‖) ^ 2 * (∑ a ∈ A, ‖cf a‖ ^ 2) := h_young
+    _ = (∑ a ∈ A, ‖cf a‖ ^ 2) * (∑ b ∈ B, ‖cg b‖) ^ 2 := h_rhs
+
 end SqgIdentity
