@@ -21603,6 +21603,8 @@ lemma galerkinKKernel_norm_le_latticeNorm (ℓ m : Fin 2 → ℤ) :
       _ = (∑ j : Fin 2, I * (sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ))) -
           (∑ j : Fin 2, I * (sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ))) :=
           Finset.sum_sub_distrib
+            (fun j => I * (sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)))
+            (fun j => I * (sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ)))
       _ = I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)) -
           I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ)) := by
           rw [← Finset.mul_sum, ← Finset.mul_sum]
@@ -21728,7 +21730,10 @@ theorem galerkinRHS_norm_le_latticeNorm_mul_l2_sum
           ∀ ℓ₂ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
           (fun ℓ : Fin 2 → ℤ => m - ℓ) ℓ₁ = (fun ℓ => m - ℓ) ℓ₂ → ℓ₁ = ℓ₂ := by
         intros ℓ₁ _ ℓ₂ _ heq
-        exact sub_left_cancel heq
+        -- heq : m - ℓ₁ = m - ℓ₂; apply (m - ·) to both sides to get ℓ₁ = ℓ₂.
+        calc ℓ₁ = m - (m - ℓ₁) := (sub_sub_cancel m ℓ₁).symm
+          _ = m - (m - ℓ₂) := by rw [heq]
+          _ = ℓ₂ := sub_sub_cancel m ℓ₂
       have h_image_eq : (S.filter (fun ℓ => m - ℓ ∈ S)).image (fun ℓ => m - ℓ) =
           S.filter (fun k => m - k ∈ S) := by
         ext x
