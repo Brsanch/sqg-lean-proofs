@@ -6,8 +6,54 @@ to the latest version.
 
 ## Unreleased (post-v0.4.39, on `main`) — 2026-04-21
 
+**Item 1 `hH2` closure — §10.172 (divergence-free pointwise bound).**
+
+Item 1's last remaining analytic input (`hH2`, the uniform `H⁻²`
+bound on `galerkinRHS`) closed **structurally** without any Sobolev
+product bilinear estimate, using only:
+
+- **§10.172.A** — Cauchy–Schwarz in `Fin 2` (`fin_two_CS_real_sq` +
+  `fin_two_CS_complex_real_sq`) + `sqgVelocitySymbol_sum_sq`
+  (∑|σ_j(ℓ)|² = 1 for ℓ ≠ 0) give
+  `‖∑_j σ_j(ℓ) · (m j : ℂ)‖ ≤ latticeNorm m`.
+- **§10.172.B** — `galerkinKKernel_norm_le_latticeNorm`: via the
+  divergence-free identity `σ(ℓ) · ℓ = 0`
+  (`sqgVelocitySymbol_divergence_free`),
+  `σ(ℓ) · (m - ℓ) = σ(ℓ) · m`, so
+  `‖galerkinKKernel ℓ (m - ℓ)‖ ≤ latticeNorm m` **uniformly in `ℓ`**.
+- **§10.172.C** — `galerkinRHS_norm_le_latticeNorm_mul_l2_sum`:
+  pointwise `‖galerkinRHS S c m‖ ≤ latticeNorm m · ∑_{n ∈ ↥S} ‖c n‖²`.
+  Proof: triangle on the finite-support sum + §10.172.B per-term
+  bound + Young's inequality on the convolution sum, with a
+  `Finset.sum_image`-based reindexing via the involution `ℓ ↦ m - ℓ`
+  to bound the `|c(m - ℓ)|²` half-sum by `∑_{n ∈ ↥S} ‖c n‖²`.
+- **§10.172.D** — `sqgGalerkin_modeLipschitz_from_l2_conservation`:
+  per-mode Lipschitz constant from §10.172.C + §10.97 `L²`
+  conservation + §10.153.B mean-value theorem.  Produces
+  `L(m) = (∫ ‖θ₀‖²) · latticeNorm m` uniform in `n`.
+- **§10.172.E** — `HasModeLipschitzFamily.ofSqgGalerkin_l2_conservation`:
+  wires §10.172.D into §10.152's `ofSqgGalerkinBounds` constructor,
+  using `sum_sq_fourierRestrict_le_L2Sq` (§10.119) to bridge the
+  equality-form `L²` conservation to the inequality form.
+- **§10.172.F** — `HasPerModeLimit.ofSqgGalerkin_l2_conservation`:
+  Item 1 capstone composing §10.172.E + §10.165 (`hExtract` witness)
+  + §10.155.B (`HasPerModeLimit.ofModeLipschitzFamily`).  Produces
+  `HasPerModeLimit α` **unconditionally** from `L²` conservation +
+  ODE hypotheses (no `hH2` hypothesis needed).
+
+**Why pointwise rather than `H⁻²`?**  The standard Aubin-Lions input
+on `𝕋²` is a uniform `H⁻s` bound on `∂_t θ`.  In 2D, the
+`L² × L² → H⁻¹` bilinear estimate **fails** due to the logarithmic
+divergence of `∑_{m ≠ 0} |m|⁻²`.  A `H⁻²` bound on `∂_t θ` would
+require `‖u θ‖_{H⁻¹}` uniformly, which itself requires `Ḣ^{1/2}`
+control on at least one factor — not attainable from pure `L²`
+conservation.  §10.172 sidesteps this by never passing through a
+Sobolev product estimate, instead using the divergence-free symbol
+structure to produce a per-mode bound directly from Young's inequality
+on the Fourier convolution.
+
 **Theorem 3 off the finite-Fourier-support class + end-to-end capstone.**
-Items 1 (analytical closure), 3 (MMP off finite-support), and 4 (BKM
+Items 1 (now fully closed), 3 (MMP off finite-support), and 4 (BKM
 off finite-support) from `OPEN.md` all closed structurally.  The
 `MaterialMaxPrinciple` and `BKMCriterionS2` hypotheses of the
 conditional Theorem 3 now lift off the finite-Fourier-support class

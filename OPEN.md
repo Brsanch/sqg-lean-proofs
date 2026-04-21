@@ -5,11 +5,14 @@ Each item is linked to the tagged release that will close it.
 
 ## SQG mathematics
 
-### 1. Generic-`L²` Galerkin → full-SQG extraction (Route B; v0.4.39)
+### ~~1. Generic-`L²` Galerkin → full-SQG extraction (Route B; v0.4.39)~~ ✓ Closed post-v0.4.39 (§10.172)
 **Status:** All three named Lean targets from v0.4.38 have constructors
 in-tree.  `l2Conservation` is internally discharged (§10.147, v0.4.38).
 Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
 (§10.148) produces an `SqgSolution` without the `hL2` hypothesis.
+Item 1's remaining `hH2` analytic input is discharged **structurally**
+by §10.172 via the divergence-free pointwise galerkinRHS bound
+(bypasses the need for any uniform `H⁻²` seminorm estimate).
 
 **v0.4.39 closed constructors:**
 
@@ -91,7 +94,7 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
   `rfl` identity `galerkinVectorField ⟨m, hm⟩ = galerkinRHS
   (galerkinExtend _) m` (line 13737).
 
-**Item 1 analytical work — ALL THREE INPUTS DISCHARGED STRUCTURALLY:**
+**Item 1 analytical work — ALL FOUR INPUTS DISCHARGED STRUCTURALLY:**
 
 1. ~~**Strong-`L²` convergence**~~ — ✓ **closed down to elementary
    tightness** via §10.164.
@@ -100,16 +103,31 @@ Route B capstone `exists_sqgSolution_via_RouteB_from_galerkin_energy`
    for §10.155.B follows from `HasModeLipschitzFamily` alone).
 3. ~~**`hDeriv` / `hCont` discharges for §10.153.C**~~ — ✓ **closed**
    via §10.166.A/B (Item 1 input #3; consumes the whole-trajectory
-   derivative from §10.116).  `hH2` (uniform `H⁻²` bound) is the
-   remaining SQG-specific analytic input; it will be discharged from
-   the §10.116 uniform `L∞` coefficient bound + §10.138 once the
-   mathlib Kato–Ponce infrastructure allows.
+   derivative from §10.116).
+4. ~~**`hH2` uniform `H⁻²` bound on `galerkinRHS`**~~ — ✓ **closed
+   structurally via §10.172 without needing any uniform `H⁻²`
+   estimate**.  §10.172.A (Cauchy–Schwarz in `Fin 2`), §10.172.B
+   (`galerkinKKernel` norm bound via divergence-free
+   `σ(ℓ) · ℓ = 0`), §10.172.C (pointwise
+   `‖galerkinRHS S c m‖ ≤ latticeNorm m · ∑_n ‖c n‖²`), §10.172.D
+   (per-mode Lipschitz from `L²` conservation via §10.153.B MVT),
+   §10.172.E (`HasModeLipschitzFamily.ofSqgGalerkin_l2_conservation`),
+   §10.172.F (`HasPerModeLimit.ofSqgGalerkin_l2_conservation` Item 1
+   capstone).  The standard uniform `H⁻²` bound via a Sobolev product
+   bilinear estimate **fails** on `𝕋²` (the `L² × L² → H⁻¹`
+   bilinear is log-divergent in 2D); the pointwise path circumvents
+   this by using the divergence-free structure directly on the
+   Fourier convolution, producing a per-mode Lipschitz constant
+   `L(m) = ‖θ₀‖²_{L²} · latticeNorm m` uniform in `n`.
 
 Route B infrastructure now delivers `SQG Galerkin data →
-HasModeLipschitzFamily → HasPerModeLimit → HasFourierSynthesis →
-HasAubinLionsExtraction → SqgSolution`, plus concrete Fourier
-synthesis (§10.157) and the `ofSummable` top-level constructor
-(§10.159).  Only genuine mathlib-scale classical analysis remains.
+HasModeLipschitzFamily (§10.172.E) → HasPerModeLimit (§10.172.F) →
+HasFourierSynthesis → HasAubinLionsExtraction → SqgSolution`, plus
+concrete Fourier synthesis (§10.157) and the `ofSummable` top-level
+constructor (§10.159).  The Item 1 chain is **fully structurally
+closed** down to `HasPerModeLimit`.  The remaining
+`HasFourierSynthesis` construction (tightness argument on `ℓ²(ℤ²)`)
+is handled by §10.164 `ofTight`.
 
 ### ~~2. `SqgEvolutionAxioms_strong` upgrade for §10.117 / §10.132~~ ✓ Closed in v0.4.33
 Delivered by §10.133–§10.134: Ici-0 port of the §10.91 → §10.92 →
@@ -214,6 +232,15 @@ required by the chain.
 The following items on prior "what's left" lists are **already
 closed** in current code:
 
+- ~~1. Generic-`L²` Galerkin → SqgSolution extraction — `hH2` analytic
+  input~~ — closed post-v0.4.39 by §10.172 via divergence-free
+  pointwise `galerkinRHS` bound instead of any `H⁻²` seminorm
+  estimate.  The standard uniform `H⁻²` bound fails on `𝕋²` due
+  to the log-divergence of `∑_{m≠0} |m|⁻²` in 2D; the pointwise
+  path bypasses this.  Per-mode Lipschitz constant
+  `L(m) = ‖θ₀‖²_{L²} · latticeNorm m` uniform in `n`.  Chain:
+  `HasModeLipschitzFamily.ofSqgGalerkin_l2_conservation` (§10.172.E)
+  → `HasPerModeLimit.ofSqgGalerkin_l2_conservation` (§10.172.F).
 - ~~2. `SqgEvolutionAxioms_strong` upgrade~~ — closed in v0.4.33
   via §10.133–§10.134 (Ici-0 port of Duhamel chain; headline
   `exists_sqgSolution_strong_of_galerkin_realSym`).
