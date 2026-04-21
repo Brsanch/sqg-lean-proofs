@@ -24444,4 +24444,27 @@ theorem HasTrigPolyBanachAlgebraBound.of_latticeZeta
   intros A B cf cg hA hB
   exact hsSeminormSq_trigPolyProduct_le_uniform_banach_algebra hs hA hB hC cf cg
 
+/-! ### §11.25.H Zero-coefficient exemplar
+
+Whenever one factor's coefficient sequence is zero, `trigPolyProduct`
+vanishes and so does its `Ḣˢ` seminorm.  Uses the SAME default
+`decidablePiFintype` instance as the structure-field elaboration to
+avoid the class-parameter mismatch diagnosed in §11.25.G. -/
+
+/-- **§11.25.H₁ — Zero left-factor trig-poly product has zero `Ḣˢ`
+seminorm.** -/
+theorem hsSeminormSq_trigPolyProduct_zero_left
+    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B (fun _ => (0 : ℂ)) cg) = 0 := by
+  rw [trigPolyProduct_zero_left]
+  exact hsSeminormSq_of_zero s
+
+/-- **§11.25.H₂ — Zero right-factor trig-poly product has zero `Ḣˢ`
+seminorm.** -/
+theorem hsSeminormSq_trigPolyProduct_zero_right
+    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cf : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B cf (fun _ => (0 : ℂ))) = 0 := by
+  rw [trigPolyProduct_zero_right]
+  exact hsSeminormSq_of_zero s
+
 end SqgIdentity
