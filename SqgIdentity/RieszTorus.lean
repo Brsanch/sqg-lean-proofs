@@ -21957,4 +21957,148 @@ noncomputable def HasPerModeLimit.ofSqgGalerkin_l2_conservation
     θ₀ hEnergy hDeriv hCont
   HasPerModeLimit.ofModeLipschitzFamily lip (sqgGalerkin_hExtract_witness lip)
 
+/-! ### §10.173 `BKMCriterionHighFreq` off the finite-Fourier-support
+class for arbitrary `s > 1` (lifts the `s ≤ 2` restriction of §10.168)
+
+Parallel to §10.168.A but uses the **generic-`s`** `BKMCriterionHighFreq`
+in place of `BKMCriterionS2`.  §10.167.A's LSC lemma is generic in
+`s` already, so dropping the `s ≤ 2` hypothesis is structural — no
+new analytic content needed.
+
+The call-site must supply uniform `Ḣˢ` bounds at every `s > 1`
+(not just `s ∈ (1, 2]`).  This is the **extension path** for Item 5
+of `OPEN.md`: with high-`s` uniform Galerkin bounds supplied (either
+unconditionally via a smooth initial data argument + Kato–Ponce, or
+axiomatically for a specific problem), conditional Theorem 3 extends
+to every `s ≥ 0`. -/
+
+/-- **§10.173.A  `BKMCriterionHighFreq` from an `L²`-limit sequence
+with uniform `Ḣˢ` control at every `s > 1`.**  Drops the `s ≤ 2`
+restriction of §10.168.A. -/
+theorem BKMCriterionHighFreq.of_L2_limit_uniform_Hs_all_s
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (fₙ : ℕ → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hConv : ∀ t : ℝ, 0 ≤ t →
+      Filter.Tendsto (fun n => ∫ x, ‖fₙ n t x - θ t x‖ ^ 2)
+        Filter.atTop (nhds 0))
+    (Ms : ℝ → ℝ)
+    (hSumm_fn : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      Summable (fun m : Fin 2 → ℤ =>
+        (fracDerivSymbol s m) ^ 2 * ‖mFourierCoeff (fₙ n t) m‖ ^ 2))
+    (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      hsSeminormSq s (fₙ n t) ≤ Ms s) :
+    BKMCriterionHighFreq θ where
+  hsPropagationHighFreq := fun _ s hs1 =>
+    ⟨Ms s, fun t ht =>
+      (hsSeminormSq_le_of_L2_limit_uniform_bound (s := s) (M := Ms s)
+        (hConv t ht)
+        (fun n => hSumm_fn n t ht s hs1)
+        (fun n => hBound n t ht s hs1)).2⟩
+
+/-- **§10.173.B  `BKMCriterionHighFreq` for the Aubin–Lions limit.**
+Specialises §10.173.A to `HasAubinLionsExtraction`.  Summability of
+the weighted family comes for free from the finite Fourier support
+of each Galerkin state via `hsSeminormSq_summable_galerkinToLp`. -/
+theorem BKMCriterionHighFreq.of_aubinLions_uniform_Hs_all_s
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (Ms : ℝ → ℝ)
+    (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    BKMCriterionHighFreq ext.θ_lim := by
+  refine BKMCriterionHighFreq.of_L2_limit_uniform_Hs_all_s
+    (θ := ext.θ_lim)
+    (fₙ := fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
+    ?_ Ms ?_ ?_
+  · intro t ht
+    exact ext.tendsto_L2 t ht
+  · intro k t _ s _
+    exact hsSeminormSq_summable_galerkinToLp s
+      (sqgBox (ext.nsub k)) (α (ext.nsub k) t)
+  · intro k t ht s hs1
+    exact hBound (ext.nsub k) t ht s hs1
+
+/-! ### §10.174 Full-range Theorem 3 on the Aubin–Lions limit
+
+Capstone composing §10.167.C + §10.173.B + `sqg_regularity_via_interpolation`
+into a single theorem delivering Theorem 3 on the **full** range `s ≥ 0`
+(not just `[0, 2]`).  Requires `SqgEvolutionAxioms` on `θ_lim` (which
+§10.144 supplies structurally for the Aubin–Lions class). -/
+
+/-- **§10.174  Full-range Theorem 3 on `s ≥ 0` for the Aubin–Lions limit.**
+
+Composes:
+
+* §10.167.C `MaterialMaxPrinciple.of_aubinLions_uniform_H1` — MMP
+  from uniform `Ḣ¹` bound on Galerkin states.
+* §10.173.B `BKMCriterionHighFreq.of_aubinLions_uniform_Hs_all_s` —
+  high-frequency BKM from uniform `Ḣˢ` bound on Galerkin states at
+  every `s > 1`.
+* `sqg_regularity_via_interpolation` — MMP + HighFreq BKM + SEA ⇒
+  uniform `Ḣˢ` bound on every `s ≥ 0`.
+
+**Extension over §10.169:** lifts the `s ≤ 2` restriction.  Caller
+must supply `Ms : ℝ → ℝ` valid for every `s > 1` (not just
+`s ∈ (1, 2]`).  This is the **structural path to Item 5** from
+`OPEN.md`: with fractional Kato–Ponce / Galerkin high-`s` analysis
+supplied (classical content), the conditional Theorem 3 holds on the
+full Sobolev scale. -/
+theorem sqg_regularity_of_aubinLions_via_interpolation
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (M₁ : ℝ) (Ms : ℝ → ℝ)
+    (hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁)
+    (hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s)
+    (hE : SqgEvolutionAxioms ext.θ_lim) :
+    ∀ s : ℝ, 0 ≤ s →
+      ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (ext.θ_lim t) ≤ M' :=
+  sqg_regularity_via_interpolation ext.θ_lim
+    (MaterialMaxPrinciple.of_aubinLions_uniform_H1 ext M₁ hBoundOne)
+    (BKMCriterionHighFreq.of_aubinLions_uniform_Hs_all_s ext Ms hBoundS)
+    hE
+
+/-! ### §10.175 End-to-end full-range Theorem 3 + `SqgSolution`
+
+Parallel to §10.171 but uses §10.174's interpolation capstone
+(full `s ≥ 0`) in place of §10.169's `s ≤ 2` bootstrap. -/
+
+/-- **§10.175  End-to-end SQG + full-range Theorem 3.**
+
+From a `HasAubinLionsExtraction` witness + per-level Galerkin `L²`
+conservation + velocity witness + smooth initial data + uniform `Ḣˢ`
+bounds on Galerkin at `s = 1` and every `s > 1`, delivers both a
+genuine `SqgSolution` and the Theorem 3 regularity conclusion on
+**every** `s ≥ 0` for its `θ`-field. -/
+theorem sqg_solution_and_regularity_via_RouteB_interpolation
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (ext : HasAubinLionsExtraction θ α)
+    (hLevel : ∀ n t, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0)))
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hu : HasGalerkinLimitVelocity ext.θ_lim u)
+    (hSmooth : ∃ s : ℝ, 2 < s ∧
+      Summable (fun n : Fin 2 → ℤ =>
+        (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (ext.θ_lim 0) n‖ ^ 2))
+    (M₁ : ℝ) (Ms : ℝ → ℝ)
+    (hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁)
+    (hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    ∃ sol : SqgSolution, sol.θ = ext.θ_lim ∧
+      ∀ s : ℝ, 0 ≤ s →
+        ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (sol.θ t) ≤ M' := by
+  obtain ⟨sol, hsol⟩ :=
+    exists_sqgSolution_via_RouteB_from_galerkin_energy ext hLevel hu hSmooth
+  refine ⟨sol, hsol, ?_⟩
+  intro s hs0
+  rw [hsol]
+  exact sqg_regularity_of_aubinLions_via_interpolation
+    ext M₁ Ms hBoundOne hBoundS sol.solvesSqgEvolution s hs0
+
 end SqgIdentity
