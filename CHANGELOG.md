@@ -196,8 +196,7 @@ Classical remainder ~400 LOC.
   `HasLatticeZetaBound (s C : ℝ) : Prop` structure bundles the
   uniform finite-sum bound as a `Prop` hypothesis; concrete witness
   for `s > 1` via global lattice zeta summability remains open.
-- **§11.25.G + §11.25.H** — hypothesis structure + zero-coefficient
-  exemplar.
+- **§11.25.G** — hypothesis structure + concrete constructor.
   - **§11.25.G₁** `HasTrigPolyBanachAlgebraBound (s C : ℝ) : Prop`
     structure: bundles `‖fg‖²_{Ḣˢ} ≤ C · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}` as
     a `Prop` for every `A, B ⊆ ℤ² \ {0}` finite.  Parallel to §11.21
@@ -205,11 +204,22 @@ Classical remainder ~400 LOC.
     Leibniz split form.
   - **§11.25.G** `HasTrigPolyBanachAlgebraBound.of_latticeZeta` —
     constructor from `HasLatticeZetaBound s C_z` + `s ≥ 1` to
-    `HasTrigPolyBanachAlgebraBound s (2^{2s} · 2C_z)` via §11.25.F.
-  - **§11.25.H** `hsSeminormSq_trigPolyProduct_zero_le_banach_algebra`
-    — zero-coefficient exemplar.  When `cf = 0`,
-    `trigPolyProduct_zero_left` + `hsSeminormSq_of_zero` give `LHS = 0`,
-    RHS ≥ 0 at any `C ≥ 0`.  Structural sanity check.
+    `HasTrigPolyBanachAlgebraBound s (2^{2s} · 2·C_z)` via §11.25.F.
+    **Diagnostic path (3 CI iterations):**
+    1. First attempt (`where bound := fun ... => ...`): `isDefEq`
+       timeout after 200000 heartbeats.
+    2. Second attempt (`refine ⟨?_, ?_⟩ + linarith [h]`): `linarith
+       failed to find a contradiction`.  linarith couldn't normalize
+       the two "identical-looking" sides.
+    3. Third attempt (factored `h_bound` + `exact ⟨_, _⟩`): explicit
+       `type mismatch` error surfaced the root cause —
+       `@trigPolyProduct inst✝ A B cf cg` (theorem's class param)
+       vs `@trigPolyProduct decidablePiFintype A B cf cg`
+       (structure's auto-synthesized default instance).
+    Final fix: remove `[DecidableEq (Fin 2 → ℤ)]` from the
+    theorem signature.  Default synthesis picks `decidablePiFintype`
+    uniformly at every use site, matching the structure's field.
+    CI green at commit `364f711`.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
