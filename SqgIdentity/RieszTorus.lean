@@ -20184,7 +20184,7 @@ noncomputable def lpOfSummableSqNorm
   refine ⟨b, ?_⟩
   have hp : (0 : ℝ) < (2 : ENNReal).toReal := by
     rw [ENNReal.toReal_ofNat]; norm_num
-  rw [memℓp_gen_iff hp]
+  refine (memℓp_gen_iff hp).mpr ?_
   simpa [ENNReal.toReal_ofNat] using hSum
 
 /-- **§10.158.D  `lpOfSummableSqNorm` coefficient recovery.** -/
