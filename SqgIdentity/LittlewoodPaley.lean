@@ -288,4 +288,73 @@ theorem HasGalerkinHsGronwallFamily.of_sqgClosure
   E₀_uniform := h.E₀
   hE₀_uniform := fun _ => rfl
 
+/-! ### §11.10 Zero-datum exemplar (Phase 11)
+
+The trivial Galerkin zero trajectory `α n t := (fun _ => 0)` gives a
+zero `HasSqgGalerkinHsClosure` witness (K = 0, E₀ = 0).  Combined
+with the trivial `HasDerivAt 0` from mathlib and §10.182's Grönwall
+family extraction, the full Phase 2→5→10 chain exercises on the
+zero datum.  This mirrors §10.170 / §10.176's zero-datum exemplars. -/
+
+/-- **Zero Galerkin trajectory** — all coefficients zero at every
+level and time. -/
+noncomputable def zeroGalerkin :
+    ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ) :=
+  fun _ _ _ => 0
+
+/-- **Zero trajectory has `trigPolyEnergyHs = 0` at every `s, n, t`.** -/
+lemma zeroGalerkin_trigPolyEnergyHs_zero (s : ℝ) (n : ℕ) (t : ℝ) :
+    trigPolyEnergyHs s (sqgBox n) (zeroGalerkin n t) = 0 := by
+  unfold zeroGalerkin trigPolyEnergyHs
+  simp
+
+/-- **Zero trajectory has `galerkinVectorField = 0` at every level.** -/
+lemma zeroGalerkin_galerkinVectorField (n : ℕ) (t : ℝ) :
+    galerkinVectorField (sqgBox n) (zeroGalerkin n t) = 0 := by
+  have hRadial : ∀ (c : ↥(sqgBox n) → ℂ),
+      galerkinVectorField (sqgBox n) (zeroGalerkin n t) =
+        galerkinVectorField (sqgBox n) (zeroGalerkin n t) := fun _ => rfl
+  -- Direct: zero input to a finite sum of products gives zero output.
+  funext m
+  unfold galerkinVectorField galerkinRHS zeroGalerkin galerkinExtend
+  simp
+
+/-- **Zero Galerkin trajectory trivially satisfies Phase 10 closure.**
+Exercises §11.8 + §11.9 on the zero datum. -/
+noncomputable def HasSqgGalerkinHsClosure.ofZero (s : ℝ) :
+    HasSqgGalerkinHsClosure s zeroGalerkin where
+  K := 0
+  hK_nn := le_refl 0
+  hDerivBound := by
+    intro n T _ x _
+    rw [zeroGalerkin_trigPolyEnergyHs_zero]
+    simp
+    -- Need: |deriv (fun t => 0) x| ≤ 0
+    have hConst : (fun t : ℝ => trigPolyEnergyHs s (sqgBox n) (zeroGalerkin n t))
+                    = fun _ => 0 := by
+      funext t
+      exact zeroGalerkin_trigPolyEnergyHs_zero s n t
+    rw [hConst, deriv_const]
+    simp
+  E₀ := 0
+  hE₀ := fun n => (zeroGalerkin_trigPolyEnergyHs_zero s n 0).le
+
+/-- **Zero Galerkin trajectory has trivial ODE (zero vector field).** -/
+lemma zeroGalerkin_hasDerivAt (n : ℕ) (t : ℝ) :
+    HasDerivAt (zeroGalerkin n)
+      (galerkinVectorField (sqgBox n) (zeroGalerkin n t)) t := by
+  rw [zeroGalerkin_galerkinVectorField]
+  -- `zeroGalerkin n = fun _ => 0`, derivative is zero.
+  have h : (zeroGalerkin n) = fun _ : ℝ => (0 : ↥(sqgBox n) → ℂ) := by
+    funext t m; rfl
+  rw [h]
+  exact hasDerivAt_const t _
+
+/-- **Zero-datum Phase 2/5 family via Phase 10 closure.** -/
+noncomputable def zeroGalerkin_gronwallFamily (s : ℝ) :
+    HasGalerkinHsGronwallFamily s zeroGalerkin :=
+  HasGalerkinHsGronwallFamily.of_sqgClosure s
+    (HasSqgGalerkinHsClosure.ofZero s)
+    (fun n t => zeroGalerkin_hasDerivAt n t)
+
 end SqgIdentity
