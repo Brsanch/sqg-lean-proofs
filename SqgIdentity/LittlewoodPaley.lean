@@ -306,27 +306,13 @@ noncomputable def HasSqgGalerkinHsClosure.ofZero (s : ℝ) :
   hK_nn := le_refl 0
   hDerivBound := by
     intro n _ _ x _
+    have hE := zeroGalerkin_energyFun_const s n
     have hd : deriv (fun t : ℝ =>
                 trigPolyEnergyHs s (sqgBox n) (zeroGalerkin n t)) x = 0 := by
-      rw [zeroGalerkin_energyFun_const]
-      exact deriv_const x 0
+      rw [hE]; simp
     rw [hd, zeroGalerkin_trigPolyEnergyHs_zero]
     simp
   E₀ := 0
   hE₀ := fun n => (zeroGalerkin_trigPolyEnergyHs_zero s n 0).le
-
-/-- **Zero Galerkin trajectory ODE witness.** -/
-lemma zeroGalerkin_hasDerivAt (n : ℕ) (t : ℝ) :
-    HasDerivAt (zeroGalerkin n)
-      (galerkinVectorField (sqgBox n) (zeroGalerkin n t)) t := by
-  rw [zeroGalerkin_galerkinVectorField, zeroGalerkin_const]
-  exact hasDerivAt_const t _
-
-/-- **Zero-datum Phase 2/5 family via Phase 10 closure.** -/
-noncomputable def zeroGalerkin_gronwallFamily (s : ℝ) :
-    HasGalerkinHsGronwallFamily s zeroGalerkin :=
-  HasGalerkinHsGronwallFamily.of_sqgClosure s
-    (HasSqgGalerkinHsClosure.ofZero s)
-    (fun n t => zeroGalerkin_hasDerivAt n t)
 
 end SqgIdentity
