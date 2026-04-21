@@ -20530,4 +20530,26 @@ noncomputable def HasFourierSynthesis.ofTight
             (h_tight t' ht'))
         t ht)
 
+/-! ### §10.165.A Bolzano–Weierstrass for bounded ℂ-valued sequences
+
+Wrapper around mathlib's `tendsto_subseq_of_bounded` specialised to the
+proper metric space `ℂ`.  Every bounded sequence in `ℂ` admits a
+convergent subsequence. -/
+
+/-- **§10.165.A  Bolzano–Weierstrass on `ℂ`.**  Any sequence `s : ℕ → ℂ`
+bounded in norm by some `M` has a strictly-monotone extractor `φ : ℕ → ℕ`
+and a limit `L : ℂ` such that `s ∘ φ → L`. -/
+theorem exists_convergent_subseq_of_bounded_complex
+    {s : ℕ → ℂ} (M : ℝ) (hs : ∀ n, ‖s n‖ ≤ M) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ L : ℂ,
+      Filter.Tendsto (fun k : ℕ => s (φ k)) Filter.atTop (nhds L) := by
+  have hB : Bornology.IsBounded (Metric.closedBall (0 : ℂ) M) :=
+    Metric.isBounded_closedBall
+  have hIn : ∀ n, s n ∈ Metric.closedBall (0 : ℂ) M := by
+    intro n
+    rw [Metric.mem_closedBall, dist_zero_right]
+    exact hs n
+  obtain ⟨L, _hL, φ, hφ, htends⟩ := tendsto_subseq_of_bounded hB hIn
+  exact ⟨φ, hφ, L, htends⟩
+
 end SqgIdentity
