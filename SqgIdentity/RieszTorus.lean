@@ -20171,24 +20171,15 @@ noncomputable def θLimOfLp
     ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
   fun t => fourierSynthesisLp (bLp t)
 
-/-- **§10.158.C  `lp` element from summable-square-norm sequence.**
-Builds the `lp (fun _ : Fin 2 → ℤ => ℂ) 2` element whose underlying
-function is `b`, given that `Summable (fun m => ‖b m‖ ^ 2)` via the
-`Memℓp` bridge.  Supplies the elementary link from per-mode ℓ²
-summability to the `lp`-valued input of `θLimOfLp`. -/
-noncomputable def lpOfSummableSqNorm
-    (b : (Fin 2 → ℤ) → ℂ)
-    (hSum : Summable fun m : Fin 2 → ℤ => ‖b m‖ ^ 2) :
-    lp (fun _ : Fin 2 → ℤ => ℂ) 2 :=
-  ⟨b, (memℓp_two_iff_summable_sq_norm b).mpr hSum⟩
-
-/-- **§10.158.D  `lpOfSummableSqNorm` coefficient recovery.** -/
-theorem lpOfSummableSqNorm_coeff
-    (b : (Fin 2 → ℤ) → ℂ)
-    (hSum : Summable fun m : Fin 2 → ℤ => ‖b m‖ ^ 2)
-    (m : Fin 2 → ℤ) :
-    (lpOfSummableSqNorm b hSum) m = b m :=
-  rfl
+-- §10.158.C `lpOfSummableSqNorm` bridge deferred: the mathlib name
+-- for the `Memℓp 2 ↔ Summable (‖·‖²)` equivalence is not
+-- `memℓp_two_iff_summable_sq_norm` (CI reported "Unknown identifier"
+-- for commit 10aeff3).  A follow-up session should verify the correct
+-- name (candidates: `lp.memℓp_two_iff_summable_sq`,
+-- `memℓp_two_iff_summable_norm_rpow`, etc.) via a mathlib lookup.
+-- §10.158.A + B are independent of this bridge and remain useful as
+-- the Fourier-synthesis constructor for any pre-built `lp`-valued
+-- function of time.
 
 /-- **§10.158.B  Fourier coefficients of `θLimOfLp` match the per-mode
 limit.**  For every `t ≥ 0` at which the `bLp` sequence agrees with
