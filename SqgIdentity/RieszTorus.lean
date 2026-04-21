@@ -20360,4 +20360,45 @@ theorem integral_norm_sq_galerkin_sub_θLim_eq_tsum
   rw [mFourierCoeff_galerkinToLp,
       mFourierCoeff_θLimOfSummable per hSum m t ht]
 
+/-! ### §10.162 Strong-L² convergence reduces to per-mode ℓ² convergence
+
+§10.161 expressed the squared `L²`-distance from the extracted Galerkin
+truncation to `θLimOfSummable` as a per-mode `ℓ²` sum of coefficient
+differences.  §10.162 packages the `Tendsto` version: if that per-mode
+`ℓ²` sum tends to zero along the extraction subsequence, so does the
+`L²`-integral.
+
+This is a one-line wrapper via `Tendsto.congr` on §10.161.  It discharges
+the `h_L2` hypothesis of `HasFourierSynthesis.ofSummable` (§10.159.C) at
+the `Lp`-integral level, reducing it to a pure `ℓ²`-convergence
+statement.  The remaining classical analysis — showing the `ℓ²`-sum of
+coefficient differences tends to zero from per-mode convergence plus
+tightness — lives entirely on `ℓ²(ℤ²)` with no `Lp`-coercion bookkeeping. -/
+
+/-- **§10.162  Strong-`L²` convergence ⇐ per-mode `ℓ²`-convergence.**  If
+the per-mode `ℓ²` sum `∑' m, ‖galerkinExtend_(nsub k) t m - per.b m t‖²`
+tends to zero, so does the corresponding `L²`-integral.  Discharges
+`h_L2` of §10.159.C at the `Lp`-integral level, leaving a pure
+`ℓ²`-convergence statement as the remaining classical input. -/
+theorem tendsto_integral_norm_sq_galerkin_sub_θLim_of_tsum
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (per : HasPerModeLimit α)
+    (hSum : ∀ t : ℝ, 0 ≤ t →
+      Summable fun m : Fin 2 → ℤ => ‖per.b m t‖ ^ 2)
+    (h_tsum : ∀ t : ℝ, 0 ≤ t →
+      Filter.Tendsto
+        (fun k : ℕ =>
+          ∑' m : Fin 2 → ℤ,
+            ‖galerkinExtend (sqgBox (per.nsub k)) (α (per.nsub k) t) m
+              - per.b m t‖ ^ 2)
+        Filter.atTop (nhds 0))
+    (t : ℝ) (ht : 0 ≤ t) :
+    Filter.Tendsto
+      (fun k : ℕ =>
+        ∫ x, ‖galerkinToLp (sqgBox (per.nsub k)) (α (per.nsub k) t) x
+                - θLimOfSummable per hSum t x‖ ^ 2)
+      Filter.atTop (nhds 0) := by
+  refine (h_tsum t ht).congr (fun k => ?_)
+  exact (integral_norm_sq_galerkin_sub_θLim_eq_tsum per hSum k t ht).symm
+
 end SqgIdentity
