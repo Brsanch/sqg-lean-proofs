@@ -19878,7 +19878,8 @@ theorem sqgGalerkin_modeLipschitz_from_UniformH2
         exact galerkinExtend_mode_lipschitz_of_ODE_bound
           (sqgBox n) (α n) m (Real.sqrt K * fracDerivSymbol 2 m) hst
           h_deriv_local (hCont n m s t hs hst) h_bound
-      · have h_abs : |t - s| = s - t := abs_of_nonpos (sub_nonpos.mpr hts)
+      · have h_abs : |t - s| = s - t := by
+          rw [abs_of_nonpos (sub_nonpos.mpr hts), neg_sub]
         rw [h_abs]
         have h_bound : ∀ τ ∈ Set.Ico t s,
             ‖galerkinRHS (sqgBox n)
