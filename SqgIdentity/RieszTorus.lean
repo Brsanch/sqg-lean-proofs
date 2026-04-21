@@ -25026,6 +25026,49 @@ theorem sum_norm_sq_le_latticeZeta_mul_hsSeminormSq
     _ ≤ latticeZetaConst s * hsSeminormSq s (trigPoly A cf) :=
         mul_le_mul_of_nonneg_right h_zeta h_seminorm_nn
 
+/-! ### §11.31 Unconditional uniform `L²` product bound (`s > 1`)
+
+Composition of §11.24 (uniform-in-support L² product bound,
+parametrised on the lattice weight `C_s(A) = ∑_a ‖a‖^{-2s}`) with
+§11.26.H (concrete `HasLatticeZetaBound` witness at `s > 1`) gives
+the unconditional bound
+
+  `∑_n ‖modeConv(n)‖² ≤ latticeZetaConst s · ‖f‖²_{Ḣˢ} · (∑_b ‖cg b‖²)`
+
+for every finite `A ⊆ ℤ² \ {0}`, `B ⊆ ℤ²`, `s > 1`.  The constant
+`latticeZetaConst s` is uniform in `A` and `B`.  On the SQG Galerkin
+scheme at `A = sqgBox n`, this delivers the uniform-in-`n`
+`L² × Ḣˢ → L²` product bound. -/
+
+/-- **§11.31 — Unconditional uniform L² product bound for `s > 1`.**
+Direct composition of §11.24 with §11.26.H. -/
+theorem l2_trigPolyProduct_le_latticeZeta
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 < s) {A B : Finset (Fin 2 → ℤ)}
+    (hA : (0 : Fin 2 → ℤ) ∉ A) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ latticeZetaConst s * hsSeminormSq s (trigPoly A cf)
+          * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+  have h_u := l2_trigPolyProduct_le_uniform hA (by linarith : (0 : ℝ) < s) cf cg
+  have h_zeta := (hasLatticeZetaBound_latticeZetaConst hs).bound A hA
+  have h_seminorm_nn : 0 ≤ hsSeminormSq s (trigPoly A cf) :=
+    hsSeminormSq_nonneg_any _ _
+  have h_cg_nn : 0 ≤ ∑ b ∈ B, ‖cg b‖ ^ 2 :=
+    Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+  have h_nn_prod : 0 ≤ hsSeminormSq s (trigPoly A cf) * (∑ b ∈ B, ‖cg b‖ ^ 2) :=
+    mul_nonneg h_seminorm_nn h_cg_nn
+  calc ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * hsSeminormSq s (trigPoly A cf)
+          * (∑ b ∈ B, ‖cg b‖ ^ 2) := h_u
+    _ = (∑ a ∈ A, (latticeNorm a) ^ (-(2 * s)))
+          * (hsSeminormSq s (trigPoly A cf) * (∑ b ∈ B, ‖cg b‖ ^ 2)) := by ring
+    _ ≤ latticeZetaConst s
+          * (hsSeminormSq s (trigPoly A cf) * (∑ b ∈ B, ‖cg b‖ ^ 2)) :=
+          mul_le_mul_of_nonneg_right h_zeta h_nn_prod
+    _ = latticeZetaConst s * hsSeminormSq s (trigPoly A cf)
+          * (∑ b ∈ B, ‖cg b‖ ^ 2) := by ring
+
 /-! ### §11.29 Monotone constant form
 
 For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`, the Banach-algebra bound
