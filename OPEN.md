@@ -88,11 +88,7 @@ required by the chain.
 
 ## Infrastructure
 
-### 9. Zenodo webhook
-Broken since v0.4.3. 24 releases have landed without Zenodo archives
-(v0.4.15 through v0.4.38). Fix: re-authorize the webhook at
-`github.com/SolomonB14D3/sqg-lean-proofs/settings/integrations`, then
-confirm a fresh DOI mints on the next tag.
+*(Item 9 resolved — see "Previously-listed items now resolved" below.)*
 
 ## Previously-listed items now resolved
 
@@ -112,6 +108,26 @@ closed** in current code:
 - ~~`push_neg` deprecation~~ — closed in v0.4.32.
 - ~~CI Node 20 deprecation~~ — mitigated in v0.4.32 via
   `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` + `actions/checkout@v6`.
+- ~~9. Zenodo webhook~~ — root cause was *not* the webhook itself
+  (HTTP handshake was fine, returning 202 OK on every fire).  Two
+  compounding issues:
+  (a) GitHub sync started creating an **orphan concept** `19646556`
+      at v0.4.3 instead of continuing canonical concept `19583256`;
+      every later release minted a new record in the orphan chain.
+  (b) `.zenodo.json`'s hardcoded `"version"` field overrode the git
+      tag name in Zenodo's record metadata, producing 14 records all
+      labeled `v0.4.9` (and one `v0.4.37`) under the orphan concept.
+  **Fix (2026-04-21):** canonical concept `19583256` extended forward
+  to v0.4.39 via the REST API (new record `19674045`, DOI
+  `10.5281/zenodo.19674045`, commit `16a00e5` stripped the stale
+  `"version"` field).  Concept DOI badge in README now resolves to
+  v0.4.39.  The 24 orphan records under `19646556` are published and
+  therefore undeletable by the owner — a separate email to
+  `info@zenodo.org` is needed to purge or relink them; this is admin
+  hygiene, not a blocker.  Zenodo's GitHub integration already points
+  at the current `Brsanch/sqg-lean-proofs` repo (not the old
+  `SolomonB14D3/sqg-lean-proofs` slug), so once the user re-enables
+  sync, future tags will archive correctly into the canonical chain.
 
 ## Protocol
 
