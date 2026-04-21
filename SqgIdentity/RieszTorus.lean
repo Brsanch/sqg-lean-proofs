@@ -21476,4 +21476,390 @@ theorem sqg_solution_and_regularity_via_RouteB_uniform_Hs
   rw [hsol]
   exact sqg_regularity_of_aubinLions_uniform_Hs ext M₁ Ms hBoundOne hBoundS s hs0 hs2
 
+/-! ### §10.172 Item 1 structural closure via pointwise `galerkinRHS`
+bound + `L²` conservation (bypasses `hH2`)
+
+Closes the `hH2` (uniform `H⁻²` bound on `galerkinRHS`) analytic input
+of Item 1 **unconditionally** from Galerkin `L²` conservation (§10.97).
+Uses only the pointwise Fourier-side estimate
+
+    `‖galerkinRHS S (galerkinExtend S c) m‖ ≤ latticeNorm m · ∑_{n ∈ S} ‖c n‖²`
+
+derived from:
+
+1. **Divergence-free structure** `∑_j σ_j(ℓ) · ℓ_j = 0`
+   (`sqgVelocitySymbol_divergence_free`) reduces
+   `∑_j σ_j(ℓ) · derivSymbol j (m-ℓ) = i · ∑_j σ_j(ℓ) · m_j`.
+2. **Cauchy–Schwarz in `Fin 2`** + `∑_j ‖σ_j(ℓ)‖² ≤ 1` gives
+   `‖∑_j σ_j(ℓ) · (m_j : ℂ)‖ ≤ latticeNorm m`.
+3. **Cauchy–Schwarz on the finite Fourier convolution**
+   `∑_{ℓ ∈ filter} |c(ℓ)| · |c(m-ℓ)| ≤ ∑_{n ∈ S} |c(n)|²`.
+
+Combined with §10.97 `L²` conservation:
+`∑_{m ∈ sqgBox n} ‖α n τ m‖² ≤ ‖θ₀‖²_{L²}` uniformly, and with §10.153.B
+mean-value theorem on per-mode trajectories, this delivers a per-mode
+Lipschitz constant `L(m) = ‖θ₀‖²_{L²} · latticeNorm m` valid at every
+`(n, m, s, t)`, discharging the `hH2` hypothesis of §10.153.C
+**structurally**.
+
+Together with §10.165 (`hExtract` witness) + §10.155.B
+(`HasPerModeLimit.ofModeLipschitzFamily`), this closes the Item 1 chain
+down to the `HasFourierSynthesis` synthesis step (handled separately
+by §10.159 / §10.164).
+
+### §10.172.A Cauchy–Schwarz in `Fin 2` (real and complex-weight)
+
+The `galerkinKKernel` bound uses `‖∑_j σ_j(ℓ) · m_j‖ ≤ latticeNorm m`.
+We prove the underlying 2-dimensional Cauchy–Schwarz elementarily. -/
+
+/-- **Real 2D Cauchy–Schwarz (squared form).**  Follows from
+`(a₀ b₀ + a₁ b₁)² + (a₀ b₁ - a₁ b₀)² = (a₀² + a₁²)(b₀² + b₁²)`. -/
+lemma fin_two_CS_real_sq (a₀ a₁ b₀ b₁ : ℝ) :
+    (a₀ * b₀ + a₁ * b₁) ^ 2 ≤ (a₀ ^ 2 + a₁ ^ 2) * (b₀ ^ 2 + b₁ ^ 2) := by
+  nlinarith [sq_nonneg (a₀ * b₁ - a₁ * b₀)]
+
+/-- **Complex 2-vector × real 2-vector Cauchy–Schwarz (squared form).**
+Decomposes each complex coefficient into real + imaginary parts and
+applies `fin_two_CS_real_sq` to each. -/
+lemma fin_two_CS_complex_real_sq (z₀ z₁ : ℂ) (a₀ a₁ : ℝ) :
+    ‖z₀ * ((a₀ : ℝ) : ℂ) + z₁ * ((a₁ : ℝ) : ℂ)‖ ^ 2
+      ≤ (‖z₀‖ ^ 2 + ‖z₁‖ ^ 2) * (a₀ ^ 2 + a₁ ^ 2) := by
+  have h_re : (z₀ * ((a₀ : ℝ) : ℂ) + z₁ * ((a₁ : ℝ) : ℂ)).re =
+              z₀.re * a₀ + z₁.re * a₁ := by
+    simp [Complex.add_re, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im]
+  have h_im : (z₀ * ((a₀ : ℝ) : ℂ) + z₁ * ((a₁ : ℝ) : ℂ)).im =
+              z₀.im * a₀ + z₁.im * a₁ := by
+    simp [Complex.add_im, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im]
+  have h_norm_sq : ‖z₀ * ((a₀ : ℝ) : ℂ) + z₁ * ((a₁ : ℝ) : ℂ)‖ ^ 2 =
+      (z₀.re * a₀ + z₁.re * a₁) ^ 2 + (z₀.im * a₀ + z₁.im * a₁) ^ 2 := by
+    rw [Complex.sq_abs, Complex.normSq_apply, h_re, h_im]
+  have h_z0 : ‖z₀‖ ^ 2 = z₀.re ^ 2 + z₀.im ^ 2 := by
+    rw [Complex.sq_abs, Complex.normSq_apply]
+  have h_z1 : ‖z₁‖ ^ 2 = z₁.re ^ 2 + z₁.im ^ 2 := by
+    rw [Complex.sq_abs, Complex.normSq_apply]
+  rw [h_norm_sq, h_z0, h_z1]
+  nlinarith [fin_two_CS_real_sq z₀.re z₁.re a₀ a₁,
+             fin_two_CS_real_sq z₀.im z₁.im a₀ a₁,
+             sq_nonneg a₀, sq_nonneg a₁,
+             sq_nonneg z₀.re, sq_nonneg z₀.im,
+             sq_nonneg z₁.re, sq_nonneg z₁.im]
+
+/-- **`σ(ℓ) · m` coordinate norm bound.**
+`‖∑_j σ_j(ℓ) · (m_j : ℂ)‖ ≤ latticeNorm m`.  Combines `fin_two_CS_complex_real_sq`
+with `sqgVelocitySymbol_sum_sq` (giving `∑_j ‖σ_j(ℓ)‖² = 1` for `ℓ ≠ 0`). -/
+lemma sqgVelocitySymbol_dot_coord_norm_le
+    (ℓ m : Fin 2 → ℤ) :
+    ‖∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)‖
+      ≤ latticeNorm m := by
+  rcases eq_or_ne ℓ (0 : Fin 2 → ℤ) with hℓ | hℓ
+  · subst hℓ
+    simp only [Fin.sum_univ_two, sqgVelocitySymbol_zero, zero_mul, add_zero,
+      norm_zero]
+    exact latticeNorm_nonneg m
+  · rw [Fin.sum_univ_two]
+    have h_sig_sq : ‖sqgVelocitySymbol 0 ℓ‖ ^ 2 + ‖sqgVelocitySymbol 1 ℓ‖ ^ 2 = 1 :=
+      sqgVelocitySymbol_sum_sq hℓ
+    have h_latt_sq : (m 0 : ℝ) ^ 2 + (m 1 : ℝ) ^ 2 = (latticeNorm m) ^ 2 := by
+      rw [latticeNorm_sq, Fin.sum_univ_two]
+    have h_CS := fin_two_CS_complex_real_sq
+      (sqgVelocitySymbol 0 ℓ) (sqgVelocitySymbol 1 ℓ) (m 0 : ℝ) (m 1 : ℝ)
+    rw [h_sig_sq, one_mul, h_latt_sq] at h_CS
+    have h_latt_nn : 0 ≤ latticeNorm m := latticeNorm_nonneg m
+    have := Real.sqrt_le_sqrt h_CS
+    rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq h_latt_nn] at this
+
+/-! ### §10.172.B `galerkinKKernel` norm bound via divergence-free
+
+`galerkinKKernel ℓ (m - ℓ) = ∑_j σ_j(ℓ) · derivSymbol j (m - ℓ) =
+i · ∑_j σ_j(ℓ) · ((m - ℓ) j : ℂ) = i · (∑_j σ_j(ℓ) · m_j - ∑_j σ_j(ℓ) · ℓ_j)
+= i · ∑_j σ_j(ℓ) · m_j` (by div-free).  Apply §10.172.A. -/
+
+/-- **`galerkinKKernel ℓ (m-ℓ)` uniform-in-`ℓ` norm bound.**
+`‖galerkinKKernel ℓ (m-ℓ)‖ ≤ latticeNorm m`.  Consequence of the
+divergence-free identity `σ(ℓ) · ℓ = 0` plus §10.172.A. -/
+lemma galerkinKKernel_norm_le_latticeNorm (ℓ m : Fin 2 → ℤ) :
+    ‖galerkinKKernel ℓ (m - ℓ)‖ ≤ latticeNorm m := by
+  unfold galerkinKKernel
+  have h_term : ∀ j : Fin 2,
+      sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ) =
+      I * (sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)) -
+      I * (sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ)) := by
+    intro j
+    unfold derivSymbol
+    have h_sub : (((m - ℓ) j : ℤ) : ℝ) = (m j : ℝ) - (ℓ j : ℝ) := by
+      simp [Pi.sub_apply, Int.cast_sub]
+    rw [show ((((m - ℓ) j : ℤ) : ℝ) : ℂ) =
+         (((m j : ℝ)) : ℂ) - (((ℓ j : ℝ)) : ℂ) from by
+           rw [h_sub]; push_cast; ring]
+    ring
+  have h_expand :
+      ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ) =
+      I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)) -
+      I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ)) := by
+    calc ∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)
+        = ∑ j : Fin 2, (I * (sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)) -
+                        I * (sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ))) :=
+          Finset.sum_congr rfl (fun j _ => h_term j)
+      _ = (∑ j : Fin 2, I * (sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ))) -
+          (∑ j : Fin 2, I * (sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ))) :=
+          Finset.sum_sub_distrib
+      _ = I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((m j : ℝ)) : ℂ)) -
+          I * (∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ)) := by
+          rw [← Finset.mul_sum, ← Finset.mul_sum]
+  have h_div_free : ∑ j : Fin 2, sqgVelocitySymbol j ℓ * (((ℓ j : ℝ)) : ℂ) = 0 := by
+    have h := sqgVelocitySymbol_divergence_free ℓ 1
+    simp only [mul_one] at h
+    rw [Fin.sum_univ_two]
+    have h_swap : sqgVelocitySymbol 0 ℓ * (((ℓ 0 : ℝ)) : ℂ) +
+                  sqgVelocitySymbol 1 ℓ * (((ℓ 1 : ℝ)) : ℂ) =
+                  (((ℓ 0 : ℝ)) : ℂ) * sqgVelocitySymbol 0 ℓ +
+                  (((ℓ 1 : ℝ)) : ℂ) * sqgVelocitySymbol 1 ℓ := by ring
+    rw [h_swap]; exact h
+  rw [h_expand, h_div_free, mul_zero, sub_zero, norm_mul, Complex.norm_I, one_mul]
+  exact sqgVelocitySymbol_dot_coord_norm_le ℓ m
+
+/-! ### §10.172.C Pointwise `galerkinRHS` bound from `L²` sum
+
+Combines §10.172.B with Young's inequality on the finite Fourier
+convolution to bound `‖galerkinRHS S c m‖` by `latticeNorm m · ∑_n ‖c n‖²`. -/
+
+/-- **Pointwise `galerkinRHS` bound.**
+`‖galerkinRHS S (galerkinExtend S c) m‖ ≤ latticeNorm m · ∑_{n ∈ ↥S} ‖c n‖²`. -/
+theorem galerkinRHS_norm_le_latticeNorm_mul_l2_sum
+    (S : Finset (Fin 2 → ℤ)) [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (m : Fin 2 → ℤ) :
+    ‖galerkinRHS S (galerkinExtend S c) m‖
+      ≤ latticeNorm m * ∑ n : ↥S, ‖c n‖ ^ 2 := by
+  unfold galerkinRHS
+  rw [norm_neg]
+  -- Step 1: triangle + per-term bound via §10.172.B.
+  have h_per_term : ∀ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+      ‖galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ) *
+       (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))‖
+        ≤ ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖ * latticeNorm m := by
+    intros ℓ _
+    rw [norm_mul, norm_mul]
+    have h_K : ‖∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)‖
+        ≤ latticeNorm m := by
+      have := galerkinKKernel_norm_le_latticeNorm ℓ m
+      unfold galerkinKKernel at this
+      exact this
+    exact mul_le_mul_of_nonneg_left h_K
+      (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+  -- Step 2: triangle on the sum.
+  have h_tri_bound :
+      ‖∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+        galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ) *
+        (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))‖
+      ≤ ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+        ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖ * latticeNorm m := by
+    refine (norm_sum_le _ _).trans ?_
+    exact Finset.sum_le_sum h_per_term
+  -- Step 3: factor out latticeNorm m.
+  have h_factor :
+      ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+        ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖ * latticeNorm m
+      = (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖) * latticeNorm m := by
+    rw [← Finset.sum_mul]
+  -- Step 4: Cauchy–Schwarz on the convolution sum bounds it by ∑_S ‖c‖².
+  have h_CS_conv :
+      ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+        ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖
+      ≤ ∑ n : ↥S, ‖c n‖ ^ 2 := by
+    -- Bound each |c(ℓ)||c(m-ℓ)| by Young's (|c(ℓ)|² + |c(m-ℓ)|²)/2,
+    -- then sum: result ≤ ∑_S |c|² using reindexing ℓ ↦ m-ℓ.
+    -- Specifically: ∑_{filter} (|c(ℓ)|² + |c(m-ℓ)|²)/2 ≤
+    --              (∑_{ℓ∈S} |c(ℓ)|²)/2 + (∑_{k∈S} |c(k)|²)/2 = ∑_S |c|².
+    have h_young_term : ∀ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+        ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖ ≤
+        (‖galerkinExtend S c ℓ‖ ^ 2 + ‖galerkinExtend S c (m - ℓ)‖ ^ 2) / 2 := by
+      intros ℓ _
+      have := two_mul_le_add_sq ‖galerkinExtend S c ℓ‖ ‖galerkinExtend S c (m - ℓ)‖
+      linarith
+    have h_young : ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖
+        ≤ ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          (‖galerkinExtend S c ℓ‖ ^ 2 + ‖galerkinExtend S c (m - ℓ)‖ ^ 2) / 2 :=
+      Finset.sum_le_sum h_young_term
+    -- Extend filter to S (nonneg summand).
+    have h_ext : ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          (‖galerkinExtend S c ℓ‖ ^ 2 + ‖galerkinExtend S c (m - ℓ)‖ ^ 2) / 2
+        ≤ ∑ ℓ ∈ S,
+          (‖galerkinExtend S c ℓ‖ ^ 2 + ‖galerkinExtend S c (m - ℓ)‖ ^ 2) / 2 := by
+      refine Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _) ?_
+      intros ℓ _ _
+      have h_nn : 0 ≤ (‖galerkinExtend S c ℓ‖ ^ 2 +
+                       ‖galerkinExtend S c (m - ℓ)‖ ^ 2) / 2 := by
+        have := add_nonneg (sq_nonneg ‖galerkinExtend S c ℓ‖)
+                           (sq_nonneg ‖galerkinExtend S c (m - ℓ)‖)
+        linarith
+      exact h_nn
+    -- Split ∑_S (a+b)/2 = (∑_S a + ∑_S b)/2.
+    have h_split : ∑ ℓ ∈ S,
+          (‖galerkinExtend S c ℓ‖ ^ 2 + ‖galerkinExtend S c (m - ℓ)‖ ^ 2) / 2
+        = ((∑ ℓ ∈ S, ‖galerkinExtend S c ℓ‖ ^ 2) +
+           (∑ ℓ ∈ S, ‖galerkinExtend S c (m - ℓ)‖ ^ 2)) / 2 := by
+      rw [← Finset.sum_add_distrib, ← Finset.sum_div]
+    -- Bound first part: ∑_{ℓ ∈ S} ‖galerkinExtend S c ℓ‖² = ∑_{n : ↥S} ‖c n‖².
+    have h_first : (∑ ℓ ∈ S, ‖galerkinExtend S c ℓ‖ ^ 2) = ∑ n : ↥S, ‖c n‖ ^ 2 := by
+      rw [← Finset.sum_attach S (fun ℓ => ‖galerkinExtend S c ℓ‖ ^ 2)]
+      apply Finset.sum_congr rfl
+      intros n _
+      rw [galerkinExtend_apply_of_mem S c n.2]
+    -- Bound second: ∑_{ℓ ∈ S} ‖galerkinExtend S c (m-ℓ)‖² ≤ ∑_{n : ↥S} ‖c n‖².
+    have h_second : (∑ ℓ ∈ S, ‖galerkinExtend S c (m - ℓ)‖ ^ 2)
+        ≤ ∑ n : ↥S, ‖c n‖ ^ 2 := by
+      -- For ℓ ∈ S with m - ℓ ∉ S, term is 0.  Restrict to filter.
+      have h_filter_eq : (∑ ℓ ∈ S, ‖galerkinExtend S c (m - ℓ)‖ ^ 2) =
+          ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S), ‖galerkinExtend S c (m - ℓ)‖ ^ 2 := by
+        rw [Finset.sum_filter]
+        apply Finset.sum_congr rfl
+        intros ℓ hℓ
+        by_cases hmℓ : m - ℓ ∈ S
+        · simp [hmℓ]
+        · rw [if_neg hmℓ, galerkinExtend_apply_of_not_mem _ _ hmℓ, norm_zero,
+              pow_two, mul_zero]
+      rw [h_filter_eq]
+      -- Reindex ℓ ↦ m - ℓ: the filter is mapped to itself (involution).
+      have h_bij : (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+                    ‖galerkinExtend S c (m - ℓ)‖ ^ 2) =
+                   ∑ k ∈ S.filter (fun k => m - k ∈ S),
+                    ‖galerkinExtend S c k‖ ^ 2 := by
+        apply Finset.sum_nbij' (fun ℓ _ => m - ℓ) (fun k _ => m - k)
+        · intros ℓ hℓ
+          rw [Finset.mem_filter] at hℓ ⊢
+          refine ⟨hℓ.2, ?_⟩
+          rwa [sub_sub_cancel]
+        · intros k hk
+          rw [Finset.mem_filter] at hk ⊢
+          refine ⟨hk.2, ?_⟩
+          rwa [sub_sub_cancel]
+        · intros ℓ _; rw [sub_sub_cancel]
+        · intros k _; rw [sub_sub_cancel]
+        · intros ℓ _; rfl
+      rw [h_bij]
+      -- Bound: ∑_{filter} ‖galerkinExtend S c k‖² ≤ ∑_{S} ‖galerkinExtend S c k‖²
+      --      = ∑_{n : ↥S} ‖c n‖² (by h_first above).
+      calc ∑ k ∈ S.filter (fun k => m - k ∈ S), ‖galerkinExtend S c k‖ ^ 2
+          ≤ ∑ k ∈ S, ‖galerkinExtend S c k‖ ^ 2 := by
+            refine Finset.sum_le_sum_of_subset_of_nonneg
+              (Finset.filter_subset _ _) ?_
+            intros _ _ _; exact sq_nonneg _
+        _ = ∑ n : ↥S, ‖c n‖ ^ 2 := h_first
+    have h_sum_bd : ((∑ ℓ ∈ S, ‖galerkinExtend S c ℓ‖ ^ 2) +
+                    (∑ ℓ ∈ S, ‖galerkinExtend S c (m - ℓ)‖ ^ 2)) / 2
+        ≤ ∑ n : ↥S, ‖c n‖ ^ 2 := by
+      have hnn : 0 ≤ (∑ n : ↥S, ‖c n‖ ^ 2) :=
+        Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+      rw [h_first]
+      linarith [h_second]
+    linarith [h_young, h_ext, h_split.le.trans h_sum_bd]
+  -- Step 5: combine.
+  calc ‖∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+        galerkinExtend S c ℓ * galerkinExtend S c (m - ℓ) *
+        (∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ))‖
+      ≤ _ := h_tri_bound
+    _ = (∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖galerkinExtend S c ℓ‖ * ‖galerkinExtend S c (m - ℓ)‖)
+        * latticeNorm m := h_factor
+    _ ≤ (∑ n : ↥S, ‖c n‖ ^ 2) * latticeNorm m :=
+        mul_le_mul_of_nonneg_right h_CS_conv (latticeNorm_nonneg m)
+    _ = latticeNorm m * ∑ n : ↥S, ‖c n‖ ^ 2 := by ring
+
+/-! ### §10.172.D `HasModeLipschitzFamily` from `L²` conservation
+
+Applies §10.172.C's pointwise bound + §10.153.B's mean-value theorem +
+§10.97's `L²` conservation hypothesis to produce a per-mode Lipschitz
+constant `L(m) = ‖θ₀‖²_{L²} · latticeNorm m` uniform in `n`.  Plugs
+directly into `HasModeLipschitzFamily.ofSqgGalerkinBounds` (§10.152). -/
+
+/-- **Per-mode Lipschitz family from `L²` conservation.**
+Discharges the remaining `hH2`-style analytic hypothesis of §10.153.C
+**structurally**.  The Lipschitz constant `L(m) = M² · latticeNorm m`
+is uniform in `n`, where `M² := ∫ x, ‖θ₀ x‖²` (the `L²` norm squared
+of the initial datum). -/
+theorem sqgGalerkin_modeLipschitz_from_l2_conservation
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hEnergy : ∀ n t, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        ≤ ∫ x, ‖θ₀ x‖ ^ 2)
+    (hDeriv : ∀ (n : ℕ) (τ : ℝ), 0 ≤ τ → ∀ (m : Fin 2 → ℤ), m ∈ sqgBox n →
+      HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m)
+        (Set.Ici τ) τ)
+    (hCont : ∀ (n : ℕ) (m : Fin 2 → ℤ), m ∈ sqgBox n → ∀ (s t : ℝ), 0 ≤ s → s ≤ t →
+      ContinuousOn (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+        (Set.Icc s t)) :
+    ∀ (n : ℕ) (m : Fin 2 → ℤ) (s t : ℝ), 0 ≤ s → 0 ≤ t →
+      ‖galerkinExtend (sqgBox n) (α n t) m - galerkinExtend (sqgBox n) (α n s) m‖
+        ≤ (∫ x, ‖θ₀ x‖ ^ 2) * latticeNorm m * |t - s| := by
+  intros n m s t hs ht
+  set M₂ : ℝ := ∫ x, ‖θ₀ x‖ ^ 2 with hM₂_def
+  have hM₂_nn : 0 ≤ M₂ := by
+    rw [hM₂_def]; exact integral_nonneg (fun _ => sq_nonneg _)
+  by_cases hm : m ∈ sqgBox n
+  · rcases le_total s t with hst | hts
+    · -- s ≤ t: direct MVT application.
+      have h_abs : |t - s| = t - s := abs_of_nonneg (sub_nonneg.mpr hst)
+      rw [h_abs]
+      have h_bound : ∀ τ ∈ Set.Ico s t,
+          ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
+            ≤ M₂ * latticeNorm m := by
+        intros τ hτ
+        have h_τ_nn : 0 ≤ τ := le_trans hs hτ.1
+        have h_pt := galerkinRHS_norm_le_latticeNorm_mul_l2_sum (sqgBox n) (α n τ) m
+        have h_l2 := hEnergy n τ h_τ_nn
+        calc ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
+            ≤ latticeNorm m * ∑ m' : ↥(sqgBox n), ‖α n τ m'‖ ^ 2 := h_pt
+          _ ≤ latticeNorm m * M₂ :=
+              mul_le_mul_of_nonneg_left h_l2 (latticeNorm_nonneg m)
+          _ = M₂ * latticeNorm m := by ring
+      have h_deriv_local : ∀ τ ∈ Set.Ico s t,
+          HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+            (galerkinRHS (sqgBox n)
+              (galerkinExtend (sqgBox n) (α n τ)) m)
+            (Set.Ici τ) τ := fun τ hτ =>
+        hDeriv n τ (le_trans hs hτ.1) m hm
+      have h_lip := galerkinExtend_mode_lipschitz_of_ODE_bound
+        (sqgBox n) (α n) m (M₂ * latticeNorm m) hst
+        h_deriv_local (hCont n m hm s t hs hst) h_bound
+      calc ‖galerkinExtend (sqgBox n) (α n t) m - galerkinExtend (sqgBox n) (α n s) m‖
+          ≤ M₂ * latticeNorm m * (t - s) := h_lip
+        _ = M₂ * latticeNorm m * (t - s) := rfl
+    · -- t ≤ s: reverse.
+      have h_abs : |t - s| = s - t := by
+        rw [abs_of_nonpos (sub_nonpos.mpr hts), neg_sub]
+      rw [h_abs]
+      have h_bound : ∀ τ ∈ Set.Ico t s,
+          ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
+            ≤ M₂ * latticeNorm m := by
+        intros τ hτ
+        have h_τ_nn : 0 ≤ τ := le_trans ht hτ.1
+        have h_pt := galerkinRHS_norm_le_latticeNorm_mul_l2_sum (sqgBox n) (α n τ) m
+        have h_l2 := hEnergy n τ h_τ_nn
+        calc ‖galerkinRHS (sqgBox n) (galerkinExtend (sqgBox n) (α n τ)) m‖
+            ≤ latticeNorm m * ∑ m' : ↥(sqgBox n), ‖α n τ m'‖ ^ 2 := h_pt
+          _ ≤ latticeNorm m * M₂ :=
+              mul_le_mul_of_nonneg_left h_l2 (latticeNorm_nonneg m)
+          _ = M₂ * latticeNorm m := by ring
+      have h_deriv_local : ∀ τ ∈ Set.Ico t s,
+          HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
+            (galerkinRHS (sqgBox n)
+              (galerkinExtend (sqgBox n) (α n τ)) m)
+            (Set.Ici τ) τ := fun τ hτ =>
+        hDeriv n τ (le_trans ht hτ.1) m hm
+      have h_lip := galerkinExtend_mode_lipschitz_of_ODE_bound
+        (sqgBox n) (α n) m (M₂ * latticeNorm m) hts
+        h_deriv_local (hCont n m hm t s ht hts) h_bound
+      rw [norm_sub_rev]
+      exact h_lip
+  · -- m ∉ sqgBox n: both galerkinExtend values are 0.
+    rw [galerkinExtend_apply_of_not_mem _ _ hm,
+        galerkinExtend_apply_of_not_mem _ _ hm, sub_zero, norm_zero]
+    exact mul_nonneg
+      (mul_nonneg hM₂_nn (latticeNorm_nonneg m))
+      (abs_nonneg _)
+
 end SqgIdentity
