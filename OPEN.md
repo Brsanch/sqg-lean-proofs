@@ -284,19 +284,35 @@ Item 5.A delivered across §11.17–§11.21:
   `∑_{(a,b), a+b=n} ‖cf a‖ ≤ ∑_a ‖cf a‖` via `sum_eq_single` pinning
   `b = n - a` (§11.22.C) + sum reorder (§11.22.D) + product-sum
   factorization (§11.22.E).
+- §11.23: **Cauchy–Schwarz bridge `ℓ¹ → Ḣˢ`** for `0 ∉ A`, `s > 0`:
+  `(∑_a ‖cf a‖)² ≤ (∑_a ‖a‖^{-2s}) · hsSeminormSq s (trigPoly A cf)`.
+  Proof: `Finset.sum_mul_sq_le_sq_mul_sq` with
+  `F a = ‖a‖^{-s}`, `G a = ‖a‖^s · ‖cf a‖`; `F · G = ‖cf a‖` via
+  `Real.rpow_add` on `-s + s = 0`; `F² = ‖a‖^{-2s}` and
+  `G² = (σ_s a)² · ‖cf a‖²`.  Key input: `latticeNorm_pos` for
+  `a ≠ 0` (from `0 ∉ A`).
+- §11.24: **Uniform-in-support `L²` product bound.**  Combines §11.22
+  and §11.23 into the finite-lattice uniform bound for `s > 0`,
+  `0 ∉ A`:
+  `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖a‖^{-2s}) · hsSeminormSq s (trigPoly A cf) · (∑_b ‖cg b‖²)`.
+  The lattice-weight factor `∑_{a ∈ A} ‖a‖^{-2s}` is bounded by the
+  global zeta `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s}` which is finite for
+  `s > d/2 = 1`.  For the SQG Galerkin at `A = sqgBox n`, this is
+  uniform in `n`.
 
-**Still outstanding for unconditional Item 5 closure:** Cauchy–Schwarz
-bridge `(∑_a ‖cf a‖)² ≤ C_s · hsSeminormSq s (trigPoly A cf)` for
-`s > d/2 = 1` (requires `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability, §11.23);
-combination of §11.22 + §11.23 into the uniform-in-support Kato–Ponce
-bound (§11.24); wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge.
-Classical remainder ~500–800 LOC.
+**Still outstanding for unconditional Item 5 closure:** global lattice
+zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for `s > 1`
+(needed for truly uniform-in-`n` bound); Peetre-weighted version of
+the uniform bound (`Ḣˢ` rather than `L²` on the product), combining
+§11.24 + §11.19.C; wiring into `HasSqgGalerkinHsClosure` Phase 10
+bridge via the SQG-specific velocity bound on `∇θ_n · u_n` and the
+§10.174 `hBoundS` discharge.  Classical remainder ~400–600 LOC.
 
-With §11.17–§11.22, closing Item 5 now reduces to supplying the
-ℓ¹ → Ḣˢ bridge (Cauchy–Schwarz + lattice `∑ ‖m‖^{-2s}` summability)
-and the SQG-specific velocity bound.  The structural chain from
-Kato-Ponce to uniform `Ḣˢ` Galerkin bound (feeding §10.174's
-`hBoundS`) is in-tree.
+With §11.17–§11.24, closing Item 5 now reduces to the lattice zeta
+summability (a standard real-analysis fact) + Peetre-weighted
+upgrade of §11.24 + the SQG-specific Riesz-transform velocity bound.
+The structural chain from Kato-Ponce to uniform `Ḣˢ` Galerkin bound
+(feeding §10.174's `hBoundS`) is in-tree.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:
