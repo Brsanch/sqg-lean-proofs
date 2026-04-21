@@ -21407,13 +21407,9 @@ theorem sqg_regularity_of_aubinLions_ofZero :
   refine sqg_regularity_of_aubinLions_uniform_Hs (θ := 0)
     (α := fun _ _ _ => (0 : ℂ)) HasAubinLionsExtraction.ofZero 0 (fun _ => 0)
     ?_ ?_
-  · intro _ _ _
-    -- `hsSeminormSq 1 (galerkinToLp ... (fun _ _ _ => 0) _ _) = 0 ≤ 0`.
-    have hZeroFn : ∀ n : ℕ,
-        ((fun _ _ _ => (0 : ℂ)) : ∀ k, ℝ → (↥(sqgBox k) → ℂ)) n
-          = fun _ _ => (0 : ↥(sqgBox n) → ℂ) := fun n => rfl
-    simp [hsSeminormSq, galerkinToLp_zero]
-  · intro _ _ _ _ _ _
-    simp [hsSeminormSq, galerkinToLp_zero]
+  · intro n t _
+    rw [zero_trinary_apply_eq_zero, galerkinToLp_zero, hsSeminormSq_of_zero]
+  · intro n t _ s _ _
+    rw [zero_trinary_apply_eq_zero, galerkinToLp_zero, hsSeminormSq_of_zero]
 
 end SqgIdentity
