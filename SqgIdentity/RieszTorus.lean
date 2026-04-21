@@ -23875,4 +23875,85 @@ private theorem young_peetre_weighted_left
   rw [h_rhs_cf, h_rhs_cg] at h_young
   exact h_young
 
+/-- **§11.25.D — Peetre-weighted Young (second-factor weight on `cg`).**
+Symmetric form of §11.25.C via §11.22 direction (`ℓ¹ × ℓ²`). -/
+private theorem young_peetre_weighted_right
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B,
+      (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+        then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0) ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖) ^ 2
+          * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2) := by
+  -- Embed the real nonneg (weighted) factors into ℂ.
+  set acf : (Fin 2 → ℤ) → ℂ := fun a => ((‖cf a‖ : ℝ) : ℂ) with hacf_def
+  set wcg : (Fin 2 → ℤ) → ℂ := fun b =>
+    ((fracDerivSymbol s b * ‖cg b‖ : ℝ) : ℂ) with hwcg_def
+  have h_wcg_nn : ∀ b, 0 ≤ fracDerivSymbol s b * ‖cg b‖ :=
+    fun b => mul_nonneg (fracDerivSymbol_nonneg _ _) (norm_nonneg _)
+  have h_acf_norm : ∀ a, ‖acf a‖ = ‖cf a‖ := by
+    intro a
+    simp only [hacf_def, Complex.norm_real, Real.norm_eq_abs]
+    exact abs_of_nonneg (norm_nonneg _)
+  have h_wcg_norm : ∀ b, ‖wcg b‖ = fracDerivSymbol s b * ‖cg b‖ := by
+    intro b
+    simp only [hwcg_def, Complex.norm_real, Real.norm_eq_abs]
+    exact abs_of_nonneg (h_wcg_nn b)
+  have h_modeConv_eq : ∀ n,
+      modeConvolution A B acf wcg n
+        = ((∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+          then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0 : ℝ) : ℂ) := by
+    intro n
+    rw [modeConvolution_eq_prod_sum]
+    rw [show ((∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+        then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0 : ℝ) : ℂ)
+        = ∑ p ∈ A ×ˢ B, ((if p.1 + p.2 = n
+          then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0 : ℝ) : ℂ) from by
+      push_cast; rfl]
+    apply Finset.sum_congr rfl
+    intros p _
+    simp only [hacf_def, hwcg_def]
+    by_cases hp : p.1 + p.2 = n
+    · rw [if_pos hp, if_pos hp]
+      push_cast; ring
+    · rw [if_neg hp, if_neg hp]
+      push_cast; rfl
+  have h_sum_nn : ∀ n, 0 ≤ ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+      then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0 := by
+    intro n
+    apply Finset.sum_nonneg
+    intros p _
+    split_ifs
+    · exact mul_nonneg (norm_nonneg _) (h_wcg_nn _)
+    · exact le_refl _
+  have h_norm_eq : ∀ n,
+      ‖modeConvolution A B acf wcg n‖
+        = ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+          then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0 := by
+    intro n
+    rw [h_modeConv_eq n, Complex.norm_real, Real.norm_eq_abs,
+        abs_of_nonneg (h_sum_nn n)]
+  have h_young := hsSeminormSq_zero_trigPolyProduct_le_young A B acf wcg
+  have h_lhs_eq :
+      (∑ n ∈ sumSet A B, ‖modeConvolution A B acf wcg n‖ ^ 2)
+        = ∑ n ∈ sumSet A B, (∑ p ∈ A ×ˢ B, if p.1 + p.2 = n
+            then ‖cf p.1‖ * (fracDerivSymbol s p.2 * ‖cg p.2‖) else 0) ^ 2 := by
+    apply Finset.sum_congr rfl
+    intros n _
+    rw [h_norm_eq n]
+  rw [h_lhs_eq] at h_young
+  have h_rhs_cf :
+      (∑ a ∈ A, ‖acf a‖) = ∑ a ∈ A, ‖cf a‖ := by
+    apply Finset.sum_congr rfl
+    intros a _
+    rw [h_acf_norm a]
+  have h_rhs_cg :
+      (∑ b ∈ B, ‖wcg b‖ ^ 2)
+        = ∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2 := by
+    apply Finset.sum_congr rfl
+    intros b _
+    rw [h_wcg_norm b, mul_pow]
+  rw [h_rhs_cf, h_rhs_cg] at h_young
+  exact h_young
+
 end SqgIdentity
