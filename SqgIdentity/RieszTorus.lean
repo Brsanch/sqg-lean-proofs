@@ -22992,4 +22992,94 @@ lemma trigPolyProduct_zero_right
   intros n _
   rw [zero_smul]
 
+/-! ### §11.18 Parseval + Cauchy–Schwarz on `trigPolyProduct`
+
+Parseval identity for the `Ḣˢ` seminorm of the trig-poly product, and
+a Cauchy–Schwarz bound on the mode convolution that yields a concrete
+(support-dependent) `L²` bound on the product. -/
+
+/-- **§11.18.A — Parseval for the trig-poly product's `Ḣˢ` seminorm.**
+The tsum over `Fin 2 → ℤ` collapses to a finite sum over `sumSet A B`
+because the Fourier coefficients vanish off this set. -/
+theorem hsSeminormSq_trigPolyProduct
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B cf cg)
+      = ∑ n ∈ sumSet A B,
+          (fracDerivSymbol s n) ^ 2 * ‖modeConvolution A B cf cg n‖ ^ 2 := by
+  unfold hsSeminormSq
+  have hZeroOff : ∀ n ∉ sumSet A B,
+      (fracDerivSymbol s n) ^ 2
+          * ‖mFourierCoeff (trigPolyProduct A B cf cg) n‖ ^ 2 = 0 := by
+    intros n hn
+    rw [mFourierCoeff_trigPolyProduct_eq_zero_of_not_mem hn, norm_zero]
+    ring
+  rw [tsum_eq_sum (s := sumSet A B) (fun n hn => hZeroOff n hn)]
+  apply Finset.sum_congr rfl
+  intros m _
+  rw [mFourierCoeff_trigPolyProduct]
+
+/-- **§11.18.B — `modeConvolution` as a single sum over `A ×ˢ B`.**
+The double sum `∑ a ∈ A, ∑ b ∈ B, ...` equals the single product sum. -/
+lemma modeConvolution_eq_prod_sum
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    modeConvolution A B cf cg n
+      = ∑ p ∈ A ×ˢ B, if p.1 + p.2 = n then cf p.1 * cg p.2 else 0 := by
+  unfold modeConvolution
+  rw [Finset.sum_product]
+
+/-- **§11.18.C — Cauchy–Schwarz on `modeConvolution`.**
+`|∑ χ · cf · cg|² ≤ (A ×ˢ B).card · ∑ χ · |cf|² · |cg|²`.  The support-
+dependent factor `|A|·|B|` is the coarsest Cauchy–Schwarz constant;
+§11.20 refines with the Peetre inequality to replace it. -/
+theorem modeConvolution_normSq_le_card_mul_sum
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) (n : Fin 2 → ℤ) :
+    ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (A ×ˢ B).card *
+          (∑ p ∈ A ×ˢ B,
+              if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0) := by
+  rw [modeConvolution_eq_prod_sum]
+  -- Drop to the real-absolute-value form.
+  set f : (Fin 2 → ℤ) × (Fin 2 → ℤ) → ℂ :=
+    fun p => if p.1 + p.2 = n then cf p.1 * cg p.2 else 0 with hf_def
+  have hNormSq_term : ∀ p : (Fin 2 → ℤ) × (Fin 2 → ℤ),
+      ‖f p‖ ^ 2
+        = if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0 := by
+    intro p
+    simp only [hf_def]
+    split_ifs
+    · rw [norm_mul, mul_pow]
+    · rw [norm_zero, pow_two, zero_mul]
+  -- Triangle: `‖∑ f p‖ ≤ ∑ ‖f p‖`.
+  have hTriangle : ‖∑ p ∈ A ×ˢ B, f p‖ ≤ ∑ p ∈ A ×ˢ B, ‖f p‖ :=
+    norm_sum_le _ _
+  -- Cauchy–Schwarz on real sum: `(∑ ‖f‖)² ≤ card · ∑ ‖f‖²`.
+  have hCS : (∑ p ∈ A ×ˢ B, ‖f p‖) ^ 2
+      ≤ (A ×ˢ B).card * ∑ p ∈ A ×ˢ B, ‖f p‖ ^ 2 := by
+    have hN_nn : ∀ p ∈ A ×ˢ B, (0 : ℝ) ≤ ‖f p‖ := fun p _ => norm_nonneg _
+    -- `(∑ a)² ≤ card · ∑ a²` via Finset.inner_mul_le_norm_mul_norm applied
+    -- to `a = 1, b = ‖f‖`.
+    have h_ones : (∑ p ∈ A ×ˢ B, (1 : ℝ) * ‖f p‖) ^ 2
+        ≤ (∑ p ∈ A ×ˢ B, (1 : ℝ) ^ 2) * (∑ p ∈ A ×ˢ B, ‖f p‖ ^ 2) :=
+      Finset.inner_mul_le_norm_mul_norm (𝕜 := ℝ) _ _ _
+    have h_simp₁ : ∀ p, (1 : ℝ) * ‖f p‖ = ‖f p‖ := fun _ => one_mul _
+    have h_simp₂ : (∑ p ∈ A ×ˢ B, (1 : ℝ) ^ 2) = (A ×ˢ B).card := by
+      simp
+    rw [Finset.sum_congr rfl (fun p _ => h_simp₁ p)] at h_ones
+    rw [h_simp₂] at h_ones
+    exact h_ones
+  -- Assemble: `‖∑ f‖² ≤ (∑ ‖f‖)² ≤ card · ∑ ‖f‖²`.
+  have hSumNn : (0 : ℝ) ≤ ∑ p ∈ A ×ˢ B, ‖f p‖ :=
+    Finset.sum_nonneg (fun p _ => norm_nonneg _)
+  have hSq : ‖∑ p ∈ A ×ˢ B, f p‖ ^ 2 ≤ (∑ p ∈ A ×ˢ B, ‖f p‖) ^ 2 := by
+    exact pow_le_pow_left₀ (norm_nonneg _) hTriangle 2
+  calc ‖∑ p ∈ A ×ˢ B, f p‖ ^ 2
+      ≤ (∑ p ∈ A ×ˢ B, ‖f p‖) ^ 2 := hSq
+    _ ≤ (A ×ˢ B).card * ∑ p ∈ A ×ˢ B, ‖f p‖ ^ 2 := hCS
+    _ = (A ×ˢ B).card * ∑ p ∈ A ×ˢ B,
+          (if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0) := by
+          rw [Finset.sum_congr rfl (fun p _ => hNormSq_term p)]
+
 end SqgIdentity
