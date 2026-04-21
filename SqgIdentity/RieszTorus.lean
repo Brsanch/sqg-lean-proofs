@@ -23059,11 +23059,11 @@ theorem modeConvolution_normSq_le_card_mul_sum
   have hCS : (∑ p ∈ A ×ˢ B, ‖f p‖) ^ 2
       ≤ (A ×ˢ B).card * ∑ p ∈ A ×ˢ B, ‖f p‖ ^ 2 := by
     have hN_nn : ∀ p ∈ A ×ˢ B, (0 : ℝ) ≤ ‖f p‖ := fun p _ => norm_nonneg _
-    -- `(∑ a)² ≤ card · ∑ a²` via Finset.inner_mul_le_norm_mul_norm applied
-    -- to `a = 1, b = ‖f‖`.
+    -- `(∑ a)² ≤ card · ∑ a²` via `Finset.sum_mul_sq_le_sq_mul_sq`
+    -- (discrete Cauchy–Schwarz) applied to `a = 1, b = ‖f‖`.
     have h_ones : (∑ p ∈ A ×ˢ B, (1 : ℝ) * ‖f p‖) ^ 2
         ≤ (∑ p ∈ A ×ˢ B, (1 : ℝ) ^ 2) * (∑ p ∈ A ×ˢ B, ‖f p‖ ^ 2) :=
-      Finset.inner_mul_le_norm_mul_norm (𝕜 := ℝ) _ _ _
+      Finset.sum_mul_sq_le_sq_mul_sq _ _ _
     have h_simp₁ : ∀ p, (1 : ℝ) * ‖f p‖ = ‖f p‖ := fun _ => one_mul _
     have h_simp₂ : (∑ p ∈ A ×ˢ B, (1 : ℝ) ^ 2) = (A ×ˢ B).card := by
       simp
@@ -23081,5 +23081,64 @@ theorem modeConvolution_normSq_le_card_mul_sum
     _ = (A ×ˢ B).card * ∑ p ∈ A ×ˢ B,
           (if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0) := by
           rw [Finset.sum_congr rfl (fun p _ => hNormSq_term p)]
+
+/-! ### §11.19 Peetre lattice inequality on `latticeNorm` / `fracDerivSymbol`
+
+For `s ≥ 1`, the Peetre inequality on `ℤ²` gives
+  `‖a + b‖^s ≤ 2^{s-1} · (‖a‖^s + ‖b‖^s)`.
+This is the pointwise Fourier-side input for Kato–Ponce: the symbol
+`σ_s(m) = ‖m‖^s` splits across the convolution. -/
+
+/-- **§11.19.A — Peetre lattice inequality.** For `s ≥ 1` and
+`a, b : ℤ²`:
+  `‖a + b‖^s ≤ 2^{s-1} · (‖a‖^s + ‖b‖^s)`.
+Proof: triangle inequality + convexity of `t ↦ t^s` on `[0, ∞)`. -/
+lemma latticeNorm_add_rpow_le
+    {s : ℝ} (hs : 1 ≤ s) (a b : Fin 2 → ℤ) :
+    (latticeNorm (a + b)) ^ s
+      ≤ 2 ^ (s - 1) * ((latticeNorm a) ^ s + (latticeNorm b) ^ s) := by
+  have h_triangle : latticeNorm (a + b) ≤ latticeNorm a + latticeNorm b :=
+    latticeNorm_add_le a b
+  have hs_nn : 0 ≤ s := le_trans zero_le_one hs
+  have hab_nn : 0 ≤ latticeNorm a + latticeNorm b :=
+    add_nonneg (latticeNorm_nonneg _) (latticeNorm_nonneg _)
+  have h_mono : (latticeNorm (a + b)) ^ s ≤ (latticeNorm a + latticeNorm b) ^ s :=
+    Real.rpow_le_rpow (latticeNorm_nonneg _) h_triangle hs_nn
+  have h_jensen : (latticeNorm a + latticeNorm b) ^ s
+      ≤ 2 ^ (s - 1) * ((latticeNorm a) ^ s + (latticeNorm b) ^ s) :=
+    Real.add_rpow_le_mul_rpow_of_nonneg (latticeNorm_nonneg _)
+      (latticeNorm_nonneg _) hs
+  linarith
+
+/-- **§11.19.B — Uniform expansion `(σ_s x)^2 = ‖x‖^{2s}` for `s ≥ 1`.**
+Both branches (`x = 0` and `x ≠ 0`) evaluate to `(latticeNorm x)^(2s)`
+via `Real.zero_rpow` and `Real.rpow_mul`. -/
+lemma fracDerivSymbol_sq_eq_latticeNorm_rpow
+    {s : ℝ} (hs : 1 ≤ s) (x : Fin 2 → ℤ) :
+    (fracDerivSymbol s x) ^ 2 = (latticeNorm x) ^ (2 * s) := by
+  have h2s_pos : (0 : ℝ) < 2 * s := by linarith
+  have h2s_ne : (2 * s : ℝ) ≠ 0 := ne_of_gt h2s_pos
+  by_cases hx : x = 0
+  · rw [hx, fracDerivSymbol_zero,
+        (latticeNorm_eq_zero_iff (0 : Fin 2 → ℤ)).mpr rfl]
+    rw [show (0 : ℝ) ^ 2 = 0 from by ring, Real.zero_rpow h2s_ne]
+  · rw [fracDerivSymbol_of_ne_zero s hx,
+        ← Real.rpow_natCast ((latticeNorm x) ^ s) 2,
+        ← Real.rpow_mul (latticeNorm_nonneg _)]
+    ring_nf
+
+/-- **§11.19.C — Peetre on `fracDerivSymbol` squared.** For `s ≥ 1` and
+any `a, b : ℤ²`:
+  `(σ_s(a+b))^2 ≤ 2^{2s-1} · ((σ_s a)^2 + (σ_s b)^2)`. -/
+lemma fracDerivSymbol_sq_add_le
+    {s : ℝ} (hs : 1 ≤ s) (a b : Fin 2 → ℤ) :
+    (fracDerivSymbol s (a + b)) ^ 2
+      ≤ 2 ^ (2 * s - 1)
+          * ((fracDerivSymbol s a) ^ 2 + (fracDerivSymbol s b) ^ 2) := by
+  rw [fracDerivSymbol_sq_eq_latticeNorm_rpow hs,
+      fracDerivSymbol_sq_eq_latticeNorm_rpow hs,
+      fracDerivSymbol_sq_eq_latticeNorm_rpow hs]
+  have h_2s : 1 ≤ 2 * s := by linarith
+  exact latticeNorm_add_rpow_le h_2s a b
 
 end SqgIdentity
