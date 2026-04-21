@@ -24521,4 +24521,62 @@ lemma max_abs_coord_le_latticeNorm (m : Fin 2 → ℤ) :
     max (|(m 0 : ℝ)|) (|(m 1 : ℝ)|) ≤ latticeNorm m :=
   max_le (abs_coord_le_latticeNorm m 0) (abs_coord_le_latticeNorm m 1)
 
+/-! ### §11.26.C Annular shell on `ℤ²` -/
+
+/-- **§11.26.C — Annular shell at `ℓ∞`-radius `k`.**  Subset of `ℤ²`
+with `max |m 0| |m 1| = k` and `m ≠ 0`.  For `k = 0` this is empty
+(only `m = 0` has `max = 0`, excluded by nonzero constraint).  For
+`k ≥ 1`, contains at most `8k + 4` points. -/
+noncomputable def annularShell (k : ℕ) : Finset (Fin 2 → ℤ) :=
+  (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)).filter
+    (fun m => m ≠ 0 ∧ (|m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ)))
+
+/-- **§11.26.C₁ — Shell membership characterization.** -/
+lemma mem_annularShell_iff (k : ℕ) (m : Fin 2 → ℤ) :
+    m ∈ annularShell k ↔
+      (∀ i : Fin 2, |m i| ≤ (k : ℤ)) ∧ m ≠ 0
+        ∧ (|m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ)) := by
+  unfold annularShell
+  simp only [Finset.mem_filter, Fintype.mem_piFinset, Finset.mem_Icc]
+  constructor
+  · rintro ⟨h_Icc, h_ne, h_max⟩
+    refine ⟨fun i => abs_le.mpr (h_Icc i), h_ne, h_max⟩
+  · rintro ⟨h_max, h_ne, h_eq⟩
+    refine ⟨fun i => ?_, h_ne, h_eq⟩
+    have := h_max i
+    exact ⟨(abs_le.mp this).1, (abs_le.mp this).2⟩
+
+/-- **§11.26.C₂ — On shell at level `k`, `latticeNorm m ≥ k`.**  Each
+shell member has one coordinate with `|m i| = k`, so by §11.26.B
+`latticeNorm m ≥ |m i| = k`. -/
+lemma latticeNorm_ge_of_mem_annularShell (k : ℕ) (m : Fin 2 → ℤ)
+    (hm : m ∈ annularShell k) :
+    (k : ℝ) ≤ latticeNorm m := by
+  rw [mem_annularShell_iff] at hm
+  rcases hm.2.2 with h0 | h1
+  · have h_abs : |(m 0 : ℝ)| = (k : ℝ) := by
+      have h_cast : ((|m 0| : ℤ) : ℝ) = ((k : ℤ) : ℝ) := by exact_mod_cast h0
+      simpa [Int.cast_abs] using h_cast
+    calc (k : ℝ) = |(m 0 : ℝ)| := h_abs.symm
+      _ ≤ latticeNorm m := abs_coord_le_latticeNorm m 0
+  · have h_abs : |(m 1 : ℝ)| = (k : ℝ) := by
+      have h_cast : ((|m 1| : ℤ) : ℝ) = ((k : ℤ) : ℝ) := by exact_mod_cast h1
+      simpa [Int.cast_abs] using h_cast
+    calc (k : ℝ) = |(m 1 : ℝ)| := h_abs.symm
+      _ ≤ latticeNorm m := abs_coord_le_latticeNorm m 1
+
+/-- **§11.26.C₃ — Shell at level `0` is empty.** -/
+lemma annularShell_zero : annularShell 0 = ∅ := by
+  unfold annularShell
+  ext m
+  simp only [Finset.mem_filter, Fintype.mem_piFinset, Finset.mem_Icc,
+    Finset.not_mem_empty, iff_false]
+  rintro ⟨h_Icc, h_ne, h_eq⟩
+  apply h_ne
+  funext i
+  have h := h_Icc i
+  push_cast at h
+  interval_cases (m i)
+  all_goals rfl
+
 end SqgIdentity
