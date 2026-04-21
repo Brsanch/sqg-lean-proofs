@@ -356,11 +356,30 @@ Item 5.A delivered across §11.17–§11.21:
   Structural sanity check that the Banach-algebra bound reduces
   correctly on zero factors.
 
+**§11.26 lattice zeta partial progress (incremental toward concrete witness):**
+- §11.26.A `summable_one_div_nat_rpow_at_two_s_sub_one` — 1D p-series at
+  `p = 2s - 1` for `s > 1`.  Application of mathlib's
+  `Real.summable_one_div_nat_rpow`.
+- §11.26.B `abs_coord_le_latticeNorm` — coord bound `|(n j : ℝ)| ≤ ‖n‖`.
+- §11.26.B₂ `max_abs_coord_le_latticeNorm` — `ℓ∞` ≤ `ℓ²` for `Fin 2 → ℤ`.
+- §11.26.C `annularShell k` — shell at `ℓ∞`-radius `k` (filter of piFinset).
+- §11.26.C₁ `mem_annularShell_iff` — membership characterization.
+- §11.26.C₂ `latticeNorm_ge_of_mem_annularShell` — `‖m‖ ≥ k` on shell k.
+- §11.26.C₃ `annularShell_zero` — shell at k=0 empty.
+- §11.26.D `card_annularShell_le` — `|shell k| ≤ 8k + 4` via filter-or
+  decomposition + `Fintype.card_filter_piFinset_eq_of_mem`.
+- §11.26.E `sum_annularShell_rpow_le` — shell-sum bound `(8k+4) · k^{-2s}`
+  for `k ≥ 1`, `s > 0` via pointwise `(‖m‖)^{-2s} ≤ k^{-2s}` +
+  cardinality bound + `mul_le_mul_of_nonneg_right`.
+- §11.26.F₁/F₂ `latticeZetaConst s`, `latticeZetaConst_nonneg` —
+  the candidate uniform constant `8·ζ(2s-1) + 4·ζ(2s)` (tsum form)
+  and its nonnegativity.
+
 **Still outstanding for unconditional Item 5 closure:**
-- Global lattice zeta summability `∑_{a ∈ ℤ² \ {0}} ‖a‖^{-2s} < ∞` for
-  `s > d/2 = 1` on `𝕋²` (standard 2D real-analysis fact; ~150 LOC).
-  Provides concrete `HasLatticeZetaBound s C` witness, discharging
-  §11.25.G's remaining hypothesis.
+- Full `HasLatticeZetaBound s (latticeZetaConst s)` proof (~80 LOC):
+  shell-partition of arbitrary `A ⊆ ℤ² \ {0}` via `shellOf a`, disjoint
+  `biUnion` decomposition, partial-sum ≤ tsum via
+  `sum_le_tsum` + `summable_one_div_nat_rpow` summability witness.
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the
   SQG-specific velocity bound on `∇θ_n · u_n` (Riesz transform
   `u = R θ` + commutator Kato–Ponce estimate for the log-derivative
