@@ -23092,7 +23092,8 @@ This is the pointwise Fourier-side input for Kato–Ponce: the symbol
 /-- **§11.19.A — Peetre lattice inequality.** For `s ≥ 1` and
 `a, b : ℤ²`:
   `‖a + b‖^s ≤ 2^{s-1} · (‖a‖^s + ‖b‖^s)`.
-Proof: triangle inequality + convexity of `t ↦ t^s` on `[0, ∞)`. -/
+Proof: triangle inequality on `latticeNorm` + convexity of `t ↦ t^s`
+on `[0, ∞)` (via `NNReal.rpow_add_le_mul_rpow_add_rpow`). -/
 lemma latticeNorm_add_rpow_le
     {s : ℝ} (hs : 1 ≤ s) (a b : Fin 2 → ℤ) :
     (latticeNorm (a + b)) ^ s
@@ -23100,14 +23101,22 @@ lemma latticeNorm_add_rpow_le
   have h_triangle : latticeNorm (a + b) ≤ latticeNorm a + latticeNorm b :=
     latticeNorm_add_le a b
   have hs_nn : 0 ≤ s := le_trans zero_le_one hs
-  have hab_nn : 0 ≤ latticeNorm a + latticeNorm b :=
-    add_nonneg (latticeNorm_nonneg _) (latticeNorm_nonneg _)
   have h_mono : (latticeNorm (a + b)) ^ s ≤ (latticeNorm a + latticeNorm b) ^ s :=
     Real.rpow_le_rpow (latticeNorm_nonneg _) h_triangle hs_nn
+  -- Convexity: `(x+y)^s ≤ 2^{s-1}·(x^s + y^s)` for `s ≥ 1`, `x, y ≥ 0`.
+  -- Lift to `NNReal` to use `NNReal.rpow_add_le_mul_rpow_add_rpow`.
   have h_jensen : (latticeNorm a + latticeNorm b) ^ s
-      ≤ 2 ^ (s - 1) * ((latticeNorm a) ^ s + (latticeNorm b) ^ s) :=
-    Real.add_rpow_le_mul_rpow_of_nonneg (latticeNorm_nonneg _)
-      (latticeNorm_nonneg _) hs
+      ≤ 2 ^ (s - 1) * ((latticeNorm a) ^ s + (latticeNorm b) ^ s) := by
+    set x : ℝ := latticeNorm a with hx_def
+    set y : ℝ := latticeNorm b with hy_def
+    have hx_nn : 0 ≤ x := latticeNorm_nonneg _
+    have hy_nn : 0 ≤ y := latticeNorm_nonneg _
+    lift x to NNReal using hx_nn with xN
+    lift y to NNReal using hy_nn with yN
+    have hNN : (xN + yN : NNReal) ^ s
+        ≤ (2 : NNReal) ^ (s - 1) * (xN ^ s + yN ^ s) :=
+      NNReal.rpow_add_le_mul_rpow_add_rpow xN yN hs
+    exact_mod_cast hNN
   linarith
 
 /-- **§11.19.B — Uniform expansion `(σ_s x)^2 = ‖x‖^{2s}` for `s ≥ 1`.**
