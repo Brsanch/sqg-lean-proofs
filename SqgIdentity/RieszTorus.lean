@@ -19792,15 +19792,18 @@ in the millions — the actual loop culprit — allowing a targeted
 `attribute [local irreducible]` fix. -/
 
 set_option maxHeartbeats 400000 in
-set_option diagnostics true in
-set_option diagnostics.threshold 100 in
-/-- **§10.153.C (diagnostic)** Per-mode Lipschitz constant for the
-uniform-`H⁻²` SQG Galerkin family, in existential form consumable by
-§10.152.  Composes §10.153.A (per-mode upper bound on `galerkinRHS`)
-with §10.153.B (MVT on the per-mode trajectory) across the
-`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split.
-
-Run with `diagnostics true` to reveal the loop culprit. -/
+-- Diagnostic (v0.4.39) identified the loop as DecidableEq-instance
+-- synthesis on `Fin 2 → ℤ` / `↥(sqgBox _)` via `Int.decEq ↦ 70k`,
+-- `Multiset.decidableForallMultiset ↦ 55k`, `dite ↦ 155k`, rather than
+-- `sqgBox` or `galerkinExtend` unfolding (those hit only 1.9k).  Fix:
+-- `classical` at the top of the tactic proof pins `Classical.decEq` as
+-- the primary `DecidableEq (Fin 2 → ℤ)` instance, bypassing the
+-- computable reduction chain through `Int.decEq` / `List.rec`.
+/-- **§10.153.C** Per-mode Lipschitz constant for the uniform-`H⁻²`
+SQG Galerkin family, in existential form consumable by §10.152.
+Composes §10.153.A (per-mode upper bound on `galerkinRHS`) with
+§10.153.B (MVT on the per-mode trajectory) across the
+`m = 0` / `m ≠ 0` split and the `s ≤ t` / `t ≤ s` split. -/
 theorem sqgGalerkin_modeLipschitz_from_UniformH2
     [DecidableEq (Fin 2 → ℤ)]
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
@@ -19819,6 +19822,7 @@ theorem sqgGalerkin_modeLipschitz_from_UniformH2
         ‖galerkinExtend (sqgBox n) (α n t) m
           - galerkinExtend (sqgBox n) (α n s) m‖
           ≤ L m * |t - s| := by
+  classical
   refine ⟨fun m => if m = 0 then 0 else Real.sqrt K * fracDerivSymbol 2 m,
     ?hNN, ?hHolds⟩
   case hNN =>
