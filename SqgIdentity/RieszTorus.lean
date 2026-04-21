@@ -24636,10 +24636,15 @@ lemma card_annularShell_le (k : ℕ) :
           (s := fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) i ha]
         rw [Finset.prod_const]
         have h_erase_card : ((Finset.univ : Finset (Fin 2)).erase i).card = 1 := by
-          rw [Finset.card_erase_of_mem (Finset.mem_univ i), Fintype.card_fin]
+          rw [Finset.card_erase_of_mem (Finset.mem_univ i), Finset.card_univ,
+              Fintype.card_fin]
         rw [h_erase_card, pow_one, Int.card_Icc]
         omega
-      · rw [Fintype.filter_piFinset_of_notMem _ _ _ ha, Finset.card_empty]
+      · have h_empty : Finset.filter (fun m : Fin 2 → ℤ => m i = a)
+            (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) = ∅ :=
+          Fintype.filter_piFinset_of_notMem
+            (fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) i a ha
+        rw [h_empty, Finset.card_empty]
         omega
     have h_k := h_card_pt (k : ℤ)
     have h_neg_k := h_card_pt (-(k : ℤ))
