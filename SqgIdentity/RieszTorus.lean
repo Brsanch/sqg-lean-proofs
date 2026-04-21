@@ -22816,8 +22816,9 @@ lemma fourierTruncate_zero
   unfold fourierTruncate trigPoly
   apply Finset.sum_eq_zero
   intros n _
-  -- Beta-reduce the lambda, then rewrite mFourierCoeff 0 = 0, close via zero_smul.
-  simp [mFourierCoeff_zero]
+  show mFourierCoeff (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) n •
+    (mFourierLp 2 n : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) = 0
+  rw [mFourierCoeff_zero, zero_smul]
 
 lemma lpProjector_zero
     (N : ℕ) :
