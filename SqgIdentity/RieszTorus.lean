@@ -23150,4 +23150,222 @@ lemma fracDerivSymbol_sq_add_le
   have h_2s : 1 ≤ 2 * s := by linarith
   exact latticeNorm_add_rpow_le h_2s a b
 
+/-- **§11.19.D — Ḣˢ seminorm of a trig polynomial** — direct finite-sum
+formula.  The tsum collapses since `mFourierCoeff (trigPoly A a) m = 0`
+for `m ∉ A`. -/
+theorem hsSeminormSq_trigPoly
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPoly A a)
+      = ∑ m ∈ A, (fracDerivSymbol s m) ^ 2 * ‖a m‖ ^ 2 := by
+  unfold hsSeminormSq
+  have hZeroOff : ∀ n ∉ A,
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (trigPoly A a) n‖ ^ 2 = 0 := by
+    intros n hn
+    rw [mFourierCoeff_trigPoly_eq_zero_of_not_mem A a hn, norm_zero]
+    ring
+  rw [tsum_eq_sum (s := A) (fun n hn => hZeroOff n hn)]
+  apply Finset.sum_congr rfl
+  intros m hm
+  rw [mFourierCoeff_trigPoly, if_pos hm]
+
+/-! ### §11.20 Concrete tame Kato–Ponce on `trigPolyProduct` (support-dependent)
+
+Combines §11.18.C (Cauchy–Schwarz on `modeConvolution`) with §11.19.C
+(Peetre inequality) to give the first concrete tame product bound on
+`trigPolyProduct`:
+
+  `‖fg‖²_{Ḣˢ} ≤ (A×B).card · 2^{2s-1}
+                · ((∑_a σ_s(a)² ‖cf a‖²)·(∑_b ‖cg b‖²)
+                   + (∑_a ‖cf a‖²)·(∑_b σ_s(b)² ‖cg b‖²))`
+
+The `(A×B).card` factor is the support-dependent Cauchy–Schwarz
+constant; a uniform (in support) bound requires Young's ℓ¹×ℓ² → ℓ²
+plus `∑_{m ∈ ℤ²} ‖m‖^{-2s}` summability for `s > d/2 = 1`, which is
+deferred to a follow-on section. -/
+
+/-- **§11.20.A — Sum reorder on `sumSet A B × (A ×ˢ B)` indicator sums.**
+For every function `X : (Fin 2 → ℤ) × (Fin 2 → ℤ) → ℝ`, summing the
+indicator `χ(p.1 + p.2 = n)` across `n ∈ sumSet A B` picks the unique
+`n = p.1 + p.2`, collapsing the double sum to `∑_{p ∈ A ×ˢ B} X p`. -/
+private lemma sum_sumSet_pair_reorder
+    [DecidableEq (Fin 2 → ℤ)]
+    (A B : Finset (Fin 2 → ℤ)) (X : (Fin 2 → ℤ) × (Fin 2 → ℤ) → ℝ) :
+    ∑ n ∈ sumSet A B, ∑ p ∈ A ×ˢ B, (if p.1 + p.2 = n then X p else 0)
+      = ∑ p ∈ A ×ˢ B, X p := by
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intros p hp
+  rw [Finset.mem_product] at hp
+  have hsum : p.1 + p.2 ∈ sumSet A B :=
+    mem_sumSet_iff.mpr ⟨p.1, hp.1, p.2, hp.2, rfl⟩
+  rw [Finset.sum_eq_single (p.1 + p.2)]
+  · rw [if_pos rfl]
+  · intros n _ hn_ne
+    exact if_neg (Ne.symm hn_ne)
+  · intro h_nm; exact absurd hsum h_nm
+
+/-- **§11.20.B — Ḣˢ seminorm of the trig-poly product: single-sum form.**
+Combines Parseval (§11.18.A) + Cauchy–Schwarz on `modeConvolution`
+(§11.18.C) + sum reorder (§11.20.A) to reduce to a single sum over
+`A ×ˢ B` with weight `(σ_s(a+b))²`. -/
+private lemma hsSeminormSq_trigPolyProduct_le_sum_pair
+    [DecidableEq (Fin 2 → ℤ)]
+    (s : ℝ) (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ (A ×ˢ B).card
+          * ∑ p ∈ A ×ˢ B,
+              (fracDerivSymbol s (p.1 + p.2)) ^ 2
+                * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 := by
+  rw [hsSeminormSq_trigPolyProduct]
+  -- Pointwise: (σ_s n)² · ‖modeConv n‖² ≤ (σ_s n)² · (|A×B| · ∑ ...)
+  have hPointwise : ∀ n ∈ sumSet A B,
+      (fracDerivSymbol s n) ^ 2 * ‖modeConvolution A B cf cg n‖ ^ 2
+        ≤ (fracDerivSymbol s n) ^ 2 *
+            ((A ×ˢ B).card * ∑ p ∈ A ×ˢ B,
+              if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0) := fun n _ =>
+    mul_le_mul_of_nonneg_left
+      (modeConvolution_normSq_le_card_mul_sum A B cf cg n)
+      (sq_nonneg _)
+  have h_sum_step1 := Finset.sum_le_sum hPointwise
+  -- Rearrange the upper bound into the target form.
+  have h_rearrange :
+      ∑ n ∈ sumSet A B, (fracDerivSymbol s n) ^ 2 *
+        ((A ×ˢ B).card * ∑ p ∈ A ×ˢ B,
+          if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0)
+      = (A ×ˢ B).card *
+          ∑ p ∈ A ×ˢ B,
+              (fracDerivSymbol s (p.1 + p.2)) ^ 2
+                * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 := by
+    calc ∑ n ∈ sumSet A B, (fracDerivSymbol s n) ^ 2 *
+          ((A ×ˢ B).card * ∑ p ∈ A ×ˢ B,
+            if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0)
+        = ∑ n ∈ sumSet A B, (A ×ˢ B).card *
+            ((fracDerivSymbol s n) ^ 2 *
+              ∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0) := by
+              apply Finset.sum_congr rfl; intros n _; ring
+      _ = (A ×ˢ B).card *
+            ∑ n ∈ sumSet A B, (fracDerivSymbol s n) ^ 2 *
+              ∑ p ∈ A ×ˢ B,
+                if p.1 + p.2 = n then ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 else 0 := by
+              rw [← Finset.mul_sum]
+      _ = (A ×ˢ B).card *
+            ∑ n ∈ sumSet A B, ∑ p ∈ A ×ˢ B,
+              (if p.1 + p.2 = n then
+                (fracDerivSymbol s (p.1 + p.2)) ^ 2
+                  * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
+               else 0) := by
+              congr 1
+              apply Finset.sum_congr rfl
+              intros n _
+              rw [Finset.mul_sum]
+              apply Finset.sum_congr rfl
+              intros p _
+              split_ifs with h_eq
+              · rw [h_eq]; ring
+              · ring
+      _ = (A ×ˢ B).card *
+            ∑ p ∈ A ×ˢ B,
+              (fracDerivSymbol s (p.1 + p.2)) ^ 2
+                * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 := by
+              congr 1
+              exact sum_sumSet_pair_reorder A B
+                (fun p => (fracDerivSymbol s (p.1 + p.2)) ^ 2 *
+                  ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2)
+  linarith
+
+/-- **§11.20.C — Concrete tame Kato–Ponce bound on `trigPolyProduct`.**
+For `s ≥ 1`, combining §11.20.B with §11.19.C Peetre gives
+  `‖fg‖²_{Ḣˢ} ≤ K · 2^{2s-1} · (E₁·N₂ + N₁·E₂)`
+where `K = (A ×ˢ B).card`, `E_i = ∑ σ_s² ‖c_i‖²`, `N_i = ∑ ‖c_i‖²`. -/
+theorem hsSeminormSq_trigPolyProduct_le_kato_ponce
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 ≤ s)
+    (A B : Finset (Fin 2 → ℤ)) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ (A ×ˢ B).card * 2 ^ (2 * s - 1) *
+          ((∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+              * (∑ b ∈ B, ‖cg b‖ ^ 2)
+           + (∑ a ∈ A, ‖cf a‖ ^ 2)
+              * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2)) := by
+  have h_single := hsSeminormSq_trigPolyProduct_le_sum_pair s A B cf cg
+  have h_peetre_pw : ∀ p ∈ A ×ˢ B,
+      (fracDerivSymbol s (p.1 + p.2)) ^ 2
+          * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
+        ≤ 2 ^ (2 * s - 1) *
+            (((fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2)
+             + (‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2)) := by
+    intros p _
+    have h_peetre := fracDerivSymbol_sq_add_le hs p.1 p.2
+    have h_nn : 0 ≤ ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 :=
+      mul_nonneg (sq_nonneg _) (sq_nonneg _)
+    calc (fracDerivSymbol s (p.1 + p.2)) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
+        = (fracDerivSymbol s (p.1 + p.2)) ^ 2 * (‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2) := by ring
+      _ ≤ (2 ^ (2 * s - 1) *
+            ((fracDerivSymbol s p.1) ^ 2 + (fracDerivSymbol s p.2) ^ 2))
+          * (‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2) :=
+            mul_le_mul_of_nonneg_right h_peetre h_nn
+      _ = 2 ^ (2 * s - 1) *
+            (((fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2)
+             + (‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2)) := by ring
+  have h_sum_peetre := Finset.sum_le_sum h_peetre_pw
+  -- Distribute and factor.
+  have h_simp_sum :
+      ∑ p ∈ A ×ˢ B, 2 ^ (2 * s - 1) *
+        (((fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2)
+         + (‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2))
+        = 2 ^ (2 * s - 1) *
+            ((∑ p ∈ A ×ˢ B,
+                (fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2)
+             + (∑ p ∈ A ×ˢ B,
+                ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2)) := by
+    rw [← Finset.mul_sum, Finset.sum_add_distrib]
+  have h_factor₁ :
+      ∑ p ∈ A ×ˢ B,
+          (fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
+        = (∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+            * (∑ b ∈ B, ‖cg b‖ ^ 2) := by
+    -- Parses via left-assoc as `((σ·cf) p.1) * ‖cg‖² p.2`; matches
+    -- `f p.1 * g p.2` directly with the chosen `f` and `g`.
+    rw [← Finset.sum_mul_sum]
+  have h_factor₂ :
+      ∑ p ∈ A ×ˢ B,
+          ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2
+        = (∑ a ∈ A, ‖cf a‖ ^ 2)
+            * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2) := by
+    -- Re-associate so `f p.1 * g p.2` matches (`f p.1 = ‖cf p.1‖²`,
+    -- `g p.2 = (σ_s p.2)² · ‖cg p.2‖²`).
+    have h_assoc : ∀ p : (Fin 2 → ℤ) × (Fin 2 → ℤ),
+        ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2
+          = ‖cf p.1‖ ^ 2 * ((fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2) :=
+      fun p => by ring
+    rw [Finset.sum_congr rfl (fun p _ => h_assoc p)]
+    rw [← Finset.sum_mul_sum]
+  have h_card_nn : (0 : ℝ) ≤ (A ×ˢ B).card := by exact_mod_cast Nat.zero_le _
+  -- Assemble.
+  calc hsSeminormSq s (trigPolyProduct A B cf cg)
+      ≤ (A ×ˢ B).card
+          * ∑ p ∈ A ×ˢ B,
+              (fracDerivSymbol s (p.1 + p.2)) ^ 2
+                * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2 := h_single
+    _ ≤ (A ×ˢ B).card *
+          (2 ^ (2 * s - 1) *
+            ((∑ p ∈ A ×ˢ B,
+                (fracDerivSymbol s p.1) ^ 2 * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2)
+             + (∑ p ∈ A ×ˢ B,
+                ‖cf p.1‖ ^ 2 * (fracDerivSymbol s p.2) ^ 2 * ‖cg p.2‖ ^ 2))) := by
+          apply mul_le_mul_of_nonneg_left _ h_card_nn
+          calc ∑ p ∈ A ×ˢ B,
+              (fracDerivSymbol s (p.1 + p.2)) ^ 2
+                * ‖cf p.1‖ ^ 2 * ‖cg p.2‖ ^ 2
+              ≤ _ := h_sum_peetre
+            _ = _ := h_simp_sum
+    _ = (A ×ˢ B).card * 2 ^ (2 * s - 1) *
+          ((∑ a ∈ A, (fracDerivSymbol s a) ^ 2 * ‖cf a‖ ^ 2)
+              * (∑ b ∈ B, ‖cg b‖ ^ 2)
+           + (∑ a ∈ A, ‖cf a‖ ^ 2)
+              * (∑ b ∈ B, (fracDerivSymbol s b) ^ 2 * ‖cg b‖ ^ 2)) := by
+          rw [h_factor₁, h_factor₂]; ring
+
 end SqgIdentity
