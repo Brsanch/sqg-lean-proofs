@@ -418,6 +418,12 @@ Item 5.A delivered across §11.17–§11.21:
   `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · latticeZetaConst s · ‖g‖²_{Ḣˢ}`
   for `s > 1`, `0 ∉ B`.  Via §11.25.B (swapped Young) + §11.30 on B.
   Completes `L² × Ḣˢ → L²` in both directions.
+- §11.33 `hsSeminormSq_trigPolyProduct_le_latticeZeta_interp` —
+  **Ḣᵗ interpolation form of §11.27** for every `t ≤ s`, `s > 1`:
+  `hsSeminormSq t (trigPolyProduct A B cf cg) ≤ 2^{2s}·(2·latticeZetaConst s) · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`.
+  Via `hsSeminormSq_mono_of_le` + finite-Fourier-support summability
+  on `sumSet A B`.  Use case: product Ḣᵗ bound at `t < s`
+  (e.g. `t = 1` with `s = 3/2` for SQG energy).
 
 **Still outstanding for unconditional Item 5 closure:**
 - Wiring into `HasSqgGalerkinHsClosure` Phase 10 bridge via the

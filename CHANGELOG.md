@@ -314,6 +314,12 @@ via the annular-shell + 1D p-series reduction.
   `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · latticeZetaConst s · ‖g‖²_{Ḣˢ}`
   for `s > 1`, `0 ∉ B`.  Via §11.25.B (swapped Young) + §11.30 on `B`.
   Completes `L² × Ḣˢ → L²` in both factor directions.
+- **§11.33** `hsSeminormSq_trigPolyProduct_le_latticeZeta_interp` —
+  Ḣᵗ interpolation form of §11.27 for every `t ≤ s`, `s > 1`:
+  `hsSeminormSq t (trigPolyProduct A B cf cg) ≤ 2^{2s}·(2·latticeZetaConst s) · ‖f‖²_{Ḣˢ} · ‖g‖²_{Ḣˢ}`.
+  Via `hsSeminormSq_mono_of_le` (exponent monotonicity) + finite-
+  Fourier-support summability on `sumSet A B`.  Use case: SQG energy
+  at `t = 1` with `s = 3/2`.
 
 **Item 5 infrastructure: full-range Theorem 3 via `BKMCriterionHighFreq`
 — §10.173–§10.175.**
