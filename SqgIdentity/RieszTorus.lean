@@ -25070,6 +25070,41 @@ theorem l2_trigPolyProduct_le_latticeZeta
     _ = latticeZetaConst s * hsSeminormSq s (trigPoly A cf)
           * (∑ b ∈ B, ‖cg b‖ ^ 2) := by ring
 
+/-! ### §11.32 Symmetric unconditional uniform `L²` product bound
+
+Swapped variant of §11.31 via §11.25.B (symmetric Young): ℓ² on `cf`,
+ℓ¹ on `cg` (instead of §11.22's ℓ¹ on `cf`, ℓ² on `cg`).  Combined
+with §11.30 applied to `B` gives the unconditional
+
+  `∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · latticeZetaConst s · ‖g‖²_{Ḣˢ}`
+
+for `s > 1`, `0 ∉ B`.  This is the `L² × Ḣˢ → L²` bound with Ḣˢ
+control on the SECOND factor rather than the first. -/
+
+/-- **§11.32 — Symmetric form of §11.31.**  For `s > 1`, `0 ∉ B`:
+`∑_n ‖modeConv(n)‖² ≤ (∑_a ‖cf a‖²) · latticeZetaConst s · ‖g‖²_{Ḣˢ}`
+via §11.25.B (swapped Young) + §11.30 on `B`. -/
+theorem l2_trigPolyProduct_le_latticeZeta_symm
+    [DecidableEq (Fin 2 → ℤ)]
+    {s : ℝ} (hs : 1 < s) {A B : Finset (Fin 2 → ℤ)}
+    (hB : (0 : Fin 2 → ℤ) ∉ B) (cf cg : (Fin 2 → ℤ) → ℂ) :
+    ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖ ^ 2) * latticeZetaConst s
+          * hsSeminormSq s (trigPoly B cg) := by
+  have h_young :=
+    hsSeminormSq_zero_trigPolyProduct_le_young_symm A B cf cg
+  have h_cs_B :=
+    sum_norm_sq_le_latticeZeta_mul_hsSeminormSq hs hB cg
+  have h_cf_nn : 0 ≤ ∑ a ∈ A, ‖cf a‖ ^ 2 :=
+    Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+  calc ∑ n ∈ sumSet A B, ‖modeConvolution A B cf cg n‖ ^ 2
+      ≤ (∑ a ∈ A, ‖cf a‖ ^ 2) * (∑ b ∈ B, ‖cg b‖) ^ 2 := h_young
+    _ ≤ (∑ a ∈ A, ‖cf a‖ ^ 2)
+          * (latticeZetaConst s * hsSeminormSq s (trigPoly B cg)) :=
+          mul_le_mul_of_nonneg_left h_cs_B h_cf_nn
+    _ = (∑ a ∈ A, ‖cf a‖ ^ 2) * latticeZetaConst s
+          * hsSeminormSq s (trigPoly B cg) := by ring
+
 /-! ### §11.29 Monotone constant form
 
 For any `C ≥ 2^{2s}·(2·latticeZetaConst s)`, the Banach-algebra bound
