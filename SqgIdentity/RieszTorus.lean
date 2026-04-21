@@ -19791,15 +19791,31 @@ if CI fails, the log will list the specific declaration(s) unfolded
 in the millions — the actual loop culprit — allowing a targeted
 `attribute [local irreducible]` fix. -/
 
--- Retry 3 (loop broken, fix type errors): diagnostic retry 2 dropped
--- the reduction counts from 265k to 434 (loop killed), but marking
--- `UniformGalerkinRHSHsNegSqBound` irreducible blocked `hH2 n τ ...`
--- application (it has shape `∀ n τ, 0 ≤ τ → GalerkinRHSHsNegSqBound
--- ...`, so needs to unfold to a function type for caller to apply).
--- Keep `GalerkinRHSHsNegSqBound` irreducible (deep Summable/tsum
--- content is where the loop lived) but restore
--- `UniformGalerkinRHSHsNegSqBound` reducibility.
+-- Retry 4: keep BOTH predicates irreducible (retry 3 showed that
+-- `GalerkinRHSHsNegSqBound`-only is insufficient to break the loop —
+-- it was retry 2's `UniformGalerkinRHSHsNegSqBound` irreducibility
+-- that stopped the chain, but retry 2 also broke the `hH2 n τ` call
+-- by preventing unfolding to the function form.  Resolution: define
+-- a helper `UniformGalerkinRHSHsNegSqBound.step` that extracts the
+-- per-(n, τ) inner predicate BEFORE the irreducibility attributes
+-- apply, then use that helper inside the theorem body.  This keeps
+-- both predicates irreducible inside the main theorem elaboration
+-- while still letting callers extract step-wise bounds.
+-- (See feedback_lean_diagnostic_workflow.md for the overall workflow.)
+
+/-- **Helper: extract per-`(n, τ)` `GalerkinRHSHsNegSqBound` from
+the uniform version.**  Defined BEFORE the irreducibility attributes,
+so it has access to the reducible definition of
+`UniformGalerkinRHSHsNegSqBound`. -/
+theorem UniformGalerkinRHSHsNegSqBound.step
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)} [DecidableEq (Fin 2 → ℤ)]
+    {s K : ℝ} (hH2 : UniformGalerkinRHSHsNegSqBound α s K)
+    (n : ℕ) (τ : ℝ) (hτ : 0 ≤ τ) :
+    GalerkinRHSHsNegSqBound (sqgBox n) (α n τ) s K :=
+  hH2 n τ hτ
+
 attribute [local irreducible] GalerkinRHSHsNegSqBound
+attribute [local irreducible] UniformGalerkinRHSHsNegSqBound
 
 set_option maxHeartbeats 400000 in
 /-- **§10.153.C** Per-mode Lipschitz constant for the uniform-`H⁻²`
@@ -19855,7 +19871,9 @@ theorem sqgGalerkin_modeLipschitz_from_UniformH2
               ≤ Real.sqrt K * fracDerivSymbol 2 m := by
           intro τ hτ
           exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
-            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans hs hτ.1)) hm
+            (sqgBox n) (α n τ) K hK
+            (UniformGalerkinRHSHsNegSqBound.step hH2 n τ
+              (le_trans hs hτ.1)) hm
         have h_deriv_local : ∀ τ ∈ Set.Ico s t,
             HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
               (galerkinRHS (sqgBox n)
@@ -19873,7 +19891,9 @@ theorem sqgGalerkin_modeLipschitz_from_UniformH2
               ≤ Real.sqrt K * fracDerivSymbol 2 m := by
           intro τ hτ
           exact galerkinRHS_mode_bound_of_HsNeg2Bound_ne_zero
-            (sqgBox n) (α n τ) K hK (hH2 n τ (le_trans ht hτ.1)) hm
+            (sqgBox n) (α n τ) K hK
+            (UniformGalerkinRHSHsNegSqBound.step hH2 n τ
+              (le_trans ht hτ.1)) hm
         have h_deriv_local : ∀ τ ∈ Set.Ico t s,
             HasDerivWithinAt (fun σ => galerkinExtend (sqgBox n) (α n σ) m)
               (galerkinRHS (sqgBox n)
@@ -20024,8 +20044,11 @@ and uniform-boundedness hypotheses of Arzelà–Ascoli), the remaining
 analytical step is reduced to producing the extraction witness.
 Mathlib's `BoundedContinuousFunction.arzelaAscoli` + `Denumerable
 (Fin 2 → ℤ)` + diagonal-across-enumerations supplies this classically.
--/
-theorem HasPerModeLimit.ofModeLipschitzFamily
+
+Declared `noncomputable def` (not `theorem`) because the output type
+`HasPerModeLimit α` is a structure carrying data (a subsequence
+function and a limit function), not a `Prop`. -/
+noncomputable def HasPerModeLimit.ofModeLipschitzFamily
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
     (_lip : HasModeLipschitzFamily α)
     (hExtract :
@@ -20036,13 +20059,16 @@ theorem HasPerModeLimit.ofModeLipschitzFamily
               (fun k : ℕ =>
                 galerkinExtend (sqgBox (nsub k)) (α (nsub k) t) m)
               Filter.atTop (nhds (b m t))) :
-    HasPerModeLimit α := by
-  obtain ⟨nsub, hmono, b, hTendsto⟩ := hExtract
-  exact
-    { nsub := nsub
-      strictMono := hmono
-      b := b
-      tendsto_modeCoeff := hTendsto }
+    HasPerModeLimit α :=
+  let nsub := Classical.choose hExtract
+  let hExtract' := Classical.choose_spec hExtract
+  let hmono := hExtract'.1
+  let b := Classical.choose hExtract'.2
+  let hTendsto := Classical.choose_spec hExtract'.2
+  { nsub := nsub
+    strictMono := hmono
+    b := b
+    tendsto_modeCoeff := hTendsto }
 
 /-! ### §10.156 Item 1 structural capstone
 
