@@ -21222,19 +21222,15 @@ theorem hsSeminormSq_one_summable_galerkinToLp
   hsSeminormSq_summable_of_finite_support 1 (galerkinToLp S c) S
     (fun m hm => mFourierCoeff_galerkinToLp_eq_zero_of_not_mem S c hm)
 
-section AubinLionsMMP
-/-- Local irreducibility on `sqgBox` prevents `whnf` from unfolding the
-finite-set definition during elaboration of §10.167.C; same diagnostic
-pattern as v0.4.38's §10.153.C closure (see
-`memory/feedback_lean_diagnostic_workflow.md`). -/
-attribute [local irreducible] sqgBox
-
 /-- **§10.167.C  MMP discharge for the Aubin–Lions limit.**
 
 Consumes a `HasAubinLionsExtraction` witness plus a uniform-in-`n`-and-
 `t` `Ḣ¹` bound on the Galerkin states `galerkinToLp (sqgBox n) (α n t)`
 and produces `MaterialMaxPrinciple (ext.θ_lim)` via §10.167.B.  The
-pointwise-in-`t` strong-`L²` convergence comes from `ext.tendsto_L2`. -/
+pointwise-in-`t` strong-`L²` convergence comes from `ext.tendsto_L2`.
+
+Proof is tactic-mode with `refine` to pin the goal shape, avoiding the
+whnf loop that term-mode elaboration hits on this application. -/
 theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     [DecidableEq (Fin 2 → ℤ)]
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
@@ -21243,14 +21239,16 @@ theorem MaterialMaxPrinciple.of_aubinLions_uniform_H1
     (M : ℝ)
     (hBound : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
       hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M) :
-    MaterialMaxPrinciple ext.θ_lim :=
-  MaterialMaxPrinciple.of_L2_limit_uniform_H1 ext.θ_lim
-    (fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
-    (fun t ht => ext.tendsto_L2 t ht) M
-    (fun k t _ => hsSeminormSq_one_summable_galerkinToLp
-      (sqgBox (ext.nsub k)) (α (ext.nsub k) t))
-    (fun k t ht => hBound (ext.nsub k) t ht)
-
-end AubinLionsMMP
+    MaterialMaxPrinciple ext.θ_lim := by
+  set fₙ : ℕ → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+    fun k t => galerkinToLp (sqgBox (ext.nsub k)) (α (ext.nsub k) t) with hfₙ
+  refine MaterialMaxPrinciple.of_L2_limit_uniform_H1 ext.θ_lim fₙ ?_ M ?_ ?_
+  · intro t ht
+    exact ext.tendsto_L2 t ht
+  · intro k t _
+    exact hsSeminormSq_one_summable_galerkinToLp
+      (sqgBox (ext.nsub k)) (α (ext.nsub k) t)
+  · intro k t ht
+    exact hBound (ext.nsub k) t ht
 
 end SqgIdentity
