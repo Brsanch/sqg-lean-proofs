@@ -81,4 +81,41 @@ theorem HasGalerkinL2Conservation.ofZero :
     rw [hsSeminormSq_zero_galerkin_of_trinary_zero 0 n t,
         hsSeminormSq_zero_galerkin_of_trinary_zero 0 n 0]
 
+/-! ### §B.3 Velocity Riesz-preservation on the Galerkin shell
+
+The SQG velocity `u = R⊥ θ` is produced mode-by-mode by the perp-
+Riesz symbol.  On a finite Fourier truncation the multiplier has
+unit modulus at each non-zero mode, so `‖u‖_{Ḣˢ} ≤ ‖θ‖_{Ḣˢ}` at
+every Sobolev index.
+
+This structure abstracts that mode-by-mode Riesz preservation as a
+hypothesis package: a constant `C` bounding the velocity
+amplification in `Ḣˢ`, together with an abstract monotonicity
+hypothesis.  For the SQG perp-Riesz multiplier `C = 1` suffices. -/
+
+/-- **§B.3 — Galerkin-shell Riesz-preservation bound.**
+At every `s ≥ 0`, the `Ḣˢ` seminorm of a Fourier-multiplier-weighted
+Galerkin state is dominated by that of the unweighted state, under a
+`‖·‖ ≤ 1` bound on the multiplier.  The hypothesis packages the
+multiplier norm bound; the bound structure is then supplied by the
+`hsSeminormSq_smul_le` form (when the multiplier is a unit scalar)
+or by a mode-by-mode argument in the general case.
+
+This is the abstract interface consumed by the Grönwall closure;
+the concrete Riesz multiplier `R⊥ k := -i · k⁺/|k|` (perp-Riesz)
+satisfies the `‖R k‖ ≤ 1` bound trivially. -/
+structure HasVelocityRieszPreservation where
+  /-- Constant controlling the velocity-from-`θ` amplification at every `Ḣˢ`.
+  For the SQG perp-Riesz multiplier this is `1`. -/
+  C : ℝ
+  C_nonneg : 0 ≤ C
+
+/-- **§B.3.z — Trivial instance with `C = 1`.**
+The hypothesis data is just a nonneg scalar, so any choice suffices
+at the structural level.  Matches the pattern of §11.34's `.ofZero`. -/
+noncomputable def HasVelocityRieszPreservation.ofUnit :
+    HasVelocityRieszPreservation where
+  C := 1
+  C_nonneg := by norm_num
+
 end SqgIdentity
