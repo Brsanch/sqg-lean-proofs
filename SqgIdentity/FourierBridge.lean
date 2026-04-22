@@ -77,9 +77,9 @@ Both sides are literally `hsSeminormSq 0 0 = 0`, so the identity is
 `galerkinToLp_zero`.  Matches the §11.35 zero-datum style. -/
 theorem HasGalerkinL2Conservation.ofZero :
     HasGalerkinL2Conservation (fun _ _ _ => (0 : ℂ)) where
-  l2Const := fun n t _ => by
-    rw [hsSeminormSq_zero_galerkin_of_trinary_zero 0 n t,
-        hsSeminormSq_zero_galerkin_of_trinary_zero 0 n 0]
+  l2Const := fun n t _ =>
+    (hsSeminormSq_zero_galerkin_of_trinary_zero 0 n t).trans
+      (hsSeminormSq_zero_galerkin_of_trinary_zero 0 n 0).symm
 
 /-! ### §B.3 Velocity Riesz-preservation on the Galerkin shell
 
@@ -208,5 +208,43 @@ noncomputable def HasGalerkinGronwallClosure.ofZero :
   hBoundOne := fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le
   hBoundS := fun n t _ s _ =>
     (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le
+
+/-! ### §B.6 `HasSqgGalerkinAllSBound.ofClassical` constructor
+
+The keystone: take the classical-input Grönwall witness from §B.5
+and project to the bare `HasSqgGalerkinAllSBound` hypothesis consumed
+by §10.174 / §11.36.  The `ofClassical` constructor is how a caller
+armed with the four classical Fourier ingredients (+ SQG-specific
+energy identity) discharges the §11.34 hypothesis that feeds the
+full-range Theorem 3. -/
+
+/-- **§B.6 — `HasSqgGalerkinAllSBound.ofClassical` constructor.**
+Projects a `HasGalerkinGronwallClosure α` witness to the bare
+`HasSqgGalerkinAllSBound α` form.  This is the Path A → Path B
+bridge: Path A's hypothesis-keyed §11.34 receives its discharge
+from Path B's classical Fourier inputs via this constructor. -/
+noncomputable def HasSqgGalerkinAllSBound.ofClassical
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (cl : HasGalerkinGronwallClosure α) :
+    HasSqgGalerkinAllSBound α where
+  M₁ := cl.M₁
+  hBoundOne := cl.hBoundOne
+  Ms := cl.Ms
+  hBoundS := cl.hBoundS
+
+/-! ### §B.7 End-to-end unconditional zero-data test
+
+Composes §B.5.z with §B.6 to produce a zero-data instance of
+`HasSqgGalerkinAllSBound` via the classical chain.  Verifies the
+composition end-to-end.  Should match §11.35 structurally; the
+distinction is provenance: this one advertises that the discharge
+came from the `HasGalerkinGronwallClosure` chain rather than from
+the trivial literal-zero `ofZero`. -/
+
+/-- **§B.7 — Zero-datum `HasSqgGalerkinAllSBound` via the classical
+chain.**  Unconditional end-to-end test of the §B.6 composition. -/
+noncomputable def HasSqgGalerkinAllSBound.ofZero_viaClassical :
+    HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) :=
+  HasSqgGalerkinAllSBound.ofClassical HasGalerkinGronwallClosure.ofZero
 
 end SqgIdentity
