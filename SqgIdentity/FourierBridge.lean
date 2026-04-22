@@ -1726,4 +1726,182 @@ theorem fourierRellichKondrachov_zero_witness :
   rw [h_zero]
   exact tendsto_const_nhds
 
+/-! ### §B.16 Helper lemmas feeding `fourier_rellich_kondrachov`
+
+Self-contained building blocks for the eventual discharge of
+`FourierRellichKondrachovHolds`.  Each lemma operates on a single
+Fourier-coefficient family `c : (Fin 2 → ℤ) → ℂ` and quantifies over
+an `H¹`-weighted summability hypothesis.
+
+These form the "per-slice" content of the classical diagonal
+extraction proof:
+
+* `§B.16.a` — single-mode bound `‖c k‖² ≤ M` whenever the weighted
+  tsum is `≤ M`.  Uses `Summable.sum_le_tsum` on a single-term
+  finset and positivity of `1 + |k|²`.
+* `§B.16.b` — squared-norm family is summable whenever the weighted
+  family is (`1 + |k|²` is bounded below by `1`).
+* `§B.16.c` — `H¹` tail bound: for any radius `R`, the tail sum over
+  `{k : |k|_∞ > R}` of `‖c k‖²` is `≤ M / (1 + R²)`.  Drops the
+  weight `1 + |k|²` on the tail in exchange for the factor
+  `1 / (1 + R²)`.
+
+These lemmas sit upstream of the diagonal-extraction / Fatou /
+finite-ball uniform-convergence arguments that together assemble
+`FourierRellichKondrachovHolds`. -/
+
+/-- **§B.16.a — Per-mode squared-norm bound.**
+
+If the `H¹`-weighted family `k ↦ (1 + |k|²) · ‖c k‖²` is summable
+with `∑' ≤ M`, then the un-weighted term at a fixed mode `k₀`
+satisfies `‖c k₀‖² ≤ M`.  We drop the weight `1 + |k₀|² ≥ 1` on the
+single term.
+
+Uses `Summable.sum_le_tsum` on the singleton `{k₀}` plus the
+positivity of all remaining terms. -/
+theorem rellich_single_mode_le
+    (c : (Fin 2 → ℤ) → ℂ) (M : ℝ)
+    (hSum : Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2))
+    (hBound : ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖c k‖ ^ 2 ≤ M)
+    (k₀ : Fin 2 → ℤ) :
+    ‖c k₀‖ ^ 2 ≤ M := by
+  -- Each weighted term is nonneg.
+  have hNonneg : ∀ k : Fin 2 → ℤ,
+      0 ≤ (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 := by
+    intro k
+    refine mul_nonneg ?_ (sq_nonneg _)
+    have h2 : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  -- Single-term sum ≤ tsum.
+  have hSingle : (1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2) * ‖c k₀‖ ^ 2
+      ≤ ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 := by
+    have := hSum.sum_le_tsum ({k₀} : Finset (Fin 2 → ℤ))
+      (fun k _ => hNonneg k)
+    simpa using this
+  -- Weight `1 + |k₀|² ≥ 1` so we can drop it below.
+  have hWeight : (1 : ℝ) ≤ 1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2 := by
+    have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  have hWeightPos : (0 : ℝ) < 1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2 := by
+    linarith
+  have hSq : (0 : ℝ) ≤ ‖c k₀‖ ^ 2 := sq_nonneg _
+  have hDrop : ‖c k₀‖ ^ 2
+      ≤ (1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2) * ‖c k₀‖ ^ 2 := by
+    have := mul_le_mul_of_nonneg_right hWeight hSq
+    simpa [one_mul] using this
+  linarith [hSingle, hBound, hDrop]
+
+/-- **§B.16.b — Un-weighted `ℓ²` summability from `H¹` summability.**
+
+If the weighted family is summable, so is `k ↦ ‖c k‖²`.  Uses
+`1 ≤ 1 + |k|²` to dominate. -/
+theorem rellich_unweighted_summable
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hSum : Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2)) :
+    Summable (fun k : Fin 2 → ℤ => ‖c k‖ ^ 2) := by
+  refine Summable.of_nonneg_of_le
+    (fun k => sq_nonneg _) ?_ hSum
+  intro k
+  have hWeight : (1 : ℝ) ≤ 1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := by
+    have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  have hSq : (0 : ℝ) ≤ ‖c k‖ ^ 2 := sq_nonneg _
+  have := mul_le_mul_of_nonneg_right hWeight hSq
+  simpa [one_mul] using this
+
+/-- **§B.16.c — `H¹` tail bound.**
+
+For any radius `R : ℕ`, the tail sum of `‖c k‖²` over lattice points
+with `|k|_∞ ≥ R+1` (equivalently `> R`) is bounded by
+`M / (1 + R²)`.  The weight `1 + |k|²` on the tail is `≥ 1 + R²`, so
+the un-weighted tail is at most `1/(1+R²)` times the weighted tail,
+which is itself `≤ M`. -/
+theorem rellich_H1_tail_bound
+    (c : (Fin 2 → ℤ) → ℂ) (M : ℝ) (R : ℕ)
+    (hSum : Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2))
+    (hBound : ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖c k‖ ^ 2 ≤ M) :
+    ∑' k : {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k}, ‖c k.1‖ ^ 2
+      ≤ M / (1 + (R : ℝ) ^ 2) := by
+  set S : Set (Fin 2 → ℤ) := {k : Fin 2 → ℤ | R < FourierAnalysis.lInfNorm k}
+    with hSdef
+  -- All terms are nonneg.
+  have hNonneg : ∀ k : Fin 2 → ℤ,
+      0 ≤ (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 := by
+    intro k
+    refine mul_nonneg ?_ (sq_nonneg _)
+    have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  -- The weight on S is ≥ 1 + R².
+  have hWeightPos : (0 : ℝ) < 1 + (R : ℝ) ^ 2 := by
+    have : (0 : ℝ) ≤ (R : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  -- For k ∈ S, (1+R²) · ‖c k‖² ≤ (1 + |k|²) · ‖c k‖².
+  have hDom : ∀ k : {k // R < FourierAnalysis.lInfNorm k},
+      (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        ≤ (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2 := by
+    intro k
+    have hk : R < FourierAnalysis.lInfNorm k.1 := k.2
+    have hkR : (R : ℝ) ≤ ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) := by
+      exact_mod_cast (Nat.le_of_lt hk)
+    have hRNonneg : (0 : ℝ) ≤ (R : ℝ) := by exact_mod_cast (Nat.zero_le R)
+    have hSqLe : (R : ℝ) ^ 2 ≤ ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2 := by
+      have := mul_self_le_mul_self hRNonneg hkR
+      simpa [sq] using this
+    have hWeightLe : (1 : ℝ) + (R : ℝ) ^ 2
+        ≤ 1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2 := by linarith
+    exact mul_le_mul_of_nonneg_right hWeightLe (sq_nonneg _)
+  -- The weighted family is summable on S (subtype).
+  have hSumS : Summable (fun k : {k // R < FourierAnalysis.lInfNorm k} =>
+      (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2) :=
+    hSum.subtype S
+  -- Unweighted summable on S.
+  have hSumS_unweighted :
+      Summable (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c k.1‖ ^ 2) :=
+    (rellich_unweighted_summable c hSum).subtype S
+  -- Scaled-unweighted summable on S.
+  have hSumS_scaled :
+      Summable (fun k : {k // R < FourierAnalysis.lInfNorm k} =>
+        (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2) :=
+    hSumS_unweighted.mul_left _
+  -- Compare tsums on S.
+  have hTsumCmp :
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        ≤ ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2 :=
+    hSumS_scaled.tsum_le_tsum hDom hSumS
+  -- The RHS is ≤ the whole-lattice tsum ≤ M.
+  have hSubset :
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        ≤ ∑' k : Fin 2 → ℤ,
+          (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 :=
+    Summable.tsum_subtype_le
+      (fun k : Fin 2 → ℤ =>
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2)
+      S hNonneg hSum
+  -- Factor constant out of tsum.
+  have hFactor :
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        = (1 + (R : ℝ) ^ 2) *
+          ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c k.1‖ ^ 2 :=
+    tsum_mul_left
+  rw [hFactor] at hTsumCmp
+  -- Combine.
+  have hFinal : (1 + (R : ℝ) ^ 2) *
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c k.1‖ ^ 2 ≤ M := by
+    linarith [hTsumCmp, hSubset, hBound]
+  -- Divide by `1 + R² > 0` via `le_div_iff`.
+  rw [le_div_iff₀ hWeightPos]
+  linarith [hFinal]
+
 end SqgIdentity
