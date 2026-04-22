@@ -5,11 +5,11 @@ title: "SQG Identity: A Lean 4 Formalization of Fourier-Space Identities for the
 authors:
   - family-names: Sanchez
     given-names: Bryan
-    alias: SolomonB14D3
-version: 0.4.39
-date-released: "2026-04-20"
-url: "https://github.com/SolomonB14D3/sqg-lean-proofs"
-repository-code: "https://github.com/SolomonB14D3/sqg-lean-proofs"
+    alias: Brsanch
+version: 0.5.0
+date-released: "2026-04-21"
+url: "https://github.com/Brsanch/sqg-lean-proofs"
+repository-code: "https://github.com/Brsanch/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
 identifiers:
   - type: doi
