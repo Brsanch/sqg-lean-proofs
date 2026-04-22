@@ -4,15 +4,57 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
-## Unreleased (post-v0.4.39, on `main`) — 2026-04-21
+## v0.5.0 — 2026-04-21
 
-**Route A execution — in progress.**  Structural skeleton for all
-12 phases delivered across §10.177–§10.182 (RieszTorus.lean) and
-§11.1–§11.10 (new file `SqgIdentity/LittlewoodPaley.lean`).  All
-structural hypothesis types are in place; the classical
-Littlewood–Paley analytical content (paraproduct definitions,
-commutator estimates, full Kato–Ponce) remains for a follow-up
-session.
+**Route A Item 5 Path A closure.**  Item 5 is now closed at the same
+standard as Items 3/4: every piece of classical PDE content is
+packaged as a named hypothesis, the full structural chain from the
+hypothesis to full-range Theorem 3 is in-tree, and zero-datum
+exemplars exercise the chain end-to-end without any open classical
+content.
+
+Highlights:
+
+- **§11.25.E–I + §11.26 lattice zeta (unconditional).** Support-
+  independent Banach-algebra `Ḣˢ` product bound on finite-Fourier-
+  support trig polynomials, parametrised on `HasLatticeZetaBound`,
+  with a concrete unconditional witness `HasLatticeZetaBound s
+  (latticeZetaConst s)` for every `s > 1` via shell-partition +
+  disjoint `biUnion` + `Summable.sum_le_tsum` on two p-series.
+- **§11.27–§11.33 unconditional consequences.**  First Banach-
+  algebra product bound in-tree with zero open hypotheses
+  (§11.27), self-product + monotone-constant forms
+  (§11.28/§11.29), `ℓ¹ → Ḣˢ` Cauchy–Schwarz bound (Fourier-side
+  Sobolev `Ḣˢ ⊂ L∞`, §11.30), uniform `L² × Ḣˢ → L²` product
+  bounds in both factor directions (§11.31/§11.32), and
+  Ḣᵗ-interpolation form (§11.33).
+- **§11.34–§11.38 Path A closure.**  `HasSqgGalerkinAllSBound α`
+  hypothesis type packaging uniform Galerkin `Ḣ¹` + `Ḣˢ` bounds at
+  every `s > 1`; `.ofZero` unconditional witness;
+  `sqg_regularity_of_allSBound` full-range Theorem 3 capstone
+  feeding §10.174; end-to-end `SqgSolution` variant;
+  `sqg_regularity_ofZero_via_allSBound` fully unconditional
+  zero-datum closure.
+
+**Companion package `sqg-lean-proofs-fourier` launched** —
+[github.com/Brsanch/sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+hosts the classical Fourier-analysis content (Littlewood–Paley,
+Bony paraproducts, Kato–Ponce commutator, Sobolev embedding
+`Ḣˢ ⊂ L∞`) that will discharge `HasSqgGalerkinAllSBound` from
+Path A to fully unconditional closure (Path B).  Designed for
+reuse by future NS / Euler / MHD formalizations.
+
+Path B remaining: ~1500 LOC in the companion package + ~500 LOC
+downstream plumbing in this repo.
+
+### Detailed changelog — Route A content since v0.4.39
+
+Structural skeleton for all 12 phases delivered across §10.177–§10.182
+(RieszTorus.lean) and §11.1–§11.10 (new file
+`SqgIdentity/LittlewoodPaley.lean`).  All structural hypothesis types
+are in place; the classical Littlewood–Paley analytical content
+(paraproduct definitions, commutator estimates, full Kato–Ponce) is
+tracked in the `sqg-lean-proofs-fourier` companion package.
 
 - **§10.177–§10.181** — Parametric-`s` Galerkin `Ḣˢ` energy identity
   (Phase 1 at `s = 1`, Phase 3 at `s > 1`).
