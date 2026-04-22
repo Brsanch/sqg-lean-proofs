@@ -655,6 +655,117 @@ theorem HasGalerkinHsEnergyIdentity.ofZero
       abs_nonneg _
     exact mul_nonneg h2C hAbs
 
+/-! ### §B.9.nonZero Weaker concrete `ofHsDerivAt_fromEnergyDerivative`
+
+Direct concrete constructor for `HasGalerkinHsEnergyIdentity` that
+takes the Galerkin ODE and an abstract derivative-rate bound, and
+produces the three-field bundle by pulling §10.181's parametric-`s`
+energy identity (`trigPolyEnergyHs_hasDerivAt` from `RieszTorus.lean`)
+through the `trigPolyEnergyHs_eq_hsSeminormSq` bridge.
+
+This is the **non-zero** concrete that Path B's capstone consumes.
+It leaves **one narrow classical gap** at this level:  the caller
+must supply the derivative-rate bound
+```
+|galerkinHsFlux s (α n τ)| ≤ 2·C · trigPolyEnergyHs s (sqgBox n) (α n τ)
+```
+which is the pointwise form of the Kato–Ponce commutator +
+divergence-free cancellation.  The `HasDerivAt` + continuity content
+is discharged directly from §10.178–§10.181 without extra classical
+input.
+
+The companion `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` at §B.13
+below composes this with `.ofSobolev` + §B.12 to produce the full
+Path B chain on real Galerkin data. -/
+
+/-- **§B.9.nonZero — weaker concrete `HasGalerkinHsEnergyIdentity`
+constructor taking a Galerkin ODE + abstract derivative bound.**
+
+Inputs:
+* `α : ∀ n, ℝ → ↥(sqgBox n) → ℂ` — the Galerkin coefficient family.
+* `hODE` — the Galerkin ODE at each level:
+  `∀ n t, HasDerivAt (α n) (galerkinVectorField (sqgBox n) (α n t)) t`.
+* `s, T, C` — Sobolev index, time horizon, derivative-rate constant.
+* `hT`, `hC` — nonneg hypotheses.
+* `hFluxBound` — the pointwise derivative bound in terms of
+  `galerkinHsFlux` and `trigPolyEnergyHs`:
+  `∀ n x ∈ [0, T), |galerkinHsFlux s (α n x)|
+                     ≤ 2·C · trigPolyEnergyHs s (sqgBox n) (α n x)`.
+  This is the classical content of the Kato–Ponce commutator + Sobolev
+  embedding; the caller discharges it via the companion fourier repo.
+
+Output: a `HasGalerkinHsEnergyIdentity α s T C` bundle.
+
+**Derivation:**
+1. `cont` — `trigPolyEnergyHs` is continuous (§10.180), so the
+   bridged `hsSeminormSq` is too.
+2. `derivWithin` — §10.178's `trigPolyEnergyHs_hasDerivAt` gives a
+   `HasDerivAt`, which we convert to `HasDerivWithinAt` on `Ici x`.
+   The derivative value needs to match
+   `deriv (hsSeminormSq s ∘ galerkinToLp ∘ α n) x` — we get this
+   via congruence through `trigPolyEnergyHs_eq_hsSeminormSq`.
+3. `deriv_bound` — §10.179's `galerkinHsFlux_eq_deriv` plus the
+   input hypothesis `hFluxBound`; the RHS is massaged into the
+   `2C · |hsSeminormSq|` shape via the bridge + `|x| = x` on nonneg. -/
+theorem HasGalerkinHsEnergyIdentity.ofHsDerivAt_fromEnergyDerivative
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (s T C : ℝ) (hT : 0 ≤ T) (hC : 0 ≤ C)
+    (hODE : ∀ n : ℕ, ∀ t : ℝ,
+      HasDerivAt (α n) (galerkinVectorField (sqgBox n) (α n t)) t)
+    (hFluxBound : ∀ n : ℕ, ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |galerkinHsFlux s (α n x)|
+        ≤ (2 * C) * trigPolyEnergyHs s (sqgBox n) (α n x)) :
+    HasGalerkinHsEnergyIdentity α s T C := by
+  -- Key bridge: hsSeminormSq s (galerkinToLp ...) = trigPolyEnergyHs s ...
+  have hBridge : ∀ (n : ℕ) (t : ℝ),
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))
+        = trigPolyEnergyHs s (sqgBox n) (α n t) := fun n t =>
+    (trigPolyEnergyHs_eq_hsSeminormSq s (sqgBox n) (α n t)).symm
+  -- Function equality upstream: hsSeminormSq-of-Galerkin = trigPolyEnergyHs
+  have hFunEq : ∀ n : ℕ,
+      (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)))
+        = fun t => trigPolyEnergyHs s (sqgBox n) (α n t) :=
+    fun n => funext (hBridge n)
+  refine
+    { nonneg_T := hT
+      nonneg_C := hC
+      cont := ?_
+      derivWithin := ?_
+      deriv_bound := ?_ }
+  · -- cont: continuity via §10.180
+    intro n
+    rw [hFunEq n]
+    exact (trigPolyEnergyHs_continuous s (α n) (hODE n)).continuousOn
+  · -- derivWithin: §10.178's HasDerivAt → HasDerivWithinAt
+    intro n x _
+    rw [hFunEq n]
+    have hHas : HasDerivAt (fun t => trigPolyEnergyHs s (sqgBox n) (α n t))
+        (∑ m : ↥(sqgBox n), (fracDerivSymbol s m.val) ^ 2 *
+          (2 * (@inner ℝ ℂ _ (α n x m) (galerkinVectorField (sqgBox n) (α n x) m)))) x :=
+      trigPolyEnergyHs_hasDerivAt s (α n) (hODE n) x
+    have hdEq : deriv (fun t => trigPolyEnergyHs s (sqgBox n) (α n t)) x
+        = ∑ m : ↥(sqgBox n), (fracDerivSymbol s m.val) ^ 2 *
+          (2 * (@inner ℝ ℂ _ (α n x m) (galerkinVectorField (sqgBox n) (α n x) m))) :=
+      hHas.deriv
+    rw [hdEq]
+    exact hHas.hasDerivWithinAt
+  · -- deriv_bound: §10.179 + hFluxBound
+    intro n x hx
+    rw [hFunEq n]
+    -- Translate |deriv trigPolyEnergyHs| ≤ 2C · |trigPolyEnergyHs|.
+    have hDer : deriv (fun t => trigPolyEnergyHs s (sqgBox n) (α n t)) x
+        = galerkinHsFlux s (α n x) :=
+      galerkinHsFlux_eq_deriv s (α n) (hODE n) x
+    rw [hDer]
+    -- RHS of target: 2C · |trigPolyEnergyHs ...| = 2C · trigPolyEnergyHs ...
+    -- since the latter is nonneg.
+    have hNN : 0 ≤ trigPolyEnergyHs s (sqgBox n) (α n x) :=
+      trigPolyEnergyHs_nonneg s (α n x)
+    have hAbs : |trigPolyEnergyHs s (sqgBox n) (α n x)|
+        = trigPolyEnergyHs s (sqgBox n) (α n x) := abs_of_nonneg hNN
+    rw [hAbs]
+    exact hFluxBound n x hx
+
 /-! ### §B.10 Velocity Lipschitz-sup bound on the Galerkin shell
 
 The Kato–Ponce commutator bound
