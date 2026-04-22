@@ -1968,4 +1968,49 @@ def FourierRellichKondrachovHolds_ofHasDiagonalExtraction_stmt : Prop :=
       HasDiagonalExtraction c M) →
   FourierRellichKondrachovHolds
 
+/-! ### §B.18 Countable-family diagonal extraction
+
+The classical Cantor diagonal for countably-many pointwise-bounded
+`ℂ`-valued sequences: given `c : ℕ → α → ℂ` with `‖c n a‖ ≤ B a` for
+every `a : α` (where `α` is `Encodable`), there is a subsequence
+`φ : ℕ → ℕ` such that `c (φ n) a` converges for every `a`.
+
+This is the Bolzano-Weierstrass half of `HasDiagonalExtraction` on
+the lattice `α = Fin 2 → ℤ`.  The Fatou-`H¹` half (lower
+semicontinuity of the Sobolev tsum) is orthogonal and left for a
+follow-up.
+-/
+
+section DiagonalExtraction
+
+open Filter Topology Metric
+
+variable {α : Type*}
+
+/-- **§B.18.a — one-step refinement.**
+
+Given a strict-mono `ψ : ℕ → ℕ` and a sequence `c : ℕ → α → ℂ` with
+`‖c n a‖ ≤ B a`, Bolzano-Weierstrass on `ℂ` produces a further
+strict-mono `ψ' : ℕ → ℕ` along which `c (ψ (ψ' ·)) a` converges. -/
+lemma refine_subseq_at_index
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a)
+    (ψ : ℕ → ℕ) (_hψ : StrictMono ψ) (a : α) :
+    ∃ ψ' : ℕ → ℕ, StrictMono ψ' ∧
+      ∃ L : ℂ, Tendsto (fun n => c (ψ (ψ' n)) a) atTop (𝓝 L) := by
+  -- The ψ-subsampled sequence at index `a` lives in the closed ball
+  -- of radius `B a` around `0`, hence bounded.  Bolzano-Weierstrass on
+  -- ℂ (a proper metric space) gives the convergent subsequence.
+  set x : ℕ → ℂ := fun n => c (ψ n) a with hx_def
+  have hxmem : ∀ n, x n ∈ Metric.closedBall (0 : ℂ) (B a) := by
+    intro n
+    simp [hx_def, Metric.closedBall, Complex.dist_eq, hBound (ψ n) a]
+  obtain ⟨L, _hL, ψ', hψ'_mono, hψ'_tend⟩ :=
+    tendsto_subseq_of_bounded (x := x) Metric.isBounded_closedBall hxmem
+  refine ⟨ψ', hψ'_mono, L, ?_⟩
+  -- `x ∘ ψ' = fun n => c (ψ (ψ' n)) a` up to defeq
+  simpa [hx_def, Function.comp] using hψ'_tend
+
+end DiagonalExtraction
+
 end SqgIdentity
