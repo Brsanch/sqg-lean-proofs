@@ -1433,12 +1433,17 @@ lemma abs_galerkinHsFlux_le_of_vectorFieldBound
       Real.sqrt (trigPolyEnergyHs s S c) * Real.sqrt (trigPolyEnergyHs s S c)
         = trigPolyEnergyHs s S c :=
     Real.mul_self_sqrt hEnn
-  calc 2 * Real.sqrt (trigPolyEnergyHs s S c) *
+  have hFinal :
+      2 * Real.sqrt (trigPolyEnergyHs s S c) *
           (M * Real.sqrt (trigPolyEnergyHs s S c))
-      = 2 * M *
-          (Real.sqrt (trigPolyEnergyHs s S c) *
-            Real.sqrt (trigPolyEnergyHs s S c)) := by ring
-    _ = 2 * M * trigPolyEnergyHs s S c := by rw [hSqrtSq]
+        = 2 * M * trigPolyEnergyHs s S c := by
+    have : 2 * Real.sqrt (trigPolyEnergyHs s S c) *
+              (M * Real.sqrt (trigPolyEnergyHs s S c))
+            = 2 * M *
+              (Real.sqrt (trigPolyEnergyHs s S c) *
+                Real.sqrt (trigPolyEnergyHs s S c)) := by ring
+    rw [this, hSqrtSq]
+  exact le_of_eq hFinal
 
 /-- **§B.14.cs — `HasGalerkinFluxBound` from a single Galerkin-vector-field
 Ḣˢ bound.**  Takes one unified inequality
