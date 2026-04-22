@@ -2310,7 +2310,7 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       (fun k => hDiffBound (c (φ n) k) (cInf k)) ?_
     exact ((hUnwSeq n).add hUnwLim).mul_left 2
   -- Squeeze: show ∀ ε > 0, eventually ∑' k, ‖…‖² < ε.
-  refine Metric.tendsto_nhds.mpr ?_
+  refine (Metric.tendsto_atTop (α := ℝ)).mpr ?_
   intro ε hε
   -- Pick radius R with M/(1+R²) < ε/8.
   have hε8 : 0 < ε / 8 := by positivity
@@ -2364,8 +2364,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
   -- Get N such that ∀ n ≥ N, low-freq sum < ε/2.
   rw [Metric.tendsto_nhds] at hLowConv
   have hε2 : 0 < ε / 2 := by positivity
-  obtain ⟨N, hN⟩ := (hLowConv (ε / 2) hε2).exists_forall_of_atTop
-  refine Filter.eventually_atTop.mpr ⟨N, fun n hn => ?_⟩
+  have hLowMetric := (Metric.tendsto_atTop (α := ℝ)).mp hLowConv
+  obtain ⟨N, hN⟩ := hLowMetric (ε / 2) hε2
+  refine ⟨N, fun n hn => ?_⟩
   specialize hN n hn
   -- hN : dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖²) 0 < ε/2
   have hNbound : ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 < ε / 2 := by
