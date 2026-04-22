@@ -1678,7 +1678,9 @@ named interface. -/
 
 Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` of Fourier-coefficient
 families, uniformly `H¹`-bounded in the sense
-`∀ n, ∑' k, (1 + (lInfNorm k : ℝ)²) · ‖c n k‖² ≤ M`, there exists a
+`∀ n, Summable (H¹-weighted family) ∧
+      ∑' k, (1 + (lInfNorm k : ℝ)²) · ‖c n k‖² ≤ M`,
+there exists a
 strictly monotone subsequence index `φ` and a limit
 `cInf : (Fin 2 → ℤ) → ℂ` such that the `ℓ²` tails
 `∑' k, ‖c (φ n) k - cInf k‖²` tend to `0` as `n → ∞`.
@@ -1688,6 +1690,8 @@ flat two-torus, which is the statement shape needed by Aubin–Lions
 extraction (Gap C). -/
 def FourierRellichKondrachovHolds : Prop :=
   ∀ (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ),
+    (∀ n : ℕ, Summable (fun k : Fin 2 → ℤ =>
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c n k‖ ^ 2)) →
     (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
         (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
           * ‖c n k‖ ^ 2 ≤ M) →
