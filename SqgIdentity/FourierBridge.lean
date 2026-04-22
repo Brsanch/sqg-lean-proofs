@@ -2309,7 +2309,8 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     refine Summable.of_nonneg_of_le (fun _ => sq_nonneg _)
       (fun k => hDiffBound (c (φ n) k) (cInf k)) ?_
     exact ((hUnwSeq n).add hUnwLim).mul_left 2
-  -- Squeeze: show ∀ ε > 0, eventually ∑' k, ‖…‖² < ε.
+  -- Supply the subsequence/limit witnesses, then reduce Tendsto → metric form.
+  refine ⟨φ, cInf, hφ_mono, ?_⟩
   refine (Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mpr ?_
   intro ε hε
   -- Pick radius R with M/(1+R²) < ε/8.
