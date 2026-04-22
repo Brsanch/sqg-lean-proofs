@@ -2355,7 +2355,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     have hPtDiff : ∀ k, Tendsto (fun n => ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 0) := by
       intro k
       have h1 : Tendsto (fun n => c (φ n) k - cInf k) atTop (𝓝 0) := by
-        have := (hPt k).sub tendsto_const_nhds
+        have hconst : Tendsto (fun _ : ℕ => cInf k) atTop (𝓝 (cInf k)) :=
+          tendsto_const_nhds
+        have := (hPt k).sub hconst
         simpa using this
       have h2 : Tendsto (fun n => ‖c (φ n) k - cInf k‖) atTop (𝓝 0) := by
         have := (continuous_norm.tendsto _).comp h1
@@ -2366,12 +2368,11 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     have := tendsto_finset_sum F_R (fun k _ => hPtDiff k)
     simpa using this
   -- Get N such that ∀ n ≥ N, low-freq sum < ε/2.
-  rw [Metric.tendsto_nhds] at hLowConv
   have hε2 : 0 < ε / 2 := by positivity
   have hLowEv :
       ∀ᶠ n in (atTop : Filter ℕ),
         dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) 0 < ε / 2 :=
-    ((Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mp hLowConv) (ε / 2) hε2
+    (Metric.tendsto_nhds.mp hLowConv) (ε / 2) hε2
   obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp hLowEv
   refine ⟨N, fun n hn => ?_⟩
   specialize hN n hn
@@ -2445,16 +2446,19 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     have hConv_a :
         ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
           = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 := by
-      have := Equiv.tsum_eq eConv
+      -- eConv is identity on the underlying value, so the tsum over the
+      -- equiv image matches the underlying indexed tsum.
+      have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c (φ n) k.1‖ ^ 2)
-      -- eConv sends {k // k ∉ F_R} ↦ {k // R < lInfNorm k} via same underlying k.
-      exact this
+      -- h1 : ∑' c, ‖c (φ n) (eConv c).1‖² = ∑' b, ‖c (φ n) b.1‖²
+      -- (eConv c).1 = c.1 by defn; reduce.
+      simpa using h1
     have hConv_b :
         ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2
           = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 := by
-      have := Equiv.tsum_eq eConv
+      have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖cInf k.1‖ ^ 2)
-      exact this
+      simpa using h1
     rw [hConv_a, hConv_b] at hTsumLe
     have := hTailSeq n R
     have := hTailLim R
