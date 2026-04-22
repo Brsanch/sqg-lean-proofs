@@ -1908,4 +1908,72 @@ theorem rellich_H1_tail_bound
   rw [le_div_iff₀ hWeightPos]
   linarith [hFinal]
 
+/-! ### §B.17 Structural narrowing: `HasDiagonalExtraction` abstraction
+
+The full classical Rellich proof factors through two independent
+classical inputs:
+
+1. **Diagonal extraction** — from uniform per-mode boundedness on a
+   countable lattice, produce a subsequence `φ` and a pointwise limit
+   `cInf`.  Classical Bolzano–Weierstrass + Cantor diagonal.
+2. **Fatou H¹ bound** — the pointwise limit inherits the uniform `H¹`
+   bound via lower semicontinuity of `∑' k, (1 + |k|²) · ‖·‖²`.
+
+Combined with `rellich_H1_tail_bound` (§B.16.c), these two inputs give
+strong `ℓ²` convergence via a finite-ball / tail split.
+
+This section packages (1) + (2) as a single named Prop, making the
+Rellich oracle's classical dependence explicit and factoring it from
+the SQG-specific chain.  Ingredient (1) is what currently blocks a
+fully unconditional discharge in mathlib v4.29 — there is no one-line
+"Cantor diagonal on a countable family of bounded ℂ-valued sequences"
+lemma, and assembling one is ~150 LOC of custom construction. -/
+
+/-- **§B.17.hyp — Packaged classical input for Rellich on `𝕋²`.**
+
+Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` uniformly `H¹`-bounded by
+`M`, `HasDiagonalExtraction c M` asserts the existence of a diagonal
+subsequence with a pointwise limit that itself satisfies the `H¹`
+bound.  This is the Bolzano–Weierstrass + Fatou content of
+Rellich–Kondrachov, isolated from the `ℓ²` tail-split plumbing. -/
+structure HasDiagonalExtraction
+    (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ) : Prop where
+  /-- Subsequence index. -/
+  φ : ℕ → ℕ
+  /-- Strictly monotone. -/
+  hφ : StrictMono φ
+  /-- Pointwise limit across all lattice modes. -/
+  cInf : (Fin 2 → ℤ) → ℂ
+  /-- Mode-wise convergence `c (φ n) k → cInf k`. -/
+  hPointwise : ∀ k : Fin 2 → ℤ,
+    Filter.Tendsto (fun n : ℕ => c (φ n) k) Filter.atTop (nhds (cInf k))
+  /-- Limit inherits `H¹` bound (Fatou). -/
+  hLimitH1 : ∑' k : Fin 2 → ℤ,
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+        * ‖cInf k‖ ^ 2 ≤ M
+  /-- Limit's `H¹`-weighted family is summable (matches the
+      strengthened hypothesis of `FourierRellichKondrachovHolds`). -/
+  hLimitSumm : Summable (fun k : Fin 2 → ℤ =>
+    (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖cInf k‖ ^ 2)
+
+/-- **§B.17.narrow — Fourier-form Rellich–Kondrachov, narrowed.**
+
+The full oracle `FourierRellichKondrachovHolds` reduces to the
+classical input `HasDiagonalExtraction` on every uniformly
+`H¹`-bounded sequence.  Statement only — the discharge assembles
+`rellich_H1_tail_bound` (§B.16.c) with a finite-ball `Finset`-sum
+convergence argument; both pieces require ~100 LOC of additional
+mathlib plumbing (`Finset.tsum_subtype_add_tsum_subtype_compl`,
+uniform convergence of a finite pointwise-convergent family) that is
+out of scope for this commit. -/
+def FourierRellichKondrachovHolds_ofHasDiagonalExtraction_stmt : Prop :=
+  (∀ (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ),
+      (∀ n : ℕ, Summable (fun k : Fin 2 → ℤ =>
+          (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c n k‖ ^ 2)) →
+      (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
+          (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+            * ‖c n k‖ ^ 2 ≤ M) →
+      HasDiagonalExtraction c M) →
+  FourierRellichKondrachovHolds
+
 end SqgIdentity
