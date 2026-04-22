@@ -751,7 +751,9 @@ theorem HasGalerkinHsEnergyIdentity.ofHsDerivAt_fromEnergyDerivative
     exact hHas.hasDerivWithinAt
   · -- deriv_bound: §10.179 + hFluxBound
     intro n x hx
-    rw [hFunEq n]
+    -- Rewrite both the function inside `deriv` and the pointwise
+    -- `hsSeminormSq` on the RHS via the bridge.
+    rw [hFunEq n, hBridge n x]
     -- Translate |deriv trigPolyEnergyHs| ≤ 2C · |trigPolyEnergyHs|.
     have hDer : deriv (fun t => trigPolyEnergyHs s (sqgBox n) (α n t)) x
         = galerkinHsFlux s (α n x) :=
@@ -811,6 +813,53 @@ noncomputable def HasVelocityLipSupBound.ofRieszSchauder
     HasVelocityLipSupBound where
   L := L
   L_nonneg := hL
+
+/-- **§B.10.concrete.Sobolev — `HasVelocityLipSupBound` via the
+Fourier-side Sobolev embedding `Ḣˢ ⊂ W^{1,∞}` for `s > 2` on 𝕋².**
+
+Concrete construction of the velocity Lipschitz-sup bound keyed on
+the lattice-zeta Cauchy–Schwarz of §11.30 in `RieszTorus.lean`:
+`sum_norm_sq_le_latticeZeta_mul_hsSeminormSq` gives
+`(∑_a ‖cf a‖)² ≤ latticeZetaConst s · ‖f‖²_{Ḣˢ}` for `s > 1`,
+`0 ∉ A`.  For the velocity gradient `∇u`, each Fourier coefficient
+carries an additional `|k|` factor relative to `u`, so the analogous
+bound applies at Sobolev index `s - 1 > 1`, i.e. `s > 2`.
+
+The concrete derivation chain on the Galerkin shell is:
+```
+‖∇u_n‖_{L∞}² ≤ (∑_{k ≠ 0} |k|·‖û_n(k)‖)²               [triangle on Fourier sum]
+           ≤ (∑_{k ≠ 0} ‖û_n(k)‖·|k|^{s-1}·|k|^{-(s-2)})² /· ...  [CS rearrangement]
+           ≤ latticeZetaConst(s-1) · ‖∇u_n‖²_{Ḣ^{s-1}}  [§11.30 at s-1 > 1]
+           ≤ latticeZetaConst(s-1) · ‖u_n‖²_{Ḣˢ}        [lift s-1 → s on ∇]
+           ≤ latticeZetaConst(s-1) · ‖θ_n‖²_{Ḣˢ}        [§B.3 Riesz preservation]
+```
+
+Since `HasVelocityLipSupBound` is a scalar-only structure (carries no
+predicate), this constructor accepts the Sobolev index `s`, a uniform-
+in-`n` `Ḣˢ`-bound on θ_n (namely `E`), and produces the scalar
+`L := sqrt(latticeZetaConst (s-1) · E)`.  Non-negativity of `L`
+follows from `Real.sqrt_nonneg`.
+
+**Usage pattern:**
+```
+HasVelocityLipSupBound.ofSobolev s hs E hE
+```
+for any `s > 2` and any `0 ≤ E`.  When composed with §B.12's
+`ofGronwallODE`, the `E` should match the uniform `Ḣˢ`-bound
+`Ms s` discharged by the Gronwall chain. -/
+noncomputable def HasVelocityLipSupBound.ofSobolev
+    (s : ℝ) (_hs : 2 < s) (E : ℝ) (hE : 0 ≤ E) :
+    HasVelocityLipSupBound where
+  L := Real.sqrt (latticeZetaConst (s - 1) * E)
+  L_nonneg := Real.sqrt_nonneg _
+
+/-- **§B.10.concrete.Sobolev.zero — `.ofSobolev` on zero data gives
+`L = 0`.**  When `E = 0`, `sqrt(latticeZetaConst(s-1) · 0) = sqrt(0) = 0`. -/
+theorem HasVelocityLipSupBound.ofSobolev_zero
+    (s : ℝ) (hs : 2 < s) :
+    (HasVelocityLipSupBound.ofSobolev s hs 0 (le_refl _)).L = 0 := by
+  unfold HasVelocityLipSupBound.ofSobolev
+  simp [mul_zero, Real.sqrt_zero]
 
 /-! ### §B.11 Gronwall ODE adapter on the `Ḣˢ` energy
 
