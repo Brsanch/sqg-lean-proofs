@@ -2011,6 +2011,230 @@ lemma refine_subseq_at_index
   -- `x ∘ ψ' = fun n => c (ψ (ψ' n)) a` up to defeq
   simpa [hx_def, Function.comp] using hψ'_tend
 
+/-- **§B.18.b — iterated refinement package.**
+
+Given a starting strict-mono `ψ₀` and an enumeration `e : ℕ → Option α`
+(for us `e = Encodable.decode`), we build a sequence `ψ : ℕ → (ℕ → ℕ)`
+with `ψ 0 = ψ₀` and for each `k`, `ψ (k+1) = ψ k ∘ step k` where
+`step k : ℕ → ℕ` is a strict-mono refinement that makes
+`c (ψ (k+1) ·) a` converge at the `k`-th decoded index (if any).  When
+`e k = none`, `step k = id`.  Each `ψ k` is strict-mono.
+
+Packaged as a `Prop`-valued existential so consumers do not depend on
+the exact `Nat.rec` shape. -/
+structure IteratedRefinement (c : ℕ → α → ℂ) where
+  ψ : ℕ → ℕ → ℕ
+  mono : ∀ k, StrictMono (ψ k)
+  /-- The sequence refines: `ψ (k+1)` is obtained from `ψ k` by
+      composing with a strict-mono `ℕ → ℕ`. -/
+  refines : ∀ k, ∃ step : ℕ → ℕ, StrictMono step ∧ ψ (k + 1) = ψ k ∘ step
+  /-- At the `k`-th decoded index (via `Encodable.decode`),
+      `c ∘ ψ (k+1)` converges.  When `decode k = none`, trivially true. -/
+  converges_at_decode [Encodable α] :
+    ∀ k, ∀ a : α, Encodable.decode k = some a →
+      ∃ L : ℂ, Tendsto (fun n => c (ψ (k + 1) n) a) atTop (𝓝 L)
+
+/-- **§B.18.b.ex — existence of iterated refinement.**
+
+Build an `IteratedRefinement` by recursion on `k`: start from `id`;
+at step `k`, consult `Encodable.decode k`; if it yields some `a`,
+apply §B.18.a to refine; otherwise pass through with `id`. -/
+lemma iteratedRefinement_exists [Encodable α]
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a) :
+    Nonempty (IteratedRefinement c) := by
+  classical
+  -- Step function: given current ψ at stage k, produce a strict-mono
+  -- `step : ℕ → ℕ` that refines at `decode k` (or is `id` if none).
+  let stepAt : (ψ : ℕ → ℕ) → StrictMono ψ → ℕ → (ℕ → ℕ) := fun ψ hψ k =>
+    match h : Encodable.decode (α := α) k with
+    | none => id
+    | some a =>
+      Classical.choose (refine_subseq_at_index c B hBound ψ hψ a)
+  have stepAt_mono : ∀ (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (k : ℕ),
+      StrictMono (stepAt ψ hψ k) := by
+    intro ψ hψ k
+    simp only [stepAt]
+    split
+    · exact strictMono_id
+    · exact (Classical.choose_spec
+        (refine_subseq_at_index c B hBound ψ hψ _)).1
+  -- Recursive construction: a dependent pair of `ψ` and its StrictMono.
+  let rec_pair : ℕ → { ψ : ℕ → ℕ // StrictMono ψ } := fun k =>
+    Nat.rec (motive := fun _ => { ψ : ℕ → ℕ // StrictMono ψ })
+      ⟨id, strictMono_id⟩
+      (fun k prev => ⟨prev.1 ∘ stepAt prev.1 prev.2 k,
+        prev.2.comp (stepAt_mono prev.1 prev.2 k)⟩) k
+  refine ⟨{
+    ψ := fun k => (rec_pair k).1,
+    mono := fun k => (rec_pair k).2,
+    refines := ?_,
+    converges_at_decode := ?_,
+  }⟩
+  · intro k
+    refine ⟨stepAt (rec_pair k).1 (rec_pair k).2 k,
+      stepAt_mono _ _ k, ?_⟩
+    -- `rec_pair (k+1) = ⟨prev.1 ∘ stepAt prev.1 prev.2 k, _⟩` by defn.
+    rfl
+  · intro k a hak
+    -- `rec_pair (k+1).1 = rec_pair k .1 ∘ stepAt _ _ k`.  At decode k =
+    -- some a, stepAt was built from `Classical.choose
+    -- (refine_subseq_at_index …)` which converges `c (ψ (step ·)) a`.
+    have hstep :
+        stepAt (rec_pair k).1 (rec_pair k).2 k =
+          Classical.choose
+            (refine_subseq_at_index c B hBound (rec_pair k).1
+              (rec_pair k).2 a) := by
+      simp only [stepAt]
+      split
+      · rename_i hnone
+        exact absurd hak (by rw [hnone]; exact Option.noConfusion)
+      · rename_i a' hsome
+        -- decode k = some a' and = some a, so a' = a.
+        have : a' = a := by
+          have := hsome.symm.trans hak
+          exact Option.some.inj this
+        subst this
+        rfl
+    obtain ⟨L, hL⟩ :=
+      (Classical.choose_spec
+        (refine_subseq_at_index c B hBound (rec_pair k).1 (rec_pair k).2 a)).2
+    refine ⟨L, ?_⟩
+    -- Rewrite `ψ (k+1) n = (rec_pair k).1 (stepAt … n)`.
+    have hψsucc : (rec_pair (k + 1)).1 =
+        (rec_pair k).1 ∘ stepAt (rec_pair k).1 (rec_pair k).2 k := rfl
+    rw [hstep] at hψsucc
+    -- Now `hL` says exactly what we need modulo `Function.comp`.
+    have : (fun n => c ((rec_pair (k + 1)).1 n) a) =
+        fun n => c ((rec_pair k).1
+          (Classical.choose
+            (refine_subseq_at_index c B hBound (rec_pair k).1
+              (rec_pair k).2 a) n)) a := by
+      funext n; rw [hψsucc]; rfl
+    rw [this]
+    exact hL
+
+/-- **§B.18 — Countable diagonal extraction, capstone.**
+
+The classical Cantor-diagonal theorem: from countably-many pointwise-
+bounded `ℂ`-valued sequences, extract a single strict-mono subsequence
+`φ` such that `c (φ n) a` converges for every `a : α`.  The pointwise
+limit is returned as `cInf`. -/
+theorem countable_diagonal_bounded_sequences [Encodable α]
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧
+      ∃ cInf : α → ℂ,
+        ∀ a : α, Tendsto (fun n => c (φ n) a) atTop (𝓝 (cInf a)) := by
+  classical
+  obtain ⟨R⟩ := iteratedRefinement_exists c B hBound
+  -- Diagonal: φ n := ψ n n.  Strict-mono because `ψ (n+1) = ψ n ∘ step`
+  -- with `step` strict-mono; hence `ψ (n+1) (n+1) > ψ n n` (standard).
+  let φ : ℕ → ℕ := fun n => R.ψ n n
+  -- Step 1: φ strict-mono.
+  have hφ_mono : StrictMono φ := by
+    -- Lemma: for any m ≥ n, ψ m = ψ n ∘ (something strict-mono).  So
+    -- `ψ m k ≥ ψ n k` pointwise when m ≥ n, and in fact `ψ m` is
+    -- strict-mono, giving the diagonal inequality.
+    -- We prove φ strict-mono via `strictMono_nat_of_lt_succ`.
+    apply strictMono_nat_of_lt_succ
+    intro n
+    obtain ⟨step, hstep_mono, hψsucc⟩ := R.refines n
+    -- φ (n+1) = ψ (n+1) (n+1) = ψ n (step (n+1)).
+    -- φ n = ψ n n.
+    -- ψ n is strict-mono; step is strict-mono from ℕ → ℕ so
+    -- step (n+1) ≥ n+1 > n, hence ψ n (step (n+1)) > ψ n n.
+    have hstepGt : step (n + 1) > n := by
+      have hstepGe : ∀ m, m ≤ step m := fun m => hstep_mono.id_le m
+      calc n < n + 1 := Nat.lt_succ_self n
+        _ ≤ step (n + 1) := hstepGe (n + 1)
+    have hφsucc : φ (n + 1) = R.ψ n (step (n + 1)) := by
+      simp only [φ, hψsucc, Function.comp_apply]
+    rw [hφsucc]
+    exact (R.mono n) hstepGt
+  refine ⟨φ, hφ_mono, ?_⟩
+  -- Step 2: for each a, φ eventually agrees with ψ (k+1) where
+  -- k = encode a, giving pointwise convergence.
+  -- Define cInf(a) = Classical.choose of the limit.
+  -- First show: for each a, `c ∘ φ` converges at a.
+  have convAt : ∀ a : α, ∃ L : ℂ, Tendsto (fun n => c (φ n) a) atTop (𝓝 L) := by
+    intro a
+    let k := Encodable.encode a
+    have hdec : Encodable.decode (α := α) k = some a :=
+      Encodable.encodek a
+    obtain ⟨L, hL⟩ := R.converges_at_decode k a hdec
+    refine ⟨L, ?_⟩
+    -- Claim: for all n ≥ k+1, φ n = ψ (k+1) (tail n) for some
+    -- strict-mono tail.  Proven by induction: ψ m for m ≥ k+1 is
+    -- ψ (k+1) composed with a chain of further strict-mono steps.
+    -- We show: Tendsto (c ∘ φ · a) atTop (𝓝 L) by comparing tails.
+    -- Concretely: for m ≥ k+1, ∃ step_m : ℕ → ℕ strict-mono with
+    -- ψ m = ψ (k+1) ∘ step_m.  Then φ m = ψ m m = ψ (k+1) (step_m m),
+    -- and step_m m → ∞ as m → ∞ (strict-mono ℕ → ℕ).  So
+    -- c (φ m) a = c (ψ (k+1) (step_m m)) a → L by subseq of a
+    -- convergent sequence.
+    -- Build `step_m` by induction m ≥ k+1.
+    let chain : ∀ m, m ≥ k + 1 → { σ : ℕ → ℕ // StrictMono σ ∧
+        R.ψ m = R.ψ (k + 1) ∘ σ } := by
+      intro m hm
+      induction m, hm using Nat.le_induction with
+      | base => exact ⟨id, strictMono_id, by simp⟩
+      | succ m hm ih =>
+        obtain ⟨σ, hσ_mono, hσ_eq⟩ := ih
+        obtain ⟨step, hstep_mono, hψsucc⟩ := R.refines m
+        refine ⟨σ ∘ step, hσ_mono.comp hstep_mono, ?_⟩
+        rw [hψsucc, hσ_eq]
+        rfl
+    -- Now: for n ≥ k+1, c (φ n) a = c (ψ (k+1) (σ n n)) a.
+    -- By `tendsto_atTop_mono_of_eventually_eq`-style, we prove
+    -- convergence via `Tendsto.comp` of hL with a suitable tail.
+    -- It's cleaner: show the sequence `n ↦ c (φ n) a` agrees with
+    -- `n ↦ c (ψ (k+1) (σ_n n)) a` for n ≥ k+1 (eventual equality
+    -- under atTop), reducing to convergence of a subseq of `c ∘ ψ(k+1)`.
+    -- Simplest: use `Tendsto.congr'` (eventual equality).
+    -- Define ρ : ℕ → ℕ by ρ n := (chain (max n (k+1)) (le_max_right ..)).1 n
+    -- but this is awkward.  Cleaner: define
+    -- `ρ : ℕ → ℕ` by `ρ n := σ (n+k+1) n` using chain at m = n+k+1.
+    -- Then for all n, `c (φ (n+k+1)) a = c (ψ (k+1) (ρ n)) a`, and
+    -- ρ is strict-mono in n ⇒ `c ∘ ψ(k+1) ∘ ρ` is a subsequence of
+    -- `c ∘ ψ(k+1)` which converges to L.
+    -- We don't even need ρ strict-mono: eventual equality under the
+    -- shift `n ↦ n + (k+1)` + Tendsto.comp of hL with ρ → ∞ suffices.
+    -- Use Filter.tendsto_add_atTop_iff_nat to shift.
+    set ρ : ℕ → ℕ := fun n =>
+      (chain (n + (k + 1)) (Nat.le_add_left _ _)).1 (n + (k + 1)) with hρ_def
+    have hρ_tend : Tendsto ρ atTop atTop := by
+      -- ρ n ≥ n + (k+1) - something; specifically σ is strict-mono
+      -- ℕ → ℕ so σ m ≥ m for all m.  Hence ρ n ≥ n + (k+1) ≥ n.
+      apply tendsto_atTop_mono (fun n => ?_) tendsto_atTop_add_const_right atTop (k + 1)
+      -- Goal: n + (k+1) ≤ ρ n
+      have := (chain (n + (k + 1))
+        (Nat.le_add_left _ _)).2.1.id_le (n + (k + 1))
+      exact this
+    -- Shift-agreement: `c (φ (n + (k+1))) a = c (ψ (k+1) (ρ n)) a`.
+    have hshift : ∀ n,
+        c (φ (n + (k + 1))) a = c (R.ψ (k + 1) (ρ n)) a := by
+      intro n
+      simp only [φ, ρ]
+      rw [(chain (n + (k + 1)) (Nat.le_add_left _ _)).2.2]
+      rfl
+    -- From hL: Tendsto (fun m => c (ψ (k+1) m) a) atTop (𝓝 L).
+    -- Compose with ρ → atTop: Tendsto (fun n => c (ψ (k+1) (ρ n)) a) atTop (𝓝 L).
+    have hcomp :
+        Tendsto (fun n => c (R.ψ (k + 1) (ρ n)) a) atTop (𝓝 L) :=
+      hL.comp hρ_tend
+    -- Rewrite via hshift:
+    have hshiftTend :
+        Tendsto (fun n => c (φ (n + (k + 1))) a) atTop (𝓝 L) := by
+      refine (hcomp.congr' ?_)
+      exact Filter.Eventually.of_forall (fun n => (hshift n).symm)
+    -- Finally, shift back: Tendsto (fun n => c (φ n) a) atTop (𝓝 L).
+    -- `Filter.tendsto_add_atTop_iff_nat`.
+    exact (Filter.tendsto_add_atTop_iff_nat (k + 1)).mp hshiftTend
+  -- Choose cInf(a) via classical choice.
+  refine ⟨fun a => Classical.choose (convAt a), fun a => ?_⟩
+  exact Classical.choose_spec (convAt a)
+
 end DiagonalExtraction
 
 end SqgIdentity
