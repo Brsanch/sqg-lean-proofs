@@ -2080,8 +2080,16 @@ theorem countable_diagonal_bounded_sequences [Encodable α]
       obtain ⟨σ, hσ_mono, hσ_eq⟩ := ih
       refine ⟨σ ∘ diagStep c B hBound (ψ m) (hψ_mono m) m,
         hσ_mono.comp (diagStep_mono c B hBound _ _ m), ?_⟩
-      rw [ψ_succ m, hσ_eq]
-      rfl
+      -- ψ (m+1) = ψ m ∘ diagStep (by ψ_succ m), and ψ m = ψ n ∘ σ (by hσ_eq).
+      -- So ψ (m+1) = (ψ n ∘ σ) ∘ diagStep = ψ n ∘ (σ ∘ diagStep).
+      show ψ (m + 1) = ψ n ∘ (σ ∘ diagStep c B hBound (ψ m) (hψ_mono m) m)
+      have e1 : ψ (m + 1) = ψ m ∘ diagStep c B hBound (ψ m) (hψ_mono m) m :=
+        ψ_succ m
+      calc ψ (m + 1)
+          = ψ m ∘ diagStep c B hBound (ψ m) (hψ_mono m) m := e1
+        _ = (ψ n ∘ σ) ∘ diagStep c B hBound (ψ m) (hψ_mono m) m := by
+              rw [← hσ_eq]
+        _ = ψ n ∘ (σ ∘ diagStep c B hBound (ψ m) (hψ_mono m) m) := rfl
   -- Diagonal.
   let φ : ℕ → ℕ := fun n => ψ n n
   -- φ strict-mono.
