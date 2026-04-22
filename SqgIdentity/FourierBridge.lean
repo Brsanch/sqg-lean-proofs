@@ -548,4 +548,138 @@ noncomputable def HasSqgGalerkinAllSBound.ofZero_viaGalerkin :
     (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
     (fun n t _ s _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
 
+/-! ### §B.9 Galerkin `Ḣˢ` energy identity bundle (hypothesis-keyed)
+
+The `Ḣˢ` energy identity for a smooth Galerkin truncation reads
+```
+½ · d/dt ‖θ_n(t)‖²_{Ḣˢ}
+  = -Re ⟨Λˢ(u_n · ∇ θ_n), Λˢ θ_n⟩_{L²}
+  = -Re ⟨[Λˢ, u_n · ∇] θ_n, Λˢ θ_n⟩_{L²}
+```
+where `Λˢ = (-Δ)^{s/2}` is the Fourier multiplier `|k|^s` and the
+last equality uses the divergence-free cancellation
+`⟨u · ∇ f, f⟩ = 0` applied to `f = Λˢθ` with `∇·u = 0`.
+
+This bundle packages the differentiability + pointwise-bounded-
+derivative content of the identity as a hypothesis, abstracting the
+full Fourier-multiplier argument until the companion
+`sqg-lean-proofs-fourier` commutator package (§B.4) becomes
+quantitative.  The key assertion is the **derivative bound**
+```
+|d/dt ‖θ_n(t)‖²_{Ḣˢ}| ≤ 2·K·L·‖θ_n(t)‖²_{Ḣˢ}
+```
+where `K = FourierKatoPonceConst.K` (from §B.4) and `L` bounds
+`‖∇u_n‖_{L∞}` uniformly in `n, t ∈ [0, T]` (supplied by §B.10's
+`HasVelocityLipSupBound`).  Grönwall (§B.11) then exponentiates. -/
+
+/-- **§B.9 — Galerkin `Ḣˢ` energy-identity bundle.**
+Hypothesis-keyed witness that the squared `Ḣˢ` seminorm of a
+Galerkin truncation is `HasDerivWithinAt`-differentiable on `[0, T]`,
+continuous on the closed interval, and has derivative bounded by
+`2·C·‖θ_n(t)‖²_{Ḣˢ}` in absolute value.
+
+The constant `C` is intended to be instantiated as `K · L` where
+`K` is the Kato–Ponce commutator constant (§B.4) and `L` is the
+velocity Lipschitz-sup bound (§B.10).  The bundle is shaped to
+plug directly into `scalar_gronwall_exp` (§10.64 of `RieszTorus`). -/
+structure HasGalerkinHsEnergyIdentity
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (s T C : ℝ) : Prop where
+  /-- `0 ≤ T`, the time interval endpoint. -/
+  nonneg_T : 0 ≤ T
+  /-- `0 ≤ C`, the derivative-bound rate constant. -/
+  nonneg_C : 0 ≤ C
+  /-- Continuity of `t ↦ ‖θ_n(t)‖²_{Ḣˢ}` on `[0, T]`. -/
+  cont : ∀ n : ℕ,
+    ContinuousOn (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)))
+      (Set.Icc 0 T)
+  /-- Right-derivative existence on `[0, T)`. -/
+  derivWithin : ∀ n : ℕ, ∀ x ∈ Set.Ico (0 : ℝ) T,
+    HasDerivWithinAt
+      (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)))
+      (deriv (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))) x)
+      (Set.Ici x) x
+  /-- The Kato–Ponce + Sobolev-embedding-derived derivative bound. -/
+  deriv_bound : ∀ n : ℕ, ∀ x ∈ Set.Ico (0 : ℝ) T,
+    |deriv (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))) x|
+      ≤ (2 * C) * |hsSeminormSq s (galerkinToLp (sqgBox n) (α n x))|
+
+/-- **§B.9.z — Zero-datum `HasGalerkinHsEnergyIdentity`.**
+On the zero trinary, `hsSeminormSq s 0 = 0` uniformly, so the
+function is constantly `0`, its derivative is identically `0`, and
+all three dynamic predicates (continuity, derivWithin, deriv_bound)
+hold trivially.  Unconditional. -/
+theorem HasGalerkinHsEnergyIdentity.ofZero
+    (s T C : ℝ) (hT : 0 ≤ T) (hC : 0 ≤ C) :
+    HasGalerkinHsEnergyIdentity (fun _ _ _ => (0 : ℂ)) s T C where
+  nonneg_T := hT
+  nonneg_C := hC
+  cont := fun n => by
+    have h : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                ((fun _ _ _ => (0 : ℂ)) n t))) = fun _ => 0 := by
+      funext t
+      exact hsSeminormSq_zero_galerkin_of_trinary_zero s n t
+    rw [h]; exact continuousOn_const
+  derivWithin := fun n x _ => by
+    have h : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                ((fun _ _ _ => (0 : ℂ)) n t))) = fun _ => 0 := by
+      funext t
+      exact hsSeminormSq_zero_galerkin_of_trinary_zero s n t
+    rw [h]
+    exact (hasDerivWithinAt_const _ _ _)
+  deriv_bound := fun n x _ => by
+    have h : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                ((fun _ _ _ => (0 : ℂ)) n t))) = fun _ => 0 := by
+      funext t
+      exact hsSeminormSq_zero_galerkin_of_trinary_zero s n t
+    rw [h]
+    -- deriv of constant is 0; both sides are 0.
+    simp
+
+/-! ### §B.10 Velocity Lipschitz-sup bound on the Galerkin shell
+
+The Kato–Ponce commutator bound
+`|⟨[Λˢ, u·∇]θ, Λˢθ⟩| ≤ K · ‖∇u‖_{L∞} · ‖θ‖²_{Ḣˢ}`
+requires a uniform `L∞` bound on `∇u` across the Galerkin family.
+Classically this follows from Sobolev embedding `Ḣʳ ⊂ L∞` for `r > d/2`
+applied to `∇u`, plus the velocity Riesz preservation (§B.3).
+
+This structure packages a scalar `L` with `0 ≤ L` expressing the
+uniform bound.  Like §B.3, the bundle is data-minimal: just the
+constant.  The concrete derivation lives in the companion repo's
+Sobolev embedding module; here we abstract it as a hypothesis. -/
+
+/-- **§B.10 — Velocity Lipschitz-sup bound.**
+Carries a nonneg scalar `L` bounding `‖∇u_n‖_{L∞}` uniformly in
+`n : ℕ` and `t ∈ [0, T]`.  The bound itself is only ever used
+multiplicatively with `K` from §B.4 to form the scalar `C = K·L`
+that Gronwall consumes in §B.11, so the structure does not carry a
+pointwise predicate — only the scalar. -/
+structure HasVelocityLipSupBound where
+  /-- Uniform `L∞` bound on `‖∇u_n‖` across the Galerkin family. -/
+  L : ℝ
+  L_nonneg : 0 ≤ L
+
+/-- **§B.10.z — Zero-datum `HasVelocityLipSupBound`.**
+With all velocities identically `0`, the Lipschitz bound trivially
+holds with `L = 0`.  Parallels §B.3.z / §B.4.z. -/
+noncomputable def HasVelocityLipSupBound.ofZero :
+    HasVelocityLipSupBound where
+  L := 0
+  L_nonneg := le_refl _
+
+/-- **§B.10.concrete — `HasVelocityLipSupBound` from an abstract
+Sobolev-embedding + Riesz-Schauder bound.**
+
+In the concrete Fourier repo, `‖∇u‖_{L∞} ≤ C_emb · ‖u‖_{Ḣ^{1+ε}}` for
+any `ε > d/2 = 1`, and combined with §B.3 this gives
+`≤ C_emb · ‖θ‖_{Ḣ^{1+ε}}`.  For the hypothesis-keyed form we simply
+accept the resulting scalar bound `L` as data, since the concrete
+quantitative chain lives in `sqg-lean-proofs-fourier`. -/
+noncomputable def HasVelocityLipSupBound.ofRieszSchauder
+    (L : ℝ) (hL : 0 ≤ L) :
+    HasVelocityLipSupBound where
+  L := L
+  L_nonneg := hL
+
 end SqgIdentity
