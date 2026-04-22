@@ -39,7 +39,7 @@ import FourierAnalysis.LittlewoodPaley.Dyadic
 
 namespace SqgIdentity
 
-open FourierAnalysis
+open Complex Finset MeasureTheory UnitAddTorus FourierAnalysis
 
 /-! ### §B.1 Smoke test: the fourier repo is importable
 
@@ -364,6 +364,79 @@ noncomputable def HasGalerkinGronwallClosure.ofZero :
   hBoundS := fun n t _ s _ =>
     (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le
 
+/-- **§B.5.concrete — `HasGalerkinGronwallClosure` from classical
+ingredients + precomputed uniform bounds.**
+
+Concrete constructor for the Grönwall closure given:
+* `K : FourierKatoPonceConst` — abstract Kato–Ponce commutator constant
+  (fed in via whatever L² quantitative form the
+  `sqg-lean-proofs-fourier` repo ultimately delivers);
+* `hL2 : HasGalerkinL2Conservation α` — classical L² conservation
+  (typically via `HasGalerkinL2Conservation.ofL2Coeff` or upstream
+  §10.147);
+* `hRiesz : HasVelocityRieszPreservation` — velocity Riesz-preservation
+  (typically via `HasVelocityRieszPreservation.ofRieszTransform`);
+* `M₁, Ms` — uniform `Ḣ¹` and parametric `Ḣˢ` bounds already discharged
+  by the caller (once the quantitative Kato–Ponce form lands in the
+  fourier repo, a downstream constructor will derive `M₁, Ms` from
+  `K.K`, `hL2`, `hRiesz`, and the Galerkin energy identity; for now
+  the caller supplies them).
+
+This constructor *does not* derive `hBoundOne`/`hBoundS` from the
+Kato–Ponce constant — that derivation is the remaining ~500 LOC of
+quantitative commutator work.  Instead, it packages the
+**already-proved** uniform bounds with the classical-input witnesses
+so downstream code (§B.6 `ofClassical`) has a single Grönwall-closure
+object to consume.
+
+**Usage pattern:**
+```
+HasGalerkinGronwallClosure.ofKatoPonce α
+  FourierKatoPonceConst.ofZero   -- or concrete K from fourier repo
+  (HasGalerkinL2Conservation.ofL2Coeff α hCoeff)
+  HasVelocityRieszPreservation.ofRieszTransform
+  M₁ Ms hBoundOne hBoundS
+```
+
+In the `.ofZero` pathway, all four numerical inputs collapse to `0`. -/
+noncomputable def HasGalerkinGronwallClosure.ofKatoPonce
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (K : FourierKatoPonceConst)
+    (hL2 : HasGalerkinL2Conservation α)
+    (hRiesz : HasVelocityRieszPreservation)
+    (M₁ : ℝ) (Ms : ℝ → ℝ)
+    (hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁)
+    (hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    HasGalerkinGronwallClosure α where
+  M₁ := M₁
+  Ms := Ms
+  l2 := hL2
+  riesz := hRiesz
+  commutator := K
+  hBoundOne := hBoundOne
+  hBoundS := hBoundS
+
+/-- **§B.5.concrete.z — `ofKatoPonce` on zero data, via zero
+ingredients.**
+
+Unconditional zero-datum exercise of the `ofKatoPonce` constructor.
+All four numeric inputs (`M₁`, `Ms`, and the two bound hypotheses)
+collapse to `0` via `hsSeminormSq_zero_galerkin_of_trinary_zero`.
+The three classical witnesses are the zero-data ones from §B.2.z /
+§B.3.z / §B.4.z. -/
+noncomputable def HasGalerkinGronwallClosure.ofKatoPonce_zero :
+    HasGalerkinGronwallClosure (fun _ _ _ => (0 : ℂ)) :=
+  HasGalerkinGronwallClosure.ofKatoPonce
+    (α := fun _ _ _ => (0 : ℂ))
+    FourierKatoPonceConst.ofZero
+    HasGalerkinL2Conservation.ofZero
+    HasVelocityRieszPreservation.ofUnit
+    0 (fun _ => 0)
+    (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
+    (fun n t _ s _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
+
 /-! ### §B.6 `HasSqgGalerkinAllSBound.ofClassical` constructor
 
 The keystone: take the classical-input Grönwall witness from §B.5
@@ -402,5 +475,77 @@ noncomputable def HasSqgGalerkinAllSBound.ofZero_viaClassical :
     HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) :=
   HasSqgGalerkinAllSBound.ofClassical
     (α := fun _ _ _ => (0 : ℂ)) HasGalerkinGronwallClosure.ofZero
+
+/-! ### §B.8 `HasSqgGalerkinAllSBound.ofGalerkin` — one-shot chaining
+
+Path B capstone: chain §B.2.concrete + §B.3.concrete + §B.5.concrete
++ §B.6 in a single constructor taking real Galerkin data
+`α : ∀ n, ℝ → ↥(sqgBox n) → ℂ` and producing the
+`HasSqgGalerkinAllSBound α` hypothesis consumed by §10.174 /
+§11.36 / §11.37.
+
+Hypothesis-keyed modulo the `FourierKatoPonceConst` (which is abstract
+pending the quantitative L² commutator bound in
+`sqg-lean-proofs-fourier`), but otherwise fully concrete: the L²
+conservation comes from an ℓ² coefficient-sum invariant (typical
+Galerkin ODE output), the Riesz preservation comes from the SQG
+perp-Riesz multiplier, and the Grönwall-stage uniform `Ḣˢ` bounds
+are passed in by the caller. -/
+
+/-- **§B.8 — One-shot `HasSqgGalerkinAllSBound.ofGalerkin`.**
+
+Concrete constructor chaining the four classical-input concrete
+constructors into the end-to-end discharge:
+
+* `HasGalerkinL2Conservation.ofL2Coeff`   (§B.2.concrete.ℓ²)
+* `HasVelocityRieszPreservation.ofRieszTransform`  (§B.3.concrete)
+* `HasGalerkinGronwallClosure.ofKatoPonce`  (§B.5.concrete)
+* `HasSqgGalerkinAllSBound.ofClassical`  (§B.6)
+
+**Inputs:**
+* `α` — the time-indexed Galerkin coefficient family.
+* `hCoeff` — `∑ m ‖α n t m‖² = ∑ m ‖α n 0 m‖²` (ℓ²-sum invariant,
+  typical Galerkin ODE output).
+* `K` — abstract Kato–Ponce commutator constant (will be filled in
+  once `sqg-lean-proofs-fourier` lands the quantitative L² form).
+* `M₁, Ms, hBoundOne, hBoundS` — uniform Galerkin `Ḣ¹`/`Ḣˢ` bounds
+  (the caller supplies these, typically via the Grönwall ODE in the
+  quantitative commutator form).
+
+**Output:** `HasSqgGalerkinAllSBound α`, ready to feed `§11.36`'s
+`sqg_regularity_of_allSBound` for the full-range Theorem 3. -/
+noncomputable def HasSqgGalerkinAllSBound.ofGalerkin
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hCoeff : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖α n 0 m‖ ^ 2)
+    (K : FourierKatoPonceConst)
+    (M₁ : ℝ) (Ms : ℝ → ℝ)
+    (hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁)
+    (hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s) :
+    HasSqgGalerkinAllSBound α :=
+  HasSqgGalerkinAllSBound.ofClassical
+    (α := α)
+    (HasGalerkinGronwallClosure.ofKatoPonce α K
+      (HasGalerkinL2Conservation.ofL2Coeff α hCoeff)
+      HasVelocityRieszPreservation.ofRieszTransform
+      M₁ Ms hBoundOne hBoundS)
+
+/-- **§B.8.z — Zero-datum exercise of `ofGalerkin`.**
+Unconditional end-to-end test: all numeric inputs are zero, the
+ℓ² invariant is `0 = 0`, the Kato–Ponce constant is `K = 0`, and
+the output matches `HasSqgGalerkinAllSBound.ofZero` up to equivalent
+defining data. -/
+noncomputable def HasSqgGalerkinAllSBound.ofZero_viaGalerkin :
+    HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) :=
+  HasSqgGalerkinAllSBound.ofGalerkin
+    (α := fun _ _ _ => (0 : ℂ))
+    (fun _ _ _ => rfl)
+    FourierKatoPonceConst.ofZero
+    0 (fun _ => 0)
+    (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
+    (fun n t _ s _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
 
 end SqgIdentity
