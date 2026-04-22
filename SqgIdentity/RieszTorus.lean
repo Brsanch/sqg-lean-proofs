@@ -25413,15 +25413,13 @@ structure IsSqgTestFormWeakSolution
   `SqgFourierContinuous θ` via §10.17's
   `IsSqgCollarLhsCondition.of_fourierContinuous` route. -/
   collar : IsSqgCollarLhsCondition θ
-  /-- Uniform pointwise flux bound: `‖sqgNonlinearFlux(τ)(m)‖ ≤ K`.
-  Discharged by `sqgNonlinearFlux_bounded` when `θ τ` and each
-  `u j τ` have `L²`-norm uniformly bounded in `τ`. -/
-  fluxConst : ℝ
-  /-- Nonnegativity of `fluxConst`. -/
-  fluxNN : 0 ≤ fluxConst
-  /-- The uniform flux bound. -/
-  fluxBound : ∀ (m : Fin 2 → ℤ) (τ : ℝ),
-      ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ fluxConst
+  /-- Uniform pointwise flux bound (existentially packaged so the
+  structure stays `Prop`-valued): some `K ≥ 0` uniformly bounds
+  `‖sqgNonlinearFlux(τ)(m)‖`. Discharged by
+  `sqgNonlinearFlux_bounded` when `θ τ` and each `u j τ` have
+  `L²`-norm uniformly bounded in `τ`. -/
+  fluxBound : ∃ K : ℝ, 0 ≤ K ∧ ∀ (m : Fin 2 → ℤ) (τ : ℝ),
+      ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ K
   /-- Flux measurability in time (per mode). -/
   fluxMeas : ∀ (m : Fin 2 → ℤ),
       AEStronglyMeasurable
@@ -25445,9 +25443,10 @@ theorem IsSqgWeakSolution.of_testFormWeakSolution
     {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     (hW : IsSqgTestFormWeakSolution θ u) :
-    IsSqgWeakSolution θ u :=
-  IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
-    hW.testForm hW.collar hW.fluxNN hW.fluxBound hW.fluxMeas
+    IsSqgWeakSolution θ u := by
+  obtain ⟨K, hK_nn, hK_bd⟩ := hW.fluxBound
+  exact IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
+    hW.testForm hW.collar hK_nn hK_bd hW.fluxMeas
 
 /-- **§12 — End-to-end capstone: `SqgEvolutionAxioms_strong` from the
 classical weak form.**
@@ -25489,9 +25488,7 @@ theorem IsSqgTestFormWeakSolution.zero
   refine
     { testForm := IsSqgWeakSolutionTimeTest.zero u
       collar := ?_
-      fluxConst := 0
-      fluxNN := le_refl 0
-      fluxBound := ?_
+      fluxBound := ⟨0, le_refl 0, ?_⟩
       fluxMeas := ?_ }
   · -- collar: on the zero field, every mFourierCoeff is the zero constant,
     -- so the LHS integral is identically 0 and its limit is
