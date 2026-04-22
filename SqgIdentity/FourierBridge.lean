@@ -1634,4 +1634,92 @@ noncomputable def HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete_zero 
       have h0 : (2 * ((0 : ℝ) * 0)) * t = 0 := by ring
       rw [h0, Real.exp_zero])
 
+/-! ### §B.15 Rellich–Kondrachov on `𝕋²` in Fourier form (oracle)
+
+This section isolates the **only** classical-analysis statement that
+Gap C needs beyond the Kato–Ponce / Sobolev–embedding chain in
+`sqg-lean-proofs-fourier`: the Fourier-form Rellich–Kondrachov
+compact embedding `H¹(𝕋²) ⊂⊂ L²(𝕋²)`.
+
+**Mathematical content.** Given a sequence of Fourier-coefficient
+families `(c_n : Fin 2 → ℤ → ℂ)` with uniform `H¹` energy
+`∑' k, (1 + |k|²) · ‖c_n k‖² ≤ M`, one can extract a subsequence
+converging strongly in `ℓ²` (equivalently, in `L²` on the torus).
+
+The classical proof is:
+
+1. Uniform `ℓ²` boundedness `∑' k, ‖c_n k‖² ≤ M` gives per-mode
+   boundedness `|c_n k|² ≤ M` for each fixed `k`.
+2. Heine–Borel on `ℂ` yields a convergent subsequence per mode.
+3. A diagonal extraction across the countable lattice `Fin 2 → ℤ`
+   gives pointwise convergence `c_{φ(n)} k → c∞ k` at every mode.
+4. The `H¹` tail bound `∑_{|k|>R} ‖c_n k‖² ≤ M / R²` shrinks the
+   tail uniformly in `n`.
+5. On the finite ball `|k| ≤ R`, pointwise convergence plus the
+   finite-dimensional equivalence of norms gives uniform convergence,
+   hence `ℓ²` convergence on the ball.
+6. Combining (4)+(5) yields strong `ℓ²` convergence.
+
+**Status.** The full machine-verified proof requires nontrivial
+mathlib infrastructure (diagonal subsequence extraction across a
+countable family, Heine–Borel for bounded sequences in `ℂ`, and
+careful `tsum` tail estimates) that is out of scope for this
+module.  Following the §11.34 / §B.14 pattern we therefore package
+the theorem statement as a named hypothesis
+`FourierRellichKondrachovHolds` and expose the plumbing consumers
+need.  This is an *oracle* in the same sense as
+`HasGalerkinFluxBound.ofKatoPonceSobolev` was before its discharge
+landed: the classical-analysis content is isolated from the
+SQG-specific chain, so downstream items (e.g. Gap C's
+`ClassicalAubinLionsExtractionHolds`) can consume it via a clean
+named interface. -/
+
+/-- **§B.15.stmt — Fourier-form Rellich–Kondrachov statement.**
+
+Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` of Fourier-coefficient
+families, uniformly `H¹`-bounded in the sense
+`∀ n, ∑' k, (1 + (lInfNorm k : ℝ)²) · ‖c n k‖² ≤ M`, there exists a
+strictly monotone subsequence index `φ` and a limit
+`c∞ : (Fin 2 → ℤ) → ℂ` such that the `ℓ²` tails
+`∑' k, ‖c (φ n) k - c∞ k‖²` tend to `0` as `n → ∞`.
+
+This is the Fourier form of Rellich–Kondrachov `H¹ ⊂⊂ L²` on the
+flat two-torus, which is the statement shape needed by Aubin–Lions
+extraction (Gap C). -/
+def FourierRellichKondrachovHolds : Prop :=
+  ∀ (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ),
+    (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖c n k‖ ^ 2 ≤ M) →
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ c∞ : (Fin 2 → ℤ) → ℂ,
+      Filter.Tendsto
+        (fun n : ℕ => ∑' k : Fin 2 → ℤ, ‖c (φ n) k - c∞ k‖ ^ 2)
+        Filter.atTop (nhds 0)
+
+/-- **§B.15.zero — Zero-sequence sanity witness.**
+
+For the constant-zero family `c = fun _ _ => 0`, the conclusion
+shape holds trivially with `φ = id` and `c∞ = 0`.  This is *not*
+a discharge of the general oracle; it only certifies that the
+conclusion is satisfiable on the trivial input, matching the
+§11.35 / §B.14.z zero-datum pattern. -/
+theorem fourierRellichKondrachov_zero_witness :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ c∞ : (Fin 2 → ℤ) → ℂ,
+      Filter.Tendsto
+        (fun n : ℕ =>
+          ∑' k : Fin 2 → ℤ,
+            ‖((fun _ _ => (0 : ℂ)) : ℕ → (Fin 2 → ℤ) → ℂ) (id n) k
+              - (fun _ : Fin 2 → ℤ => (0 : ℂ)) k‖ ^ 2)
+        Filter.atTop (nhds 0) := by
+  refine ⟨id, strictMono_id, fun _ => (0 : ℂ), ?_⟩
+  have h_zero : (fun n : ℕ =>
+      ∑' k : Fin 2 → ℤ,
+        ‖((fun _ _ => (0 : ℂ)) : ℕ → (Fin 2 → ℤ) → ℂ) (id n) k
+          - (fun _ : Fin 2 → ℤ => (0 : ℂ)) k‖ ^ 2)
+        = fun _ => (0 : ℝ) := by
+    funext n
+    simp
+  rw [h_zero]
+  exact tendsto_const_nhds
+
 end SqgIdentity
