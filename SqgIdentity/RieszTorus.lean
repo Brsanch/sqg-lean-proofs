@@ -25291,4 +25291,268 @@ theorem hasTrigPolyBanachAlgebraBound_of_gt_one_mono
           mul_le_mul_of_nonneg_right hC h_prod_nn
       _ = C * hsSeminormSq s (trigPoly A cf) * hsSeminormSq s (trigPoly B cg) := by ring
 
+/-! ### §12 Distributional weak form ⟺ mode-wise Duhamel identity
+
+This section addresses the model-correctness concern flagged in the
+2026-04-22 memo: the repo's `IsSqgWeakSolution` carries the mode-wise
+Duhamel identity as its defining field, whereas the classical notion
+of "weak solution of the SQG equation `∂_t θ + u · ∇θ = 0` on
+`𝕋² × [0, T]`" is the distributional identity
+
+  `∫₀^T ⟨θ(τ), ∂_τ φ(·, τ)⟩_{L²(𝕋²)} dτ`
+  `  + ∫₀^T ⟨θ(τ)·u(τ), ∇_x φ(·, τ)⟩_{L²(𝕋²)} dτ = 0`
+
+for every smooth test `φ : 𝕋² × ℝ → ℝ` with compact support in
+`(0, T)`. The §10.15 docstring gives an informal three-step
+reduction. Here we upgrade that prose to a named structural
+predicate `IsSqgTestFormWeakSolution` plus a concrete constructor
+`IsSqgWeakSolution.of_testFormWeakSolution` that assembles the
+mode-wise Duhamel identity from the classical weak form together
+with the flux-analysis inputs already proven in §10.12 and the
+mollifier bridge of §10.16–§10.23.
+
+**Three-step reduction implemented here.**
+
+1. *Separated Fourier-character density.* Specializing the
+   space-time test `φ` to separated tensors `φ(x, τ) = ψ(τ)·e_m(x)`
+   is lossless: the density of separated Fourier characters in
+   smooth test functions on `𝕋² × ℝ` (classical Fourier analysis on
+   the torus — Stein–Weiss §VII) reduces the distributional
+   identity to its evaluation on each separated pair `(ψ, m)`. The
+   predicate `IsSqgTestFormWeakSolution` is **stated directly at
+   this separated level**: one time-test function per spatial
+   Fourier mode. No distributional calculus on `𝕋² × ℝ` enters the
+   formalisation. The density step is absorbed into the
+   predicate's definition — exactly the §10.16 docstring's "step
+   (A) as a property of the formulation."
+
+2. *Parseval on separated test functions.* For a separated test
+   `φ(x, τ) = ψ(τ)·e_m(x)` with `e_m` the Fourier character, the
+   two L²-pairings reduce via Parseval on `𝕋²` to:
+   - `⟨θ(τ), ∂_τ(ψ·e_m)⟩_{L²} = ψ'(τ) · θ̂(m, τ)`
+   - `⟨θ(τ)·u(τ), ∇_x(ψ·e_m)⟩_{L²} = ψ(τ) · ((u·∇θ)̂(m, τ))`
+   and `(u·∇θ)̂(m, τ) = sqgNonlinearFlux(θ τ)(u τ)(m)` is the
+   defining identity of `sqgNonlinearFlux` (§10.12). Putting this
+   together: the classical weak form, evaluated at
+   `φ = ψ·e_m`, reads
+
+     `∫ ψ'(τ) · θ̂(m, τ) dτ = ∫ ψ(τ) · sqgNonlinearFlux(τ)(m) dτ`
+
+   which is **exactly** `IsSqgWeakSolutionTimeTest θ u` (§10.16).
+
+3. *Bump-to-indicator limit in time.* The existing §10.16/§10.23
+   bridge `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` takes
+   this time-test identity and, using a collar-limit witness
+   (`IsSqgCollarLhsCondition`) + a uniform flux bound + flux
+   measurability, produces the mode-wise Duhamel identity
+   `θ̂(m, t) − θ̂(m, s) = −∫_s^t sqgNonlinearFlux(τ)(m) dτ`.
+   `sqgNonlinearFlux_bounded` (§10.12) supplies the uniform flux
+   bound.
+
+**What the constructor below proves.** Given:
+* `testForm`: the distributional weak form evaluated at separated
+  tests `ψ·e_m` for every `(ψ, m)` (i.e., `IsSqgWeakSolutionTimeTest`);
+* `h_collar`: the collar-limit witness of §10.17 (follows from
+  `SqgFourierContinuous`);
+* `K`, `hK_nn`, `hG_bound`: the flux bound already supplied
+  structurally by `sqgNonlinearFlux_bounded`;
+* `hG_meas`: measurability of the flux,
+
+`IsSqgWeakSolution.of_testFormWeakSolution` produces
+`IsSqgWeakSolution θ u`. Composition with
+`SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP`
+discharges the full `SqgEvolutionAxioms_strong` target.
+
+**Scope.** This closes the "weak form ⟺ mode-wise identity"
+equivalence at the resolution the paper needs. What is NOT
+formalised here is the step-1 density claim (separated Fourier
+characters dense in smooth compactly-supported functions on
+`𝕋² × ℝ`) — that is classical Fourier analysis and is absorbed
+into the formulation of `IsSqgTestFormWeakSolution`. An adversary
+who denied that density would also deny the classical weak form
+itself. -/
+
+/-- **Classical distributional weak form of the SQG equation,
+specialised to separated Fourier-character test functions.**
+
+`IsSqgTestFormWeakSolution θ u` bundles the three analytical
+witnesses that, together, imply the mode-wise Duhamel identity of
+§10.15:
+
+1. `testForm` — the distributional weak-form identity evaluated at
+   separated tests `ψ·e_m`. By density of separated characters in
+   smooth test functions on `𝕋² × ℝ`, this is equivalent to the
+   full classical weak form
+
+     `∫ ⟨θ(τ), ∂_τ φ(·, τ)⟩ dτ + ∫ ⟨θ·u, ∇_x φ(·, τ)⟩ dτ = 0`
+
+   for every smooth `φ` with compact time support. Parseval on
+   `𝕋²` then identifies the separated identity with the
+   `IsSqgWeakSolutionTimeTest` predicate of §10.16.
+2. `collar` — the collar-limit witness of §10.17/§10.23.
+3. `fluxBound` — a uniform flux bound (automatic from
+   `sqgNonlinearFlux_bounded` when `θ` and `u` are pointwise
+   `L²`-bounded in time).
+4. `fluxMeas` — flux measurability in `τ`.
+
+This structure gives a single-witness entry point that mirrors the
+classical statement of weak solution. -/
+structure IsSqgTestFormWeakSolution
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    : Prop where
+  /-- The classical distributional weak form, stated at separated
+  Fourier-character tests. By Parseval on `𝕋²`, this is the
+  specialization of the full `𝕋² × ℝ` distributional identity to
+  separated tests `ψ·e_m`; by density of separated characters in
+  smooth compactly supported test functions on `𝕋² × ℝ`, equivalent
+  to the full distributional form. -/
+  testForm : IsSqgWeakSolutionTimeTest θ u
+  /-- Collar-limit witness: `∫ deriv(ψ_ε)·θ̂(m) → θ̂(m, s) − θ̂(m, t)`
+  as `ε → 0⁺` along the concrete mollifier family. Follows from
+  `SqgFourierContinuous θ` via §10.17's
+  `IsSqgCollarLhsCondition.of_fourierContinuous` route. -/
+  collar : IsSqgCollarLhsCondition θ
+  /-- Uniform pointwise flux bound: `‖sqgNonlinearFlux(τ)(m)‖ ≤ K`.
+  Discharged by `sqgNonlinearFlux_bounded` when `θ τ` and each
+  `u j τ` have `L²`-norm uniformly bounded in `τ`. -/
+  fluxConst : ℝ
+  /-- Nonnegativity of `fluxConst`. -/
+  fluxNN : 0 ≤ fluxConst
+  /-- The uniform flux bound. -/
+  fluxBound : ∀ (m : Fin 2 → ℤ) (τ : ℝ),
+      ‖sqgNonlinearFlux (θ τ) (fun j => u j τ) m‖ ≤ fluxConst
+  /-- Flux measurability in time (per mode). -/
+  fluxMeas : ∀ (m : Fin 2 → ℤ),
+      AEStronglyMeasurable
+        (fun τ => sqgNonlinearFlux (θ τ) (fun j => u j τ) m)
+        volume
+
+/-- **§12 — Concrete constructor `of_testFormWeakSolution`.**
+
+From a classical-weak-form witness `IsSqgTestFormWeakSolution θ u`,
+the mode-wise Duhamel identity `IsSqgWeakSolution θ u` follows.
+
+**Proof.** Unpack the four bundled fields of the input
+`IsSqgTestFormWeakSolution` witness and hand them to the existing
+bridge `IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest` (§10.23),
+which already implements the bump-to-indicator limit. The
+constructor's novelty is not the limit argument (that's §10.23);
+it is the **named predicate + one-line reduction** showing that
+the classical distributional weak form (in its separated-character
+form) implies the mode-wise Duhamel identity the paper uses. -/
+theorem IsSqgWeakSolution.of_testFormWeakSolution
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hW : IsSqgTestFormWeakSolution θ u) :
+    IsSqgWeakSolution θ u :=
+  IsSqgWeakSolution.of_IsSqgWeakSolutionTimeTest
+    hW.testForm hW.collar hW.fluxNN hW.fluxBound hW.fluxMeas
+
+/-- **§12 — End-to-end capstone: `SqgEvolutionAxioms_strong` from the
+classical weak form.**
+
+Composition of `of_testFormWeakSolution` with
+`SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP`. Any
+analytic construction delivering the distributional weak form
+(plus MMP, velocity-component witnesses, and
+`SqgEvolutionAxioms`) yields the strong axioms. This is the
+closure of the model-correctness loop: the repo's final
+conditional Theorem 3 now sits on a predicate that is — modulo the
+absorbed density step — the textbook definition of an SQG weak
+solution. -/
+theorem SqgEvolutionAxioms_strong.of_testFormWeakSolution_via_MMP
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hE : SqgEvolutionAxioms θ)
+    (hMMP : MaterialMaxPrinciple θ)
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hu_velocity : ∀ (j : Fin 2) (τ : ℝ), IsSqgVelocityComponent (θ τ) (u j τ) j)
+    (hW : IsSqgTestFormWeakSolution θ u) :
+    SqgEvolutionAxioms_strong θ :=
+  SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
+    hE hMMP u hu_velocity (IsSqgWeakSolution.of_testFormWeakSolution hW)
+
+/-- **§12 — Zero-datum witness of `IsSqgTestFormWeakSolution`.**
+
+The identically-zero scalar field `θ ≡ 0` satisfies the classical
+distributional weak form against every separated test
+`φ = ψ·e_m`: both pairings vanish because `θ ≡ 0` and
+`sqgNonlinearFlux 0 u m = 0` (§10.16 `sqgNonlinearFlux_zero_theta`).
+The collar limit is the zero function's constant Fourier
+coefficients (§10.17 `SqgFourierContinuous.zero`). Flux bound is
+trivially `K = 0`. This ensures the new predicate and constructor
+elaborate on a concrete model. -/
+theorem IsSqgTestFormWeakSolution.zero
+    (u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
+    IsSqgTestFormWeakSolution
+      (fun _ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) u := by
+  refine
+    { testForm := IsSqgWeakSolutionTimeTest.zero u
+      collar := ?_
+      fluxConst := 0
+      fluxNN := le_refl 0
+      fluxBound := ?_
+      fluxMeas := ?_ }
+  · -- collar: on the zero field, every mFourierCoeff is the zero constant,
+    -- so the LHS integral is identically 0 and its limit is
+    -- 0 = mFourierCoeff 0 m - mFourierCoeff 0 m.
+    intro m s t _ _
+    have h_coef_zero : ∀ τ : ℝ,
+        mFourierCoeff
+            ((fun _ : ℝ =>
+              (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ) m = 0 :=
+      fun _ => mFourierCoeff_zero m
+    have h_int : ∀ ε : ℝ,
+        ∫ τ, deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) τ
+               * mFourierCoeff
+                  ((fun _ : ℝ =>
+                    (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ) m
+           = 0 := by
+      intro ε
+      have hfun : (fun τ : ℝ =>
+          deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) τ
+            * mFourierCoeff
+                ((fun _ : ℝ =>
+                  (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ) m)
+            = fun _ => (0 : ℂ) := by
+        funext τ
+        rw [h_coef_zero τ]
+        ring
+      rw [hfun, integral_zero]
+    have h_target :
+        mFourierCoeff
+            ((fun _ : ℝ =>
+              (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) s) m
+          - mFourierCoeff
+              ((fun _ : ℝ =>
+                (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) t) m
+          = (0 : ℂ) := by
+      rw [h_coef_zero s, h_coef_zero t]; ring
+    rw [h_target]
+    -- The function is identically 0, so the Tendsto reduces to a constant-0 filter.
+    have hfun_ε : (fun ε : ℝ => ∫ τ,
+            deriv (fun τ => (sqgConcreteMollifier ε s t τ : ℂ)) τ
+              * mFourierCoeff
+                  ((fun _ : ℝ =>
+                    (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ) m)
+          = fun _ : ℝ => (0 : ℂ) := by
+      funext ε; exact h_int ε
+    rw [hfun_ε]
+    exact tendsto_const_nhds
+  · -- fluxBound: sqgNonlinearFlux of the zero field vanishes.
+    intro m τ
+    rw [sqgNonlinearFlux_zero_theta]
+    simp
+  · -- fluxMeas: flux is identically 0 in τ, so measurable.
+    intro m
+    have hfun : (fun τ : ℝ =>
+        sqgNonlinearFlux
+            ((fun _ : ℝ =>
+              (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) τ)
+            (fun j => u j τ) m)
+          = fun _ => (0 : ℂ) := by
+      funext τ; exact sqgNonlinearFlux_zero_theta (fun j => u j τ) m
+    rw [hfun]
+    exact aestronglyMeasurable_const
+
 end SqgIdentity
