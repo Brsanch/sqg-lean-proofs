@@ -1166,4 +1166,223 @@ noncomputable def HasSqgGalerkinAllSBound.ofGalerkin_nonZero
       E hE_nn hE1Fam hEsFam hExpBound
   HasSqgGalerkinAllSBound.ofClassical (α := α) cl
 
+/-! ### §B.14 Pointwise Kato–Ponce flux-bound structure
+
+The last **named** classical gap on non-zero SQG Galerkin data is the
+pointwise derivative-rate bound
+
+```
+|galerkinHsFlux s (α n x)| ≤ 2·(K·L) · trigPolyEnergyHs s (sqgBox n) (α n x)
+```
+
+which Path B's energy-identity constructor §B.9.nonZero currently
+consumes as a raw hypothesis function.  The classical content is the
+quantitative Kato–Ponce commutator estimate
+`|⟨[Λˢ, u·∇]θ, Λˢθ⟩| ≤ K · ‖∇u‖_{L∞} · ‖θ‖²_{Ḣˢ}`
+composed with Sobolev embedding `Ḣˢ ⊂ L∞` for `s > 1` on 𝕋² — the
+live derivation target of `sqg-lean-proofs-fourier`.
+
+This section packages the two raw hypotheses (`hFluxH1`, `hFluxHs`) of
+§B.13 into a **single named structure** `HasGalerkinFluxBound`, so that
+the final Path B capstone consumes exactly one abstract classical input
+rather than two per-level hypothesis functions.  This collapses the
+§B.13 six-input signature to a five-input signature, and documents the
+remaining gap at a single named site.
+
+The structure carries:
+* nonneg scalars `K, L, T` (Kato–Ponce constant, Lipschitz-sup
+  bound, time horizon),
+* the flux inequality at `s = 1` and at each `s > 1`,
+on the Galerkin coefficient family `α`.
+
+**`.ofZero`** witnesses the bound unconditionally on zero data.
+
+**`.ofClassical`** takes the two raw hypothesis functions (the legacy
+§B.13 signature) and repackages them into the structure — the pure
+translation between the two signatures.  Useful as a legacy bridge when
+a caller already has both hypotheses broken out separately.
+
+When the companion fourier repo's quantitative Kato–Ponce commutator
+bound (`norm_partialCommutator_le_hs_fully_uniform`) is adapted to the
+lattice Galerkin flux form, a future `.ofFourierKatoPonce` constructor
+will discharge the structure without any abstract input.  That
+adaptation requires relating the fourier-repo's partial commutator on
+continuous 𝕋²→ℂ to the finite-dim `galerkinVectorField` — a nontrivial
+translation through `galerkinToLp` + `mFourierCoeff`. -/
+
+/-- **§B.14 — Pointwise Kato–Ponce flux-bound structure.**
+
+Bundles the two per-Sobolev-level flux inequalities
+
+```
+∀ n t ∈ [0, T), |galerkinHsFlux 1 (α n t)| ≤ 2·(K·L)·trigPolyEnergyHs 1 ...
+∀ s > 1, ∀ n t ∈ [0, T), |galerkinHsFlux s (α n t)| ≤ 2·(K·L)·trigPolyEnergyHs s ...
+```
+
+into one named structure, with nonneg scalars `K, L, T` and the two
+inequalities as fields.
+
+**Usage:** the caller provides one `HasGalerkinFluxBound` value which
+then discharges both `hFluxH1` and `hFluxHs` arguments of §B.13, giving
+the fully-concrete `ofGalerkin_nonZero_fullyConcrete` end-to-end
+constructor on the `§B.15` level. -/
+structure HasGalerkinFluxBound
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (K L : ℝ) : Prop where
+  /-- `0 ≤ K`, Kato–Ponce commutator constant nonneg. -/
+  K_nonneg : 0 ≤ K
+  /-- `0 ≤ L`, velocity Lipschitz-sup bound nonneg. -/
+  L_nonneg : 0 ≤ L
+  /-- Ḣ¹ flux inequality, for every time horizon `T ≥ 0`. -/
+  fluxH1 : ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T → ∀ x ∈ Set.Ico (0 : ℝ) T,
+    |galerkinHsFlux 1 (α n x)|
+      ≤ (2 * (K * L)) * trigPolyEnergyHs 1 (sqgBox n) (α n x)
+  /-- Ḣˢ flux inequality at each `s > 1`, for every time horizon `T ≥ 0`. -/
+  fluxHs : ∀ s : ℝ, 1 < s → ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T →
+    ∀ x ∈ Set.Ico (0 : ℝ) T,
+    |galerkinHsFlux s (α n x)|
+      ≤ (2 * (K * L)) * trigPolyEnergyHs s (sqgBox n) (α n x)
+
+/-- **§B.14.z — Zero-datum `HasGalerkinFluxBound` with `K = L = 0`.**
+On the zero Galerkin family, `galerkinVectorField (sqgBox n) 0 = 0`,
+so `galerkinHsFlux s 0 = 0`, and both sides of each inequality are
+`0 ≤ 0`.  Unconditional. -/
+theorem HasGalerkinFluxBound.ofZero :
+    HasGalerkinFluxBound (fun _ _ _ => (0 : ℂ)) 0 0 := by
+  refine
+    { K_nonneg := le_refl _
+      L_nonneg := le_refl _
+      fluxH1 := ?_
+      fluxHs := ?_ }
+  · intro n T _ x _
+    -- galerkinHsFlux on the zero family is 0.
+    have hFlux : galerkinHsFlux 1 (((fun _ _ _ => (0 : ℂ))
+        : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n x) = 0 := by
+      unfold galerkinHsFlux galerkinVectorField galerkinRHS galerkinExtend
+      simp
+    rw [hFlux, abs_zero]
+    have hNN : 0 ≤ trigPolyEnergyHs 1 (sqgBox n)
+        (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n x) :=
+      trigPolyEnergyHs_nonneg 1 _
+    have h2KL : (2 * ((0 : ℝ) * 0)) = 0 := by ring
+    rw [h2KL, zero_mul]
+  · intro s _ n T _ x _
+    have hFlux : galerkinHsFlux s (((fun _ _ _ => (0 : ℂ))
+        : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n x) = 0 := by
+      unfold galerkinHsFlux galerkinVectorField galerkinRHS galerkinExtend
+      simp
+    rw [hFlux, abs_zero]
+    have hNN : 0 ≤ trigPolyEnergyHs s (sqgBox n)
+        (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n x) :=
+      trigPolyEnergyHs_nonneg s _
+    have h2KL : (2 * ((0 : ℝ) * 0)) = 0 := by ring
+    rw [h2KL, zero_mul]
+
+/-- **§B.14.raw — `HasGalerkinFluxBound` from two raw hypothesis functions.**
+
+Legacy-shape constructor: takes the two per-level flux hypotheses in the
+§B.13 raw form (`hFluxH1, hFluxHs`) plus `K, L` nonneg, and repackages
+them into the named structure.  Useful when a caller has the bounds
+broken out as separate hypotheses and wants to feed the fullyConcrete
+path. -/
+theorem HasGalerkinFluxBound.ofHypotheses
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    {K L : ℝ} (hK : 0 ≤ K) (hL : 0 ≤ L)
+    (hFluxH1 : ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T → ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |galerkinHsFlux 1 (α n x)|
+        ≤ (2 * (K * L)) * trigPolyEnergyHs 1 (sqgBox n) (α n x))
+    (hFluxHs : ∀ s : ℝ, 1 < s → ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T →
+      ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |galerkinHsFlux s (α n x)|
+        ≤ (2 * (K * L)) * trigPolyEnergyHs s (sqgBox n) (α n x)) :
+    HasGalerkinFluxBound α K L where
+  K_nonneg := hK
+  L_nonneg := hL
+  fluxH1 := hFluxH1
+  fluxHs := hFluxHs
+
+/-! ### §B.15 Fully-concrete Path B capstone via `HasGalerkinFluxBound`
+
+Upgrade of §B.13's `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` that
+consumes a single `HasGalerkinFluxBound` bundle instead of two raw
+hypothesis functions.
+
+**Input change:** the six-argument signature `(hFluxH1, hFluxHs, K, Lip,
+hExpBound, ...)` collapses to `(flux : HasGalerkinFluxBound α K L,
+hExpBound, ...)`.  The Kato–Ponce constant `K` and the Lipschitz bound
+`L` are extracted from the structure; the two per-level flux bounds are
+extracted from `flux.fluxH1` / `flux.fluxHs`.
+
+**Named remaining gap:** `HasGalerkinFluxBound α K L` is the one narrow
+classical input — precisely the pointwise Kato–Ponce + Sobolev-embedding
+commutator estimate on the Galerkin flux.  Its discharge via the
+companion fourier repo's `norm_partialCommutator_le_hs_fully_uniform`
+requires a lattice↔continuous translation not yet present in-tree.  All
+other Path B fields (`HasGalerkinL2Conservation`, `HasVelocityRieszPreservation`,
+`HasGalerkinHsEnergyIdentity`, `HasVelocityLipSupBound` via `.ofSobolev`)
+are either concrete or discharged structurally from the structure's
+own `K_nonneg` / `L_nonneg`. -/
+
+/-- **§B.15 — Fully-concrete Path B capstone on non-zero data.**
+
+End-to-end constructor chaining §B.1–§B.12 into `HasSqgGalerkinAllSBound α`
+consuming:
+
+1. `α`, `hODE`, `hCoeff` — Galerkin ODE + ℓ² invariant (as in §B.13).
+2. `flux : HasGalerkinFluxBound α K L` — the **single named classical
+   input** packaging the Kato–Ponce + Sobolev flux estimate.
+3. `D₁, Dₛ, hD₁_init, hDₛ_init` — initial-data Ḣˢ bounds.
+4. `E, hE_nn, hExpBound` — exponential amplification on bounded horizon.
+
+Returns a `HasSqgGalerkinAllSBound α` ready for §10.174 / §11.36. -/
+noncomputable def HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hODE : ∀ n : ℕ, ∀ t : ℝ,
+      HasDerivAt (α n) (galerkinVectorField (sqgBox n) (α n t)) t)
+    (hCoeff : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖α n 0 m‖ ^ 2)
+    {K L : ℝ} (flux : HasGalerkinFluxBound α K L)
+    (D₁ : ℝ) (hD₁_init : ∀ n : ℕ,
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n 0)) ≤ D₁)
+    (Dₛ : ℝ → ℝ) (hDₛ_init : ∀ s : ℝ, 1 < s → ∀ n : ℕ,
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0)) ≤ Dₛ s)
+    (E : ℝ) (hE_nn : 0 ≤ E)
+    (hExpBound : ∀ t : ℝ, 0 ≤ t →
+      Real.exp ((2 * (K * L)) * t) ≤ E) :
+    HasSqgGalerkinAllSBound α :=
+  HasSqgGalerkinAllSBound.ofGalerkin_nonZero α hODE hCoeff
+    { K := K, K_nonneg := flux.K_nonneg }
+    { L := L, L_nonneg := flux.L_nonneg }
+    D₁ hD₁_init Dₛ hDₛ_init
+    E hE_nn
+    flux.fluxH1 flux.fluxHs
+    hExpBound
+
+/-- **§B.15.z — Zero-datum `ofGalerkin_nonZero_fullyConcrete`.**
+Unconditional end-to-end exercise on zero Galerkin data using the
+`HasGalerkinFluxBound.ofZero` witness. -/
+noncomputable def HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete_zero :
+    HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) :=
+  HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete
+    (α := fun _ _ _ => (0 : ℂ))
+    (fun n t => by
+      -- α ≡ 0, galerkinVectorField of 0 = 0, so HasDerivAt of const 0 at 0.
+      have h : galerkinVectorField (sqgBox n)
+          (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t) = 0 := by
+        funext m
+        unfold galerkinVectorField galerkinRHS galerkinExtend
+        simp
+      rw [h]; exact hasDerivAt_const t _)
+    (fun _ _ _ => by simp)
+    HasGalerkinFluxBound.ofZero
+    0 (fun n => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n 0).le)
+    (fun _ => 0) (fun s _ n =>
+      (hsSeminormSq_zero_galerkin_of_trinary_zero s n 0).le)
+    1 (by norm_num)
+    (fun t _ => by
+      -- K = L = 0, so exp(0·t) = 1 ≤ 1.
+      have h0 : (2 * ((0 : ℝ) * 0)) * t = 0 := by ring
+      rw [h0, Real.exp_zero])
+
 end SqgIdentity
