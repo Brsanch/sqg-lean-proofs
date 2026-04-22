@@ -24,12 +24,14 @@ uniform `Ḣˢ` bound on finite-Fourier-support Galerkin approximants:
 4. Sobolev embedding `Ḣˢ ⊂ L∞` for `s > 1` on `𝕋²`, supplied by
    `FourierAnalysis.KatoPonce.SobolevEmbedding`.
 
-The three `structure` hypotheses introduced here
-(`HasKatoPonceCommutatorBound`, `HasVelocityRieszPreservation`,
-`HasGalerkinGronwallClosure`) follow the same pattern as §11.34:
-they isolate the classical Fourier content from the SQG-specific
-chain, so Path A plumbing lands without blocking on the parallel
-Kato–Ponce agent in the fourier repo.
+The four hypothesis-keyed structures introduced here
+(`HasGalerkinL2Conservation`, `HasVelocityRieszPreservation`,
+`FourierKatoPonceConst`, `HasGalerkinGronwallClosure`) follow the
+same pattern as §11.34: they isolate the classical Fourier content
+from the SQG-specific chain, so Path A plumbing lands without
+blocking on the parallel Kato–Ponce agent in the fourier repo.
+The capstone `HasSqgGalerkinAllSBound.ofClassical` assembles all
+four into the global `Ḣˢ` bound hypothesis consumed by §10.174.
 -/
 
 import SqgIdentity.RieszTorus
@@ -134,19 +136,26 @@ Riesz-preservation and Sobolev embedding, it yields the ODE
 `d/dt ‖θ‖²_{Ḣˢ} ≤ C · ‖θ‖²_{Ḣˢ} · ‖θ‖_{Ḣˢ}` on the Galerkin
 truncation. -/
 
-/-- **§B.4 — Kato–Ponce commutator `Ḣˢ` bound (structural package).**
-Hypothesis-keyed form.  Parameters:
+/-- **§B.4 — Kato–Ponce commutator scalar constant (structural package).**
+Hypothesis-keyed form.  Carries only a nonneg scalar `K`.  The concrete
+commutator bound in terms of this constant is discharged at application
+time.  The in-tree analogue `HasKatoPonceCommutatorBound s C`
+(§11.6) already packages a concrete bound; this `Fourier` version
+strips the dependency on `paraRemainder` stubs so Path B can compile
+ahead of the fourier-repo commutator work.
+
+Parameters:
 * `K` — scalar constant (classically O(1), symbol-calculus argument).
 * `K_nonneg` — `0 ≤ K`. -/
-structure HasKatoPonceCommutatorBound where
+structure FourierKatoPonceConst where
   K : ℝ
   K_nonneg : 0 ≤ K
 
 /-- **§B.4.z — Trivial witness with `K = 0`.**
 On zero data the commutator vanishes, so the bound holds with `K = 0`.
 Parallel to §11.35 / §B.2.z. -/
-noncomputable def HasKatoPonceCommutatorBound.ofZero :
-    HasKatoPonceCommutatorBound where
+noncomputable def FourierKatoPonceConst.ofZero :
+    FourierKatoPonceConst where
   K := 0
   K_nonneg := le_refl _
 
@@ -186,7 +195,7 @@ structure HasGalerkinGronwallClosure
   /-- Classical velocity Riesz-preservation witness. -/
   riesz : HasVelocityRieszPreservation
   /-- Classical Kato–Ponce commutator bound witness. -/
-  commutator : HasKatoPonceCommutatorBound
+  commutator : FourierKatoPonceConst
   /-- The packaged `Ḣ¹` bound. -/
   hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
     hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁
@@ -204,7 +213,7 @@ noncomputable def HasGalerkinGronwallClosure.ofZero :
   Ms := fun _ => 0
   l2 := HasGalerkinL2Conservation.ofZero
   riesz := HasVelocityRieszPreservation.ofUnit
-  commutator := HasKatoPonceCommutatorBound.ofZero
+  commutator := FourierKatoPonceConst.ofZero
   hBoundOne := fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le
   hBoundS := fun n t _ s _ =>
     (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le
@@ -245,6 +254,7 @@ the trivial literal-zero `ofZero`. -/
 chain.**  Unconditional end-to-end test of the §B.6 composition. -/
 noncomputable def HasSqgGalerkinAllSBound.ofZero_viaClassical :
     HasSqgGalerkinAllSBound (fun _ _ _ => (0 : ℂ)) :=
-  HasSqgGalerkinAllSBound.ofClassical HasGalerkinGronwallClosure.ofZero
+  HasSqgGalerkinAllSBound.ofClassical
+    (α := fun _ _ _ => (0 : ℂ)) HasGalerkinGronwallClosure.ofZero
 
 end SqgIdentity
