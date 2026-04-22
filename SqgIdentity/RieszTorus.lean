@@ -25524,7 +25524,7 @@ theorem IsSqgTestFormWeakSolution.zero
               ((fun _ : ℝ =>
                 (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))) t) m
           = (0 : ℂ) := by
-      rw [h_coef_zero s, h_coef_zero t]; ring
+      simp [h_coef_zero]
     rw [h_target]
     -- The function is identically 0, so the Tendsto reduces to a constant-0 filter.
     have hfun_ε : (fun ε : ℝ => ∫ τ,
