@@ -2319,7 +2319,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     -- Choose R large enough: R ≥ √(8M/ε) suffices.
     by_cases hM0 : M = 0
     · refine ⟨0, ?_⟩
-      simp [hM0]; exact hε8
+      rw [hM0]
+      simp
+      exact hε8
     · have hM_pos : 0 < M := lt_of_le_of_ne hM_nn (Ne.symm hM0)
       -- R := ⌈√(8M/ε)⌉ + 1
       obtain ⟨R, hR⟩ : ∃ R : ℕ, 8 * M / ε < 1 + (R : ℝ) ^ 2 := by
@@ -2365,7 +2367,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
   -- Get N such that ∀ n ≥ N, low-freq sum < ε/2.
   rw [Metric.tendsto_nhds] at hLowConv
   have hε2 : 0 < ε / 2 := by positivity
-  have hLowMetric := (Metric.tendsto_atTop (α := ℝ)).mp hLowConv
+  have hLowMetric : ∀ ε' > 0, ∃ N, ∀ n ≥ N,
+      dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) 0 < ε' :=
+    (Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mp hLowConv
   obtain ⟨N, hN⟩ := hLowMetric (ε / 2) hε2
   refine ⟨N, fun n hn => ?_⟩
   specialize hN n hn
