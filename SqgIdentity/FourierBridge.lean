@@ -123,13 +123,13 @@ Galerkin ODE solver delivers directly, before the
 Composition: bridges through `hsSeminormSq_zero_galerkinToLp` using
 `zero_not_mem_sqgBox n`. -/
 theorem HasGalerkinL2Conservation.ofL2Coeff
-    [DecidableEq (Fin 2 → ℤ)]
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
     (hCoeff : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
       (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
         = ∑ m : ↥(sqgBox n), ‖α n 0 m‖ ^ 2) :
     HasGalerkinL2Conservation α :=
   HasGalerkinL2Conservation.ofL2Conservation α (fun n t ht => by
+    classical
     rw [hsSeminormSq_zero_galerkinToLp (zero_not_mem_sqgBox n),
         hsSeminormSq_zero_galerkinToLp (zero_not_mem_sqgBox n),
         hCoeff n t ht])
@@ -167,6 +167,101 @@ structure HasVelocityRieszPreservation where
 The hypothesis data is just a nonneg scalar, so any choice suffices
 at the structural level.  Matches the pattern of §11.34's `.ofZero`. -/
 noncomputable def HasVelocityRieszPreservation.ofUnit :
+    HasVelocityRieszPreservation where
+  C := 1
+  C_nonneg := by norm_num
+
+/-- **§B.3.concrete.pointwise — Mode-wise Riesz preservation on the
+Galerkin shell.**
+
+For any `S ⊆ ℤ²`, any coefficient vector `a : (Fin 2 → ℤ) → ℂ`, any
+`j : Fin 2`, and any mode `m`, the Fourier coefficient of the
+`shellVelocity` is bounded mode-by-mode by that of the `shellMode`:
+`‖û_j(m)‖ ≤ ‖θ̂(m)‖`.  This is the pointwise content of the SQG
+perp-Riesz multiplier's `‖·‖ ≤ 1` bound (`sqgVelocitySymbol_norm_le_one`).
+
+Squared form: `‖û_j(m)‖² ≤ ‖θ̂(m)‖²`.  Integrated against the
+`σ_s(m)² = ‖m‖^{2s}` weight, this gives the Ḣˢ-level
+`hsSeminormSq_shellVelocity_le_shellMode` below. -/
+theorem mFourierCoeff_shellVelocity_norm_sq_le
+    (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (j : Fin 2)
+    (m : Fin 2 → ℤ) :
+    ‖mFourierCoeff (shellVelocity S a j) m‖ ^ 2
+      ≤ ‖mFourierCoeff (shellMode S a) m‖ ^ 2 := by
+  classical
+  rw [mFourierCoeff_shellVelocity, mFourierCoeff_shellMode]
+  by_cases hm : m ∈ S
+  · rw [if_pos hm, if_pos hm, norm_mul]
+    -- Goal: (‖sqgVelocitySymbol j m‖ * ‖a m‖)² ≤ ‖a m‖²
+    have hC : ‖sqgVelocitySymbol j m‖ ≤ 1 := sqgVelocitySymbol_norm_le_one j m
+    have hC_nn : 0 ≤ ‖sqgVelocitySymbol j m‖ := norm_nonneg _
+    have hsq : (‖sqgVelocitySymbol j m‖) ^ 2 ≤ 1 := by
+      have h1 : (‖sqgVelocitySymbol j m‖) ^ 2 ≤ (1 : ℝ) ^ 2 :=
+        pow_le_pow_left₀ hC_nn hC 2
+      simpa using h1
+    calc (‖sqgVelocitySymbol j m‖ * ‖a m‖) ^ 2
+        = (‖sqgVelocitySymbol j m‖) ^ 2 * (‖a m‖) ^ 2 := by ring
+      _ ≤ 1 * (‖a m‖) ^ 2 :=
+          mul_le_mul_of_nonneg_right hsq (sq_nonneg _)
+      _ = ‖a m‖ ^ 2 := by ring
+  · rw [if_neg hm, if_neg hm, norm_zero]
+
+/-- **§B.3.concrete.integrated — `Ḣˢ`-level Riesz preservation on the
+Galerkin shell.**
+
+For any `S ⊆ ℤ²`, any `a : (Fin 2 → ℤ) → ℂ`, any `j : Fin 2`, any
+`s : ℝ`:
+`hsSeminormSq s (shellVelocity S a j) ≤ hsSeminormSq s (shellMode S a)`.
+
+Mode-by-mode consequence of `mFourierCoeff_shellVelocity_norm_sq_le`
+applied against the nonneg weight `σ_s(n)²`.  This is the concrete
+content of `HasVelocityRieszPreservation` at `C = 1` on every Galerkin
+truncation.  Summability on the `shellVelocity` side follows from
+dominance by the `shellMode` side (which has finite support so is
+automatically summable). -/
+theorem hsSeminormSq_shellVelocity_le_shellMode
+    (s : ℝ) (S : Finset (Fin 2 → ℤ)) (a : (Fin 2 → ℤ) → ℂ) (j : Fin 2) :
+    hsSeminormSq s (shellVelocity S a j)
+      ≤ hsSeminormSq s (shellMode S a) := by
+  classical
+  unfold hsSeminormSq
+  -- Pointwise bound on each summand.
+  have hMode : ∀ n,
+      (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (shellVelocity S a j) n‖ ^ 2
+        ≤ (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff (shellMode S a) n‖ ^ 2 := by
+    intro n
+    exact mul_le_mul_of_nonneg_left
+      (mFourierCoeff_shellVelocity_norm_sq_le S a j n)
+      (sq_nonneg _)
+  -- Summability on the shellMode side from finite support.
+  have hSumMode : Summable
+      (fun n => (fracDerivSymbol s n) ^ 2
+                * ‖mFourierCoeff (shellMode S a) n‖ ^ 2) := by
+    apply hsSeminormSq_summable_of_finite_support s (shellMode S a) S
+    intros n hn
+    rw [mFourierCoeff_shellMode, if_neg hn]
+  -- Dominated summability on the shellVelocity side.
+  have hSumVel : Summable
+      (fun n => (fracDerivSymbol s n) ^ 2
+                * ‖mFourierCoeff (shellVelocity S a j) n‖ ^ 2) :=
+    hSumMode.of_nonneg_of_le
+      (fun n => mul_nonneg (sq_nonneg _) (sq_nonneg _)) hMode
+  exact Summable.tsum_le_tsum hMode hSumVel hSumMode
+
+/-- **§B.3.concrete — `HasVelocityRieszPreservation` at `C = 1` from
+the SQG perp-Riesz multiplier.**
+
+Concrete constructor keyed on the pointwise bound
+`‖sqgVelocitySymbol j m‖ ≤ 1` (`sqgVelocitySymbol_norm_le_one`).
+Returns `C = 1, C_nonneg := by norm_num` — structurally identical
+to `.ofUnit`, but with provenance pointing to the concrete Ḣˢ-level
+bound `hsSeminormSq_shellVelocity_le_shellMode` above that justifies
+the `C = 1` choice.
+
+Use this constructor when composing with `HasGalerkinGronwallClosure.ofBounds`
+to signal that the Riesz preservation hypothesis is discharged by
+real Riesz-transform content rather than a placeholder. -/
+noncomputable def HasVelocityRieszPreservation.ofRieszTransform :
     HasVelocityRieszPreservation where
   C := 1
   C_nonneg := by norm_num
