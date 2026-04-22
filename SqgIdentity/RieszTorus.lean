@@ -25552,4 +25552,205 @@ theorem IsSqgTestFormWeakSolution.zero
     rw [hfun]
     exact aestronglyMeasurable_const
 
+/-! ### §10.183 Gap C: Aubin–Lions classical-hypothesis bundle
+
+**Goal.**  Narrow the `HasAubinLionsExtraction` hypothesis surface by
+packaging the *classical* analytical inputs to an Aubin–Lions
+extraction on the torus into a single bundle:
+
+1. A uniform `L²` bound `sup_{n,t} ‖α_n(t)‖_{L²} ≤ M_{L²}`.
+2. A uniform `H⁻²` time-derivative bound (via §10.138's
+   `UniformGalerkinRHSHsNegSqBound`), which classically yields
+   equicontinuity in `t` of the Galerkin trajectories into `H⁻²`.
+3. An `H¹ ⊂⊂ L²` compact-embedding witness on `𝕋²` — the
+   Rellich–Kondrachov step.  **This is the mathlib-level gap.**
+   mathlib v4.29 provides `Mathlib.Topology.MetricSpace.Sequences`
+   (sequential compactness API) but no packaged Rellich–Kondrachov on
+   the flat torus with H¹→L² semantics.  We therefore carry it as an
+   explicit hypothesis field `compactEmbedding` asserting that any
+   sequence in `Lp ℂ 2 (𝕋²)` bounded in the `Ḣ¹` seminorm has a
+   subsequence converging strongly in `L²`.
+
+The classical Aubin–Lions argument (Simon 1987, Cor. 4) then reads:
+Banach–Alaoglu on (1) + equicontinuity from (2) + Arzelà–Ascoli +
+compact embedding (3) ⇒ strong `L²` subsequence convergence at every
+rational `t`, upgraded to every real `t` by equicontinuity.
+
+**Scope honesty.**  We do *not* execute the Arzelà–Ascoli / Banach–
+Alaoglu chain in Lean here.  What we do:
+* Define the hypothesis bundle `HasAubinLionsHypotheses`.
+* Expose a constructor `HasAubinLionsExtraction.ofStrongL2Convergence`
+  that takes *already-extracted* strong-L² convergence data (what the
+  classical argument would produce) and packages it into the
+  structure.  This is the narrowest possible reduction of Gap C:
+  every downstream consumer of `HasAubinLionsExtraction` can be
+  rebuilt from "subsequence + limit + pointwise strong-L² convergence"
+  without any further analytical input.
+* Expose a constructor `HasAubinLionsExtraction.ofClassical` which
+  takes the classical hypothesis bundle together with a `classical`
+  Aubin–Lions oracle — a named hypothesis asserting that the
+  extraction exists.  This isolates the still-needed classical theorem
+  (Simon 1987) as a single named axiom-level hypothesis at the call
+  site, same pattern as `SqgEvolutionAxioms` in Items 2/6.
+
+The §10.139 structural chain `HasPerModeLimit` + `HasFourierSynthesis`
+→ `HasAubinLionsExtraction.ofPerModeLimit` remains the primary route;
+§10.183 provides a complementary entry point for callers who already
+have a raw strong-L² subsequence. -/
+
+/-- **Classical Aubin–Lions hypothesis bundle.**  Packages the three
+analytical inputs needed for an Aubin–Lions extraction on `𝕋²`:
+uniform `L²`, uniform `H⁻²` time-derivative, and an abstract
+compact-embedding witness (for the `H¹ ⊂⊂ L²` step which is
+currently a mathlib gap on the flat torus).
+
+The `compactEmbedding` field asserts: any sequence of `Lp ℂ 2 (𝕋²)`
+elements uniformly bounded in the `Ḣ¹` seminorm admits a subsequence
+converging strongly in `L²`.  This is Rellich–Kondrachov on `𝕋²`;
+mathlib v4.29 does not yet provide it as a packaged theorem. -/
+structure HasAubinLionsHypotheses
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
+  /-- Uniform `L²` bound `sup_{n,t ≥ 0} ‖galerkinToLp (sqgBox n) (α n t)‖² ≤ M_L²`. -/
+  M_L2 : ℝ
+  M_L2_nonneg : 0 ≤ M_L2
+  uniformL2 : ∀ (n : ℕ) (t : ℝ), 0 ≤ t →
+    (∫ x, ‖galerkinToLp (sqgBox n) (α n t) x‖ ^ 2) ≤ M_L2
+  /-- Initial-data match: the Galerkin initial data agree with `θ` in `L²`. -/
+  initL2 : ∀ n : ℕ,
+    (∫ x, ‖galerkinToLp (sqgBox n) (α n 0) x - θ x‖ ^ 2) ≤ M_L2
+  /-- Uniform `H⁻²` time-derivative bound from §10.138.  Encoded as the
+  Prop `UniformGalerkinRHSHsNegSqBound α 2 K`. -/
+  K_Hneg2 : ℝ
+  K_Hneg2_nonneg : 0 ≤ K_Hneg2
+  uniformHneg2 : UniformGalerkinRHSHsNegSqBound α 2 K_Hneg2
+  /-- Rellich–Kondrachov-style compact embedding on `𝕋²`.  Any sequence
+  in `Lp ℂ 2 (𝕋²)` bounded in the `Ḣ¹` seminorm admits a
+  strongly-`L²`-convergent subsequence.  **This is the mathlib gap**:
+  proved classically but not yet packaged in mathlib v4.29 for the
+  flat torus. -/
+  compactEmbedding :
+    ∀ (f : ℕ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+      (M_H1 : ℝ),
+    (∀ k, hsSeminormSq 1 (f k) ≤ M_H1) →
+    ∃ (g : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+      (φ : ℕ → ℕ),
+      StrictMono φ ∧
+      Filter.Tendsto
+        (fun k : ℕ => ∫ x, ‖(f (φ k)) x - g x‖ ^ 2)
+        Filter.atTop (nhds 0)
+
+/-- **Strong-L² convergence data**: a subsequence + limit + strong-L²
+convergence at every `t ≥ 0`.  This is exactly the *output* of a
+classical Aubin–Lions extraction.  Packaging it as a constructor lets
+downstream callers build `HasAubinLionsExtraction` directly from raw
+convergence data without threading through `HasPerModeLimit` /
+`HasFourierSynthesis`. -/
+structure AubinLionsStrongL2Data
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
+  /-- Extracted subsequence. -/
+  nsub : ℕ → ℕ
+  strictMono : StrictMono nsub
+  /-- Limit trajectory. -/
+  θ_lim : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))
+  /-- Initial-data match. -/
+  init_eq : θ_lim 0 = θ
+  /-- Strong-L² convergence pointwise-in-t. -/
+  tendsto_L2 : ∀ t : ℝ, 0 ≤ t →
+    Filter.Tendsto
+      (fun k : ℕ => ∫ x, ‖galerkinToLp (sqgBox (nsub k)) (α (nsub k) t) x
+              - θ_lim t x‖ ^ 2)
+      Filter.atTop (nhds 0)
+
+/-- **`HasAubinLionsExtraction.ofStrongL2Convergence`**.  The structural
+constructor: given already-extracted strong-L² convergence data,
+package it into the target structure.  This is a pure field-copy; it
+does NOT discharge any analytical content.  Its purpose is to give
+downstream callers a clean entry point when the classical
+compactness argument has been executed externally. -/
+noncomputable def HasAubinLionsExtraction.ofStrongL2Convergence
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    (data : AubinLionsStrongL2Data θ α) :
+    HasAubinLionsExtraction θ α where
+  nsub := data.nsub
+  strictMono := data.strictMono
+  θ_lim := data.θ_lim
+  init_eq := data.init_eq
+  tendsto_L2 := data.tendsto_L2
+
+/-- **Classical Aubin–Lions oracle.**  A named hypothesis asserting
+that from `HasAubinLionsHypotheses α θ` one can extract strong-L²
+convergence data.  This is Simon 1987, Corollary 4, specialised to
+`L²(𝕋²)` with time derivatives in `H⁻²`.  Packaged as a hypothesis at
+the same level as `SqgEvolutionAxioms` (Items 2/6): the classical
+theorem's *conclusion* is available; its Lean-formal proof requires
+Banach–Alaoglu + Arzelà–Ascoli + Rellich–Kondrachov plumbing that is
+not yet in mathlib for the flat torus.
+
+This is the single named analytical gap closing Gap C at the same
+standard as Items 3/4/5 (`HasSqgGalerkinAllSBound`, MMP hypotheses
+etc.): one named hypothesis isolates the classical content. -/
+def ClassicalAubinLionsExtractionHolds
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop :=
+  HasAubinLionsHypotheses α θ → Nonempty (AubinLionsStrongL2Data θ α)
+
+/-- **`HasAubinLionsExtraction.ofClassical`**.  Given the classical
+hypothesis bundle `HasAubinLionsHypotheses α θ` and the Aubin–Lions
+oracle `ClassicalAubinLionsExtractionHolds α θ`, produce a
+`HasAubinLionsExtraction θ α` witness.
+
+This is the Gap C closure at the hypothesis-bundle level: the only
+remaining analytical content not formalised in Lean is the single
+`ClassicalAubinLionsExtractionHolds` hypothesis, which corresponds to
+Simon 1987 Cor. 4 + Rellich–Kondrachov on `𝕋²`.  Both are classical
+theorems; their absence from mathlib v4.29 is the precise scope of
+Gap C's residual formalisation work.
+
+The downstream chain `HasAubinLionsExtraction →
+exists_sqgSolution_of_aubinLions → SqgSolution` is unaffected. -/
+noncomputable def HasAubinLionsExtraction.ofClassical
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hyp : HasAubinLionsHypotheses α θ)
+    (oracle : ClassicalAubinLionsExtractionHolds α θ) :
+    HasAubinLionsExtraction θ α :=
+  HasAubinLionsExtraction.ofStrongL2Convergence (oracle hyp).some
+
+/-- **Zero-datum `ClassicalAubinLionsExtractionHolds` instance.**
+For `α ≡ 0` and `θ = 0`, the classical oracle is discharged trivially:
+the zero-strong-L²-data witness is an `AubinLionsStrongL2Data`. -/
+theorem ClassicalAubinLionsExtractionHolds.ofZero :
+    ClassicalAubinLionsExtractionHolds
+      (fun _ _ _ => (0 : ℂ))
+      (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) := by
+  intro _
+  refine ⟨{
+    nsub := fun n => n
+    strictMono := strictMono_id
+    θ_lim := fun _ => 0
+    init_eq := rfl
+    tendsto_L2 := ?_ }⟩
+  intro t _
+  have hIntegrandZero : ∀ k : ℕ,
+      (∫ x, ‖galerkinToLp (sqgBox k)
+            (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t) x
+            - ((fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))))
+                t) x‖ ^ 2) = 0 := by
+    intro k
+    have hZeroFn :
+        ((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t
+          = (0 : ↥(sqgBox k) → ℂ) := by funext m; rfl
+    rw [hZeroFn, galerkinToLp_zero]
+    simp
+  rw [show (fun k : ℕ =>
+      ∫ x, ‖galerkinToLp (sqgBox k)
+            (((fun _ _ _ => (0 : ℂ)) : ∀ n, ℝ → (↥(sqgBox n) → ℂ)) k t) x
+            - ((fun _ : ℝ => (0 : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))))
+                t) x‖ ^ 2)
+      = fun _ : ℕ => (0 : ℝ) from funext hIntegrandZero]
+  exact tendsto_const_nhds
+
 end SqgIdentity
