@@ -19,9 +19,12 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 25,400 lines of Lean 4 source in the
-`RieszTorus` module (over 26,100 lines project-wide), with **zero
-`sorry` and no axioms beyond mathlib**.
+The formalization comprises over 25,290 lines of Lean 4 source in the
+`RieszTorus` module (over 26,260 lines project-wide, including the
+`FourierBridge` module that wires in the
+[sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+companion package for classical Littlewood–Paley / Kato–Ponce content),
+with **zero `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
 
