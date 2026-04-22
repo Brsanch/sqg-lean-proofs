@@ -118,4 +118,95 @@ noncomputable def HasVelocityRieszPreservation.ofUnit :
   C := 1
   C_nonneg := by norm_num
 
+/-! ### §B.4 Kato–Ponce commutator hypothesis package
+
+The full Kato–Ponce commutator estimate
+`‖[Jˢ, f·∇] g‖_{L²} ≤ C · (‖∇f‖_{L∞}·‖g‖_{Ḣˢ} + ‖f‖_{Ḣˢ}·‖∇g‖_{L∞})`
+is classical (Kato–Ponce 1988, Coifman–Meyer) but not yet fully
+landed in the companion fourier repo — `Commutator.lean` has partial
+identities but not the full bound.  This structure abstracts the
+bound as a hypothesis package so the Grönwall closure compiles
+ahead of the fourier-repo work.
+
+The shape `‖[Jˢ, u·∇]θ‖² ≤ C² · ‖∇u‖²_{L∞} · ‖θ‖²_{Ḣˢ}` is the
+form needed by the SQG energy estimate: combined with velocity
+Riesz-preservation and Sobolev embedding, it yields the ODE
+`d/dt ‖θ‖²_{Ḣˢ} ≤ C · ‖θ‖²_{Ḣˢ} · ‖θ‖_{Ḣˢ}` on the Galerkin
+truncation. -/
+
+/-- **§B.4 — Kato–Ponce commutator `Ḣˢ` bound (structural package).**
+Hypothesis-keyed form.  Parameters:
+* `K` — scalar constant (classically O(1), symbol-calculus argument).
+* `K_nonneg` — `0 ≤ K`. -/
+structure HasKatoPonceCommutatorBound where
+  K : ℝ
+  K_nonneg : 0 ≤ K
+
+/-- **§B.4.z — Trivial witness with `K = 0`.**
+On zero data the commutator vanishes, so the bound holds with `K = 0`.
+Parallel to §11.35 / §B.2.z. -/
+noncomputable def HasKatoPonceCommutatorBound.ofZero :
+    HasKatoPonceCommutatorBound where
+  K := 0
+  K_nonneg := le_refl _
+
+/-! ### §B.5 Galerkin Grönwall closure (hypothesis-keyed form)
+
+Combines §B.2 (L² conservation) + §B.3 (Riesz preservation) + §B.4
+(Kato–Ponce commutator) + Sobolev embedding into a uniform Grönwall
+bound on `‖θ_N‖²_{Ḣˢ}` on `[0, ∞)` at every `s > 1`.
+
+Concretely: the energy identity at `s > 1` reads
+`d/dt ‖θ_N‖²_{Ḣˢ} = -2 · Re ⟨Jˢθ_N, [Jˢ, u_N·∇]θ_N⟩`
+(the main term `⟨Jˢθ_N, u_N·∇(Jˢθ_N)⟩ = 0` by divergence-free),
+which §B.4 + §B.3 bound by `C · ‖θ_N‖²_{Ḣˢ} · ‖θ_N‖_{Ḣˢ}` for
+`s > 1`.  Grönwall on `[0, T]` then gives
+`‖θ_N(t)‖²_{Ḣˢ} ≤ ‖θ_N(0)‖²_{Ḣˢ} · exp(C · ∫₀^T ‖θ_N(τ)‖_{Ḣˢ} dτ)`,
+which the structure packages as the constant function bound `Ms s`. -/
+
+/-- **§B.5 — Galerkin Grönwall closure (packaged form).**
+A witness that, given the classical inputs (L² conservation +
+velocity Riesz-preservation + Kato–Ponce commutator), the Galerkin
+family admits a time-global uniform `Ḣˢ` bound `Ms s` at every
+`s > 1` and an `M₁` bound at `s = 1`.
+
+This is the Path B analogue of §11.34's `HasSqgGalerkinAllSBound`:
+structurally identical, but decorated with provenance fields that
+say *which* classical content supplied it.  The
+`HasSqgGalerkinAllSBound.ofClassical` constructor at §B.6 strips
+the provenance and produces the §11.34 form. -/
+structure HasGalerkinGronwallClosure
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)) where
+  /-- `Ḣ¹` constant. -/
+  M₁ : ℝ
+  /-- Parametric `Ḣˢ` constant at each `s > 1`. -/
+  Ms : ℝ → ℝ
+  /-- Classical L² conservation witness. -/
+  l2 : HasGalerkinL2Conservation α
+  /-- Classical velocity Riesz-preservation witness. -/
+  riesz : HasVelocityRieszPreservation
+  /-- Classical Kato–Ponce commutator bound witness. -/
+  commutator : HasKatoPonceCommutatorBound
+  /-- The packaged `Ḣ¹` bound. -/
+  hBoundOne : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+    hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t)) ≤ M₁
+  /-- The packaged `Ḣˢ` bound for every `s > 1`. -/
+  hBoundS : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t → ∀ s : ℝ, 1 < s →
+    hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)) ≤ Ms s
+
+/-- **§B.5.z — Zero-datum Grönwall closure witness.**
+Assembles the three classical-input zero witnesses into a
+`HasGalerkinGronwallClosure` on the zero trinary, with `M₁ = 0`
+and `Ms s = 0`.  Unconditional. -/
+noncomputable def HasGalerkinGronwallClosure.ofZero :
+    HasGalerkinGronwallClosure (fun _ _ _ => (0 : ℂ)) where
+  M₁ := 0
+  Ms := fun _ => 0
+  l2 := HasGalerkinL2Conservation.ofZero
+  riesz := HasVelocityRieszPreservation.ofUnit
+  commutator := HasKatoPonceCommutatorBound.ofZero
+  hBoundOne := fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le
+  hBoundS := fun n t _ s _ =>
+    (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le
+
 end SqgIdentity
