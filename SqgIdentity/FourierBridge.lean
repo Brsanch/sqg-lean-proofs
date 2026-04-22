@@ -2164,4 +2164,303 @@ theorem countable_diagonal_bounded_sequences [Encodable α]
 
 end DiagonalExtraction
 
+/-! ### §B.19 Assembly: `fourier_rellich_kondrachov`
+
+Assembles §B.16 (tail + single-mode bounds) with §B.18
+(countable diagonal extraction) into the full Rellich–Kondrachov
+oracle `FourierRellichKondrachovHolds`.
+
+The proof has four stages:
+
+1. **Diagonal extraction.** §B.18 applied with
+   `B k = √(M / (1 + (lInfNorm k)²))` produces a subsequence `φ`
+   and pointwise limit `cInf : (Fin 2 → ℤ) → ℂ`.  The per-mode bound
+   `‖c n k‖ ≤ B k` comes from §B.16.a composed with `Real.sqrt_le_sqrt`.
+
+2. **Fatou H¹ bound on `cInf`.**  Pointwise convergence + continuity
+   of finite sums + `Real.tsum_le_of_sum_le` lifts the uniform `H¹`
+   bound on the sequence to the limit.
+
+3. **Tail bound on `cInf`.**  Same argument as §B.16.c applied with
+   the Fatou bound as input.
+
+4. **ε/3 split.**  Given ε, pick `R` making the tail < ε/4 uniformly
+   in `n`.  Pointwise convergence on the finite set `lInfBall (R+1)`
+   closes the low-frequency part; the `(a-b)² ≤ 2(a² + b²)` split
+   handles the high-frequency tail.
+-/
+
+open Filter Topology
+
+/-- `Encodable (Fin 2 → ℤ)` via `Encodable.finArrow` on `Encodable ℤ`. -/
+instance : Encodable (Fin 2 → ℤ) := Encodable.finArrow
+
+/-- **§B.19 — Fourier Rellich–Kondrachov on `𝕋²`.**
+
+Full discharge of the `FourierRellichKondrachovHolds` oracle.  The
+proof assembles the countable diagonal extraction (§B.18), the
+uniform tail bound (§B.16), and a finite-ball / tail ε/3 argument. -/
+theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
+  intro c M hSumN hBoundN
+  classical
+  -- Per-mode supremum bound from §B.16.a.
+  set B : (Fin 2 → ℤ) → ℝ := fun k => Real.sqrt M with hB_def
+  have hB_nonneg : ∀ k, 0 ≤ B k := fun _ => Real.sqrt_nonneg _
+  have hB_bound : ∀ n k, ‖c n k‖ ≤ B k := by
+    intro n k
+    have h2 : ‖c n k‖ ^ 2 ≤ M :=
+      rellich_single_mode_le (c n) M (hSumN n) (hBoundN n) k
+    have hnn : (0 : ℝ) ≤ ‖c n k‖ := norm_nonneg _
+    have hM_nn : (0 : ℝ) ≤ M := le_trans (sq_nonneg _) h2
+    have := Real.sqrt_le_sqrt h2
+    rw [Real.sqrt_sq hnn] at this
+    exact this
+  -- Step 1: diagonal extraction.
+  obtain ⟨φ, hφ_mono, cInf, hPt⟩ :=
+    countable_diagonal_bounded_sequences (α := Fin 2 → ℤ) c B hB_bound
+  -- Abbreviations.
+  set w : (Fin 2 → ℤ) → ℝ := fun k =>
+    1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 with hw_def
+  have hw_nonneg : ∀ k, 0 ≤ w k := by
+    intro k; have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 :=
+      sq_nonneg _
+    simp [hw_def]; linarith
+  have hw_one : ∀ k, (1 : ℝ) ≤ w k := by
+    intro k; have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 :=
+      sq_nonneg _
+    simp [hw_def]; linarith
+  -- Step 2: Fatou H¹ bound on cInf.
+  -- Pointwise continuity: for each k, (c (φ n) k) → cInf k in ℂ, hence
+  -- ‖c (φ n) k‖² → ‖cInf k‖².
+  have hSqPt : ∀ k, Tendsto (fun n => ‖c (φ n) k‖ ^ 2) atTop (𝓝 (‖cInf k‖ ^ 2)) := by
+    intro k
+    have h1 : Tendsto (fun n => ‖c (φ n) k‖) atTop (𝓝 (‖cInf k‖)) :=
+      (continuous_norm.tendsto _).comp (hPt k)
+    simpa using h1.pow 2
+  have hWSqPt : ∀ k, Tendsto (fun n => w k * ‖c (φ n) k‖ ^ 2) atTop
+      (𝓝 (w k * ‖cInf k‖ ^ 2)) := fun k =>
+    (hSqPt k).const_mul (w k)
+  -- Finite-sum convergence.
+  have hFinPt : ∀ F : Finset (Fin 2 → ℤ),
+      Tendsto (fun n => ∑ k ∈ F, w k * ‖c (φ n) k‖ ^ 2) atTop
+        (𝓝 (∑ k ∈ F, w k * ‖cInf k‖ ^ 2)) := by
+    intro F
+    exact tendsto_finset_sum F (fun k _ => hWSqPt k)
+  -- Each finite sum ≤ M.
+  have hFinLeM : ∀ F : Finset (Fin 2 → ℤ),
+      ∑ k ∈ F, w k * ‖cInf k‖ ^ 2 ≤ M := by
+    intro F
+    have hEv : ∀ n, ∑ k ∈ F, w k * ‖c (φ n) k‖ ^ 2 ≤ M := by
+      intro n
+      have hNonneg : ∀ k, 0 ≤ w k * ‖c (φ n) k‖ ^ 2 := fun k =>
+        mul_nonneg (hw_nonneg k) (sq_nonneg _)
+      have hSub : ∑ k ∈ F, w k * ‖c (φ n) k‖ ^ 2
+          ≤ ∑' k, w k * ‖c (φ n) k‖ ^ 2 :=
+        (hSumN (φ n)).sum_le_tsum F (fun k _ => hNonneg k)
+      exact hSub.trans (hBoundN (φ n))
+    exact le_of_tendsto' (hFinPt F) hEv
+  -- Nonnegativity of limit terms.
+  have hLimNonneg : ∀ k, 0 ≤ w k * ‖cInf k‖ ^ 2 := fun k =>
+    mul_nonneg (hw_nonneg k) (sq_nonneg _)
+  -- Summable and tsum ≤ M.
+  have hSumLim : Summable (fun k => w k * ‖cInf k‖ ^ 2) :=
+    summable_of_sum_le hLimNonneg hFinLeM
+  have hTsumLim : ∑' k, w k * ‖cInf k‖ ^ 2 ≤ M :=
+    Real.tsum_le_of_sum_le hLimNonneg hFinLeM
+  -- Step 3: tail bound on cInf.  Same proof as §B.16.c but inlined.
+  have hTailLim : ∀ R : ℕ,
+      ∑' k : {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2
+        ≤ M / (1 + (R : ℝ) ^ 2) :=
+    fun R => rellich_H1_tail_bound cInf M R hSumLim hTsumLim
+  -- §B.16.c-style tail bound on each c (φ n).
+  have hTailSeq : ∀ n R,
+      ∑' k : {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2
+        ≤ M / (1 + (R : ℝ) ^ 2) :=
+    fun n R => rellich_H1_tail_bound (c (φ n)) M R (hSumN (φ n)) (hBoundN (φ n))
+  -- Unweighted summability.
+  have hUnwSeq : ∀ n, Summable (fun k => ‖c (φ n) k‖ ^ 2) :=
+    fun n => rellich_unweighted_summable (c (φ n)) (hSumN (φ n))
+  have hUnwLim : Summable (fun k => ‖cInf k‖ ^ 2) :=
+    rellich_unweighted_summable cInf hSumLim
+  -- Step 4: ε/3 argument for ℓ² Cauchy.
+  -- Goal: Tendsto (fun n => ∑' k, ‖c (φ n) k - cInf k‖²) atTop (𝓝 0).
+  -- First establish summability of the difference family.
+  have hM_nn : 0 ≤ M := by
+    have := hTsumLim
+    have hSum0 : 0 ≤ ∑' k, w k * ‖cInf k‖ ^ 2 := tsum_nonneg hLimNonneg
+    linarith
+  -- Elementary: ‖a - b‖² ≤ 2·(‖a‖² + ‖b‖²).
+  have hDiffBound : ∀ (a b : ℂ), ‖a - b‖ ^ 2 ≤ 2 * (‖a‖ ^ 2 + ‖b‖ ^ 2) := by
+    intro a b
+    have h1 : ‖a - b‖ ≤ ‖a‖ + ‖b‖ := norm_sub_le a b
+    have h2 : 0 ≤ ‖a - b‖ := norm_nonneg _
+    have h3 : ‖a - b‖ ^ 2 ≤ (‖a‖ + ‖b‖) ^ 2 := by
+      exact pow_le_pow_left h2 h1 2
+    have h4 : (‖a‖ + ‖b‖) ^ 2 ≤ 2 * (‖a‖ ^ 2 + ‖b‖ ^ 2) := by
+      have := sq_nonneg (‖a‖ - ‖b‖)
+      nlinarith [sq_nonneg (‖a‖ - ‖b‖), sq_nonneg (‖a‖ + ‖b‖)]
+    linarith
+  -- Summability of the difference family.
+  have hDiffSum : ∀ n, Summable (fun k => ‖c (φ n) k - cInf k‖ ^ 2) := by
+    intro n
+    refine Summable.of_nonneg_of_le (fun _ => sq_nonneg _)
+      (fun k => hDiffBound (c (φ n) k) (cInf k)) ?_
+    exact ((hUnwSeq n).add hUnwLim).mul_left 2
+  -- Squeeze: show ∀ ε > 0, eventually ∑' k, ‖…‖² < ε.
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  -- Pick radius R with M/(1+R²) < ε/8.
+  have hε8 : 0 < ε / 8 := by positivity
+  have hMε : ∃ R : ℕ, M / (1 + (R : ℝ) ^ 2) < ε / 8 := by
+    -- Choose R large enough: R ≥ √(8M/ε) suffices.
+    by_cases hM0 : M = 0
+    · refine ⟨0, ?_⟩
+      simp [hM0]; exact hε8
+    · have hM_pos : 0 < M := lt_of_le_of_ne hM_nn (Ne.symm hM0)
+      -- R := ⌈√(8M/ε)⌉ + 1
+      obtain ⟨R, hR⟩ : ∃ R : ℕ, 8 * M / ε < 1 + (R : ℝ) ^ 2 := by
+        set Q := 8 * M / ε
+        have hQ_nn : 0 ≤ Q := by positivity
+        obtain ⟨R, hR⟩ := exists_nat_gt (Real.sqrt Q)
+        refine ⟨R, ?_⟩
+        have hsq : Q = (Real.sqrt Q) ^ 2 := by
+          rw [sq]; exact (Real.mul_self_sqrt hQ_nn).symm
+        have hR_nn : 0 ≤ (R : ℝ) := by exact_mod_cast (Nat.zero_le R)
+        have hsqrt_nn : 0 ≤ Real.sqrt Q := Real.sqrt_nonneg _
+        have hsqlt : (Real.sqrt Q) ^ 2 < (R : ℝ) ^ 2 := by
+          have := sq_lt_sq' (by linarith) hR
+          exact this
+        linarith [hsqlt, hsq ▸ (le_refl Q)]
+      refine ⟨R, ?_⟩
+      have hpos : 0 < 1 + (R : ℝ) ^ 2 := by
+        have : (0 : ℝ) ≤ (R : ℝ) ^ 2 := sq_nonneg _; linarith
+      rw [div_lt_iff₀ hpos]
+      have : 8 * M < ε * (1 + (R : ℝ) ^ 2) := by
+        have := (div_lt_iff₀ hε).mp hR
+        linarith
+      linarith
+  obtain ⟨R, hR_lt⟩ := hMε
+  -- Low-frequency finite set: `lInfBall (R + 1) = {k : lInfNorm k < R + 1} = {k : lInfNorm k ≤ R}`.
+  set F_R : Finset (Fin 2 → ℤ) := FourierAnalysis.lInfBall (R + 1) with hF_R
+  -- Pointwise convergence on the finite set.
+  have hLowConv :
+      Tendsto (fun n => ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 0) := by
+    have hPtDiff : ∀ k, Tendsto (fun n => ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 0) := by
+      intro k
+      have h1 : Tendsto (fun n => c (φ n) k - cInf k) atTop (𝓝 0) := by
+        have := (hPt k).sub tendsto_const_nhds
+        simpa using this
+      have h2 : Tendsto (fun n => ‖c (φ n) k - cInf k‖) atTop (𝓝 0) := by
+        have := (continuous_norm.tendsto _).comp h1
+        simpa using this
+      have h3 : Tendsto (fun n => ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 (0 ^ 2)) :=
+        h2.pow 2
+      simpa using h3
+    have := tendsto_finset_sum F_R (fun k _ => hPtDiff k)
+    simpa using this
+  -- Get N such that ∀ n ≥ N, low-freq sum < ε/2.
+  rw [Metric.tendsto_nhds] at hLowConv
+  have hε2 : 0 < ε / 2 := by positivity
+  obtain ⟨N, hN⟩ := (hLowConv (ε / 2) hε2).exists_forall_of_atTop
+  refine Filter.eventually_atTop.mpr ⟨N, fun n hn => ?_⟩
+  specialize hN n hn
+  -- hN : dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖²) 0 < ε/2
+  have hNbound : ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 < ε / 2 := by
+    have hnn : 0 ≤ ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 :=
+      Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+    have := hN
+    rw [Real.dist_eq, abs_of_nonneg hnn] at this
+    linarith [this]
+  -- High-frequency tail: use hTailSeq and hTailLim.
+  -- Note: F_R = lInfBall (R+1), so k ∉ F_R ↔ R < lInfNorm k ↔ R + 1 ≤ lInfNorm k,
+  -- i.e. the complement subtype is {k // R < lInfNorm k}.
+  -- Split the tsum: low + high.
+  have hFR_iff : ∀ k, k ∈ F_R ↔ FourierAnalysis.lInfNorm k < R + 1 := by
+    intro k; simp [hF_R, FourierAnalysis.mem_lInfBall]
+  have hCompl_iff : ∀ k, k ∉ F_R ↔ R < FourierAnalysis.lInfNorm k := by
+    intro k; rw [hFR_iff]; omega
+  -- ∑' k, ‖diff k‖² = ∑ k ∈ F_R, … + ∑' (k : {k // k ∉ F_R}), …
+  have hSplit := (hDiffSum n).sum_add_tsum_subtype_compl F_R
+  -- hSplit : ∑ k ∈ F_R, ‖diff‖² + ∑' k : {k // k ∉ F_R}, ‖diff k.1‖² = ∑' k, ‖diff k‖²
+  -- Bound tail by 2(tail_seq + tail_lim).
+  have hTailDiff :
+      ∑' k : {k : Fin 2 → ℤ // k ∉ F_R}, ‖c (φ n) k.1 - cInf k.1‖ ^ 2
+        ≤ 2 * (M / (1 + (R : ℝ) ^ 2) + M / (1 + (R : ℝ) ^ 2)) := by
+    -- Convert subtype.
+    have hEq : (fun k : {k // k ∉ F_R} => ‖c (φ n) k.1 - cInf k.1‖ ^ 2)
+        = (fun k : {k // R < FourierAnalysis.lInfNorm k} =>
+            ‖c (φ n) k.1 - cInf k.1‖ ^ 2) ∘
+          (fun k : {k // k ∉ F_R} =>
+            (⟨k.1, (hCompl_iff k.1).mp k.2⟩ : {k // R < FourierAnalysis.lInfNorm k})) := by
+      funext k; rfl
+    -- Easier path: just bound directly.
+    -- Restricted summability (subtype of subtype).
+    have hSumRestr :
+        Summable (fun k : {k // k ∉ F_R} => ‖c (φ n) k.1 - cInf k.1‖ ^ 2) :=
+      (hDiffSum n).subtype _
+    -- Domination: ‖a - b‖² ≤ 2‖a‖² + 2‖b‖² pointwise.
+    have hDom : ∀ k : {k // k ∉ F_R},
+        ‖c (φ n) k.1 - cInf k.1‖ ^ 2
+          ≤ 2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2 := by
+      intro k
+      have := hDiffBound (c (φ n) k.1) (cInf k.1); linarith
+    have hSum_a : Summable (fun k : {k // k ∉ F_R} => ‖c (φ n) k.1‖ ^ 2) :=
+      (hUnwSeq n).subtype _
+    have hSum_b : Summable (fun k : {k // k ∉ F_R} => ‖cInf k.1‖ ^ 2) :=
+      hUnwLim.subtype _
+    have hSum_rhs :
+        Summable (fun k : {k // k ∉ F_R} =>
+          2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2) :=
+      (hSum_a.mul_left 2).add (hSum_b.mul_left 2)
+    have hTsumLe :
+        ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1 - cInf k.1‖ ^ 2
+          ≤ ∑' k : {k // k ∉ F_R},
+              (2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2) :=
+      hSumRestr.tsum_le_tsum hDom hSum_rhs
+    have hFactor :
+        ∑' k : {k // k ∉ F_R},
+            (2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2)
+          = 2 * ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
+            + 2 * ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2 := by
+      rw [tsum_add (hSum_a.mul_left 2) (hSum_b.mul_left 2)]
+      rw [tsum_mul_left, tsum_mul_left]
+    rw [hFactor] at hTsumLe
+    -- Now convert subtype {k // k ∉ F_R} to {k // R < lInfNorm k}.
+    have eConv : {k : Fin 2 → ℤ // k ∉ F_R} ≃ {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k} := {
+      toFun := fun k => ⟨k.1, (hCompl_iff k.1).mp k.2⟩
+      invFun := fun k => ⟨k.1, (hCompl_iff k.1).mpr k.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+    have hConv_a :
+        ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 :=
+      Equiv.tsum_eq eConv.symm (fun k => ‖c (φ n) k.1‖ ^ 2) |>.symm
+    have hConv_b :
+        ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 :=
+      Equiv.tsum_eq eConv.symm (fun k => ‖cInf k.1‖ ^ 2) |>.symm
+    rw [hConv_a, hConv_b] at hTsumLe
+    have := hTailSeq n R
+    have := hTailLim R
+    nlinarith [hTailSeq n R, hTailLim R, hTsumLe]
+  -- Assemble.
+  have hε_bound : 2 * (M / (1 + (R : ℝ) ^ 2) + M / (1 + (R : ℝ) ^ 2)) < ε / 2 := by
+    have : M / (1 + (R : ℝ) ^ 2) + M / (1 + (R : ℝ) ^ 2) < ε / 8 + ε / 8 := by linarith
+    linarith
+  have hTotal :
+      ∑' k, ‖c (φ n) k - cInf k‖ ^ 2 < ε := by
+    have := hSplit
+    -- ∑' = ∑ k ∈ F_R, … + ∑' k : {k // k ∉ F_R}, …
+    have heq : ∑' k, ‖c (φ n) k - cInf k‖ ^ 2 =
+        (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) +
+        ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1 - cInf k.1‖ ^ 2 := this.symm
+    rw [heq]
+    linarith [hNbound, hTailDiff, hε_bound]
+  -- Conclude.
+  rw [Real.dist_eq]
+  have hnn : 0 ≤ ∑' k, ‖c (φ n) k - cInf k‖ ^ 2 :=
+    tsum_nonneg (fun _ => sq_nonneg _)
+  rw [abs_of_nonneg (by linarith [hnn])]
+  linarith [hTotal]
+
 end SqgIdentity
