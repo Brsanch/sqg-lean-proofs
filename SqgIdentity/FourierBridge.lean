@@ -1652,7 +1652,7 @@ The classical proof is:
    boundedness `|c_n k|² ≤ M` for each fixed `k`.
 2. Heine–Borel on `ℂ` yields a convergent subsequence per mode.
 3. A diagonal extraction across the countable lattice `Fin 2 → ℤ`
-   gives pointwise convergence `c_{φ(n)} k → c∞ k` at every mode.
+   gives pointwise convergence `c_{φ(n)} k → cInf k` at every mode.
 4. The `H¹` tail bound `∑_{|k|>R} ‖c_n k‖² ≤ M / R²` shrinks the
    tail uniformly in `n`.
 5. On the finite ball `|k| ≤ R`, pointwise convergence plus the
@@ -1680,8 +1680,8 @@ Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` of Fourier-coefficient
 families, uniformly `H¹`-bounded in the sense
 `∀ n, ∑' k, (1 + (lInfNorm k : ℝ)²) · ‖c n k‖² ≤ M`, there exists a
 strictly monotone subsequence index `φ` and a limit
-`c∞ : (Fin 2 → ℤ) → ℂ` such that the `ℓ²` tails
-`∑' k, ‖c (φ n) k - c∞ k‖²` tend to `0` as `n → ∞`.
+`cInf : (Fin 2 → ℤ) → ℂ` such that the `ℓ²` tails
+`∑' k, ‖c (φ n) k - cInf k‖²` tend to `0` as `n → ∞`.
 
 This is the Fourier form of Rellich–Kondrachov `H¹ ⊂⊂ L²` on the
 flat two-torus, which is the statement shape needed by Aubin–Lions
@@ -1691,21 +1691,22 @@ def FourierRellichKondrachovHolds : Prop :=
     (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
         (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
           * ‖c n k‖ ^ 2 ≤ M) →
-    ∃ φ : ℕ → ℕ, ∃ c∞ : (Fin 2 → ℤ) → ℂ,
+    ∃ φ : ℕ → ℕ,
+    ∃ cInf : (Fin 2 → ℤ) → ℂ,
       StrictMono φ ∧
-      Filter.Tendsto
-        (fun n : ℕ => ∑' k : Fin 2 → ℤ, ‖c (φ n) k - c∞ k‖ ^ 2)
-        Filter.atTop (nhds 0)
+        Filter.Tendsto
+          (fun n : ℕ => ∑' k : Fin 2 → ℤ, ‖c (φ n) k - cInf k‖ ^ 2)
+          Filter.atTop (nhds 0)
 
 /-- **§B.15.zero — Zero-sequence sanity witness.**
 
 For the constant-zero family `c = fun _ _ => 0`, the conclusion
-shape holds trivially with `φ = id` and `c∞ = 0`.  This is *not*
+shape holds trivially with `φ = id` and `cInf = 0`.  This is *not*
 a discharge of the general oracle; it only certifies that the
 conclusion is satisfiable on the trivial input, matching the
 §11.35 / §B.14.z zero-datum pattern. -/
 theorem fourierRellichKondrachov_zero_witness :
-    ∃ φ : ℕ → ℕ, ∃ c∞ : (Fin 2 → ℤ) → ℂ,
+    ∃ φ : ℕ → ℕ, ∃ cInf : (Fin 2 → ℤ) → ℂ,
       StrictMono φ ∧
       Filter.Tendsto
         (fun n : ℕ =>
