@@ -20,11 +20,20 @@ The mathematical content is developed in the accompanying paper:
   ([markdown source](./paper/sqg-identity.md))
 
 The formalization comprises over 25,290 lines of Lean 4 source in the
-`RieszTorus` module (over 26,260 lines project-wide, including the
-`FourierBridge` module that wires in the
+`RieszTorus` module and 1,388 lines in the `FourierBridge` module
+(over 27,390 lines project-wide, wiring in the
 [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
-companion package for classical Littlewood–Paley / Kato–Ponce content),
-with **zero `sorry` and no axioms beyond mathlib**.
+companion package for classical Littlewood–Paley / Bony paraproduct /
+quantitative uniform-in-N Kato–Ponce commutator content), with
+**zero `sorry` and no axioms beyond mathlib**.
+
+The Path-B regularity chain `HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete`
+in `SqgIdentity/FourierBridge.lean` composes concrete discharges of
+the L² conservation, Riesz velocity preservation, Ḣˢ energy identity,
+velocity Lipschitz bound, and exponential Grönwall closure — one
+narrow named classical gap remains (`HasGalerkinFluxBound α K L`, a
+finite-dim lattice adaptation of the fourier repo's quantitative
+uniform-in-N Kato–Ponce bound).
 
 ## What is proven unconditionally
 
