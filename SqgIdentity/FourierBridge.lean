@@ -2320,7 +2320,8 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     by_cases hM0 : M = 0
     · refine ⟨0, ?_⟩
       rw [hM0]
-      simp
+      have : (0 : ℝ) / (1 + ((0 : ℕ) : ℝ) ^ 2) = 0 := by norm_num
+      rw [this]
       exact hε8
     · have hM_pos : 0 < M := lt_of_le_of_ne hM_nn (Ne.symm hM0)
       -- R := ⌈√(8M/ε)⌉ + 1
@@ -2367,19 +2368,20 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
   -- Get N such that ∀ n ≥ N, low-freq sum < ε/2.
   rw [Metric.tendsto_nhds] at hLowConv
   have hε2 : 0 < ε / 2 := by positivity
-  have hLowMetric : ∀ ε' > 0, ∃ N, ∀ n ≥ N,
-      dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) 0 < ε' :=
-    (Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mp hLowConv
-  obtain ⟨N, hN⟩ := hLowMetric (ε / 2) hε2
+  have hLowEv :
+      ∀ᶠ n in (atTop : Filter ℕ),
+        dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) 0 < ε / 2 :=
+    ((Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mp hLowConv) (ε / 2) hε2
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp hLowEv
   refine ⟨N, fun n hn => ?_⟩
   specialize hN n hn
   -- hN : dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖²) 0 < ε/2
   have hNbound : ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 < ε / 2 := by
     have hnn : 0 ≤ ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 :=
       Finset.sum_nonneg (fun _ _ => sq_nonneg _)
-    have := hN
-    rw [Real.dist_eq, abs_of_nonneg hnn] at this
-    linarith [this]
+    have h := hN
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg hnn] at h
+    exact h
   -- High-frequency tail: use hTailSeq and hTailLim.
   -- Note: F_R = lInfBall (R+1), so k ∉ F_R ↔ R < lInfNorm k ↔ R + 1 ≤ lInfNorm k,
   -- i.e. the complement subtype is {k // R < lInfNorm k}.
@@ -2431,7 +2433,7 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
             (2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2)
           = 2 * ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
             + 2 * ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2 := by
-      rw [tsum_add (hSum_a.mul_left 2) (hSum_b.mul_left 2)]
+      rw [Summable.tsum_add (hSum_a.mul_left 2) (hSum_b.mul_left 2)]
       rw [tsum_mul_left, tsum_mul_left]
     rw [hFactor] at hTsumLe
     -- Now convert subtype {k // k ∉ F_R} to {k // R < lInfNorm k}.
@@ -2442,12 +2444,17 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       right_inv := fun _ => rfl }
     have hConv_a :
         ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
-          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 :=
-      Equiv.tsum_eq eConv.symm (fun k => ‖c (φ n) k.1‖ ^ 2) |>.symm
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 := by
+      have := Equiv.tsum_eq eConv
+        (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c (φ n) k.1‖ ^ 2)
+      -- eConv sends {k // k ∉ F_R} ↦ {k // R < lInfNorm k} via same underlying k.
+      exact this
     have hConv_b :
         ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2
-          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 :=
-      Equiv.tsum_eq eConv.symm (fun k => ‖cInf k.1‖ ^ 2) |>.symm
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 := by
+      have := Equiv.tsum_eq eConv
+        (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖cInf k.1‖ ^ 2)
+      exact this
     rw [hConv_a, hConv_b] at hTsumLe
     have := hTailSeq n R
     have := hTailLim R
