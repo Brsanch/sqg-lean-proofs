@@ -1936,25 +1936,17 @@ Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` uniformly `H¹`-bounded b
 subsequence with a pointwise limit that itself satisfies the `H¹`
 bound.  This is the Bolzano–Weierstrass + Fatou content of
 Rellich–Kondrachov, isolated from the `ℓ²` tail-split plumbing. -/
-structure HasDiagonalExtraction
-    (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ) : Prop where
-  /-- Subsequence index. -/
-  φ : ℕ → ℕ
-  /-- Strictly monotone. -/
-  hφ : StrictMono φ
-  /-- Pointwise limit across all lattice modes. -/
-  cInf : (Fin 2 → ℤ) → ℂ
-  /-- Mode-wise convergence `c (φ n) k → cInf k`. -/
-  hPointwise : ∀ k : Fin 2 → ℤ,
-    Filter.Tendsto (fun n : ℕ => c (φ n) k) Filter.atTop (nhds (cInf k))
-  /-- Limit inherits `H¹` bound (Fatou). -/
-  hLimitH1 : ∑' k : Fin 2 → ℤ,
-      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
-        * ‖cInf k‖ ^ 2 ≤ M
-  /-- Limit's `H¹`-weighted family is summable (matches the
-      strengthened hypothesis of `FourierRellichKondrachovHolds`). -/
-  hLimitSumm : Summable (fun k : Fin 2 → ℤ =>
-    (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖cInf k‖ ^ 2)
+def HasDiagonalExtraction
+    (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ) : Prop :=
+  ∃ φ : ℕ → ℕ, ∃ cInf : (Fin 2 → ℤ) → ℂ,
+    StrictMono φ ∧
+    (∀ k : Fin 2 → ℤ,
+      Filter.Tendsto (fun n : ℕ => c (φ n) k) Filter.atTop (nhds (cInf k))) ∧
+    (∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖cInf k‖ ^ 2 ≤ M) ∧
+    Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖cInf k‖ ^ 2)
 
 /-- **§B.17.narrow — Fourier-form Rellich–Kondrachov, narrowed.**
 
