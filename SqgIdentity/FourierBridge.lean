@@ -2226,9 +2226,11 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       sq_nonneg _
     simp [hw_def]; linarith
   have hw_one : ∀ k, (1 : ℝ) ≤ w k := by
-    intro k; have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 :=
+    intro k
+    have h0 : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 :=
       sq_nonneg _
-    simp [hw_def]; linarith
+    show (1 : ℝ) ≤ 1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2
+    linarith
   -- Step 2: Fatou H¹ bound on cInf.
   -- Pointwise continuity: for each k, (c (φ n) k) → cInf k in ℂ, hence
   -- ‖c (φ n) k‖² → ‖cInf k‖².
@@ -2295,7 +2297,8 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
     have h1 : ‖a - b‖ ≤ ‖a‖ + ‖b‖ := norm_sub_le a b
     have h2 : 0 ≤ ‖a - b‖ := norm_nonneg _
     have h3 : ‖a - b‖ ^ 2 ≤ (‖a‖ + ‖b‖) ^ 2 := by
-      exact pow_le_pow_left h2 h1 2
+      have h2' : 0 ≤ ‖a‖ + ‖b‖ := by positivity
+      nlinarith [h1, h2, h2']
     have h4 : (‖a‖ + ‖b‖) ^ 2 ≤ 2 * (‖a‖ ^ 2 + ‖b‖ ^ 2) := by
       have := sq_nonneg (‖a‖ - ‖b‖)
       nlinarith [sq_nonneg (‖a‖ - ‖b‖), sq_nonneg (‖a‖ + ‖b‖)]
@@ -2307,7 +2310,7 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       (fun k => hDiffBound (c (φ n) k) (cInf k)) ?_
     exact ((hUnwSeq n).add hUnwLim).mul_left 2
   -- Squeeze: show ∀ ε > 0, eventually ∑' k, ‖…‖² < ε.
-  rw [Metric.tendsto_nhds]
+  refine Metric.tendsto_nhds.mpr ?_
   intro ε hε
   -- Pick radius R with M/(1+R²) < ε/8.
   have hε8 : 0 < ε / 8 := by positivity
