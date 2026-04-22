@@ -1550,6 +1550,97 @@ theorem HasGalerkinFluxBound.ofVectorFieldBound
     exact abs_galerkinHsFlux_le_of_vectorFieldBound (α n x) hKL
       (hVF s hs.le n T hT x hx)
 
+/-! ### §B.14.lat — Pointwise lattice bound on the Galerkin vector field
+
+Unconditional pointwise bound: each coordinate of `galerkinVectorField S c`
+is bounded by a finite convolution on the lattice.  Uses only two
+ingredients already in the repo:
+
+* `sqgVelocitySymbol_norm_le_one` (Riesz contractivity per-mode per-component).
+* `norm_derivSymbol_le` — `‖∂̂_j n‖ ≤ ‖n‖`.
+
+The resulting bound
+`‖galerkinVectorField S c m‖ ≤ 2·∑_{ℓ∈S, m-ℓ∈S} ‖c ℓ‖·‖c (m-ℓ)‖·latticeNorm (m-ℓ)`
+is the natural input to a Kato–Ponce-style `Ḣˢ` bound, because the
+factor `latticeNorm (m-ℓ)` is exactly the `‖ℓ‖` weight a gradient
+commutator introduces.
+
+This section is Path-B infrastructure: it converts the abstract
+`galerkinVectorField` into a concrete lattice-convolution shape that
+the downstream Fourier-repo Kato–Ponce proof can terminate.  No
+hypothesis is introduced; this is proven unconditionally.
+-/
+
+set_option maxHeartbeats 400000 in
+/-- **§B.14.lat — Pointwise j-sum bound.** The inner j-sum in
+`galerkinRHS` is bounded pointwise by `2·latticeNorm (m-ℓ)` via
+Riesz contractivity (`sqgVelocitySymbol_norm_le_one`) plus the
+elementary `‖∂̂_j n‖ ≤ ‖n‖` estimate, summed over `j : Fin 2`. -/
+lemma norm_sqgVelocitySymbol_derivSymbol_jSum_le
+    (ℓ k : Fin 2 → ℤ) :
+    ‖∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j k‖
+      ≤ 2 * latticeNorm k := by
+  refine (norm_sum_le _ _).trans ?_
+  have hterm : ∀ j : Fin 2,
+      ‖sqgVelocitySymbol j ℓ * derivSymbol j k‖ ≤ latticeNorm k := by
+    intro j
+    rw [norm_mul]
+    calc ‖sqgVelocitySymbol j ℓ‖ * ‖derivSymbol j k‖
+        ≤ 1 * ‖derivSymbol j k‖ :=
+          mul_le_mul_of_nonneg_right
+            (sqgVelocitySymbol_norm_le_one j ℓ) (norm_nonneg _)
+      _ = ‖derivSymbol j k‖ := one_mul _
+      _ ≤ latticeNorm k := norm_derivSymbol_le j k
+  calc ∑ j : Fin 2, ‖sqgVelocitySymbol j ℓ * derivSymbol j k‖
+      ≤ ∑ _j : Fin 2, latticeNorm k :=
+        Finset.sum_le_sum (fun j _ => hterm j)
+    _ = 2 * latticeNorm k := by
+        simp [Finset.sum_const, Finset.card_fin, mul_comm]
+
+set_option maxHeartbeats 400000 in
+/-- **§B.14.lat — Pointwise lattice-convolution bound on
+`galerkinRHS`.**  For every `c : (Fin 2 → ℤ) → ℂ` and every `m`,
+`‖galerkinRHS S c m‖` is bounded by the finite convolution
+`2 · ∑_{ℓ ∈ filter} ‖c ℓ‖ · ‖c (m-ℓ)‖ · latticeNorm (m-ℓ)`.
+Combines `norm_sqgVelocitySymbol_derivSymbol_jSum_le` with the
+triangle inequality on the outer `Finset.sum`. -/
+lemma norm_galerkinRHS_le_latticeConvolution
+    [DecidableEq (Fin 2 → ℤ)]
+    (S : Finset (Fin 2 → ℤ))
+    (c : (Fin 2 → ℤ) → ℂ) (m : Fin 2 → ℤ) :
+    ‖galerkinRHS S c m‖
+      ≤ ∑ ℓ ∈ S.filter (fun ℓ => m - ℓ ∈ S),
+          ‖c ℓ‖ * ‖c (m - ℓ)‖ * (2 * latticeNorm (m - ℓ)) := by
+  unfold galerkinRHS
+  rw [norm_neg]
+  refine (norm_sum_le _ _).trans ?_
+  refine Finset.sum_le_sum (fun ℓ _ => ?_)
+  rw [norm_mul, norm_mul]
+  have hjSum :
+      ‖∑ j : Fin 2, sqgVelocitySymbol j ℓ * derivSymbol j (m - ℓ)‖
+        ≤ 2 * latticeNorm (m - ℓ) :=
+    norm_sqgVelocitySymbol_derivSymbol_jSum_le ℓ (m - ℓ)
+  have hcℓ : 0 ≤ ‖c ℓ‖ := norm_nonneg _
+  have hcmℓ : 0 ≤ ‖c (m - ℓ)‖ := norm_nonneg _
+  have hprod_nn : 0 ≤ ‖c ℓ‖ * ‖c (m - ℓ)‖ := mul_nonneg hcℓ hcmℓ
+  exact mul_le_mul_of_nonneg_left hjSum hprod_nn
+
+set_option maxHeartbeats 400000 in
+/-- **§B.14.lat — Pointwise lattice-convolution bound on
+`galerkinVectorField`.**  The state-space-level version of
+`norm_galerkinRHS_le_latticeConvolution`, with `c` a finite-support
+coefficient function on the Galerkin shell `S`. -/
+lemma norm_galerkinVectorField_le_latticeConvolution
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (m : ↥S) :
+    ‖galerkinVectorField S c m‖
+      ≤ ∑ ℓ ∈ S.filter (fun ℓ => (m : Fin 2 → ℤ) - ℓ ∈ S),
+          ‖galerkinExtend S c ℓ‖ *
+            ‖galerkinExtend S c ((m : Fin 2 → ℤ) - ℓ)‖ *
+            (2 * latticeNorm ((m : Fin 2 → ℤ) - ℓ)) := by
+  show ‖galerkinRHS S (galerkinExtend S c) (m : Fin 2 → ℤ)‖ ≤ _
+  exact norm_galerkinRHS_le_latticeConvolution S (galerkinExtend S c) _
+
 /-! ### §B.15 Fully-concrete Path B capstone via `HasGalerkinFluxBound`
 
 Upgrade of §B.13's `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` that
