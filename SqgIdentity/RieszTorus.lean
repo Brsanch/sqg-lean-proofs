@@ -17964,6 +17964,44 @@ theorem HasGalerkinLimitVelocity.ofZero :
   intros j t
   exact IsSqgVelocityComponent.of_zero j
 
+/-- **Classical velocity witness from pointwise existence.**
+
+Given any scalar trajectory `θ_lim : ℝ → Lp ℂ 2` and a pointwise
+existence hypothesis
+`hExists : ∀ (j : Fin 2) (t : ℝ), ∃ u_j, IsSqgVelocityComponent (θ_lim t) u_j j`,
+we bundle the per-`(j, t)` witness into a single velocity family
+`u : Fin 2 → ℝ → Lp ℂ 2` via `Classical.choose`.  The existence
+hypothesis carries the mode-wise classical Riesz-multiplier content
+`u_j(t)ˆ(m) = sqgVelocitySymbol j m · θ̂(m)`; this constructor simply
+packages it into the `HasGalerkinLimitVelocity` shape expected by
+`SqgEvolutionAxioms.of_galerkinLimit`. -/
+noncomputable def HasGalerkinLimitVelocity.ofClassical
+    (θ_lim : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hExists : ∀ (j : Fin 2) (t : ℝ),
+        ∃ u_j : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))),
+          IsSqgVelocityComponent (θ_lim t) u_j j) :
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) //
+      HasGalerkinLimitVelocity θ_lim u} :=
+  ⟨fun j t => Classical.choose (hExists j t),
+    fun j t => Classical.choose_spec (hExists j t)⟩
+
+/-- **Velocity-witness extraction from `SqgEvolutionAxioms`.**
+
+`SqgEvolutionAxioms.velocityIsRieszTransform` produces, for each
+axis `j`, an existential
+`∃ u_j : ℝ → Lp ℂ 2, ∀ t, IsSqgVelocityComponent (θ t) (u_j t) j`.
+Bundling over `j` via `Classical.choose` yields a
+`HasGalerkinLimitVelocity θ u` witness directly.  Lets downstream
+constructors start from a bare `SqgEvolutionAxioms` rather than
+having to manually extract each axis. -/
+noncomputable def HasGalerkinLimitVelocity.ofSqgAxioms
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (hAx : SqgEvolutionAxioms θ) :
+    {u : Fin 2 → ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) //
+      HasGalerkinLimitVelocity θ u} :=
+  ⟨fun j => Classical.choose (hAx.velocityIsRieszTransform j),
+    fun j t => Classical.choose_spec (hAx.velocityIsRieszTransform j) t⟩
+
 /-- **`SqgEvolutionAxioms` for a packaged Galerkin-limit trajectory.**
 
 Assumes:
