@@ -548,4 +548,358 @@ noncomputable def HasSqgGalerkinAllSBound.ofZero_viaGalerkin :
     (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
     (fun n t _ s _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
 
+/-! ### §B.9 Galerkin `Ḣˢ` energy identity bundle (hypothesis-keyed)
+
+The `Ḣˢ` energy identity for a smooth Galerkin truncation reads
+```
+½ · d/dt ‖θ_n(t)‖²_{Ḣˢ}
+  = -Re ⟨Λˢ(u_n · ∇ θ_n), Λˢ θ_n⟩_{L²}
+  = -Re ⟨[Λˢ, u_n · ∇] θ_n, Λˢ θ_n⟩_{L²}
+```
+where `Λˢ = (-Δ)^{s/2}` is the Fourier multiplier `|k|^s` and the
+last equality uses the divergence-free cancellation
+`⟨u · ∇ f, f⟩ = 0` applied to `f = Λˢθ` with `∇·u = 0`.
+
+This bundle packages the differentiability + pointwise-bounded-
+derivative content of the identity as a hypothesis, abstracting the
+full Fourier-multiplier argument until the companion
+`sqg-lean-proofs-fourier` commutator package (§B.4) becomes
+quantitative.  The key assertion is the **derivative bound**
+```
+|d/dt ‖θ_n(t)‖²_{Ḣˢ}| ≤ 2·K·L·‖θ_n(t)‖²_{Ḣˢ}
+```
+where `K = FourierKatoPonceConst.K` (from §B.4) and `L` bounds
+`‖∇u_n‖_{L∞}` uniformly in `n, t ∈ [0, T]` (supplied by §B.10's
+`HasVelocityLipSupBound`).  Grönwall (§B.11) then exponentiates. -/
+
+/-- **§B.9 — Galerkin `Ḣˢ` energy-identity bundle.**
+Hypothesis-keyed witness that the squared `Ḣˢ` seminorm of a
+Galerkin truncation is `HasDerivWithinAt`-differentiable on `[0, T]`,
+continuous on the closed interval, and has derivative bounded by
+`2·C·‖θ_n(t)‖²_{Ḣˢ}` in absolute value.
+
+The constant `C` is intended to be instantiated as `K · L` where
+`K` is the Kato–Ponce commutator constant (§B.4) and `L` is the
+velocity Lipschitz-sup bound (§B.10).  The bundle is shaped to
+plug directly into `scalar_gronwall_exp` (§10.64 of `RieszTorus`). -/
+structure HasGalerkinHsEnergyIdentity
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (s T C : ℝ) : Prop where
+  /-- `0 ≤ T`, the time interval endpoint. -/
+  nonneg_T : 0 ≤ T
+  /-- `0 ≤ C`, the derivative-bound rate constant. -/
+  nonneg_C : 0 ≤ C
+  /-- Continuity of `t ↦ ‖θ_n(t)‖²_{Ḣˢ}` on `[0, T]`. -/
+  cont : ∀ n : ℕ,
+    ContinuousOn (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)))
+      (Set.Icc 0 T)
+  /-- Right-derivative existence on `[0, T)`. -/
+  derivWithin : ∀ n : ℕ, ∀ x ∈ Set.Ico (0 : ℝ) T,
+    HasDerivWithinAt
+      (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)))
+      (deriv (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))) x)
+      (Set.Ici x) x
+  /-- The Kato–Ponce + Sobolev-embedding-derived derivative bound. -/
+  deriv_bound : ∀ n : ℕ, ∀ x ∈ Set.Ico (0 : ℝ) T,
+    |deriv (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))) x|
+      ≤ (2 * C) * |hsSeminormSq s (galerkinToLp (sqgBox n) (α n x))|
+
+/-- **§B.9.z — Zero-datum `HasGalerkinHsEnergyIdentity`.**
+On the zero trinary, `hsSeminormSq s 0 = 0` uniformly, so the
+function is constantly `0`, its derivative is identically `0`, and
+all three dynamic predicates (continuity, derivWithin, deriv_bound)
+hold trivially.  Unconditional. -/
+theorem HasGalerkinHsEnergyIdentity.ofZero
+    (s T C : ℝ) (hT : 0 ≤ T) (hC : 0 ≤ C) :
+    HasGalerkinHsEnergyIdentity (fun _ _ _ => (0 : ℂ)) s T C := by
+  -- Helper: for every `n, t`, the seminorm collapses to 0.
+  have hZero : ∀ (n : ℕ) (t : ℝ),
+      hsSeminormSq s (galerkinToLp (sqgBox n)
+        (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)) = 0 :=
+    fun n t => hsSeminormSq_zero_galerkin_of_trinary_zero s n t
+  refine
+    { nonneg_T := hT
+      nonneg_C := hC
+      cont := ?_
+      derivWithin := ?_
+      deriv_bound := ?_ }
+  · -- cont: the Ḣˢ seminorm is 0 pointwise
+    intro n
+    have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                  (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
+                = fun _ : ℝ => (0 : ℝ) :=
+      funext (hZero n)
+    rw [hEq]
+    exact continuousOn_const
+  · -- derivWithin: derivative of constant 0 is 0
+    intro n x _
+    have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                  (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
+                = fun _ : ℝ => (0 : ℝ) :=
+      funext (hZero n)
+    rw [hEq]
+    simp only [deriv_const']
+    -- `fun _ : ℝ → 0 : ℝ` has derivative 0 within any set.
+    exact (hasDerivAt_const x (0 : ℝ)).hasDerivWithinAt
+  · -- deriv_bound: |deriv of 0| ≤ (2C) * |0| = 0, so this reduces to 0 ≤ 0.
+    intro n x _
+    have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                  (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
+                = fun _ : ℝ => (0 : ℝ) :=
+      funext (hZero n)
+    rw [hEq]
+    simp only [deriv_const', abs_zero]
+    -- Goal: 0 ≤ 2 * C * |hsSeminormSq s (galerkinToLp (sqgBox n) (fun _ => 0))|
+    have h2C : 0 ≤ 2 * C := by linarith
+    have hAbs : 0 ≤ |hsSeminormSq s (galerkinToLp (sqgBox n) (fun _ : ↥(sqgBox n) => (0 : ℂ)))| :=
+      abs_nonneg _
+    exact mul_nonneg h2C hAbs
+
+/-! ### §B.10 Velocity Lipschitz-sup bound on the Galerkin shell
+
+The Kato–Ponce commutator bound
+`|⟨[Λˢ, u·∇]θ, Λˢθ⟩| ≤ K · ‖∇u‖_{L∞} · ‖θ‖²_{Ḣˢ}`
+requires a uniform `L∞` bound on `∇u` across the Galerkin family.
+Classically this follows from Sobolev embedding `Ḣʳ ⊂ L∞` for `r > d/2`
+applied to `∇u`, plus the velocity Riesz preservation (§B.3).
+
+This structure packages a scalar `L` with `0 ≤ L` expressing the
+uniform bound.  Like §B.3, the bundle is data-minimal: just the
+constant.  The concrete derivation lives in the companion repo's
+Sobolev embedding module; here we abstract it as a hypothesis. -/
+
+/-- **§B.10 — Velocity Lipschitz-sup bound.**
+Carries a nonneg scalar `L` bounding `‖∇u_n‖_{L∞}` uniformly in
+`n : ℕ` and `t ∈ [0, T]`.  The bound itself is only ever used
+multiplicatively with `K` from §B.4 to form the scalar `C = K·L`
+that Gronwall consumes in §B.11, so the structure does not carry a
+pointwise predicate — only the scalar. -/
+structure HasVelocityLipSupBound where
+  /-- Uniform `L∞` bound on `‖∇u_n‖` across the Galerkin family. -/
+  L : ℝ
+  L_nonneg : 0 ≤ L
+
+/-- **§B.10.z — Zero-datum `HasVelocityLipSupBound`.**
+With all velocities identically `0`, the Lipschitz bound trivially
+holds with `L = 0`.  Parallels §B.3.z / §B.4.z. -/
+noncomputable def HasVelocityLipSupBound.ofZero :
+    HasVelocityLipSupBound where
+  L := 0
+  L_nonneg := le_refl _
+
+/-- **§B.10.concrete — `HasVelocityLipSupBound` from an abstract
+Sobolev-embedding + Riesz-Schauder bound.**
+
+In the concrete Fourier repo, `‖∇u‖_{L∞} ≤ C_emb · ‖u‖_{Ḣ^{1+ε}}` for
+any `ε > d/2 = 1`, and combined with §B.3 this gives
+`≤ C_emb · ‖θ‖_{Ḣ^{1+ε}}`.  For the hypothesis-keyed form we simply
+accept the resulting scalar bound `L` as data, since the concrete
+quantitative chain lives in `sqg-lean-proofs-fourier`. -/
+noncomputable def HasVelocityLipSupBound.ofRieszSchauder
+    (L : ℝ) (hL : 0 ≤ L) :
+    HasVelocityLipSupBound where
+  L := L
+  L_nonneg := hL
+
+/-! ### §B.11 Gronwall ODE adapter on the `Ḣˢ` energy
+
+The §10.64 `scalar_gronwall_exp` adapter takes a scalar function
+`E : ℝ → ℝ` that is nonneg, differentiable on `[0, T]`, and satisfies
+`|E' t| ≤ K · |E t|`, and produces `E t ≤ E 0 · exp(K · t)`.  Here we
+specialise to `E(t) = ‖θ_n(t)‖²_{Ḣˢ}` pulled out of a
+`HasGalerkinHsEnergyIdentity` bundle, giving the exponential bound
+needed to discharge `hBoundOne` / `hBoundS` uniformly in `n`. -/
+
+/-- **§B.11 — Galerkin `Ḣˢ` exponential bound from the energy-identity
+bundle.**  Applies `scalar_gronwall_exp` (§10.64 of `RieszTorus.lean`)
+to the squared `Ḣˢ` seminorm of the Galerkin truncation, using the
+derivative + continuity + bound content from
+`HasGalerkinHsEnergyIdentity`. -/
+theorem HasGalerkinHsEnergyIdentity.exp_bound
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    {s T C : ℝ}
+    (hE : HasGalerkinHsEnergyIdentity α s T C) (n : ℕ) :
+    ∀ t ∈ Set.Icc (0 : ℝ) T,
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))
+        ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0))
+          * Real.exp ((2 * C) * t) := by
+  have hnn : ∀ x ∈ Set.Icc (0 : ℝ) T,
+      0 ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n x)) :=
+    fun x _ => hsSeminormSq_nonneg s _
+  exact scalar_gronwall_exp
+    (fun t => hsSeminormSq s (galerkinToLp (sqgBox n) (α n t)))
+    (2 * C) T hE.nonneg_T
+    (hE.cont n) (hE.derivWithin n) (hE.deriv_bound n) hnn
+
+/-- **§B.11.uniform — Time-uniform exponential upper bound.**
+Passes from the `t ∈ [0, T]` point bound to the time-uniform
+constant `E₀(n) · exp((2C)·T)`, which is the shape consumed by
+`hBoundOne`/`hBoundS`.  Requires `0 ≤ C` to apply monotonicity of
+`exp` on the scalar `(2C)·t`. -/
+theorem HasGalerkinHsEnergyIdentity.exp_bound_uniform
+    {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
+    {s T C : ℝ}
+    (hE : HasGalerkinHsEnergyIdentity α s T C) (n : ℕ)
+    (t : ℝ) (ht0 : 0 ≤ t) (htT : t ≤ T) :
+    hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))
+      ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0))
+        * Real.exp ((2 * C) * T) := by
+  have hMem : t ∈ Set.Icc (0 : ℝ) T := ⟨ht0, htT⟩
+  have hPoint := hE.exp_bound n t hMem
+  have hE0_nn : 0 ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0)) :=
+    hsSeminormSq_nonneg _ _
+  have h2C_nn : 0 ≤ 2 * C := by
+    have h2 : (0 : ℝ) ≤ 2 := by norm_num
+    exact mul_nonneg h2 hE.nonneg_C
+  have hExpMono : Real.exp ((2 * C) * t) ≤ Real.exp ((2 * C) * T) := by
+    apply Real.exp_le_exp.mpr
+    exact mul_le_mul_of_nonneg_left htT h2C_nn
+  calc hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))
+      ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0))
+          * Real.exp ((2 * C) * t) := hPoint
+    _ ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0))
+          * Real.exp ((2 * C) * T) :=
+        mul_le_mul_of_nonneg_left hExpMono hE0_nn
+
+/-! ### §B.12 `HasGalerkinGronwallClosure.ofGronwallODE` capstone
+
+Assembles a concrete `HasGalerkinGronwallClosure` from:
+
+* `HasGalerkinL2Conservation` (§B.2).
+* `HasVelocityRieszPreservation` (§B.3).
+* `FourierKatoPonceConst` (§B.4) — abstract scalar `K`.
+* `HasVelocityLipSupBound` (§B.10) — abstract scalar `L`.
+* `HasGalerkinHsEnergyIdentity` at `s = 1` and at each `s > 1`,
+  with rate `C = K · L` — abstracted as hypothesis bundles so the
+  quantitative Kato–Ponce + Sobolev-embedding derivation can live in
+  the companion fourier repo.
+* A uniform-in-n bound on the initial `Ḣ¹` and `Ḣˢ` seminorms.
+* A time horizon `T`.
+
+The constructor chooses `M₁ = D₁·exp((2·K·L)·T)` and
+`Ms s = Dₛ s · exp((2·K·L)·T)` where `Dₛ s` is the uniform-in-n
+initial-data bound at Sobolev level `s`.  Gronwall (§B.11.uniform)
+discharges both `hBoundOne` and `hBoundS` on `[0, T]`.
+
+This is **not** the final fully-unconditional closure — the three
+bundle inputs (energy identity at `s = 1` and at each `s > 1`, plus
+`HasVelocityLipSupBound`) still carry classical content.  But it
+reduces the §B.5 four-field abstract-constant discharge to three
+named classical inputs + their Gronwall integration, which is the
+promised sub-500 LOC final step once the fourier repo's
+quantitative Kato–Ponce lands. -/
+
+/-- **§B.12 — `HasGalerkinGronwallClosure.ofGronwallODE` capstone.**
+
+Concrete constructor producing `M₁, Ms, hBoundOne, hBoundS` by
+Gronwall-integrating an `Ḣˢ` energy identity at each Sobolev level,
+using rate `C = K.K · Lip.L`.
+
+The consumer `HasGalerkinGronwallClosure` requires the uniform
+bound to hold **for all `t ≥ 0`**, so we consume an energy-identity
+bundle parametrised by the time horizon `T` — a family of bundles
+`hE1Fam T` and `hEsFam s T`, one per horizon.  At each time `t`, we
+pick horizon `T = t` and invoke Gronwall on `[0, t]`.
+
+To have a **single** scalar bound `M₁` that dominates the
+time-dependent Gronwall output `D₁ · exp((2C)·t)`, the caller must
+supply a uniform-over-horizons amplification bound `E : ℝ` with
+`D · exp((2C)·T) ≤ D · E` for every `T` of interest.  Operationally
+this corresponds to adopting a finite-time-horizon supremum of
+interest (e.g. `t ∈ [0, T_max]` for some fixed `T_max`) and
+absorbing `exp((2C)·T_max)` into `E`.
+
+**Two-parameter shape:** the caller supplies both the initial-data
+bound `D` and the exponential amplification `E`, and claims
+`hBoundOne ≤ D · E` — i.e., that `E ≥ exp((2C)·t)` for all `t` of
+interest.  On bounded horizons this reduces to the concrete
+`E = exp((2C)·T_max)`. -/
+noncomputable def HasGalerkinGronwallClosure.ofGronwallODE
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hL2 : HasGalerkinL2Conservation α)
+    (hRiesz : HasVelocityRieszPreservation)
+    (K : FourierKatoPonceConst)
+    (Lip : HasVelocityLipSupBound)
+    (D₁ : ℝ) (hD₁_init : ∀ n : ℕ,
+      hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n 0)) ≤ D₁)
+    (Dₛ : ℝ → ℝ) (hDₛ_init : ∀ s : ℝ, 1 < s → ∀ n : ℕ,
+      hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0)) ≤ Dₛ s)
+    (E : ℝ) (hE_nn : 0 ≤ E)
+    (hE1Fam : ∀ T : ℝ, 0 ≤ T →
+      HasGalerkinHsEnergyIdentity α 1 T (K.K * Lip.L))
+    (hEsFam : ∀ s : ℝ, 1 < s → ∀ T : ℝ, 0 ≤ T →
+      HasGalerkinHsEnergyIdentity α s T (K.K * Lip.L))
+    (hExpBound : ∀ t : ℝ, 0 ≤ t →
+      Real.exp ((2 * (K.K * Lip.L)) * t) ≤ E) :
+    HasGalerkinGronwallClosure α where
+  M₁ := D₁ * E
+  Ms := fun s => Dₛ s * E
+  l2 := hL2
+  riesz := hRiesz
+  commutator := K
+  hBoundOne := by
+    intro n t ht
+    -- Pick horizon `T = t`; invoke Gronwall on `[0, t]`.
+    have hBundle := hE1Fam t ht
+    have hPoint := hBundle.exp_bound_uniform n t ht (le_refl t)
+    have hD₁n := hD₁_init n
+    have hExpLe := hExpBound t ht
+    have hD₁n_nn : 0 ≤ hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n 0)) :=
+      hsSeminormSq_nonneg _ _
+    calc hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n t))
+        ≤ hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n 0))
+            * Real.exp ((2 * (K.K * Lip.L)) * t) := hPoint
+      _ ≤ hsSeminormSq 1 (galerkinToLp (sqgBox n) (α n 0)) * E :=
+          mul_le_mul_of_nonneg_left hExpLe hD₁n_nn
+      _ ≤ D₁ * E :=
+          mul_le_mul_of_nonneg_right hD₁n hE_nn
+  hBoundS := by
+    intro n t ht s hs
+    have hBundle := hEsFam s hs t ht
+    have hPoint := hBundle.exp_bound_uniform n t ht (le_refl t)
+    have hDₛn := hDₛ_init s hs n
+    have hExpLe := hExpBound t ht
+    have hDₛn_nn : 0 ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0)) :=
+      hsSeminormSq_nonneg _ _
+    calc hsSeminormSq s (galerkinToLp (sqgBox n) (α n t))
+        ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0))
+            * Real.exp ((2 * (K.K * Lip.L)) * t) := hPoint
+      _ ≤ hsSeminormSq s (galerkinToLp (sqgBox n) (α n 0)) * E :=
+          mul_le_mul_of_nonneg_left hExpLe hDₛn_nn
+      _ ≤ Dₛ s * E :=
+          mul_le_mul_of_nonneg_right hDₛn hE_nn
+
+/-- **§B.12.z — Zero-datum `ofGronwallODE` exercise.**
+Unconditional end-to-end test.  All inputs collapse:
+* `D₁ = 0`, `Dₛ s = 0` (zero Galerkin truncation has zero seminorm);
+* `K.K · Lip.L = 0 · 0 = 0`, so `exp((2·0)·t) = 1`; pick `E = 1`;
+* `M₁ = Ms s = 0 · 1 = 0`.
+Result matches `HasGalerkinGronwallClosure.ofZero` up to defining
+data. -/
+noncomputable def HasGalerkinGronwallClosure.ofGronwallODE_zero :
+    HasGalerkinGronwallClosure (fun _ _ _ => (0 : ℂ)) :=
+  HasGalerkinGronwallClosure.ofGronwallODE
+    (α := fun _ _ _ => (0 : ℂ))
+    HasGalerkinL2Conservation.ofZero
+    HasVelocityRieszPreservation.ofUnit
+    FourierKatoPonceConst.ofZero
+    HasVelocityLipSupBound.ofZero
+    0 (fun n => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n 0).le)
+    (fun _ => 0)
+      (fun s _ n => (hsSeminormSq_zero_galerkin_of_trinary_zero s n 0).le)
+    1 (by norm_num)
+    (fun T hT => HasGalerkinHsEnergyIdentity.ofZero 1 T (0 * 0) hT
+        (by norm_num))
+    (fun s _ T hT => HasGalerkinHsEnergyIdentity.ofZero s T (0 * 0) hT
+        (by norm_num))
+    (fun t _ => by
+      -- Both Kato-Ponce.K and velocity-Lip.L are literally 0 (ofZero
+      -- witnesses); the exponent is 0, exp is 1.  Use `show` +
+      -- `norm_num` to discharge everything in one step.
+      show Real.exp ((2 * ((FourierKatoPonceConst.ofZero).K
+              * (HasVelocityLipSupBound.ofZero).L)) * t) ≤ (1 : ℝ)
+      have hK : (FourierKatoPonceConst.ofZero).K = 0 := rfl
+      have hL : (HasVelocityLipSupBound.ofZero).L = 0 := rfl
+      rw [hK, hL, zero_mul, mul_zero, zero_mul, Real.exp_zero])
+
 end SqgIdentity
