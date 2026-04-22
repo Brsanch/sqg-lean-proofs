@@ -2310,7 +2310,7 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       (fun k => hDiffBound (c (φ n) k) (cInf k)) ?_
     exact ((hUnwSeq n).add hUnwLim).mul_left 2
   -- Squeeze: show ∀ ε > 0, eventually ∑' k, ‖…‖² < ε.
-  refine (Metric.tendsto_atTop (α := ℝ)).mpr ?_
+  refine (Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mpr ?_
   intro ε hε
   -- Pick radius R with M/(1+R²) < ε/8.
   have hε8 : 0 < ε / 8 := by positivity
