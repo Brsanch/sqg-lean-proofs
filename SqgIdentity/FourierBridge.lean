@@ -612,6 +612,11 @@ hold trivially.  Unconditional. -/
 theorem HasGalerkinHsEnergyIdentity.ofZero
     (s T C : ℝ) (hT : 0 ≤ T) (hC : 0 ≤ C) :
     HasGalerkinHsEnergyIdentity (fun _ _ _ => (0 : ℂ)) s T C := by
+  -- Helper: for every `n, t`, the seminorm collapses to 0.
+  have hZero : ∀ (n : ℕ) (t : ℝ),
+      hsSeminormSq s (galerkinToLp (sqgBox n)
+        (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)) = 0 :=
+    fun n t => hsSeminormSq_zero_galerkin_of_trinary_zero s n t
   refine
     { nonneg_T := hT
       nonneg_C := hC
@@ -620,16 +625,28 @@ theorem HasGalerkinHsEnergyIdentity.ofZero
       deriv_bound := ?_ }
   · -- cont: the Ḣˢ seminorm is 0 pointwise
     intro n
-    simp_rw [hsSeminormSq_zero_galerkin_of_trinary_zero]
+    have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                  (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
+                = fun _ : ℝ => (0 : ℝ) :=
+      funext (hZero n)
+    rw [hEq]
     exact continuousOn_const
   · -- derivWithin: derivative of constant 0 is 0
     intro n x _
-    simp_rw [hsSeminormSq_zero_galerkin_of_trinary_zero]
+    have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                  (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
+                = fun _ : ℝ => (0 : ℝ) :=
+      funext (hZero n)
+    rw [hEq]
     simp only [deriv_const']
     exact hasDerivWithinAt_const
   · -- deriv_bound: |0| ≤ (2C) * |0|
     intro n x _
-    simp_rw [hsSeminormSq_zero_galerkin_of_trinary_zero]
+    have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
+                  (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
+                = fun _ : ℝ => (0 : ℝ) :=
+      funext (hZero n)
+    rw [hEq]
     simp
 
 /-! ### §B.10 Velocity Lipschitz-sup bound on the Galerkin shell
@@ -870,8 +887,13 @@ noncomputable def HasGalerkinGronwallClosure.ofGronwallODE_zero :
     (fun s _ T hT => HasGalerkinHsEnergyIdentity.ofZero s T (0 * 0) hT
         (by norm_num))
     (fun t _ => by
-      -- exp((2·(0·0))·t) = exp 0 = 1 ≤ 1
-      have h : (2 * ((0 : ℝ) * 0)) * t = 0 := by ring
-      rw [h, Real.exp_zero])
+      -- Both Kato-Ponce.K and velocity-Lip.L are literally 0 (ofZero
+      -- witnesses); the exponent is 0, exp is 1.  Use `show` +
+      -- `norm_num` to discharge everything in one step.
+      show Real.exp ((2 * ((FourierKatoPonceConst.ofZero).K
+              * (HasVelocityLipSupBound.ofZero).L)) * t) ≤ (1 : ℝ)
+      have hK : (FourierKatoPonceConst.ofZero).K = 0 := rfl
+      have hL : (HasVelocityLipSupBound.ofZero).L = 0 := rfl
+      rw [hK, hL, zero_mul, mul_zero, zero_mul, Real.exp_zero])
 
 end SqgIdentity
