@@ -1383,6 +1383,173 @@ theorem HasGalerkinFluxBound.ofClassical_zero :
       have h2KL : (2 * ((0 : ℝ) * 0)) = 0 := by ring
       rw [h2KL, zero_mul])
 
+/-! ### §B.14.cs — Cauchy–Schwarz reduction of the flux bound
+
+Narrow the flux-bound hypothesis from the raw flux inequality
+`|galerkinHsFlux s c| ≤ 2·(K·L)·trigPolyEnergyHs s c` to the cleaner
+vector-field-energy inequality
+`galerkinVectorFieldHsEnergy s c ≤ (K·L)²·trigPolyEnergyHs s c`,
+where `galerkinVectorFieldHsEnergy s c := ∑ m, (fracDerivSymbol s m)² ·
+‖galerkinVectorField c m‖²` is the `Ḣˢ` energy of the Galerkin
+nonlinear flux.
+
+The reduction is Cauchy–Schwarz applied to the flux sum.  This
+preserves the structural chain of §B.15 while moving the remaining
+classical hypothesis closer to the natural output of a Kato–Ponce
+commutator estimate (which bounds `‖u·∇θ‖²_{Ḣˢ}` by `‖θ‖²_{Ḣˢ}`). -/
+
+/-- **`Ḣˢ` energy of the Galerkin nonlinear flux.** -/
+noncomputable def galerkinVectorFieldHsEnergy
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) : ℝ :=
+  ∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 * ‖galerkinVectorField S c m‖ ^ 2
+
+lemma galerkinVectorFieldHsEnergy_nonneg
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) :
+    0 ≤ galerkinVectorFieldHsEnergy s c :=
+  Finset.sum_nonneg (fun _ _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))
+
+/-- **Cauchy–Schwarz on the Galerkin `Ḣˢ` flux.**
+`|galerkinHsFlux s c| ≤ 2·√(trigPolyEnergyHs s c)·√(galerkinVectorFieldHsEnergy s c)`. -/
+theorem abs_galerkinHsFlux_le_cauchySchwarz
+    (s : ℝ) {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) :
+    |galerkinHsFlux s c| ≤
+      2 * Real.sqrt (trigPolyEnergyHs s S c) *
+        Real.sqrt (galerkinVectorFieldHsEnergy s c) := by
+  -- Step 1: pull the 2 out, and bound each inner product by the product of norms.
+  have hFlux :
+      galerkinHsFlux s c =
+        2 * ∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 *
+          (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m)) := by
+    unfold galerkinHsFlux
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl (fun m _ => ?_)
+    ring
+  rw [hFlux, abs_mul, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+  -- Step 2: |∑ a_m · ⟨c m, v m⟩_ℝ| ≤ ∑ |a_m| · ‖c m‖ · ‖v m‖ ≤ ∑ a_m · ‖c m‖ · ‖v m‖
+  have hAbsSum :
+      |∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 *
+          (@inner ℝ ℂ _ (c m) (galerkinVectorField S c m))|
+      ≤ ∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 *
+          (‖c m‖ * ‖galerkinVectorField S c m‖) := by
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    refine Finset.sum_le_sum (fun m _ => ?_)
+    rw [abs_mul]
+    have habs_sq : |(fracDerivSymbol s m.val) ^ 2| = (fracDerivSymbol s m.val) ^ 2 :=
+      abs_of_nonneg (sq_nonneg _)
+    rw [habs_sq]
+    exact mul_le_mul_of_nonneg_left
+      (abs_real_inner_le_norm (c m) (galerkinVectorField S c m))
+      (sq_nonneg _)
+  refine le_trans (mul_le_mul_of_nonneg_left hAbsSum (by norm_num : (0 : ℝ) ≤ 2)) ?_
+  -- Step 3: rewrite ∑ (fracDeriv)² · ‖c‖ · ‖v‖ as ∑ (fracDeriv · ‖c‖) · (fracDeriv · ‖v‖) and apply CS.
+  have hRewrite :
+      ∑ m : ↥S, (fracDerivSymbol s m.val) ^ 2 *
+          (‖c m‖ * ‖galerkinVectorField S c m‖)
+        = ∑ m : ↥S,
+            ((fracDerivSymbol s m.val) * ‖c m‖) *
+              ((fracDerivSymbol s m.val) * ‖galerkinVectorField S c m‖) := by
+    refine Finset.sum_congr rfl (fun m _ => ?_)
+    ring
+  rw [hRewrite]
+  have hCS :
+      ∑ m : ↥S,
+          ((fracDerivSymbol s m.val) * ‖c m‖) *
+            ((fracDerivSymbol s m.val) * ‖galerkinVectorField S c m‖)
+      ≤ Real.sqrt (∑ m : ↥S, ((fracDerivSymbol s m.val) * ‖c m‖) ^ 2) *
+          Real.sqrt (∑ m : ↥S,
+            ((fracDerivSymbol s m.val) * ‖galerkinVectorField S c m‖) ^ 2) :=
+    Real.sum_mul_le_sqrt_mul_sqrt _ _ _
+  refine le_trans (mul_le_mul_of_nonneg_left hCS (by norm_num : (0 : ℝ) ≤ 2)) ?_
+  -- Step 4: identify the two sums-of-squares with trigPolyEnergyHs / galerkinVectorFieldHsEnergy.
+  have hSqC :
+      ∑ m : ↥S, ((fracDerivSymbol s m.val) * ‖c m‖) ^ 2
+        = trigPolyEnergyHs s S c := by
+    unfold trigPolyEnergyHs
+    refine Finset.sum_congr rfl (fun m _ => ?_); ring
+  have hSqV :
+      ∑ m : ↥S, ((fracDerivSymbol s m.val) * ‖galerkinVectorField S c m‖) ^ 2
+        = galerkinVectorFieldHsEnergy s c := by
+    unfold galerkinVectorFieldHsEnergy
+    refine Finset.sum_congr rfl (fun m _ => ?_); ring
+  rw [hSqC, hSqV]
+  ring_nf
+  rfl
+
+/-- **Flux bound from a vector-field Ḣˢ bound.** If the Galerkin
+nonlinear-flux Ḣˢ energy is bounded by `M²·trigPolyEnergyHs`, then the
+flux itself is bounded by `2·M·trigPolyEnergyHs` (up to a square root
+sign convention).  Stated in the form that feeds §B.14.raw. -/
+lemma abs_galerkinHsFlux_le_of_vectorFieldBound
+    {s : ℝ} {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) {M : ℝ} (hM : 0 ≤ M)
+    (hVF : galerkinVectorFieldHsEnergy s c ≤ M ^ 2 * trigPolyEnergyHs s S c) :
+    |galerkinHsFlux s c| ≤ 2 * M * trigPolyEnergyHs s S c := by
+  refine (abs_galerkinHsFlux_le_cauchySchwarz s c).trans ?_
+  -- √E · √(M²·E) = M·E
+  have hEnn : 0 ≤ trigPolyEnergyHs s S c := trigPolyEnergyHs_nonneg s c
+  have hVnn : 0 ≤ galerkinVectorFieldHsEnergy s c :=
+    galerkinVectorFieldHsEnergy_nonneg s c
+  have hSqrtVF :
+      Real.sqrt (galerkinVectorFieldHsEnergy s c)
+        ≤ Real.sqrt (M ^ 2 * trigPolyEnergyHs s S c) :=
+    Real.sqrt_le_sqrt hVF
+  have hSqrtProd :
+      Real.sqrt (M ^ 2 * trigPolyEnergyHs s S c)
+        = M * Real.sqrt (trigPolyEnergyHs s S c) := by
+    rw [Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq hM]
+  have hStep :
+      2 * Real.sqrt (trigPolyEnergyHs s S c) *
+          Real.sqrt (galerkinVectorFieldHsEnergy s c)
+        ≤ 2 * Real.sqrt (trigPolyEnergyHs s S c) *
+            (M * Real.sqrt (trigPolyEnergyHs s S c)) := by
+    have h2E : 0 ≤ 2 * Real.sqrt (trigPolyEnergyHs s S c) :=
+      mul_nonneg (by norm_num) (Real.sqrt_nonneg _)
+    refine mul_le_mul_of_nonneg_left ?_ h2E
+    exact hSqrtVF.trans (le_of_eq hSqrtProd)
+  refine hStep.trans ?_
+  -- 2·√E·(M·√E) = 2·M·E
+  have hSqrtSq :
+      Real.sqrt (trigPolyEnergyHs s S c) * Real.sqrt (trigPolyEnergyHs s S c)
+        = trigPolyEnergyHs s S c :=
+    Real.mul_self_sqrt hEnn
+  have hFinal :
+      2 * Real.sqrt (trigPolyEnergyHs s S c) *
+          (M * Real.sqrt (trigPolyEnergyHs s S c))
+        = 2 * M * trigPolyEnergyHs s S c := by
+    have : 2 * Real.sqrt (trigPolyEnergyHs s S c) *
+              (M * Real.sqrt (trigPolyEnergyHs s S c))
+            = 2 * M *
+              (Real.sqrt (trigPolyEnergyHs s S c) *
+                Real.sqrt (trigPolyEnergyHs s S c)) := by ring
+    rw [this, hSqrtSq]
+  exact le_of_eq hFinal
+
+/-- **§B.14.cs — `HasGalerkinFluxBound` from a single Galerkin-vector-field
+Ḣˢ bound.**  Takes one unified inequality
+`∀ s ≥ 1, galerkinVectorFieldHsEnergy s (α n x) ≤ (K·L)² · trigPolyEnergyHs s (sqgBox n) (α n x)`
+and produces the flux-bound structure with constants `(K, L)`.  This is
+the narrowest hypothesis the downstream capstone §B.15 accepts — closer
+to the natural shape of a Kato–Ponce commutator + Sobolev-embedding
+output. -/
+theorem HasGalerkinFluxBound.ofVectorFieldBound
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    {K L : ℝ} (hK : 0 ≤ K) (hL : 0 ≤ L)
+    (hVF : ∀ s : ℝ, 1 ≤ s → ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T →
+      ∀ x ∈ Set.Ico (0 : ℝ) T,
+      galerkinVectorFieldHsEnergy s (α n x) ≤
+        (K * L) ^ 2 * trigPolyEnergyHs s (sqgBox n) (α n x)) :
+    HasGalerkinFluxBound α K L := by
+  have hKL : 0 ≤ K * L := mul_nonneg hK hL
+  refine HasGalerkinFluxBound.ofHypotheses α hK hL ?_ ?_
+  · intro n T hT x hx
+    exact abs_galerkinHsFlux_le_of_vectorFieldBound (α n x) hKL (hVF 1 le_rfl n T hT x hx)
+  · intro s hs n T hT x hx
+    exact abs_galerkinHsFlux_le_of_vectorFieldBound (α n x) hKL
+      (hVF s hs.le n T hT x hx)
+
 /-! ### §B.15 Fully-concrete Path B capstone via `HasGalerkinFluxBound`
 
 Upgrade of §B.13's `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` that
