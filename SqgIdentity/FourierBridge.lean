@@ -1301,6 +1301,88 @@ theorem HasGalerkinFluxBound.ofHypotheses
   fluxH1 := hFluxH1
   fluxHs := hFluxHs
 
+/-- **§B.14.classical — `HasGalerkinFluxBound` from a single unified
+classical Kato–Ponce bound at all `s ≥ 1`.**
+
+This is the **narrowed named classical input**: one single inequality
+
+```
+∀ s ≥ 1, ∀ n T, 0 ≤ T, ∀ x ∈ [0, T),
+  |galerkinHsFlux s (α n x)| ≤ (2·(K·L)) · trigPolyEnergyHs s (sqgBox n) (α n x)
+```
+
+parameterized uniformly over `s ∈ [1, ∞)`, matching the natural output
+shape of the classical Kato–Ponce commutator estimate on `𝕋²` paired
+with the Sobolev embedding `Ḣˢ ⊂ L∞` for `s > 1` (velocity Lipschitz
+constant `L` depending only on `s` and the lattice zeta constant from
+§11.30).
+
+The constructor specialises the unified bound to the two field cases
+(`s = 1` via `le_refl`, `s > 1` via `hs.le`).  This narrowing matters
+because the companion fourier repo's `norm_partialCommutator_le_hs_fully_uniform`
+naturally produces a single `s`-uniform bound, not two split cases — so
+downstream consumers only need to supply one inequality. -/
+theorem HasGalerkinFluxBound.ofClassical
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    {K L : ℝ} (hK : 0 ≤ K) (hL : 0 ≤ L)
+    (hFluxAll : ∀ s : ℝ, 1 ≤ s → ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T →
+      ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |galerkinHsFlux s (α n x)|
+        ≤ (2 * (K * L)) * trigPolyEnergyHs s (sqgBox n) (α n x)) :
+    HasGalerkinFluxBound α K L where
+  K_nonneg := hK
+  L_nonneg := hL
+  fluxH1 := hFluxAll 1 (le_refl 1)
+  fluxHs := fun s hs => hFluxAll s hs.le
+
+/-- **§B.14.katoPonceSobolev — `HasGalerkinFluxBound` from a
+Kato–Ponce commutator constant + a Sobolev embedding constant.**
+
+Further narrowing: express the product `2·(K·L)` as the product of a
+Kato–Ponce commutator constant `C_KP` (depending only on `s`) and a
+velocity Lipschitz-sup constant `C_Sob` (from `Ḣˢ ⊂ L∞` via §11.30's
+`latticeZetaConst`), via a factorisation hypothesis
+
+```
+∀ s ≥ 1, ∀ n T x ∈ [0, T),
+  |galerkinHsFlux s (α n x)| ≤ (2·(C_KP · C_Sob)) · trigPolyEnergyHs s ...
+```
+
+where `C_KP = K` and `C_Sob = L`.  This is notationally identical to
+`.ofClassical` — provided as an alias so callers matching the
+Kato–Ponce × Sobolev nomenclature of the classical literature can read
+the argument roles directly. -/
+theorem HasGalerkinFluxBound.ofKatoPonceSobolev
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    {C_KP C_Sob : ℝ} (hKP : 0 ≤ C_KP) (hSob : 0 ≤ C_Sob)
+    (hFluxAll : ∀ s : ℝ, 1 ≤ s → ∀ n : ℕ, ∀ T : ℝ, 0 ≤ T →
+      ∀ x ∈ Set.Ico (0 : ℝ) T,
+      |galerkinHsFlux s (α n x)|
+        ≤ (2 * (C_KP * C_Sob)) * trigPolyEnergyHs s (sqgBox n) (α n x)) :
+    HasGalerkinFluxBound α C_KP C_Sob :=
+  HasGalerkinFluxBound.ofClassical α hKP hSob hFluxAll
+
+/-- **§B.14.classical.zero — Zero-datum sanity check on `.ofClassical`.**
+On the zero Galerkin family `α ≡ 0` both sides of the unified bound are
+`0 ≤ 0` at every `s ≥ 1`, and the resulting `HasGalerkinFluxBound`
+matches `HasGalerkinFluxBound.ofZero`. -/
+theorem HasGalerkinFluxBound.ofClassical_zero :
+    HasGalerkinFluxBound (fun _ _ _ => (0 : ℂ)) 0 0 :=
+  HasGalerkinFluxBound.ofClassical
+    (α := fun _ _ _ => (0 : ℂ))
+    (le_refl 0) (le_refl 0)
+    (fun s _ n T _ x _ => by
+      have hFlux : galerkinHsFlux s (((fun _ _ _ => (0 : ℂ))
+          : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n x) = 0 := by
+        unfold galerkinHsFlux galerkinVectorField galerkinRHS galerkinExtend
+        simp
+      rw [hFlux, abs_zero]
+      have hNN : 0 ≤ trigPolyEnergyHs s (sqgBox n)
+          (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n x) :=
+        trigPolyEnergyHs_nonneg s _
+      have h2KL : (2 * ((0 : ℝ) * 0)) = 0 := by ring
+      rw [h2KL, zero_mul])
+
 /-! ### §B.15 Fully-concrete Path B capstone via `HasGalerkinFluxBound`
 
 Upgrade of §B.13's `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` that
