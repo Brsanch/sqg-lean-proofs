@@ -641,14 +641,19 @@ theorem HasGalerkinHsEnergyIdentity.ofZero
     simp only [deriv_const']
     -- `fun _ : ℝ → 0 : ℝ` has derivative 0 within any set.
     exact (hasDerivAt_const x (0 : ℝ)).hasDerivWithinAt
-  · -- deriv_bound: |0| ≤ (2C) * |0|
+  · -- deriv_bound: |deriv of 0| ≤ (2C) * |0| = 0, so this reduces to 0 ≤ 0.
     intro n x _
     have hEq : (fun t => hsSeminormSq s (galerkinToLp (sqgBox n)
                   (((fun _ _ _ => (0 : ℂ)) : ∀ m : ℕ, ℝ → (↥(sqgBox m) → ℂ)) n t)))
                 = fun _ : ℝ => (0 : ℝ) :=
       funext (hZero n)
     rw [hEq]
-    simp [deriv_const']
+    simp only [deriv_const', abs_zero]
+    -- Goal: 0 ≤ 2 * C * |hsSeminormSq s (galerkinToLp (sqgBox n) (fun _ => 0))|
+    have h2C : 0 ≤ 2 * C := by linarith
+    have hAbs : 0 ≤ |hsSeminormSq s (galerkinToLp (sqgBox n) (fun _ : ↥(sqgBox n) => (0 : ℂ)))| :=
+      abs_nonneg _
+    exact mul_nonneg h2C hAbs
 
 /-! ### §B.10 Velocity Lipschitz-sup bound on the Galerkin shell
 
