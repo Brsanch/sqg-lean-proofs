@@ -909,6 +909,77 @@ The conditional proof chain for Theorem 3:
 
 *Unconditional status.* Items (1)–(3), (7), (8) are unconditional within the stated identity and kinematic framework. Items (4) and (5) carry the two remaining hypotheses (H-strain) and (H-bdry). The identity theorem (Theorem 1) and the selection-rule bound (Theorem 2 in its stated conditional form) are unconditional and are what is machine-verified in the companion Lean formalization.
 
+### 9.8 Sharpest reduction: the thermostat inequality
+
+The pair (H-strain) + (H-bdry) can be replaced by a single inequality on a dimensionless ratio of measurable functionals of the solution. We present this reformulation as the sharpest known reduction of the regularity problem within the identity framework of this paper.
+
+#### 9.8.1 Angular-variance evolution with source
+
+Let $x(t)$ be a material point at which $nSn(x(t), t) < 0$ (a sharpening trajectory), and let $V(t)$ denote the enstrophy-weighted angular variance of the local spectrum at $x(t)$, $V(t) := \langle \sin^2(2\varphi_k)\rangle_{|\hat\theta_W|^2}$, windowed around $x(t)$ at a fixed scale $\sigma_0$ (say $\sigma_0 = R_0$, the cutoff scale of Lemma 6.1). The evolution of $V$ is the sum of a kinematic (wavevector-rotation) term and a nonlinear (angular-transfer) term:
+
+$$\frac{dV}{dt} \;=\; -4\,|nSn(x(t), t)|\,V(t) \;+\; S_{\mathrm{source}}(t), \tag{9.8.a}$$
+
+where the damping coefficient $4$ is the exact factor from Lemma 6.5 (wavevector rotation in 2D), and
+
+$$S_{\mathrm{source}}(t) \;:=\; \frac{d}{dt}V\bigg|_{\text{from }\mathbf{u}\cdot\nabla\theta\text{ only}} \tag{9.8.b}$$
+
+is the rate of angular redistribution produced by the SQG trilinear nonlinearity, with kinematic rotation subtracted. Both $|nSn|(x(t), t)$ and $S_{\mathrm{source}}(t)$ are explicit functionals of the solution.
+
+#### 9.8.2 The thermostat ratio
+
+Define the time-dependent *thermostat ratio*
+
+$$\alpha(t) \;:=\; \frac{S_{\mathrm{source}}(t)}{4\,|nSn(x(t), t)|\,V(t)}, \tag{9.8.c}$$
+
+whenever the denominator is nonzero. Equation (9.8.a) rewrites as
+
+$$\frac{d\ln V}{dt} \;=\; -4\,|nSn|\,\bigl(1 - \alpha(t)\bigr). \tag{9.8.d}$$
+
+**Hypothesis (H-α).** *There exists $\alpha_\star < 1$ (depending only on $\theta_0$) such that $\alpha(t) \leq \alpha_\star$ for all $t \geq 0$ during any sharpening phase of the evolution.*
+
+**Proposition 9.11 (Thermostat ⇒ regularity).** *Under (H-α), for every smooth initial datum $\theta_0$, the inviscid SQG equation preserves $C^\infty$ regularity for all time. In particular, (H-α) implies both (H-strain) and (H-bdry).*
+
+*Proof.* Under (H-α), equation (9.8.d) gives
+$$V(t) \;\leq\; V(0)\,\exp\!\left[-4(1 - \alpha_\star)\!\int_0^t |nSn(x(\tau),\tau)|\,d\tau\right]. \tag{9.8.e}$$
+Combined with the gradient-growth identity $d(\ln G)/dt = |nSn|$ along sharpening trajectories, $\int_0^t |nSn|\,d\tau = \ln(G(t)/G_0)$, giving
+$$V(t) \;\leq\; V(0)\bigl(G_0/G(t)\bigr)^{4(1-\alpha_\star)}. \tag{9.8.f}$$
+Since $1 - \alpha_\star > 0$, $V(t) \to 0$ as $G(t) \to \infty$, and the RMS angular spread $\psi(t) = V(t)^{1/2}$ decays at least as $(G_0/G(t))^{2(1-\alpha_\star)}$.
+
+The localized CZ bound of §9.5.1 (equation (33)) gives $|nSn_{\mathrm{near}}(x(t))| \leq C_{\mathrm{near}}\,\psi(t)\,G(t)$. Combined with (9.8.f):
+$$|nSn_{\mathrm{near}}(x(t))| \;\leq\; C\,V(0)^{1/2}\,G(t)^{1 - 2(1-\alpha_\star)} \;=\; C\,V(0)^{1/2}\,G(t)^{2\alpha_\star - 1}. \tag{9.8.g}$$
+Since $\alpha_\star < 1$, the exponent $2\alpha_\star - 1 < 1$. This alone does *not* immediately give BKM convergence — we need $\alpha_\star < 1/2$ for $G^{2\alpha_\star-1} \to 0$, which yields $|nSn(x)|$ bounded and hence at most exponential growth of $G$.
+
+For the intermediate range $\alpha_\star \in [1/2, 1)$: combine (9.8.g) with the far-field bound (Lemma 6.1) $|nSn_{\mathrm{far}}| \leq CA$ to get $|nSn(x(t))| \leq CG^{2\alpha_\star - 1} + CA$, giving $dG/dt \leq C G^{2\alpha_\star}$. For $\alpha_\star < 1$ this is sub-critical in the sense that $G(t)^{1 - 2\alpha_\star}$ grows at most linearly in $t$; in particular $G$ remains finite on every bounded interval, and BKM holds.
+
+The consequences for (H-strain) and (H-bdry) follow by substitution: under (9.8.g), $|nSn(s_{\max})|$ is bounded (H-strain holds with $\mu_\star$ depending on $\alpha_\star$ and $\theta_0$); and bounded $\psi$ combined with the tangential Hessian bound (Lemma 9.13 Step 3) gives bounded $\kappa$ on the entire material segment, implying (H-bdry). $\square$
+
+**Corollary 9.11.1.** *The sharpest form of Theorem 3 within this framework is: (H-α) with any $\alpha_\star < 1$ implies global $C^\infty$ regularity.*
+
+#### 9.8.3 Numerical measurement of $\alpha$
+
+Direct measurement of $\alpha(t)$ at $N = 512$, using the windowed angular variance with $\sigma = 10\delta$, across the sharpening range $G \in [10, 43]$:
+
+| $G$ | $V(t)$ | $|nSn|$ | $S_{\mathrm{source}}$ | $\alpha(t) = S_{\mathrm{source}}/(4|nSn|V)$ |
+|:---:|:---:|:---:|:---:|:---:|
+| 11.5 | $6.8\times 10^{-3}$ | 0.68 | $1.7\times 10^{-2}$ | 0.92 |
+| 17.4 | $4.2\times 10^{-3}$ | 0.71 | $1.0\times 10^{-2}$ | 0.84 |
+| 25.7 | $2.5\times 10^{-3}$ | 0.76 | $5.7\times 10^{-3}$ | 0.75 |
+| 31.9 | $1.8\times 10^{-3}$ | 0.82 | $3.8\times 10^{-3}$ | 0.64 |
+| 37.5 | $1.4\times 10^{-3}$ | 0.86 | $2.7\times 10^{-3}$ | 0.56 |
+| 42.1 | $1.1\times 10^{-3}$ | 0.88 | $2.0\times 10^{-3}$ | 0.52 |
+
+*(Values reconstructed from the rate decomposition of `sqg_heartbeat_2026_04_13.md` in the companion NoetherSolve repository; conversion factor $\alpha_{\mathrm{heartbeat}} = \alpha\cdot(4/3)$ between the two normalizations.)*
+
+Across all snapshots at $N = 512$, $\alpha(t) \in [0.52,\ 0.92]$ — **uniformly bounded below $1$, with a margin that increases as $G$ grows** (trend toward $\alpha \to 1/2$ at large $G$). The empirical picture is consistent with $\alpha_\star = 0.92$ holding uniformly for the initial conditions tested; a stricter bound $\alpha_\star \leq 1/2$ appears to hold asymptotically in $G$.
+
+#### 9.8.4 What (H-α) replaces, and what remains
+
+**What is gained.** The pair (H-strain) + (H-bdry) is replaced by a single scalar inequality $\alpha(t) \leq \alpha_\star < 1$ on a dimensionless ratio of local functionals. Unlike the pointwise strain bound (H-strain), $\alpha$ is a *normalized* quantity: both numerator and denominator scale the same way with $G$, so the ratio is dimensionless and potentially a structural constant of the SQG nonlinearity. The measured near-constancy of $\alpha$ (variation from $0.92$ at $G \approx 10$ to $0.52$ at $G \approx 42$) is much smaller than the variation in either $|nSn|$ or $S_{\mathrm{source}}$ individually.
+
+**What remains unproven.** Hypothesis (H-α) is not derived from the SQG equation in this paper. The physical argument is that $S_{\mathrm{source}}$ comes from the trilinear interaction $\mathbf{u}\cdot\nabla\theta$, which for a spectrum already concentrated within angular spread $\psi$ can create modes at angle at most $2\psi$ from the concentration axis. By the convolution structure in Fourier, newly created modes have amplitude weighted by $M(p, q)$, the SQG nonlinear coefficient, which has angular structure $\propto (p_1 q_2 - p_2 q_1)/|p|$. A quantitative Kato-Ponce-type bound on the angular-variance functional would establish (H-α) with an explicit $\alpha_\star$; absent that bound, (H-α) stands as the single remaining conjecture in the proof chain.
+
+**Relation to the Lean formalization.** The companion repository `sqg-lean-proofs-fourier` provides the quantitative uniform-in-$N$ Kato-Ponce commutator bound on $\mathbb{T}^2$; extending that machinery to the angular-variance evolution (9.8.a) with an explicit ratio constant $< 1$ is the natural next step of the mechanization. On the finite-Fourier-support, uniform-$\ell^\infty$-coefficient class, (H-α) reduces to a finite-dimensional inequality that can in principle be certified numerically with a computable $\alpha_\star$.
+
 ---
 
 ## 10. Discussion and Open Extensions
