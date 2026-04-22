@@ -1691,10 +1691,11 @@ def FourierRellichKondrachovHolds : Prop :=
     (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
         (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
           * ‖c n k‖ ^ 2 ≤ M) →
-    ∃ φ : ℕ → ℕ, StrictMono φ ∧
-      (∃ c∞ : (Fin 2 → ℤ) → ℂ, Filter.Tendsto
+    ∃ φ : ℕ → ℕ, ∃ c∞ : (Fin 2 → ℤ) → ℂ,
+      StrictMono φ ∧
+      Filter.Tendsto
         (fun n : ℕ => ∑' k : Fin 2 → ℤ, ‖c (φ n) k - c∞ k‖ ^ 2)
-        Filter.atTop (nhds 0))
+        Filter.atTop (nhds 0)
 
 /-- **§B.15.zero — Zero-sequence sanity witness.**
 
@@ -1704,14 +1705,15 @@ a discharge of the general oracle; it only certifies that the
 conclusion is satisfiable on the trivial input, matching the
 §11.35 / §B.14.z zero-datum pattern. -/
 theorem fourierRellichKondrachov_zero_witness :
-    ∃ φ : ℕ → ℕ, StrictMono φ ∧
-      (∃ c∞ : (Fin 2 → ℤ) → ℂ, Filter.Tendsto
+    ∃ φ : ℕ → ℕ, ∃ c∞ : (Fin 2 → ℤ) → ℂ,
+      StrictMono φ ∧
+      Filter.Tendsto
         (fun n : ℕ =>
           ∑' k : Fin 2 → ℤ,
             ‖((fun _ _ => (0 : ℂ)) : ℕ → (Fin 2 → ℤ) → ℂ) (id n) k
               - (fun _ : Fin 2 → ℤ => (0 : ℂ)) k‖ ^ 2)
-        Filter.atTop (nhds 0)) := by
-  refine ⟨id, strictMono_id, fun _ => (0 : ℂ), ?_⟩
+        Filter.atTop (nhds 0) := by
+  refine ⟨id, fun _ => (0 : ℂ), strictMono_id, ?_⟩
 
   have h_zero : (fun n : ℕ =>
       ∑' k : Fin 2 → ℤ,
