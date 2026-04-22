@@ -19,8 +19,8 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 25,100 lines of Lean 4 source in the
-`RieszTorus` module (over 25,800 lines project-wide), with **zero
+The formalization comprises over 25,400 lines of Lean 4 source in the
+`RieszTorus` module (over 26,100 lines project-wide), with **zero
 `sorry` and no axioms beyond mathlib**.
 
 ## What is proven unconditionally
@@ -381,37 +381,48 @@ instance doesn't export across files).
   this gives a **concrete support-independent Banach-algebra `Ḣˢ`
   product bound with explicit constant** `2^{2s}·(2·latticeZetaConst s)`.
 
-**What remains for unconditional Item 5 closure:**
-- **Phase 10 wiring via commutator Kato–Ponce** (~200 LOC).
-  Classical SQG analysis uses the COMMUTATOR form `‖[Jˢ, u·∇]θ‖_{L²}
-  ≤ C·(‖∇u‖_{L∞}·‖θ‖_{Ḣˢ} + ‖u‖_{Ḣˢ}·‖∇θ‖_{L∞})` (§11.6), needing
-  L∞-Sobolev embedding `Ḣˢ ⊂ L∞` for `s > d/2 = 1`.  §11.25.E/F/G +
-  §11.26.H provide the support-independent Banach-algebra bound with
-  concrete constant — a stepping stone; the commutator estimate
-  remains.
-- **§10.174 `hBoundS` discharge** (~50 LOC).  Once the uniform Galerkin
-  `Ḣˢ` bound is assembled from the commutator chain, feed it into
-  the full-range Theorem 3 capstone.
-- The remaining Item 1 classical analytical inputs, each consumed by
-  the v0.4.39 structural constructors as a precisely-typed, named
-  hypothesis:
-    1. The **classical Arzelà–Ascoli + Cantor diagonal extraction
-       witness** (the `hExtract` input of
-       `HasPerModeLimit.ofModeLipschitzFamily`, §10.155.B).
-       Mathlib has `BoundedContinuousFunction.arzelaAscoli` +
-       `Denumerable (Fin 2 → ℤ)`.
-    2. The **strong-`L²` convergence** of the extracted Galerkin
-       sequence to the constructed `θ_lim` (the `h_L2` input of
-       `HasFourierSynthesis.ofPerModeLimit` / `.ofSummable`,
-       §10.154.B / §10.159.C).  Parseval + Fatou + dominated
-       convergence on `ℓ²(ℤ²)`.
-    3. The **per-mode ODE / continuity / H⁻² bound discharges** for
-       §10.153.C's `hDeriv` / `hCont` / `hH2` hypotheses from
-       §10.116's Galerkin trajectory + §10.138's `H⁻²` bound, via
-       coordinate projection of the ODE derivative.
-- A concrete `HasBumpToIndicatorSequence` witness (§10.135)
-  constructed from mathlib's `ContDiffBump` infrastructure, to close
-  item 6 analytically rather than only structurally.
+- **§11.27–§11.33** (~180 LOC): unconditional consequences of §11.26.H
+  composed with the existing abstract theorems.  §11.27 is the concrete
+  Banach-algebra `Ḣˢ` product bound (zero open hypotheses) for every
+  `s > 1`.  §11.28 self-product form; §11.29 monotone constant form;
+  §11.30 `ℓ¹ → Ḣˢ` Cauchy–Schwarz (Fourier-side form of Sobolev
+  `Ḣˢ ⊂ L∞`); §11.31/§11.32 uniform `L² × Ḣˢ → L²` bounds in both
+  factor directions; §11.33 Ḣᵗ interpolation for `t ≤ s`.
+- **§11.34–§11.38 Path A closure of Item 5** (~120 LOC):
+  `HasSqgGalerkinAllSBound α` hypothesis type packaging uniform
+  Galerkin `Ḣ¹` + `Ḣˢ` bounds at every `s > 1`; `.ofZero` witness;
+  `sqg_regularity_of_allSBound` capstone composing with §10.174's
+  full-range interpolation; end-to-end `SqgSolution` variant;
+  zero-datum unconditional full-range Theorem 3.
+
+**Item 5 Path A closure** is at the same standard as Items 3/4:
+hypothesis-keyed with zero-data exemplars; all classical PDE content
+is labeled and isolated behind named hypotheses.
+
+### Path B: fully unconditional discharge
+
+The classical Fourier-analysis content that would discharge the
+`HasSqgGalerkinAllSBound` hypothesis unconditionally —
+Littlewood–Paley dyadic decomposition, Bony paraproducts, the
+Kato–Ponce commutator estimate `‖[Jˢ, u·∇]g‖_{L²} ≤ C·(‖∇u‖_{L∞}·‖g‖_{Ḣˢ} + ‖u‖_{Ḣˢ}·‖∇g‖_{L∞})`,
+and the Sobolev embedding `Ḣˢ ⊂ L∞` for `s > d/2 = 1` — lives in
+the companion package
+[`sqg-lean-proofs-fourier`](https://github.com/Brsanch/sqg-lean-proofs-fourier).
+That package is intended for reuse by future NS / Euler / MHD
+formalizations.
+
+Remaining work for Path B: ~1500 LOC of classical content in the
+companion package, plus ~500 LOC of SQG-specific plumbing in this
+repo (energy identity, velocity Riesz-preservation, BKM-integral
+Grönwall, `HasSqgGalerkinAllSBound.ofClassical` constructor).
+
+### Other open items (see `OPEN.md`)
+
+- Item 1 classical analytical inputs consumed by v0.4.39 structural
+  constructors (Arzelà–Ascoli + Cantor diagonal, strong-`L²`
+  convergence, per-mode ODE / continuity / `H⁻²` discharges).
+- Concrete `HasBumpToIndicatorSequence` witness (§10.135) from
+  mathlib's `ContDiffBump` infrastructure.
 
 ## Canonical open-items tracker
 

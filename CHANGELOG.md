@@ -279,12 +279,11 @@ via the annular-shell + 1D p-series reduction.
   unconditionally.**  Composed with §11.25.F/G/G₁ gives the
   support-independent Banach-algebra Ḣˢ product bound with concrete
   constant `2^{2s}·(2·latticeZetaConst s)`.
-- **§11.27** `hasTrigPolyBanachAlgebraBound_of_gt_one` — **fully
-  unconditional Banach-algebra `Ḣˢ` product bound witness** via
+- **§11.27** `hasTrigPolyBanachAlgebraBound_of_gt_one` — fully
+  unconditional Banach-algebra `Ḣˢ` product bound witness via
   one-line composition of §11.25.G `.of_latticeZeta` with §11.26.H.
   Delivers `HasTrigPolyBanachAlgebraBound s (2^{2s}·(2·latticeZetaConst s))`
-  for every `s > 1`, the **first Banach-algebra product bound in-tree
-  with zero open hypotheses**.  §11.27.A
+  for every `s > 1`.  §11.27.A
   `hasTrigPolyBanachAlgebraBound_of_gt_one_zero_left` — zero-coefficient
   exemplar sanity check.
 - **§11.28** `hsSeminormSq_trigPolyProduct_self_le` — self-product
