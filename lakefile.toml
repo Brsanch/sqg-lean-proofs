@@ -14,5 +14,10 @@ name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.29.0"
 
+[[require]]
+name = "fourier_analysis"
+git = "https://github.com/Brsanch/sqg-lean-proofs-fourier.git"
+rev = "main"
+
 [[lean_lib]]
 name = "SqgIdentity"
