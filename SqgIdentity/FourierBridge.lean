@@ -83,6 +83,57 @@ theorem HasGalerkinL2Conservation.ofZero :
     (hsSeminormSq_zero_galerkin_of_trinary_zero 0 n t).trans
       (hsSeminormSq_zero_galerkin_of_trinary_zero 0 n 0).symm
 
+/-- **§B.2.concrete — `HasGalerkinL2Conservation` from an upstream
+`hLevel` witness.**
+
+The §10.147 Route-B `l2Conservation_of_aubinLions_raw` consumes a
+hypothesis `hLevel` of exactly the same shape
+`hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+   = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0))`
+for every `n, t, 0 ≤ t`.  The concrete construction of this witness
+is `SqgEvolutionAxioms.of_galerkin_realSym_Ici.l2Conservation`
+(§10.117.B), driven by the ℓ²-sum invariant of §10.116.
+
+This constructor packages that already-proved identity into the
+`HasGalerkinL2Conservation` shape consumed by §B.5.
+
+**Usage pattern:**
+```
+HasGalerkinL2Conservation.ofL2Conservation α hLevel
+```
+where `hLevel` is typically obtained from the Galerkin ODE solver
+plus `hsSeminormSq_zero_galerkinToLp` on each `α n`. -/
+theorem HasGalerkinL2Conservation.ofL2Conservation
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hLevel : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n t))
+        = hsSeminormSq 0 (galerkinToLp (sqgBox n) (α n 0))) :
+    HasGalerkinL2Conservation α where
+  l2Const := hLevel
+
+/-- **§B.2.concrete.ℓ² — `HasGalerkinL2Conservation` directly from the
+coefficient ℓ²-sum invariant.**
+
+Variant of `ofL2Conservation` that accepts the more primitive form of
+the hypothesis — `∑ m ‖α n t m‖² = ∑ m ‖α n 0 m‖²` — rather than the
+already-processed `hsSeminormSq 0` shape.  This is what the §10.116
+Galerkin ODE solver delivers directly, before the
+`hsSeminormSq_zero_galerkinToLp` bridge is applied.
+
+Composition: bridges through `hsSeminormSq_zero_galerkinToLp` using
+`zero_not_mem_sqgBox n`. -/
+theorem HasGalerkinL2Conservation.ofL2Coeff
+    [DecidableEq (Fin 2 → ℤ)]
+    (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
+    (hCoeff : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
+      (∑ m : ↥(sqgBox n), ‖α n t m‖ ^ 2)
+        = ∑ m : ↥(sqgBox n), ‖α n 0 m‖ ^ 2) :
+    HasGalerkinL2Conservation α :=
+  HasGalerkinL2Conservation.ofL2Conservation α (fun n t ht => by
+    rw [hsSeminormSq_zero_galerkinToLp (zero_not_mem_sqgBox n),
+        hsSeminormSq_zero_galerkinToLp (zero_not_mem_sqgBox n),
+        hCoeff n t ht])
+
 /-! ### §B.3 Velocity Riesz-preservation on the Galerkin shell
 
 The SQG velocity `u = R⊥ θ` is produced mode-by-mode by the perp-
