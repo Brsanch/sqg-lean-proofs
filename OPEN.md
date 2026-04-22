@@ -529,7 +529,7 @@ Decided 2026-04-21 late evening.  All remaining analytic content
 shaped primitives.  No upstream review cycle; mathlib contribution
 is a separate later activity.
 
-### LOC mapping (~4810 lines total, ~12-15 agent-hours)
+### LOC mapping (~4810 lines total)
 
 | Phase | Target | LOC | Deliverable |
 |---|---|---|---|
@@ -585,11 +585,14 @@ Phase 8 (commutator) ───────────────┘         �
   `mFourierBasis` + dyadic cutoffs.
 - Fractional Leibniz: exactly what we're adding.
 
-### Session entry points for future agent
+### Entry points for future development
 
-- **Start a session with**: "continue Route A, start Phase 6 (Littlewood-Paley primitives)".
-- **Or**: "continue Route A, Item 2 first (Galerkin Ḣ¹ energy identity)".
-- Read `memory/plan_route_A_item_5.md` for the full dependency map.
+- Path A closure: in-tree via §11.34–§11.38.  Next natural step is
+  Path B unconditional discharge of `HasSqgGalerkinAllSBound`.
+- Path B classical content: see the companion package
+  [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+  for the Littlewood-Paley + Kato-Ponce commutator development.
+- Dependency map: this file plus the companion package's README.
 
 ## Protocol
 
