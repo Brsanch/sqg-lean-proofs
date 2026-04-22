@@ -25572,10 +25572,10 @@ noncomputable def lpCoeff
     ℓ²((Fin 2 → ℤ), ℂ) :=
   ⟨c, by
     -- `Memℓp c 2` follows from `Summable (‖c ·‖ ^ (2 : ℝ))`.
-    have h2 : (2 : ℝ≥0∞).toReal = 2 := by
+    have h2 : (2 : ENNReal).toReal = 2 := by
       simp [ENNReal.toReal_ofNat]
-    have hReal : Summable (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ (2 : ℝ≥0∞).toReal) := by
-      have hcongr : (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ (2 : ℝ≥0∞).toReal)
+    have hReal : Summable (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ (2 : ENNReal).toReal) := by
+      have hcongr : (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ (2 : ENNReal).toReal)
                   = (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ 2) := by
         funext k
         rw [h2]
