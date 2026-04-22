@@ -25552,4 +25552,72 @@ theorem IsSqgTestFormWeakSolution.zero
     rw [hfun]
     exact aestronglyMeasurable_const
 
+/-! ### §B.15 Inverse Fourier transform: `L²` from summable Fourier coefficients
+
+Given a square-summable sequence of Fourier coefficients
+`c : (Fin 2 → ℤ) → ℂ`, produce a unique `L²` function whose
+`mFourierCoeff` recovers `c`.  This is just the `HilbertBasis.repr.symm`
+of the `mFourierBasis` applied to the packaged `ℓ²` element.
+-/
+
+section LpFromFourier
+
+open UnitAddTorus MeasureTheory
+
+/-- The underlying `ℓ²((Fin 2 → ℤ), ℂ)` element built from a summable
+coefficient sequence. -/
+noncomputable def lpCoeff
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hSum : Summable (fun k => ‖c k‖ ^ 2)) :
+    ℓ²((Fin 2 → ℤ), ℂ) :=
+  ⟨c, by
+    -- `Memℓp c 2` follows from `Summable (‖c ·‖ ^ (2 : ℝ))`.
+    have h2 : (2 : ℝ≥0∞).toReal = 2 := by
+      simp [ENNReal.toReal_ofNat]
+    have hReal : Summable (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ (2 : ℝ≥0∞).toReal) := by
+      have hcongr : (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ (2 : ℝ≥0∞).toReal)
+                  = (fun k : (Fin 2 → ℤ) => ‖c k‖ ^ 2) := by
+        funext k
+        rw [h2]
+        exact Real.rpow_two _
+      rw [hcongr]; exact hSum
+    exact memℓp_gen hReal⟩
+
+@[simp] lemma lpCoeff_apply
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hSum : Summable (fun k => ‖c k‖ ^ 2)) (k : Fin 2 → ℤ) :
+    (lpCoeff c hSum : (Fin 2 → ℤ) → ℂ) k = c k := rfl
+
+/-- Inverse Fourier transform: from summable Fourier coefficients on `𝕋²`,
+produce an `L²` function with those coefficients. -/
+noncomputable def lpOfFourierCoeff
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hSum : Summable (fun k => ‖c k‖ ^ 2)) :
+    Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))) :=
+  mFourierBasis.repr.symm (lpCoeff c hSum)
+
+/-- The forward Fourier coefficient inverts `lpOfFourierCoeff`. -/
+theorem mFourierCoeff_lpOfFourierCoeff
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hSum : Summable (fun k => ‖c k‖ ^ 2)) (k : Fin 2 → ℤ) :
+    mFourierCoeff (lpOfFourierCoeff c hSum) k = c k := by
+  -- `mFourierBasis.repr f k = mFourierCoeff f k` on `L²(𝕋²)`.
+  have hrepr := mFourierBasis_repr (d := Fin 2) (lpOfFourierCoeff c hSum) k
+  -- `repr (repr.symm x) = x`, so `repr (lpOfFourierCoeff c hSum) = lpCoeff c hSum`.
+  have hround : mFourierBasis.repr (lpOfFourierCoeff c hSum) = lpCoeff c hSum := by
+    unfold lpOfFourierCoeff
+    exact LinearIsometryEquiv.apply_symm_apply _ _
+  -- Read off the `k`-th component.
+  have h1 : (mFourierBasis.repr (lpOfFourierCoeff c hSum) : (Fin 2 → ℤ) → ℂ) k
+        = (lpCoeff c hSum : (Fin 2 → ℤ) → ℂ) k := by
+    rw [hround]
+  have h2 : (lpCoeff c hSum : (Fin 2 → ℤ) → ℂ) k = c k := rfl
+  -- Combine.
+  calc mFourierCoeff (lpOfFourierCoeff c hSum) k
+      = mFourierBasis.repr (lpOfFourierCoeff c hSum) k := hrepr.symm
+    _ = (lpCoeff c hSum : (Fin 2 → ℤ) → ℂ) k := h1
+    _ = c k := h2
+
+end LpFromFourier
+
 end SqgIdentity
