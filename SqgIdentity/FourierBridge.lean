@@ -2450,15 +2450,19 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       -- equiv image matches the underlying indexed tsum.
       have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c (φ n) k.1‖ ^ 2)
-      -- h1 : ∑' c, ‖c (φ n) (eConv c).1‖² = ∑' b, ‖c (φ n) b.1‖²
-      -- (eConv c).1 = c.1 by defn; reduce.
-      simpa using h1
+      have hLHS : ∀ x : {k // k ∉ F_R}, ‖c (φ n) x.1‖ ^ 2
+          = ‖c (φ n) (eConv x).1‖ ^ 2 := fun _ => rfl
+      rw [tsum_congr hLHS]
+      exact h1
     have hConv_b :
         ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2
           = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 := by
       have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖cInf k.1‖ ^ 2)
-      simpa using h1
+      have hLHS : ∀ x : {k // k ∉ F_R}, ‖cInf x.1‖ ^ 2
+          = ‖cInf (eConv x).1‖ ^ 2 := fun _ => rfl
+      rw [tsum_congr hLHS]
+      exact h1
     rw [hConv_a, hConv_b] at hTsumLe
     have := hTailSeq n R
     have := hTailLim R
