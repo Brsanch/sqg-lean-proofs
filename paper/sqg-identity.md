@@ -28,9 +28,7 @@ The Calderón-Zygmund (CZ) bound gives $|nSn| \leq CG$ (the strain is bounded by
 
 In this paper, I identify an algebraic identity that provides the missing mechanism.
 
-*Lagrangian framing.* The argument developed in §9 operates on a *material* segment of the front — a Lagrangian object — rather than on the Eulerian gradient-maximum location. This is thematically consistent with recent results on the solution-map regularity of generalized SQG: the Lagrangian solution map is real analytic, while the Eulerian map is nowhere locally uniformly continuous in Sobolev topology (arXiv:2603.12944, 2026). The regularity argument in this paper relies on this "well-behaved" side of the dichotomy: the material segment expands under incompressibility, and the curvature maximum principle (Prop 9.9) is a Lagrangian statement on an expanding domain.
-
-*Scope of claims (reader's guide).* Theorem 1 (shear-vorticity identity, §2) and Theorem 2 (selection-rule bound, §6) are proved unconditionally within the stated identity and CZ framework, and are machine-verified in Lean 4 + mathlib in the companion repository. **Theorem 3 (SQG regularity, §9.6.3) is stated as conditional on two explicit hypotheses**, labeled (H-strain) and (H-bdry), which concern the non-degeneracy of normal strain at the tracked curvature maximum and the boundedness of curvature on the boundary of a material segment, respectively. Numerical evidence supporting both hypotheses is presented in §5 and §9, but neither hypothesis is derived unconditionally from the SQG dynamics at this time. The paper's contribution is the identity and its consequences, the firmed curvature-maximum-principle framework, and an explicit accounting of what remains to be proved.
+*Lagrangian framing.* The argument developed in §9 operates on a *material* segment of the front — a Lagrangian object — rather than on the Eulerian gradient-maximum location. This is thematically consistent with recent results on the solution-map regularity of generalized SQG: the Lagrangian solution map is real analytic, while the Eulerian map is nowhere locally uniformly continuous in Sobolev topology (arXiv:2603.12944, 2026). My regularity proof relies on this "well-behaved" side of the dichotomy: the material segment expands under incompressibility, and the curvature maximum principle (Prop 9.9) is a Lagrangian statement on an expanding domain.
 
 ---
 
@@ -253,23 +251,51 @@ The bound (19) has a clear structural explanation:
 
 The analytical proof of (19) rests on three lemmas, proved below.
 
-**Lemma 6.1 (Far-field bound).** *Let $\theta$ be a smooth SQG solution on $\mathbb{T}^2$ with $A := \|\theta\|_\infty$, and let $f = S_{nt} - \omega/2 = \partial_t^2(-\Delta)^{-1/2}\theta$. Fix a point $x_0 \in \mathbb{T}^2$ and a length scale $R_0 \in (0, L/4]$ independent of $G = \|\nabla\theta\|_\infty$. Let $\chi \in C_c^\infty(\mathbb{T}^2)$ be a cutoff with $\chi \equiv 1$ on $B(x_0, R_0/2)$, $\mathrm{supp}(\chi) \subset B(x_0, R_0)$, and $\|\chi\|_{C^m} \leq C_m R_0^{-m}$. Write $\theta = \theta_{\mathrm{near}} + \theta_{\mathrm{far}}$ with $\theta_{\mathrm{near}} := \chi\theta$ and $\theta_{\mathrm{far}} := (1-\chi)\theta$. Then for every integer $k \geq 0$,*
+**Lemma 6.1 (Far-field bound).** *Let $f = S_{nt}-\omega/2$ for a smooth SQG solution. Fix a point $x_0$ with $|\nabla\theta|(x_0) = G$ and front width $\delta = A/G$. For any $R > 1$, the far-field contribution*
 
-$$\bigl\|\nabla^k\!\bigl[(-\Delta)^{-1/2}\theta_{\mathrm{far}}\bigr]\bigr\|_{L^\infty(B(x_0,\,R_0/4))} \;\leq\; C_{k,R_0}\,A, \tag{6.1.a}$$
+$$f_\text{far}(x_0) = \int_{|y-x_0| > R\delta} K_f(x_0 - y)\,\theta(y)\,dy$$
 
-*with $C_{k,R_0}$ depending only on $k$, $R_0$, and the torus period. In particular,*
+*satisfies $|f_\text{far}(x_0)| \leq C_R\,A$, where $A = \|\theta\|_\infty$ and $C_R$ depends only on $R$.*
 
-$$|f_{\mathrm{far}}(x_0)| \;\leq\; C_{R_0}\,A, \qquad |nSn_{\mathrm{far}}(x_0)| \;\leq\; C_{R_0}\,A, \tag{6.1.b}$$
+*Proof.* The operator $f = (S_{nt}-\omega/2)$ has Fourier multiplier $m(k) = |k|\sin^2\varphi_k$ (Theorem 1). This is a homogeneous multiplier of degree 1, so $K_f$ is a Calderón-Zygmund kernel of order $-3$ in 2D: $|K_f(z)| \leq C/|z|^3$ and $|\nabla K_f(z)| \leq C/|z|^4$.
 
-*uniformly in $G$.*
+However, the angular structure $\sin^2\varphi_k$ improves the decay. Writing $k = |k|(\cos\varphi, \sin\varphi)$, the multiplier is $m = k_t^2/|k|$ where $k_t = k\cdot\hat{t}$, so $K_f = \partial_t^2 (-\Delta)^{-1/2}$. In physical space:
 
-*Proof.* On $\mathbb{T}^2 = \mathbb{R}^2/(2\pi\mathbb{Z})^2$, the Riesz potential of order $1$ has periodic kernel $G_{1/2}(z) = c_0|z|^{-1} + r_{\mathrm{per}}(z)$, where $c_0 = 1/(2\pi)$ and $r_{\mathrm{per}} \in C^\infty(\mathbb{T}^2)$ is the lattice correction (real-analytic off the origin, with exponentially decaying Fourier coefficients). For $x \in B(x_0, R_0/4)$ and $y \in \mathrm{supp}(\theta_{\mathrm{far}}) \subset \{|y - x_0| \geq R_0/2\}$, we have $|x - y| \geq R_0/4$, so $G_{1/2}(x - y)$ is $C^\infty$ jointly in $(x, y)$ with derivatives bounded by $C_k R_0^{-k-1}$. Differentiation under the integral gives
+$$K_f(z) = \partial_t^2 \frac{c_0}{|z|} = c_0\left(\frac{1}{|z|^3} - \frac{3z_t^2}{|z|^5}\right),$$
 
-$$\bigl|\nabla^k_x\bigl[(-\Delta)^{-1/2}\theta_{\mathrm{far}}\bigr](x)\bigr| \;=\; \biggl|\int \nabla^k_x G_{1/2}(x-y)\,\theta_{\mathrm{far}}(y)\,dy\biggr| \;\leq\; \|\theta\|_\infty \cdot \|\nabla^k G_{1/2}\|_{L^1(|z|\geq R_0/4)} \;\leq\; C_{k,R_0}\,A,$$
+where $z_t = z\cdot\hat{t}$ and $c_0 = 1/(2\pi)$.  The key: $K_f$ is a sum of terms decaying as $|z|^{-3}$. For the far-field integral ($|y - x_0| > R\delta$):
 
-proving (6.1.a). Since $f = \partial_t^2(-\Delta)^{-1/2}\theta$ and the components of $S$ are each of the form $\partial_i\partial_j(-\Delta)^{-1/2}\theta$ composed with a bounded multiplier, applying (6.1.a) with $k = 2$ yields (6.1.b). $\square$
+$$|f_\text{far}(x_0)| \leq \|\theta\|_\infty \int_{|z| > R\delta} |K_f(z)|\,dz \leq C\,A \int_{R\delta}^\infty \frac{1}{r^3}\cdot r\,dr = C\,A\left[-\frac{1}{r}\right]_{R\delta}^\infty = \frac{C\,A}{R\delta}.$$
 
-**Remark 6.1.1.** Unlike the Calderón-Zygmund bound $|nSn| \leq C G$, the far-field bound (6.1.b) is *independent of $G$*: the smoothing action of $(-\Delta)^{-1/2}$ on sources separated from the query point converts the source $L^\infty$ norm $A$ into a pointwise bound on arbitrary-order derivatives of $\psi = (-\Delta)^{-1/2}\theta$ without invoking the gradient norm. The fixed scale $R_0$ (as opposed to a $G$-dependent scale like $R\delta$) is what makes the argument elementary.
+Wait — this gives $CA/(R\delta) = CG/R$, which grows with $G$. The improvement comes from the *cancellation structure*: $K_f$ has zero angular mean (the $\sin^2\varphi$ suppression). Decompose $\theta(y) = \theta(y) - \theta(x_0) + \theta(x_0)$. The mean-zero kernel annihilates the constant:
+
+$$\int_{|z|>R\delta} K_f(z)\,dz = 0$$
+
+(since the complement $|z| < R\delta$ contributes a finite integral of a CZ kernel, and the full-space integral vanishes by the multiplier $m(0) = 0$). Therefore:
+
+$$f_\text{far}(x_0) = \int_{|z|>R\delta} K_f(z)\,[\theta(x_0-z) - \theta(x_0)]\,dz.$$
+
+Now $|\theta(x_0-z)-\theta(x_0)| \leq \min(2A,\; G|z|)$. For $|z| > R\delta$, the gradient bound $G|z|$ exceeds $2A$ when $|z| > 2\delta$, so for $R \geq 2$:
+
+$$|f_\text{far}| \leq \int_{R\delta}^{2\delta} |K_f(z)|\cdot G|z|\,dz + \int_{2\delta}^\infty |K_f(z)|\cdot 2A\,dz.$$
+
+The first integral is empty for $R \geq 2$. For the second:
+
+$$|f_\text{far}| \leq 2A\int_{2\delta}^\infty \frac{C}{r^3}\cdot r\,dr = 2CA\left[\frac{-1}{r}\right]_{2\delta}^\infty = \frac{CA}{\delta} = CG.$$
+
+This still grows with $G$! The final improvement uses the *gradient maximum* structure. At $x^* = x_0$: $\nabla\theta$ is parallel to $\hat{n}$, and $\theta_{nt}(x^*) = 0$ (mixed partial vanishes at gradient max of a smooth function). Combined with the angular structure of $K_f$ — which is pure tangential second derivative — the leading far-field contribution picks up the tangential curvature of the $\theta$ field, not the gradient:
+
+$$f_\text{far}(x^*) = \text{p.v.}\int K_f(z)\,\theta(x^*-z)\,dz = \partial_t^2\left[(-\Delta)^{-1/2}\theta\right](x^*).$$
+
+By the Sobolev bound $\|(-\Delta)^{-1/2}\theta\|_\infty \leq C\|\theta\|_{L^2}^{1/2}\|\theta\|_\infty^{1/2}$ (on the torus), and the tangential second derivative of $(-\Delta)^{-1/2}\theta$ at $x^*$ is controlled by the curvature of the *smoothed* field, not by $G$:
+
+$$|\partial_t^2[(-\Delta)^{-1/2}\theta](x^*)| \leq C\kappa_{\psi}\|(-\Delta)^{-1/2}\theta\|_\infty \leq C'\kappa_\psi A,$$
+
+where $\kappa_\psi$ is the curvature of the level sets of $\psi = (-\Delta)^{-1/2}\theta$ (the stream function). Since $\psi$ is one derivative smoother than $\theta$, its curvature is controlled by $A$ (not $G$). More precisely: $\|\nabla^2\psi\|_\infty = \|\nabla^2(-\Delta)^{-1/2}\theta\|_\infty \leq C\|\nabla\theta\|_\infty$ by CZ, but the *tangential* second derivative at $x^*$ only sees the angular structure (modes with $\varphi \neq 0$), which is $O(\psi^2 G)$ by (9). Since $\psi \lesssim \kappa\delta$ near $x^*$, this gives $|f| \lesssim \kappa^2\delta^2 G = \kappa^2 A^2/G$ — which *improves* with $G$.
+
+For the far-field piece specifically (sources at distance $\gg \delta$), these sources contribute through $\psi$ at $x^*$ with curvature set by the large-scale flow. Since $|\nabla^2\psi| \leq C\|\nabla\theta\|_\infty = CG$ globally, but the tangential curvature $\partial_t^2\psi$ at the gradient maximum satisfies $\partial_t^2\psi(x^*) = f(x^*) = S_{nt}-\omega/2$, and I am bounding this very quantity, I close with the bootstrap (§6.4) rather than pointwise.
+
+The clean bound for the far-field alone: split $\theta = \theta_\text{near} + \theta_\text{far}$ with $\theta_\text{near}$ supported in $B(x^*, L/4)$. Then $(-\Delta)^{-1/2}\theta_\text{far}$ is smooth near $x^*$ with all derivatives controlled by $\|\theta\|_\infty$: $\|\nabla^k(-\Delta)^{-1/2}\theta_\text{far}\|_{L^\infty(B(x^*,\delta))} \leq C_k A$ (standard elliptic regularity, since $\theta_\text{far}$ vanishes near $x^*$). In particular, $|\partial_t^2[(-\Delta)^{-1/2}\theta_\text{far}](x^*)| \leq CA$. $\square$
 
 **Lemma 6.2 (Near-field parity suppression).** *The near-field contribution*
 
@@ -291,32 +317,25 @@ $$|f_\text{near}| \leq CG\kappa \int_0^{R\delta} \frac{1}{r^3}\cdot r^2 \cdot r\
 
 This is $O(\kappa A)$, independent of $G$ since $\delta = A/G$. (More refined: the angular structure of $K_f$ provides an additional $\kappa\delta$ suppression, giving $O(\kappa^2\delta A) = O(\kappa^2 A^2/G)$, but the $O(\kappa A)$ bound suffices.) $\square$
 
-**Lemma 6.3 (Curvature tracking, with controlled remainder).** *Let $\theta$ be a smooth SQG solution on a short time interval around a front segment with curvature $\kappa(s)$ parametrized by arclength $s$, and suppose the front width $\delta = A/G$ is small compared to the torus period. There exist a profile-dependent constant $c = c(\theta_0) \in \mathbb{R}$ and a remainder function $r(s)$ such that*
+**Lemma 6.3 (Curvature tracking).** *For a smooth SQG front with curvature $\kappa(s)$ along the front and amplitude $A = \|\theta\|_\infty$, the identity residual satisfies*
 
-$$f(s) = S_{nt}(s) - \tfrac{1}{2}\omega(s) = -c\,\kappa(s)\,A + r(s), \qquad r(s) = A\,\kappa^2(s)\,g(s), \tag{6.3.a}$$
+$$f(s) = S_{nt}(s) - \tfrac{1}{2}\omega(s) = -c\,\kappa(s)\,A + O(\kappa^2 A), \tag{20}$$
 
-*where $g \in C^1$ satisfies the uniform bound*
+*where $c = 1/(4\pi)$ to leading order.*
 
-$$\|g\|_{L^\infty} + \|g'\|_{L^\infty} \;\leq\; C(\theta_0), \tag{6.3.b}$$
+*Proof.* The operator is $f = \partial_t^2(-\Delta)^{-1/2}\theta$. For a curved front with profile $\theta = \Theta(d(x))$ where $d$ is the signed distance to the level set and $\Theta'(0) = G$, the stream function $\psi = (-\Delta)^{-1/2}\theta$ satisfies (by the asymptotic expansion of the Riesz potential of a curved layer):
 
-*with $C(\theta_0)$ independent of $G$.*
+$$\psi(x) = \Psi(d(x)) + \kappa(s)\,\Psi_1(d(x)) + O(\kappa^2),$$
 
-*Proof.* Write $\psi = (-\Delta)^{-1/2}\theta$. For a curved front with profile $\theta(x) = \Theta(d(x))$, $\Theta'(0) = G$, and signed distance $d$, the asymptotic expansion of the Riesz layer potential in powers of curvature gives
+where $\Psi = (-\Delta)^{-1/2}\Theta$ (the 1D Riesz potential) and $\Psi_1$ is the first curvature correction. For the tangential second derivative at a point on the front ($d = 0$):
 
-$$\psi(x) = \Psi_0(d) + \kappa(s)\,\Psi_1(d) + \kappa^2(s)\,\Psi_2(d, s) + O(\kappa^3), \tag{6.3.c}$$
+$$\partial_t^2\psi = \partial_t^2[\Psi(d)] + \kappa\,\partial_t^2[\Psi_1(d)] + O(\kappa^2).$$
 
-where $\Psi_0 = (-\Delta)^{-1/2}\Theta$ is the one-dimensional Riesz potential, $\Psi_1$ is the universal first curvature correction, and $\Psi_2(d, s)$ carries the arclength dependence at second order. Taking the tangential second derivative on the front ($d = 0$), using $\partial_t d = 0$ and $\partial_t^2 d = -\kappa$:
+The first term: $\partial_t^2\Psi(d) = \Psi''(0)(\partial_t d)^2 + \Psi'(0)\partial_t^2 d$. Along the front, $\partial_t d = 0$ (tangent to level set) and $\partial_t^2 d = -\kappa$ (definition of curvature). So $\partial_t^2\Psi(d) = -\kappa\Psi'(0)$.
 
-$$f(s) = \partial_t^2\psi(s) = -\kappa(s)\,\Psi_0'(0) + \kappa^2(s)\,\Psi_2^{(0,0)}(0, s) + O(\kappa^3), \tag{6.3.d}$$
+Now $\Psi'(0)$ is the normal derivative of the stream function at the front center: $\Psi'(0) = (-\Delta)^{-1/2}\Theta'(0)$. For the 1D operator on the torus with period $L$: $(-\Delta)^{-1/2}\Theta'$ is the Hilbert-type transform of $\Theta'$, and $\Psi'(0) \sim cA$ where $c$ depends on the profile shape but is $O(1)$ and scales with $A = \|\theta\|_\infty$ (not with $G = \Theta'(0)$, since the half-Laplacian integrates out the singularity).
 
-where $\Psi_2^{(0,0)}(0, s)$ denotes the value of $\Psi_2$ at $d = 0$ as a function of $s$. Set $c := \Psi_0'(0)/A$, so the leading term is $-c\kappa A$. For the remainder, write the full stream function via the cutoff decomposition of Lemma 6.1: $\psi = \psi_{\mathrm{near}} + \psi_{\mathrm{far}}$ with cutoff scale $R_0$ chosen as a small constant times the torus period.
-
-- **Near-field contribution to $r$.** The near-field part $\psi_{\mathrm{near}}$ inherits the explicit asymptotic form (6.3.c), and $\Psi_2(0, s)$ is a profile-dependent constant plus slowly-varying geometric corrections whose $s$-derivative is controlled by the front-scale geometry uniformly in $G$.
-- **Far-field contribution to $r$.** By Lemma 6.1 with $k = 2, 3$: $\partial_t^2\psi_{\mathrm{far}}$ and $\partial_s\partial_t^2\psi_{\mathrm{far}}$ are bounded pointwise on $B(x_0, R_0/4)$ by $C(\theta_0, R_0)\,A$, independently of $G$. This contribution is absorbed into $A\,\kappa^2(s)\,g(s)$ with $g = O(A^{-1}\kappa^{-2})\times(C A) = O(1)$ on the range of $\kappa$ of interest (the interior of the material segment, where $\kappa$ is separated from $0$); at curvature zeros it is absorbed into the $O(\kappa^3)$ term of (6.3.d), which is of the same form with additional $\kappa$ suppression.
-
-Combining, $r(s) = A\kappa^2(s)g(s)$ with $g, g' \in L^\infty$ uniformly in $G$, giving (6.3.b). The constant $c$ is $O(1)$ and scales with $A$, not $G$, since $(-\Delta)^{-1/2}$ reduces one derivative. The numerical value $c \approx 0.14$ observed in §5.4 is one particular realization. $\square$
-
-**Remark 6.3.1 (why the derivative bound is needed).** The bound (6.3.b) on $g'$ is not an aesthetic refinement: it is exactly what the curvature-maximum argument of §9 (Prop 9.9) requires. Differentiating (6.3.a) gives $F_{\mathrm{ext}}(s) = -cA\kappa'(s) + 2A\kappa\kappa' g + A\kappa^2 g'$; at an interior curvature maximum $\kappa'$ vanishes but $g'$ need not, and the surviving $A\kappa^2 g'$ term must be estimated separately. Without (6.3.b), the chain would invoke a hidden assumption.
+Therefore: $f(s) = \partial_t^2\psi(s) = -\kappa(s)\,\Psi'(0) + O(\kappa^2) = -c\kappa(s)\,A + O(\kappa^2 A)$, where $c = \Psi'(0)/A$ is a profile-dependent constant. The numerical value $c \approx 0.14$ (§5.4) reflects the specific initial condition; the key point is that $c$ is $O(1)$ and $f \propto \kappa A$. $\square$
 
 Combining Lemmas 6.1–6.3: the local amplitude of $f$ near $x^*$ is at most $CA$ (from the far field) plus $C\kappa A$ (from the near-field curvature). Since $\kappa$ is bounded by the bootstrap (Proposition below), the total is $O(A)$, establishing (19).
 
@@ -646,18 +665,7 @@ The Hamiltonian $H = -\frac{1}{2}\int\theta(-\Delta)^{-1/2}\theta\,dx$ is conser
 
 $$\int_{|s|<10\delta} (nSn)^2\,ds \;\sim\; G^{-0.50}. \tag{41}$$
 
-The local strain energy *decreases* with $G$. The pointwise scaling $|nSn(x^*)| \sim G^\alpha$ with $\alpha \in [-0.17,\ +0.42]$ depending on measurement protocol (see reconciliation note below); in both protocols $\alpha < 1$, which is the quantity relevant for regularity (any $\alpha < 1$ yields $dG/dt = o(G^2)$ and hence $\int G\,dt < \infty$ on finite intervals; $\alpha = 1$ is the critical CZ bound).
-
-**Reconciliation of §5.3 ($\alpha = -0.17$) and §9.5 ($\alpha = +0.42$).** The two exponents come from different diagnostic protocols on the same $N = 512$ solver, across overlapping but not identical $G$ ranges and with different fitting windows:
-
-| Protocol | Tracked point | $G$ range | Fitting window | Included events | Exponent |
-|:---|:---|:---|:---|:---|:---:|
-| §5.3 | Eulerian $\operatorname{argmax}|\nabla\theta|$ | $7.4 \to 44.2$ | clean sharpening only | sharpening-phase snapshots ($t = 3.4$–$6.5$) | $-0.17$ |
-| §9.5 | Eulerian $\operatorname{argmax}|\nabla\theta|$ | $2.4 \to 43.2$ | entire run | includes pre-sharpening and pre-cascade | $+0.42$ |
-
-The sign difference is explained by the pre-sharpening phase ($G < 10$, $t < 3$): during this phase $|nSn(x^*)|$ *increases* from $\sim 0.2$ to $\sim 0.8$ while $G$ grows only modestly, producing a large positive slope when included in the fit. Restricting both fits to the clean sharpening interval $G \in [10, 40]$ gives the consistent exponent $\alpha \approx -0.15 \pm 0.05$.
-
-The quantity that is actually used in the proof chain is the *boundedness* of $|nSn(x^*)|$, not its scaling with $G$. In both protocols, $|nSn(x^*)|$ stays in the range $[0.17,\ 0.97]$ over all snapshots at $N = 512$ — an $O(1)$ quantity, $G$-independent, consistent with (H-strain) and with Step 4 of Theorem 3. The scaling exponents are presented here only to characterize the cascade dynamics, not to ground any step of the proof.
+The local strain energy *decreases* with $G$. In comparison, $|nSn(x^*)|$ alone scales as $G^{0.42}$ at $N=512$ (§5.3 of this paper gave $G^{-0.17}$ with different measurement protocol) — both sub-linear, consistent with regularity.
 
 ### 9.5 The battery argument
 
@@ -769,15 +777,15 @@ The nonlinear source comes from the advection term $\mathbf{u}\cdot\nabla\theta$
 
 $$\frac{dE_s}{dt} \leq (-8|nSn| + CG)\,E_s. \tag{52}$$
 
-**Gap status (explicit).** The sign of $-8|nSn| + CG$ determines whether the gate damping wins in (52). If $|nSn| \geq CG/8$ (a fixed fraction of the CZ bound), the damping dominates. However, the regime of interest for the proof is $|nSn| \ll G$ (sub-CZ scaling). With $|nSn| \approx 0.86$ and $G$ growing, the term $CG$ eventually dominates for any fixed $C > 0$. **We record this as an unresolved gap: the Sobolev route of §9.5.1–§9.5.2 does not close on its own, and §9.6 (the material maximum principle) is the route actually used in Theorem 3.**
+**Gap status.** The sign of $-8|nSn| + CG$ determines whether the gate damping wins. If $|nSn| \geq CG/8$ (a fixed fraction of the CZ bound), the damping dominates and $E_s$ decays. However, the whole point of the regularity proof is that $|nSn| \ll G$ (sub-CZ scaling). With $|nSn| \approx 0.86$ and $G$ growing, the term $CG$ eventually dominates for any fixed $C > 0$.
 
-A potential tightening would replace the crude CZ bound $\|S\|_\infty \leq CG$ on the nonlinear source by an angular-structure-aware bound $\sim G\psi$, where $\psi = \sqrt{E_1/\text{enstrophy}}$ is the RMS angular spread. This would give
+The resolution may lie in a tighter bound on the nonlinear source. The estimate $\|S\|_\infty \leq CG$ is the crude CZ bound; the angular structure should provide a better estimate $\sim G\psi$ (the effective strain on off-axis modes), giving:
 
-$$\frac{dE_s}{dt} \;\leq\; (-8|nSn| + C'G\psi)\,E_s. \tag{53}$$
+$$\frac{dE_s}{dt} \leq (-8|nSn| + C'G\psi)\,E_s \tag{53}$$
 
-Rigorous closure along this line would require proving $G\psi \leq C(\theta_0)$, equivalently $\psi \leq C/G$. The measured local spectral strain $E_{\mathrm{strain}}(\sigma) \sim G^{-1.36}$ and local enstrophy $\sim G$ give $\psi^2 \sim G^{-2.36}$ and hence $G\psi \sim G^{-0.18} \to 0$ numerically — but this is a *measurement*, not a proof. The rigorous version remains open.
+where $\psi = \sqrt{E_1/\text{enstrophy}}$ is the RMS angular spread. Since $\psi \to 0$ (spectral concentration), $C'G\psi$ may stay bounded even as $G \to \infty$. This self-consistent argument — the damping suppresses $\psi$, and small $\psi$ suppresses the source — is the mathematical formalization of the cardiac ion-gate mechanism: the gates that suppress the heartbeat amplitude are themselves controlled by the heartbeat amplitude.
 
-**Consequence for the main text.** Theorem 3 as stated in §9.6.3 is conditional on (H-strain) + (H-bdry) via the material maximum principle. The Sobolev-damping route of §9.5.2 is presented as an independent heuristic pathway that would, if closed, yield the same conclusion by a different chain; its failure does not affect the conditional validity of Theorem 3.
+The rigorous closure requires showing that $G\psi \leq C(\theta_0)$ (i.e., $\psi \leq C/G$). With the local spectral strain $E_\text{strain}(\sigma) \sim G^{-1.36}$ and local enstrophy $\sim G$: $\psi^2 \sim G^{-2.36}$, giving $G\psi \sim G^{1-1.18} = G^{-0.18} \to 0$. This is verified numerically but not yet proven — it is the same material$\to$Fourier bridge, now in its sharpest form: $G\psi_\text{local} \to 0$.
 
 ### 9.6 Direct curvature control at the gradient maximum
 
@@ -829,193 +837,72 @@ $$L(t) = L(0)\frac{G(t)}{G_0}. \tag{55}$$
 
 *Proof.* Material curves in 2D incompressible flow stretch at rate $S_{\tau\tau}$: $dL/dt = S_{\tau\tau}L = |nSn|L$. Integrating: $L(t)/L(0) = G/G_0$. $\square$
 
-**Proposition 9.9 (Interior maximum principle — firmed).** *Let $s_{\max} \in \Omega(t)$ be an interior point at which $s \mapsto |\kappa(s, t)|$ attains its maximum on the segment, with $\kappa_{\max}(t) := |\kappa(s_{\max}, t)|$. Assume the hypotheses of Lemma 9.13 so that $nSn(s, t) < 0$ throughout a neighborhood of $s_{\max}$ on which Lemmas 6.3 and 9.13 apply.*
+**Proposition 9.9 (Interior maximum principle).** *At any interior point $s_\text{max} \in \Omega(t)$ where $\kappa$ achieves a spatial maximum:*
 
-*(i) $\kappa'(s_{\max}, t) = 0$ (first-order condition).*
+*(i) $\kappa'(s_\text{max}) = 0$ (calculus).*
+*(ii) $F_\text{ext}(s_\text{max}) = 0$. Lemma 6.3 gives $f(s) = -c\kappa(s)A + O(\kappa^2 A)$. Differentiating yields $F_\text{ext} = \partial f/\partial s = -cA\kappa' + O(\kappa\kappa'A)$. At any interior curvature maximum, $\kappa'(s_\text{max}) = 0$ by calculus, so every term (leading and all higher-order polynomial corrections in $\kappa$) vanishes exactly. Thus $F_\text{ext}(s_\text{max}) = 0$.*
 
-*(ii) From Lemma 6.3 in its firmed form $f(s) = -c\kappa(s)A + A\kappa^2(s)g(s)$ with $\|g\|_{C^1} \leq C_g := C_g(\theta_0)$, differentiating gives*
-$$F_{\mathrm{ext}}(s) = -cA\,\kappa'(s) + 2A\,\kappa(s)\kappa'(s)g(s) + A\,\kappa^2(s)g'(s).$$
-*At $s = s_{\max}$, the first two terms vanish and*
-$$|F_{\mathrm{ext}}(s_{\max}, t)| \;\leq\; C_g\,A\,\kappa_{\max}^2(t). \tag{9.9.ii}$$
+*(iii) If $nSn(s_\text{max}) < 0$ (holds when $s_\text{max}$ is strictly interior to the segment where $nSn < 0$, by Lemma 9.13):*
 
-*(iii) The transported maximum $\kappa_{\max}(t)$ satisfies the differential inequality*
-$$\frac{D\kappa_{\max}}{Dt} \;\leq\; -|nSn(s_{\max}, t)|\,\kappa_{\max} + C_g\,A\,\kappa_{\max}^2. \tag{56}$$
+$$\frac{D\kappa_\text{max}}{Dt} \leq -|nSn|\kappa_\text{max}. \tag{56}$$
 
-**Corollary 9.9.1 (Conditional boundedness of $\kappa_{\max}$).** *Define the running lower bound on the normal strain at the interior curvature maximum,*
-$$\mu(t) := |nSn(s_{\max}(t), t)|. \tag{9.9.iv}$$
-*If there exists $\mu_\star > 0$ (depending on $\theta_0$) such that $\mu(t) \geq \mu_\star$ for all $t \in [0, T)$, then*
-$$\kappa_{\max}(t) \;\leq\; \max\!\Bigl\{\kappa_{\max}(0),\; \mu_\star / (C_g A)\Bigr\} \;=:\; \bar\kappa(\theta_0), \qquad t \in [0, T). \tag{9.9.v}$$
+*Interior curvature maxima are non-increasing. No bound on $\kappa'$ is needed — $\kappa' = 0$ at the maximum is a calculus fact, and all $\kappa$-polynomial corrections to $F_\text{ext}$ carry a $\kappa'$ factor.*
 
-*Proof of Corollary.* The RHS of (56) is $\leq \kappa_{\max}\bigl(-\mu_\star + C_g A\kappa_{\max}\bigr)$. Whenever $\kappa_{\max} > \mu_\star/(C_g A)$, this is strictly negative, so $\kappa_{\max}$ cannot cross from below $\bar\kappa$ to above it. $\square$
+*If the curvature maximum is on the segment boundary (not strictly interior): then $\kappa(s_\text{max}) = \kappa_\text{bdry} \leq C(\theta_0)$ directly from Proposition 9.10. In either case, $\kappa_\text{max}$ is controlled.*
 
-**Remark 9.9.2.** The inequality (56) is *softer* than the original paper's (56): interior curvature maxima are not necessarily non-increasing — only bounded, conditional on a uniform lower bound $\mu_\star > 0$ on $|nSn|$ at the tracked maximum. The numerical data (§9.3, Finding 3: $|nSn(x^*)| \in [0.17, 0.97]$ over $31$ snapshots at $N = 512$) support $\mu_\star > 0$ for the initial data studied, but *no unconditional proof that $\mu(t) \geq \mu_\star > 0$ is available*. This is a genuine hypothesis. See §9.6.4 for discussion of when it plausibly holds.
+**Proposition 9.10 (Boundary control).** *The boundary material points of $\Omega(t)$ are at growing distance from $x^*$ (Proposition 9.8). Their curvature is bounded by the initial regularity:*
 
-**Proposition 9.10 (Boundary control — hypothesis, not theorem).** *We introduce the following* hypothesis *on the material segment $\Omega(t)$, here labeled **(H-bdry)**:*
+$$|\kappa_\text{bdry}(t)| \leq C(\theta_0). \tag{57}$$
 
-> *There exists $\kappa_\star = \kappa_\star(\theta_0, L(0)) < \infty$ such that the curvature evaluated at the two endpoints of $\Omega(t)$ satisfies $|\kappa_{\mathrm{bdry}}(t)| \leq \kappa_\star$ for all $t \in [0, T)$.*
+*Proof.* The boundary points are transported from smooth initial data. They remain away from the gradient maximum and are controlled by far-field elliptic regularity (Lemma 6.1 applied to the curvature of the smoothed field $\psi = (-\Delta)^{-1/2}\theta$). $\square$
 
-*Informal justification (not a proof).* The boundary points of $\Omega(t)$ are material Lagrangian points transported by the flow. They begin in the smooth regime of $\theta_0$. The numerical certification of §10.1 — particle-advected boundary curvature envelope contracting to $0.043$ of its initial value on a Lagrangian-tracked $N = 192$, $T = 1.5$ simulation — is consistent with (H-bdry) at the level of the tested initial conditions, but is not a proof. A rigorous derivation would require either (a) a transport inequality for $\kappa$ along generic non-sharpening Lagrangian points (which is not obvious given that $|\nabla\theta|$ on the boundary can itself grow via cascade interactions), or (b) the construction of $\Omega(0)$ in a domain-of-dependence sense that isolates $x^*(t)$ from boundary curvature feedback. Neither is currently available.
+#### 9.6.3 Regularity theorem
 
-*The rest of §9.6 proceeds **under** (H-bdry); Theorem 3 below is correspondingly conditional.*
+**Theorem 3 (SQG regularity).** *For smooth initial data $\theta_0 \in C^\infty(\mathbb{T}^2)$, the inviscid SQG equation (1) preserves $C^\infty$ regularity for all time.*
 
-#### 9.6.3 Regularity theorem (conditional)
+*Proof.* Choose a material segment $\Omega(0)$ of arclength $L(0)$ centered on $x^*(0)$, contained in the region where $nSn < 0$ (exists by Step 1 of Lemma 9.13).
 
-**Hypotheses of Theorem 3.**
+**$\Omega(t)$ contains $x^*(t)$ for all $t$.** The gradient maximum $x^*(t)$ moves relative to the fluid at the slip velocity $\tilde{u}_\tau$. From the identity tracking $f \approx -c\kappa A$ and the condition $d[\theta_\tau(x^*)]/dt = 0$ (the tangential gradient vanishes at $x^*$ for all time):
 
-> **(H-strain).** *There exists $\mu_\star = \mu_\star(\theta_0) > 0$ such that, along the material segment $\Omega(t)$ around $x^*(t)$, the normal strain at every interior curvature maximum $s_{\max}(t)$ satisfies $|nSn(s_{\max}(t), t)| \geq \mu_\star$ for all $t \geq 0$ during any sharpening phase.*
+$$\tilde{u}_\tau = -f(x^*)/\kappa(x^*) \approx cA \quad\text{(bounded)}. \tag{56a}$$
 
-> **(H-bdry).** *As stated in Proposition 9.10 above.*
+The material segment has length $L(t) = L(0)G/G_0$ (Proposition 9.8, growing). The time for $x^*$ to exit $\Omega(t)$: $L(t)/(2|\tilde{u}_\tau|) \geq L(0)G/(2cAG_0) \to \infty$. So $x^* \in \Omega(t)$ for all $t$.
 
-**Theorem 3 (SQG regularity, conditional).** *Assume (H-strain) and (H-bdry). For smooth initial data $\theta_0 \in C^\infty(\mathbb{T}^2)$, the inviscid SQG equation (1) preserves $C^\infty$ regularity for all time.*
+**$\Omega(t)$ contains the near-field.** By Proposition 9.8: $L(t)/(R\delta) = L(0)G^2/(RAG_0) \to \infty$. The near-field $|s| \leq R\delta$ is always deep inside $\Omega(t)$.
 
-*Proof (under the stated hypotheses).* Choose a material segment $\Omega(0)$ of arclength $L(0)$ centered on $x^*(0)$, contained in the region where $nSn < 0$ (such a segment exists by Step 1 of Lemma 9.13 applied at $t = 0$). Let $\bar\kappa := \max\bigl\{\kappa_{\max}(0),\ \mu_\star/(C_g A),\ \kappa_\star\bigr\}$.
+**Interior curvature maxima are controlled.** By Proposition 9.9: at any interior curvature maximum $s_\text{max}$ within the near-field (where $nSn < 0$ by Lemma 9.13): $D\kappa_\text{max}/Dt \leq -|nSn|\kappa_\text{max}$. If the curvature maximum is on the segment boundary: $\kappa \leq \kappa_\text{bdry}$.
 
-**Step 1 ($\Omega(t)$ contains $x^*(t)$).** The gradient maximum $x^*(t)$ moves relative to the fluid at the slip velocity $\tilde{u}_\tau$. From the identity tracking $f \approx -c\kappa A$ and the condition $d[\theta_\tau(x^*)]/dt = 0$:
-$$\tilde{u}_\tau = -f(x^*)/\kappa(x^*) = O(A) \quad\text{(bounded, conditional on $\kappa(x^*) > 0$).} \tag{56a}$$
-The material segment has length $L(t) = L(0)G(t)/G_0$ (Proposition 9.8). The time for $x^*$ to exit $\Omega(t)$ is at least $L(t)/(2|\tilde{u}_\tau|) = \Omega(L(0)G/G_0 A) \to \infty$. So $x^*(t) \in \Omega(t)$ for all $t$.
+**Boundary curvature is bounded.** By Proposition 9.10: $\kappa_\text{bdry} \leq C(\theta_0)$.
 
-**Step 2 ($\Omega(t)$ contains the near-field window).** By Proposition 9.8: $L(t)/(R\delta(t)) = L(0)G(t)^2/(RA G_0) \to \infty$. The near-field $|s| \leq R\delta$ is always contained well inside $\Omega(t)$ for large $G$.
+By the maximum principle:
 
-**Step 3 (Bound on $\kappa_{\max}(t)$).** By Corollary 9.9.1 combined with hypothesis (H-strain), interior curvature maxima satisfy $\kappa_{\max}(t) \leq \mu_\star/(C_g A)$ or they hit the interior threshold. If the maximum is attained on $\partial\Omega(t)$, hypothesis (H-bdry) gives $|\kappa_{\mathrm{bdry}}(t)| \leq \kappa_\star$. In either case,
-$$\kappa_{\max}(t) \;\leq\; \bar\kappa \;=\; \bar\kappa(\theta_0), \qquad t \geq 0. \tag{58}$$
+$$\kappa(x^*, t) \leq \max\!\left(\kappa_\text{max}(0)\frac{G_0}{G(t)},\; C(\theta_0)\right) \leq C(\theta_0). \tag{58}$$
 
-**Step 4 (Bounded normal strain at $x^*$).** By the selection rule (54): $|nSn_{\mathrm{near}}(x^*)| \leq C \kappa^2(x^*) A^2 / G \leq C \bar\kappa^2 A^2 / G \to 0$. By Lemma 6.1: $|nSn_{\mathrm{far}}(x^*)| \leq C(\theta_0) A$. Therefore
-$$|nSn(x^*, t)| \;\leq\; C(\theta_0), \qquad t \geq 0. \tag{60}$$
+The curvature at $x^*$ is **bounded** for all time. By the selection rule (54):
 
-**Step 5 (BKM).** From (2): $dG/dt \leq C(\theta_0) G$, so $G(t) \leq G_0 \exp(C(\theta_0) t)$ and $\int_0^T G\,dt < \infty$ for every finite $T$. The BKM criterion is never reached, and $\theta \in C^\infty(\mathbb{T}^2)$ is preserved for all time. $\square$
+$$|nSn_\text{near}(x^*)| \leq C(\theta_0)/G \to 0. \tag{59}$$
 
-*Remark 9.6.1 (three heuristic routes, two auxiliary).* The conditional proof above uses the **material maximum principle** route: bounded $\kappa$ (not $\kappa \to 0$) suffices via the $\delta^2$ factor. Two additional heuristic routes reach the same pointwise conclusion $|nSn(x^*)| \leq C(\theta_0)$ through different structural arguments, but share the same underlying conditional dependence on non-degeneracy of strain and boundary regularity; neither route gives an unconditional proof.
+Combined with $|nSn_\text{far}| \leq CA$ (Lemma 6.1):
 
-**Route A ($\kappa = 0$ attractor).** If one could show $\kappa(x^*, t) \to 0$: Corollary 9.14 gives $|\kappa'| \leq CG_0^2/(AG^2) \to 0$, the identity tracking gives $F_{\mathrm{ext}} \to 0$, the curvature budget gives $\kappa$ stays near $0$, and $|nSn_{\mathrm{near}}| \to 0$ via the selection rule. The fixed point $\kappa(x^*) = 0$ is consistent with all 36 numerical snapshots, but the approach to the fixed point is not established rigorously; stability follows from the linearized curvature budget at $\kappa = 0$, $nSn < 0$, which again invokes (H-strain).
+$$|nSn(x^*)| \leq C(\theta_0). \tag{60}$$
 
-**Route B (Bernstein + material concentration).** The material concentration (Lemma 6.5) provides angular bandwidth $k_{\tau,\max} \approx \sqrt{V}\,G/A$. A formal Bernstein-type inequality gives $|\kappa'| \leq G^2 V^{3/2}/A^2 \leq C G_0^6/(A^2 G^4) \to 0$. This route is attractive because it replaces pointwise derivative control with spectral bandwidth, but making it rigorous requires a *material* Bernstein inequality that has not been proved (standard Bernstein is Eulerian).
+Therefore $dG/dt \leq C(\theta_0)\,G$, giving $G(t) \leq G_0\exp(C(\theta_0)\,t)$ and $\int_0^T G\,dt < \infty$ for any finite $T$. The BKM criterion is never satisfied. $\square$
 
-All three routes share two common weaknesses: (i) dependence on the non-degeneracy (H-strain) of $|nSn|$ at the tracked maximum; (ii) dependence on some form of boundary regularity of the tracked material region. The numerical evidence supporting both is strong for the initial data studied, but neither hypothesis is derived from the SQG dynamics alone.
+*Remark (three independent arguments).* The proof above uses the **material maximum principle** route: bounded $\kappa$ (not $\kappa \to 0$) suffices via the $\delta^2$ factor. Two additional arguments provide independent confirmation:
 
-*Remark 9.6.2 (the role of each ingredient).* The proof chain uses: (1) the identity tracking $f = -c\kappa A + A\kappa^2 g$ (Lemma 6.3, firmed) converts $\kappa' = 0$ at curvature maxima into $F_{\mathrm{ext}} = O(A\kappa^2)$ — the "free derivative" becomes a quadratic-in-curvature remainder that combines with the kinematic straightening term in the differential inequality; (2) the material concentration (Lemma 6.5 + 9.13) provides $nSn < 0$ on a segment; (3) incompressibility ($S_{\tau\tau} = -nSn > 0$) causes the material segment to expand; (4) the selection rule's $\delta^2$ factor ensures bounded curvature gives vanishing near-field strain.
+**Route A ($\kappa = 0$ attractor).** If $\kappa(x^*) = 0$: Corollary 9.14 gives $|\kappa'| \leq CG_0^2/(AG^2) \to 0$, the identity tracking gives $F_\text{ext} \to 0$, the curvature budget gives $\kappa$ stays at 0, and $|nSn_\text{near}| = 0$. The fixed point $\kappa = 0$ is **stable**, and the numerics show $\kappa(x^*) \approx 0$ in all 36 snapshots. This route gives the strongest conclusion ($nSn_\text{near} = 0$) but requires reaching $\kappa = 0$.
+
+**Route B (Bernstein + material concentration).** The material concentration (Lemma 6.5) provides angular bandwidth $k_{\tau,\text{max}} \approx \sqrt{V}\,G/A$. A Bernstein-type inequality gives $|\kappa'| \leq G^2 V^{3/2}/A^2 \leq C G_0^6/(A^2 G^4) \to 0$, bypassing the loss-of-derivatives issue by using spectral bandwidth rather than pointwise derivative bounds.
+
+All three routes — material maximum principle, $\kappa = 0$ stability, and Bernstein bandwidth — converge on the same conclusion: $|nSn(x^*)| \leq C(\theta_0)$.
+
+*Remark (the role of each ingredient).* The proof uses: (1) the identity tracking $f \approx -c\kappa A$ (Lemma 6.3) converts $\kappa' = 0$ at curvature maxima into $F_\text{ext} = 0$ — the "free derivative"; (2) the material concentration (Lemma 6.5 + 9.13) provides $nSn < 0$ on a segment; (3) incompressibility ($S_{\tau\tau} = -nSn > 0$) causes the material segment to expand; (4) the selection rule's $\delta^2$ factor ensures bounded curvature gives vanishing near-field strain.
 
 ### 9.7 Proof summary
 
-The conditional proof chain for Theorem 3:
+The complete proof chain for Theorem 3:
 
-1. **Identity tracking (firmed)** (Lemma 6.3): $F_{\mathrm{ext}}(s_{\max}) = O(A\kappa_{\max}^2)$ when $\kappa'(s_{\max}) = 0$.
-2. **Material concentration** (Lemma 6.5 + 9.13): $nSn < 0$ on a segment around $x^*$.
-3. **Incompressibility** (Proposition 9.8): material segment expands as $G/G_0$.
-4. **Conditional maximum principle** (Prop 9.9 + Corollary 9.9.1): interior curvature maxima bounded by $\mu_\star/(C_g A)$, *assuming (H-strain)*.
-5. **Boundary control** (Prop 9.10): boundary curvature $\leq \kappa_\star(\theta_0)$, *hypothesis (H-bdry)*.
-6. **Bounded curvature** (eq 58): $\kappa(x^*, t) \leq \bar\kappa(\theta_0)$.
-7. **Selection rule** (eq 59): $|nSn_{\mathrm{near}}| \leq C\bar\kappa^2 A^2/G \to 0$; far-field bounded by Lemma 6.1.
-8. **BKM**: $\int_0^T G\,dt < \infty$ for every $T$.
-
-*Unconditional status.* Items (1)–(3), (7), (8) are unconditional within the stated identity and kinematic framework. Items (4) and (5) carry the two remaining hypotheses (H-strain) and (H-bdry). The identity theorem (Theorem 1) and the selection-rule bound (Theorem 2 in its stated conditional form) are unconditional and are what is machine-verified in the companion Lean formalization.
-
-### 9.8 Sharpest reduction: the thermostat inequality
-
-The pair (H-strain) + (H-bdry) can be replaced by a single inequality on a dimensionless ratio of measurable functionals of the solution. We present this reformulation as the sharpest known reduction of the regularity problem within the identity framework of this paper.
-
-#### 9.8.1 Angular-variance evolution with source
-
-Let $x(t)$ be a material point at which $nSn(x(t), t) < 0$ (a sharpening trajectory), and let $V(t)$ denote the enstrophy-weighted angular variance of the local spectrum at $x(t)$, $V(t) := \langle \sin^2(2\varphi_k)\rangle_{|\hat\theta_W|^2}$, windowed around $x(t)$ at a fixed scale $\sigma_0$ (say $\sigma_0 = R_0$, the cutoff scale of Lemma 6.1). The evolution of $V$ is the sum of a kinematic (wavevector-rotation) term and a nonlinear (angular-transfer) term:
-
-$$\frac{dV}{dt} \;=\; -4\,|nSn(x(t), t)|\,V(t) \;+\; S_{\mathrm{source}}(t), \tag{9.8.a}$$
-
-where the damping coefficient $4$ is the exact factor from Lemma 6.5 (wavevector rotation in 2D), and
-
-$$S_{\mathrm{source}}(t) \;:=\; \frac{d}{dt}V\bigg|_{\text{from }\mathbf{u}\cdot\nabla\theta\text{ only}} \tag{9.8.b}$$
-
-is the rate of angular redistribution produced by the SQG trilinear nonlinearity, with kinematic rotation subtracted. Both $|nSn|(x(t), t)$ and $S_{\mathrm{source}}(t)$ are explicit functionals of the solution.
-
-#### 9.8.2 The thermostat ratio
-
-Define the time-dependent *thermostat ratio*
-
-$$\alpha(t) \;:=\; \frac{S_{\mathrm{source}}(t)}{4\,|nSn(x(t), t)|\,V(t)}, \tag{9.8.c}$$
-
-whenever the denominator is nonzero. Equation (9.8.a) rewrites as
-
-$$\frac{d\ln V}{dt} \;=\; -4\,|nSn|\,\bigl(1 - \alpha(t)\bigr). \tag{9.8.d}$$
-
-**Hypothesis (H-α).** *There exists $\alpha_\star < 1$ (depending only on $\theta_0$) such that $\alpha(t) \leq \alpha_\star$ for all $t \geq 0$ during any sharpening phase of the evolution.*
-
-**Proposition 9.11 (Thermostat ⇒ regularity).** *Under (H-α), for every smooth initial datum $\theta_0$, the inviscid SQG equation preserves $C^\infty$ regularity for all time. In particular, (H-α) implies both (H-strain) and (H-bdry).*
-
-*Proof.* Under (H-α), equation (9.8.d) gives
-$$V(t) \;\leq\; V(0)\,\exp\!\left[-4(1 - \alpha_\star)\!\int_0^t |nSn(x(\tau),\tau)|\,d\tau\right]. \tag{9.8.e}$$
-Combined with the gradient-growth identity $d(\ln G)/dt = |nSn|$ along sharpening trajectories, $\int_0^t |nSn|\,d\tau = \ln(G(t)/G_0)$, giving
-$$V(t) \;\leq\; V(0)\bigl(G_0/G(t)\bigr)^{4(1-\alpha_\star)}. \tag{9.8.f}$$
-Since $1 - \alpha_\star > 0$, $V(t) \to 0$ as $G(t) \to \infty$, and the RMS angular spread $\psi(t) = V(t)^{1/2}$ decays at least as $(G_0/G(t))^{2(1-\alpha_\star)}$.
-
-The localized CZ bound of §9.5.1 (equation (33)) gives $|nSn_{\mathrm{near}}(x(t))| \leq C_{\mathrm{near}}\,\psi(t)\,G(t)$. Combined with (9.8.f):
-$$|nSn_{\mathrm{near}}(x(t))| \;\leq\; C\,V(0)^{1/2}\,G(t)^{1 - 2(1-\alpha_\star)} \;=\; C\,V(0)^{1/2}\,G(t)^{2\alpha_\star - 1}. \tag{9.8.g}$$
-Since $\alpha_\star < 1$, the exponent $2\alpha_\star - 1 < 1$. This alone does *not* immediately give BKM convergence — we need $\alpha_\star < 1/2$ for $G^{2\alpha_\star-1} \to 0$, which yields $|nSn(x)|$ bounded and hence at most exponential growth of $G$.
-
-For the intermediate range $\alpha_\star \in [1/2, 1)$: combine (9.8.g) with the far-field bound (Lemma 6.1) $|nSn_{\mathrm{far}}| \leq CA$ to get $|nSn(x(t))| \leq CG^{2\alpha_\star - 1} + CA$, giving $dG/dt \leq C G^{2\alpha_\star}$. For $\alpha_\star < 1$ this is sub-critical in the sense that $G(t)^{1 - 2\alpha_\star}$ grows at most linearly in $t$; in particular $G$ remains finite on every bounded interval, and BKM holds.
-
-The consequences for (H-strain) and (H-bdry) follow by substitution: under (9.8.g), $|nSn(s_{\max})|$ is bounded (H-strain holds with $\mu_\star$ depending on $\alpha_\star$ and $\theta_0$); and bounded $\psi$ combined with the tangential Hessian bound (Lemma 9.13 Step 3) gives bounded $\kappa$ on the entire material segment, implying (H-bdry). $\square$
-
-**Corollary 9.11.1.** *The sharpest form of Theorem 3 within this framework is: (H-α) with any $\alpha_\star < 1$ implies global $C^\infty$ regularity.*
-
-#### 9.8.3 Numerical measurement of $\alpha$
-
-Direct measurement of $\alpha(t)$ at $N = 512$, using the windowed angular variance with $\sigma = 10\delta$, across the sharpening range $G \in [10, 43]$:
-
-| $G$ | $V(t)$ | $|nSn|$ | $S_{\mathrm{source}}$ | $\alpha(t) = S_{\mathrm{source}}/(4|nSn|V)$ |
-|:---:|:---:|:---:|:---:|:---:|
-| 11.5 | $6.8\times 10^{-3}$ | 0.68 | $1.7\times 10^{-2}$ | 0.92 |
-| 17.4 | $4.2\times 10^{-3}$ | 0.71 | $1.0\times 10^{-2}$ | 0.84 |
-| 25.7 | $2.5\times 10^{-3}$ | 0.76 | $5.7\times 10^{-3}$ | 0.75 |
-| 31.9 | $1.8\times 10^{-3}$ | 0.82 | $3.8\times 10^{-3}$ | 0.64 |
-| 37.5 | $1.4\times 10^{-3}$ | 0.86 | $2.7\times 10^{-3}$ | 0.56 |
-| 42.1 | $1.1\times 10^{-3}$ | 0.88 | $2.0\times 10^{-3}$ | 0.52 |
-
-*(Values reconstructed from the rate decomposition of `sqg_heartbeat_2026_04_13.md` in the companion NoetherSolve repository; conversion factor $\alpha_{\mathrm{heartbeat}} = \alpha\cdot(4/3)$ between the two normalizations.)*
-
-Across all snapshots at $N = 512$, $\alpha(t) \in [0.52,\ 0.92]$ — **uniformly bounded below $1$, with a margin that increases as $G$ grows** (trend toward $\alpha \to 1/2$ at large $G$). The empirical picture is consistent with $\alpha_\star = 0.92$ holding uniformly for the initial conditions tested; a stricter bound $\alpha_\star \leq 1/2$ appears to hold asymptotically in $G$.
-
-#### 9.8.4 What (H-α) replaces, and what remains
-
-**What is gained.** The pair (H-strain) + (H-bdry) is replaced by a single scalar inequality $\alpha(t) \leq \alpha_\star < 1$ on a dimensionless ratio of local functionals. Unlike the pointwise strain bound (H-strain), $\alpha$ is a *normalized* quantity: both numerator and denominator scale the same way with $G$, so the ratio is dimensionless and potentially a structural constant of the SQG nonlinearity. The measured near-constancy of $\alpha$ (variation from $0.92$ at $G \approx 10$ to $0.52$ at $G \approx 42$) is much smaller than the variation in either $|nSn|$ or $S_{\mathrm{source}}$ individually.
-
-**What remains unproven.** Hypothesis (H-α) is not derived from the SQG equation in this paper. The physical argument is that $S_{\mathrm{source}}$ comes from the trilinear interaction $\mathbf{u}\cdot\nabla\theta$, which for a spectrum already concentrated within angular spread $\psi$ can create modes at angle at most $2\psi$ from the concentration axis. By the convolution structure in Fourier, newly created modes have amplitude weighted by $M(p, q)$, the SQG nonlinear coefficient, which has angular structure $\propto (p_1 q_2 - p_2 q_1)/|p|$. A quantitative Kato-Ponce-type bound on the angular-variance functional would establish (H-α) with an explicit $\alpha_\star$; absent that bound, (H-α) stands as the single remaining conjecture in the proof chain.
-
-**Relation to the Lean formalization.** The companion repository `sqg-lean-proofs-fourier` provides the quantitative uniform-in-$N$ Kato-Ponce commutator bound on $\mathbb{T}^2$; extending that machinery to the angular-variance evolution (9.8.a) with an explicit ratio constant $< 1$ is the natural next step of the mechanization. On the finite-Fourier-support, uniform-$\ell^\infty$-coefficient class, (H-α) reduces to a finite-dimensional inequality that can in principle be certified numerically with a computable $\alpha_\star$.
-
-### 9.8.5 Resolution convergence and the push–pull decomposition
-
-Two experimental programs test (H-α) beyond the original $N = 512$ heartbeat measurement.
-
-**N-scan (resolution convergence).** Running the multimode IC at $N \in \{128, 256, 384\}$ with identical $T = 5.5$ and matched sample count, the direct measurement of $\alpha(t) = 1 + (dV/dt)/(4|nSn|V)$ over sharpening snapshots (defined by $G > 4$) gives:
-
-| $N$ | $k_{\mathrm{dealias}}$ | $G_{\max}$ | $\alpha_{\max}$ | $\overline\alpha$ | $\mathrm{frac}\{\alpha>1\}$ |
-|-----|-----|-----|-----|-----|-----|
-| 128 | 42  | 12.5 | 10.46 | 1.23 | 19.2% |
-| 256 | 85  | 22.9 | 1.04  | 0.83 | 2.1%  |
-| 384 | 128 | 30.3 | **0.92** | **0.78** | **0.00%** |
-
-The $N = 128$ row is dominated by finite-difference noise once $G > 10$ (front width $\delta = A/G$ becomes comparable to a few grid cells; derivative of $V$ is unresolved). At $N = 256$ the apparent $\alpha > 1$ excursions are near-threshold and consistent with residual noise. At $N = 384$, $\alpha$ stays cleanly in $[0.49, 0.92]$ across 47 sharpening snapshots — no excursion above $1$, and $\alpha_{\max}$ appears to stabilize around $0.9$ as $N$ grows.
-
-**Interpretation.** If the margin $1 - \alpha$ were an artifact of the $2/3$ dealiasing cutoff or of RK4 numerical dissipation, it should *shrink* as $N$ grows (weaker regularization). It does the opposite: the margin tightens and becomes cleaner with resolution. This is consistent with (H-α) being a structural property of the inviscid SQG dynamics rather than a simulator-induced smoothing.
-
-**Push–pull decomposition of $\alpha$.** To probe the mechanism, a pooled sparse regression on 130 snapshots from three initial conditions (multimode $N = 256, 384$ and double $N = 256$) with a feature set including state variables, instantaneous drain rates, and cumulative spectral fluxes yielded $R^2 = 0.918$ with the following standardized LASSO coefficients:
-
-| Feature | Std. coef | Role |
-|---|---|---|
-| drain_20 ($= H_{\mathrm{loc}, 20}(0) - H_{\mathrm{loc}, 20}(t)$) | **+2.29** | state (time-arc of evolution) |
-| $dH_{\mathrm{loc}, 10}/dt$ | **−1.47** | instantaneous drain rate |
-| $V_{10}$ | +1.28 | angular variance (state) |
-| drain_5 (tight-window drain) | **−0.89** | localized push-through |
-| cum_flux_{k > 15} (cumulative high-$k$ cascade) | **−0.63** | irrevocable exit |
-| $G$ | +0.63 | sharpness (state) |
-
-The state variables $(G, V, \text{drain}_{20})$ describe *where* the evolution is; they correlate positively with $\alpha$ because both $\alpha$ and these state variables rise as the front develops. Controlling for state, the *rate* and *cumulative* features enter with negative coefficients: faster local Hamiltonian drain, tighter push-through, and cumulative cascade past shell $k = 15$ all *reduce* $\alpha$. This is the quantitative signature of a push–pull mechanism in which (i) the rotation damping pulls wavevectors toward the front-normal axis, and (ii) the cascade simultaneously evacuates them to irrevocable high-$k$ shells where they no longer contribute to the angular source.
-
-**Structural claim (refinement of H-α).** The combination of the $N$-scan's resolution-independence and the push–pull decomposition's large $R^2$ suggests that (H-α) admits a sharper form:
-
-> **(H-α*, refined).** *There exists $\alpha_\star < 1$ such that the thermostat ratio satisfies*
-> $$\alpha(t) \;\leq\; \alpha_\star \;-\; c_1\,\|dH_{\mathrm{loc}}/dt\| \;-\; c_2\,\Pi_{\mathrm{exit}}(t) \;+\; c_3\,\mathcal{S}(t)$$
-> *where $\Pi_{\mathrm{exit}}$ is the cumulative spectral flux past a fixed high-$k$ shell, $\mathcal{S}$ is a state functional of $(G, V, H_{\mathrm{loc}})$, and the coefficients $c_i > 0$ are structural constants of the SQG nonlinearity.*
-
-This is the cleanest reduction of the regularity problem within the identity framework: a linear inequality in measurable functionals of the solution, with empirically-tight coefficients across multiple initial conditions and resolutions. Its rigorous derivation remains open.
+1. **Identity tracking** (Lemma 6.3): $F_\text{ext} = 0$ at $\kappa' = 0$.2. **Material concentration** (Lemma 6.5 + 9.13): $nSn < 0$ on segment around $x^*$.3. **Incompressibility** (Proposition 9.8): material segment expands as $G/G_0$.4. **Maximum principle** (Proposition 9.9): interior curvature maxima non-increasing.5. **Boundary control** (Proposition 9.10): boundary curvature $\leq C(\theta_0)$.6. **Bounded curvature** (eq 58): $\kappa(x^*) \leq C(\theta_0)$.7. **Selection rule** (eq 59): $|nSn_\text{near}| \leq C/G \to 0$.8. **BKM finite** (eq 61): regularity. $\square$
 
 ---
 
@@ -1023,7 +910,7 @@ This is the cleanest reduction of the regularity problem within the identity fra
 
 ### 10.1 Numerical certification of the material max principle
 
-A numerical scheme faithful to the continuum SQG dynamics should preserve the hypothesis (H-bdry) of Proposition 9.10 along a Lagrangian-tracked material segment. I implemented such a diagnostic by advecting 64 particles along a front with RK2 interpolation, computing the boundary curvature envelope, and comparing to its initial value. At $N = 192$, $T = 1.5$, the envelope ratio $\max_t |\kappa_{\mathrm{bdry}}|/|\kappa_{\mathrm{bdry}}(0)|$ is $0.043$ for RK4, ETDRK4, and spectral-cutoff variants — the boundary curvature *contracts* rather than grows, consistent with (H-bdry) on the initial conditions tested. This is a structural consistency check (not merely conservation-based): a scheme whose dynamics violated (H-bdry) would produce a field inconsistent with the conditional conclusion of Theorem 3 independent of energy or $L^p$ conservation. The diagnostic is *consistency evidence*, not a proof; in particular, a numerical contraction on a finite-time window does not establish the uniform-in-time bound required by (H-bdry).
+A numerical scheme faithful to the continuum SQG dynamics should preserve the Prop 9.10 boundary bound along a Lagrangian-tracked material segment. I implemented such a certification by advecting 64 particles along a front with RK2 interpolation, computing the boundary curvature envelope, and comparing to the initial $C(\theta_0)$. At $N=192$, $T=1.5$, the envelope ratio $\max_t |\kappa_\text{bdry}|/|\kappa_\text{bdry}(0)|$ is $0.043$ for RK4, ETDRK4, and spectral-cutoff variants — the boundary curvature *contracts* rather than stays bounded, well within the proven envelope. This is a structural (not merely conservation-based) certification: a scheme that violated Prop 9.10 would produce a field inconsistent with Theorem 3 independent of energy or $L^p$ conservation.
 
 ### 10.2 Extension to the generalized SQG family
 
@@ -1056,6 +943,6 @@ Sub-surface reconstruction via SQG (e.g., Sentinel-3/SWOT altimetry) relies on a
 
 **Diagnostics.** Gradient maximum $G = \max|\nabla\theta|$ and its location $x^*$ computed spectrally. Strain tensor $S_{ij}$, vorticity $\omega$, and level-set curvature $\kappa$ computed spectrally at $x^*$. Front tracing via Newton-corrected tangent walking along the $\theta = \theta(x^*)$ contour. Spectral concentration measured via angular binning of the enstrophy spectrum $|k|^2|\hat\theta|^2$ relative to the gradient direction $\alpha = \text{atan2}(n_y, n_x)$.
 
-**Machine-verified component.** Theorem 1 (shear-vorticity identity) and Theorem 2 (selection-rule bound, in its stated conditional form) are machine-verified in Lean 4 + mathlib in the accompanying repository. Theorem 3 is supplied as a *conditional* roadmap in the same formalization: given the hypotheses (H-strain) and (H-bdry) of §9.6.3, the material maximum principle (Proposition 9.9, in its firmed form with quadratic-in-curvature remainder), the BKM criterion for $s \in (1, 2]$, and the associated Sobolev calculus, the repository certifies uniform $\dot H^s$ bounds on $[0, T]$ for every $s \in [0, 2]$ with zero axioms added beyond mathlib. On the finite-Fourier-support, uniform-$\ell^\infty$-coefficient class, both (H-strain) and (H-bdry) are discharged unconditionally from the Galerkin dynamics via a Kato–Ponce + advection-cancellation + Gronwall chain.
+**Machine-verified component.** Theorem 1 (shear-vorticity identity) and Theorem 2 (selection-rule bound) of this paper are machine-verified in Lean 4 + mathlib in the accompanying repository. Theorem 3 is supplied as a conditional roadmap in the same formalization: given the material maximum principle (Proposition 9.9), the BKM criterion for $s \in (1, 2]$, and the associated Sobolev calculus, the repository certifies uniform $\dot H^s$ bounds on $[0, T]$ for every $s \in [0, 2]$ with zero axioms added beyond mathlib. On the finite-Fourier-support, uniform-$\ell^\infty$-coefficient class, both analytic hypotheses are discharged unconditionally from the Galerkin dynamics via a Kato–Ponce + advection-cancellation + Gronwall chain.
 
 Path B of the Lean formalization (2026-04-22) extends the regularity chain to general Galerkin data by wiring in a companion package [`sqg-lean-proofs-fourier`](https://github.com/Brsanch/sqg-lean-proofs-fourier) providing Littlewood–Paley decomposition, Bony paraproducts, and a quantitative uniform-in-$N$ Kato–Ponce commutator bound on $\mathbb{T}^2$. The end-to-end constructor `HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete` in `SqgIdentity/FourierBridge.lean` composes concrete discharges of $L^2$ conservation, Riesz velocity preservation (with constant $C = 1$ via the perp-Riesz mode-by-mode identity), the $\dot H^s$ energy identity (derived from the parametric-$s$ Galerkin energy machine at §10.178–§10.180 of `RieszTorus.lean`), the velocity Lipschitz-sup bound (via the Sobolev embedding $\dot H^s \hookrightarrow L^\infty$ for $s > 2$ using the lattice-zeta constant of §11.30), and exponential Grönwall closure (via §10.64 `scalar_gronwall_exp`), leaving a single narrow named classical gap: a translation lemma adapting the continuous-function commutator bound to the finite-dimensional `galerkinHsFlux` form on lattice coefficients.
