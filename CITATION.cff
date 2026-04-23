@@ -18,6 +18,12 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.19654673
     description: Archive of v0.4.9
+  - type: doi
+    value: 10.5281/zenodo.19674045
+    description: Archive of v0.4.39 and v0.5.0
+  - type: doi
+    value: 10.5281/zenodo.19716897
+    description: Archive of v0.6.0
 license: MIT
 keywords:
   - Lean 4
