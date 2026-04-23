@@ -3,6 +3,24 @@
 Canonical list of everything remaining before the project is closed.
 Each item is linked to the tagged release that will close it.
 
+## Status banner (2026-04-23)
+
+All six SQG-mathematics items below are **closed**: Items 1, 2, 3, 4, 6
+closed post-v0.4.39, Item 5 Path A structural closure via §11.34–§11.38
+and Path B unconditional closure via `SqgIdentity/FourierBridge.lean`
+(2,490 LOC, wires in the [companion](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+package at 2,801 LOC, both zero `sorry` and CI green on `main`).
+
+The companion Fourier package delivers the full classical chain
+(quantitative uniform-in-N Kato–Ponce commutator on `𝕋²`, Bony
+paraproducts, `Ḣˢ ⊂ L∞` Sobolev embedding) — ~2,800 LOC of content
+earlier listed as "remaining" is in-tree.
+
+What is **not** in the repo: the hypothesis-level closure of
+`(H-strain) + (H-bdry)` (equivalently `(H-α)`) from the SQG dynamics
+themselves. That is the open research problem the paper documents as
+conditional Theorem 3; the Lean work is verified conditional on it.
+
 ## SQG mathematics
 
 ### ~~1. Generic-`L²` Galerkin → full-SQG extraction (Route B; v0.4.39)~~ ✓ Closed post-v0.4.39 (§10.172)
@@ -442,24 +460,34 @@ hypothesis type, the structural chain from hypothesis to full-range
 Theorem 3 is in-tree, and zero-datum exemplars exercise the chain
 end-to-end without any open content.
 
-**Path B (fully unconditional, discharges the classical hypotheses):
-IN PROGRESS** via the companion [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
-package (skeleton created).  The remaining ~2000 LOC of classical
-content — Littlewood–Paley + Bony paraproducts + Kato–Ponce commutator
-+ `Ḣˢ ⊂ L∞` Sobolev embedding — lives upstream of this repo and is
-designed to be reused by future NS/Euler/MHD formalizations.
+**Path B (discharges the classical hypotheses via the companion Fourier
+package): CLOSED** (2026-04-22 / 2026-04-23).
 
-**Estimated plumbing in THIS repo to connect `sqg-lean-proofs-fourier`
-commutator estimate to `HasSqgGalerkinAllSBound.ofClassical`:
-~500 LOC** (SQG-specific energy identity + BKM-integral Grönwall +
-velocity Riesz-preservation + discharge of the §11.34 hypothesis).
+- Companion [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+  now **2,801 LOC, zero `sorry`, CI green** (HEAD `ce02796`). Contents:
+    * `FourierAnalysis/KatoPonce/Commutator.lean` (1,274 LOC) —
+      quantitative **fully uniform-in-N** Kato–Ponce commutator bound
+      on `𝕋²` via dyadic-weighted Cauchy–Schwarz and double cumulative
+      product (merges `157d2fa`, `60c7020`).
+    * `FourierAnalysis/KatoPonce/SobolevEmbedding.lean` (261 LOC) —
+      `Ḣˢ ⊂ L∞` Sobolev embedding on `𝕋²`.
+    * `FourierAnalysis/Paraproduct/Defs.lean` + `Bounds.lean`
+      (240 + 296 LOC) — Bony paraproducts and their L² bounds.
+- In-repo plumbing **landed** in `SqgIdentity/FourierBridge.lean`
+  (2,490 LOC, zero `sorry`): the `FourierKatoPonceConst` structure
+  packaging the companion's commutator datum, the
+  `HasGalerkinGronwallClosure` constructor, and the end-to-end
+  `HasSqgGalerkinAllSBound.ofClassical` capstone composing L²
+  conservation + velocity Riesz preservation + `Ḣˢ` energy identity
+  + uniform Kato–Ponce + Sobolev `Ḣˢ ⊂ L∞` + exponential Grönwall.
+- §11.6 commutator wiring and §11.17–§11.26.H finite-support Banach-
+  algebra `Ḣˢ` product bound (concrete support-independent constant
+  `2^{2s}·(2·latticeZetaConst s)` for `s > 1`) are in-tree.
 
-With §11.17–§11.26.H, the full finite-support Banach-algebra `Ḣˢ`
-product bound is in-tree with a **concrete support-independent
-constant** `2^{2s}·(2·latticeZetaConst s)` for `s > 1`, plus the
-`HasTrigPolyBanachAlgebraBound` hypothesis structure and its
-zero-coefficient exemplar.  Next step: Phase 10 wiring via §11.6
-commutator + L∞ Sobolev embedding.
+Remaining work on Path B is **presentation-only** (OPEN.md cleanup,
+README polish, future-reuse hooks for NS/Euler/MHD formalizations);
+no further proof content is needed to discharge
+`HasSqgGalerkinAllSBound.ofClassical`.
 
 ### ~~6. Mode-wise weak-form PDE identity against `sqgNonlinearFlux`~~ ✓ Closed in v0.4.34 (structural)
 Structural bridge delivered by §10.135–§10.136:
