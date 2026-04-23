@@ -1634,4 +1634,857 @@ noncomputable def HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete_zero 
       have h0 : (2 * ((0 : ℝ) * 0)) * t = 0 := by ring
       rw [h0, Real.exp_zero])
 
+/-! ### §B.15 Rellich–Kondrachov on `𝕋²` in Fourier form (oracle)
+
+This section isolates the **only** classical-analysis statement that
+Gap C needs beyond the Kato–Ponce / Sobolev–embedding chain in
+`sqg-lean-proofs-fourier`: the Fourier-form Rellich–Kondrachov
+compact embedding `H¹(𝕋²) ⊂⊂ L²(𝕋²)`.
+
+**Mathematical content.** Given a sequence of Fourier-coefficient
+families `(c_n : Fin 2 → ℤ → ℂ)` with uniform `H¹` energy
+`∑' k, (1 + |k|²) · ‖c_n k‖² ≤ M`, one can extract a subsequence
+converging strongly in `ℓ²` (equivalently, in `L²` on the torus).
+
+The classical proof is:
+
+1. Uniform `ℓ²` boundedness `∑' k, ‖c_n k‖² ≤ M` gives per-mode
+   boundedness `|c_n k|² ≤ M` for each fixed `k`.
+2. Heine–Borel on `ℂ` yields a convergent subsequence per mode.
+3. A diagonal extraction across the countable lattice `Fin 2 → ℤ`
+   gives pointwise convergence `c_{φ(n)} k → cInf k` at every mode.
+4. The `H¹` tail bound `∑_{|k|>R} ‖c_n k‖² ≤ M / R²` shrinks the
+   tail uniformly in `n`.
+5. On the finite ball `|k| ≤ R`, pointwise convergence plus the
+   finite-dimensional equivalence of norms gives uniform convergence,
+   hence `ℓ²` convergence on the ball.
+6. Combining (4)+(5) yields strong `ℓ²` convergence.
+
+**Status.** The full machine-verified proof requires nontrivial
+mathlib infrastructure (diagonal subsequence extraction across a
+countable family, Heine–Borel for bounded sequences in `ℂ`, and
+careful `tsum` tail estimates) that is out of scope for this
+module.  Following the §11.34 / §B.14 pattern we therefore package
+the theorem statement as a named hypothesis
+`FourierRellichKondrachovHolds` and expose the plumbing consumers
+need.  This is an *oracle* in the same sense as
+`HasGalerkinFluxBound.ofKatoPonceSobolev` was before its discharge
+landed: the classical-analysis content is isolated from the
+SQG-specific chain, so downstream items (e.g. Gap C's
+`ClassicalAubinLionsExtractionHolds`) can consume it via a clean
+named interface. -/
+
+/-- **§B.15.stmt — Fourier-form Rellich–Kondrachov statement.**
+
+Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` of Fourier-coefficient
+families, uniformly `H¹`-bounded in the sense
+`∀ n, Summable (H¹-weighted family) ∧
+      ∑' k, (1 + (lInfNorm k : ℝ)²) · ‖c n k‖² ≤ M`,
+there exists a
+strictly monotone subsequence index `φ` and a limit
+`cInf : (Fin 2 → ℤ) → ℂ` such that the `ℓ²` tails
+`∑' k, ‖c (φ n) k - cInf k‖²` tend to `0` as `n → ∞`.
+
+This is the Fourier form of Rellich–Kondrachov `H¹ ⊂⊂ L²` on the
+flat two-torus, which is the statement shape needed by Aubin–Lions
+extraction (Gap C). -/
+def FourierRellichKondrachovHolds : Prop :=
+  ∀ (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ),
+    (∀ n : ℕ, Summable (fun k : Fin 2 → ℤ =>
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c n k‖ ^ 2)) →
+    (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖c n k‖ ^ 2 ≤ M) →
+    ∃ φ : ℕ → ℕ,
+    ∃ cInf : (Fin 2 → ℤ) → ℂ,
+      StrictMono φ ∧
+        Filter.Tendsto
+          (fun n : ℕ => ∑' k : Fin 2 → ℤ, ‖c (φ n) k - cInf k‖ ^ 2)
+          Filter.atTop (nhds 0)
+
+/-- **§B.15.zero — Zero-sequence sanity witness.**
+
+For the constant-zero family `c = fun _ _ => 0`, the conclusion
+shape holds trivially with `φ = id` and `cInf = 0`.  This is *not*
+a discharge of the general oracle; it only certifies that the
+conclusion is satisfiable on the trivial input, matching the
+§11.35 / §B.14.z zero-datum pattern. -/
+theorem fourierRellichKondrachov_zero_witness :
+    ∃ φ : ℕ → ℕ, ∃ cInf : (Fin 2 → ℤ) → ℂ,
+      StrictMono φ ∧
+      Filter.Tendsto
+        (fun n : ℕ =>
+          ∑' k : Fin 2 → ℤ,
+            ‖((fun _ _ => (0 : ℂ)) : ℕ → (Fin 2 → ℤ) → ℂ) (id n) k
+              - (fun _ : Fin 2 → ℤ => (0 : ℂ)) k‖ ^ 2)
+        Filter.atTop (nhds 0) := by
+  refine ⟨id, fun _ => (0 : ℂ), strictMono_id, ?_⟩
+
+  have h_zero : (fun n : ℕ =>
+      ∑' k : Fin 2 → ℤ,
+        ‖((fun _ _ => (0 : ℂ)) : ℕ → (Fin 2 → ℤ) → ℂ) (id n) k
+          - (fun _ : Fin 2 → ℤ => (0 : ℂ)) k‖ ^ 2)
+        = fun _ => (0 : ℝ) := by
+    funext n
+    simp
+  rw [h_zero]
+  exact tendsto_const_nhds
+
+/-! ### §B.16 Helper lemmas feeding `fourier_rellich_kondrachov`
+
+Self-contained building blocks for the eventual discharge of
+`FourierRellichKondrachovHolds`.  Each lemma operates on a single
+Fourier-coefficient family `c : (Fin 2 → ℤ) → ℂ` and quantifies over
+an `H¹`-weighted summability hypothesis.
+
+These form the "per-slice" content of the classical diagonal
+extraction proof:
+
+* `§B.16.a` — single-mode bound `‖c k‖² ≤ M` whenever the weighted
+  tsum is `≤ M`.  Uses `Summable.sum_le_tsum` on a single-term
+  finset and positivity of `1 + |k|²`.
+* `§B.16.b` — squared-norm family is summable whenever the weighted
+  family is (`1 + |k|²` is bounded below by `1`).
+* `§B.16.c` — `H¹` tail bound: for any radius `R`, the tail sum over
+  `{k : |k|_∞ > R}` of `‖c k‖²` is `≤ M / (1 + R²)`.  Drops the
+  weight `1 + |k|²` on the tail in exchange for the factor
+  `1 / (1 + R²)`.
+
+These lemmas sit upstream of the diagonal-extraction / Fatou /
+finite-ball uniform-convergence arguments that together assemble
+`FourierRellichKondrachovHolds`. -/
+
+/-- **§B.16.a — Per-mode squared-norm bound.**
+
+If the `H¹`-weighted family `k ↦ (1 + |k|²) · ‖c k‖²` is summable
+with `∑' ≤ M`, then the un-weighted term at a fixed mode `k₀`
+satisfies `‖c k₀‖² ≤ M`.  We drop the weight `1 + |k₀|² ≥ 1` on the
+single term.
+
+Uses `Summable.sum_le_tsum` on the singleton `{k₀}` plus the
+positivity of all remaining terms. -/
+theorem rellich_single_mode_le
+    (c : (Fin 2 → ℤ) → ℂ) (M : ℝ)
+    (hSum : Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2))
+    (hBound : ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖c k‖ ^ 2 ≤ M)
+    (k₀ : Fin 2 → ℤ) :
+    ‖c k₀‖ ^ 2 ≤ M := by
+  -- Each weighted term is nonneg.
+  have hNonneg : ∀ k : Fin 2 → ℤ,
+      0 ≤ (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 := by
+    intro k
+    refine mul_nonneg ?_ (sq_nonneg _)
+    have h2 : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  -- Single-term sum ≤ tsum.
+  have hSingle : (1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2) * ‖c k₀‖ ^ 2
+      ≤ ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 := by
+    have := hSum.sum_le_tsum ({k₀} : Finset (Fin 2 → ℤ))
+      (fun k _ => hNonneg k)
+    simpa using this
+  -- Weight `1 + |k₀|² ≥ 1` so we can drop it below.
+  have hWeight : (1 : ℝ) ≤ 1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2 := by
+    have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  have hWeightPos : (0 : ℝ) < 1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2 := by
+    linarith
+  have hSq : (0 : ℝ) ≤ ‖c k₀‖ ^ 2 := sq_nonneg _
+  have hDrop : ‖c k₀‖ ^ 2
+      ≤ (1 + ((FourierAnalysis.lInfNorm k₀ : ℕ) : ℝ) ^ 2) * ‖c k₀‖ ^ 2 := by
+    have := mul_le_mul_of_nonneg_right hWeight hSq
+    simpa [one_mul] using this
+  linarith [hSingle, hBound, hDrop]
+
+/-- **§B.16.b — Un-weighted `ℓ²` summability from `H¹` summability.**
+
+If the weighted family is summable, so is `k ↦ ‖c k‖²`.  Uses
+`1 ≤ 1 + |k|²` to dominate. -/
+theorem rellich_unweighted_summable
+    (c : (Fin 2 → ℤ) → ℂ)
+    (hSum : Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2)) :
+    Summable (fun k : Fin 2 → ℤ => ‖c k‖ ^ 2) := by
+  refine Summable.of_nonneg_of_le
+    (fun k => sq_nonneg _) ?_ hSum
+  intro k
+  have hWeight : (1 : ℝ) ≤ 1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := by
+    have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  have hSq : (0 : ℝ) ≤ ‖c k‖ ^ 2 := sq_nonneg _
+  have := mul_le_mul_of_nonneg_right hWeight hSq
+  simpa [one_mul] using this
+
+/-- **§B.16.c — `H¹` tail bound.**
+
+For any radius `R : ℕ`, the tail sum of `‖c k‖²` over lattice points
+with `|k|_∞ ≥ R+1` (equivalently `> R`) is bounded by
+`M / (1 + R²)`.  The weight `1 + |k|²` on the tail is `≥ 1 + R²`, so
+the un-weighted tail is at most `1/(1+R²)` times the weighted tail,
+which is itself `≤ M`. -/
+theorem rellich_H1_tail_bound
+    (c : (Fin 2 → ℤ) → ℂ) (M : ℝ) (R : ℕ)
+    (hSum : Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2))
+    (hBound : ∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖c k‖ ^ 2 ≤ M) :
+    ∑' k : {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k}, ‖c k.1‖ ^ 2
+      ≤ M / (1 + (R : ℝ) ^ 2) := by
+  set S : Set (Fin 2 → ℤ) := {k : Fin 2 → ℤ | R < FourierAnalysis.lInfNorm k}
+    with hSdef
+  -- All terms are nonneg.
+  have hNonneg : ∀ k : Fin 2 → ℤ,
+      0 ≤ (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 := by
+    intro k
+    refine mul_nonneg ?_ (sq_nonneg _)
+    have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  -- The weight on S is ≥ 1 + R².
+  have hWeightPos : (0 : ℝ) < 1 + (R : ℝ) ^ 2 := by
+    have : (0 : ℝ) ≤ (R : ℝ) ^ 2 := sq_nonneg _
+    linarith
+  -- For k ∈ S, (1+R²) · ‖c k‖² ≤ (1 + |k|²) · ‖c k‖².
+  have hDom : ∀ k : {k // R < FourierAnalysis.lInfNorm k},
+      (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        ≤ (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2 := by
+    intro k
+    have hk : R < FourierAnalysis.lInfNorm k.1 := k.2
+    have hkR : (R : ℝ) ≤ ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) := by
+      exact_mod_cast (Nat.le_of_lt hk)
+    have hRNonneg : (0 : ℝ) ≤ (R : ℝ) := by exact_mod_cast (Nat.zero_le R)
+    have hSqLe : (R : ℝ) ^ 2 ≤ ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2 := by
+      have := mul_self_le_mul_self hRNonneg hkR
+      simpa [sq] using this
+    have hWeightLe : (1 : ℝ) + (R : ℝ) ^ 2
+        ≤ 1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2 := by linarith
+    exact mul_le_mul_of_nonneg_right hWeightLe (sq_nonneg _)
+  -- The weighted family is summable on S (subtype).
+  have hSumS : Summable (fun k : {k // R < FourierAnalysis.lInfNorm k} =>
+      (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2) :=
+    hSum.subtype S
+  -- Unweighted summable on S.
+  have hSumS_unweighted :
+      Summable (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c k.1‖ ^ 2) :=
+    (rellich_unweighted_summable c hSum).subtype S
+  -- Scaled-unweighted summable on S.
+  have hSumS_scaled :
+      Summable (fun k : {k // R < FourierAnalysis.lInfNorm k} =>
+        (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2) :=
+    hSumS_unweighted.mul_left _
+  -- Compare tsums on S.
+  have hTsumCmp :
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        ≤ ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2 :=
+    hSumS_scaled.tsum_le_tsum hDom hSumS
+  -- The RHS is ≤ the whole-lattice tsum ≤ M.
+  have hSubset :
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + ((FourierAnalysis.lInfNorm k.1 : ℕ) : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        ≤ ∑' k : Fin 2 → ℤ,
+          (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2 :=
+    Summable.tsum_subtype_le
+      (fun k : Fin 2 → ℤ =>
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c k‖ ^ 2)
+      S hNonneg hSum
+  -- Factor constant out of tsum.
+  have hFactor :
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k},
+          (1 + (R : ℝ) ^ 2) * ‖c k.1‖ ^ 2
+        = (1 + (R : ℝ) ^ 2) *
+          ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c k.1‖ ^ 2 :=
+    tsum_mul_left
+  rw [hFactor] at hTsumCmp
+  -- Combine.
+  have hFinal : (1 + (R : ℝ) ^ 2) *
+      ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c k.1‖ ^ 2 ≤ M := by
+    linarith [hTsumCmp, hSubset, hBound]
+  -- Divide by `1 + R² > 0` via `le_div_iff`.
+  rw [le_div_iff₀ hWeightPos]
+  linarith [hFinal]
+
+/-! ### §B.17 Structural narrowing: `HasDiagonalExtraction` abstraction
+
+The full classical Rellich proof factors through two independent
+classical inputs:
+
+1. **Diagonal extraction** — from uniform per-mode boundedness on a
+   countable lattice, produce a subsequence `φ` and a pointwise limit
+   `cInf`.  Classical Bolzano–Weierstrass + Cantor diagonal.
+2. **Fatou H¹ bound** — the pointwise limit inherits the uniform `H¹`
+   bound via lower semicontinuity of `∑' k, (1 + |k|²) · ‖·‖²`.
+
+Combined with `rellich_H1_tail_bound` (§B.16.c), these two inputs give
+strong `ℓ²` convergence via a finite-ball / tail split.
+
+This section packages (1) + (2) as a single named Prop, making the
+Rellich oracle's classical dependence explicit and factoring it from
+the SQG-specific chain.  Ingredient (1) is what currently blocks a
+fully unconditional discharge in mathlib v4.29 — there is no one-line
+"Cantor diagonal on a countable family of bounded ℂ-valued sequences"
+lemma, and assembling one is ~150 LOC of custom construction. -/
+
+/-- **§B.17.hyp — Packaged classical input for Rellich on `𝕋²`.**
+
+Given a sequence `c : ℕ → (Fin 2 → ℤ) → ℂ` uniformly `H¹`-bounded by
+`M`, `HasDiagonalExtraction c M` asserts the existence of a diagonal
+subsequence with a pointwise limit that itself satisfies the `H¹`
+bound.  This is the Bolzano–Weierstrass + Fatou content of
+Rellich–Kondrachov, isolated from the `ℓ²` tail-split plumbing. -/
+def HasDiagonalExtraction
+    (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ) : Prop :=
+  ∃ φ : ℕ → ℕ, ∃ cInf : (Fin 2 → ℤ) → ℂ,
+    StrictMono φ ∧
+    (∀ k : Fin 2 → ℤ,
+      Filter.Tendsto (fun n : ℕ => c (φ n) k) Filter.atTop (nhds (cInf k))) ∧
+    (∑' k : Fin 2 → ℤ,
+        (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+          * ‖cInf k‖ ^ 2 ≤ M) ∧
+    Summable (fun k : Fin 2 → ℤ =>
+      (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖cInf k‖ ^ 2)
+
+/-- **§B.17.narrow — Fourier-form Rellich–Kondrachov, narrowed.**
+
+The full oracle `FourierRellichKondrachovHolds` reduces to the
+classical input `HasDiagonalExtraction` on every uniformly
+`H¹`-bounded sequence.  Statement only — the discharge assembles
+`rellich_H1_tail_bound` (§B.16.c) with a finite-ball `Finset`-sum
+convergence argument; both pieces require ~100 LOC of additional
+mathlib plumbing (`Finset.tsum_subtype_add_tsum_subtype_compl`,
+uniform convergence of a finite pointwise-convergent family) that is
+out of scope for this commit. -/
+def FourierRellichKondrachovHolds_ofHasDiagonalExtraction_stmt : Prop :=
+  (∀ (c : ℕ → (Fin 2 → ℤ) → ℂ) (M : ℝ),
+      (∀ n : ℕ, Summable (fun k : Fin 2 → ℤ =>
+          (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2) * ‖c n k‖ ^ 2)) →
+      (∀ n : ℕ, ∑' k : Fin 2 → ℤ,
+          (1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2)
+            * ‖c n k‖ ^ 2 ≤ M) →
+      HasDiagonalExtraction c M) →
+  FourierRellichKondrachovHolds
+
+/-! ### §B.18 Countable-family diagonal extraction
+
+The classical Cantor diagonal for countably-many pointwise-bounded
+`ℂ`-valued sequences: given `c : ℕ → α → ℂ` with `‖c n a‖ ≤ B a` for
+every `a : α` (where `α` is `Encodable`), there is a subsequence
+`φ : ℕ → ℕ` such that `c (φ n) a` converges for every `a`.
+
+This is the Bolzano-Weierstrass half of `HasDiagonalExtraction` on
+the lattice `α = Fin 2 → ℤ`.  The Fatou-`H¹` half (lower
+semicontinuity of the Sobolev tsum) is orthogonal and left for a
+follow-up.
+-/
+
+section DiagonalExtraction
+
+open Filter Topology Metric
+
+variable {α : Type*}
+
+/-- **§B.18.a — one-step refinement.**
+
+Given a strict-mono `ψ : ℕ → ℕ` and a sequence `c : ℕ → α → ℂ` with
+`‖c n a‖ ≤ B a`, Bolzano-Weierstrass on `ℂ` produces a further
+strict-mono `ψ' : ℕ → ℕ` along which `c (ψ (ψ' ·)) a` converges. -/
+lemma refine_subseq_at_index
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a)
+    (ψ : ℕ → ℕ) (_hψ : StrictMono ψ) (a : α) :
+    ∃ ψ' : ℕ → ℕ, StrictMono ψ' ∧
+      ∃ L : ℂ, Tendsto (fun n => c (ψ (ψ' n)) a) atTop (𝓝 L) := by
+  -- The ψ-subsampled sequence at index `a` lives in the closed ball
+  -- of radius `B a` around `0`, hence bounded.  Bolzano-Weierstrass on
+  -- ℂ (a proper metric space) gives the convergent subsequence.
+  set x : ℕ → ℂ := fun n => c (ψ n) a with hx_def
+  have hxmem : ∀ n, x n ∈ Metric.closedBall (0 : ℂ) (B a) := by
+    intro n
+    simp [hx_def, Metric.closedBall, Complex.dist_eq, hBound (ψ n) a]
+  obtain ⟨L, _hL, ψ', hψ'_mono, hψ'_tend⟩ :=
+    tendsto_subseq_of_bounded (x := x) Metric.isBounded_closedBall hxmem
+  refine ⟨ψ', hψ'_mono, L, ?_⟩
+  -- `x ∘ ψ' = fun n => c (ψ (ψ' n)) a` up to defeq
+  simpa [hx_def, Function.comp] using hψ'_tend
+
+/-- **§B.18.b — step function.**
+
+Given a strict-mono `ψ` and an index `a`, pick a strict-mono
+refinement `step` along which `c ∘ ψ ∘ step` converges at `a`. -/
+noncomputable def diagStep [Encodable α]
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a)
+    (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (k : ℕ) : ℕ → ℕ := by
+  classical
+  exact match Encodable.decode (α := α) k with
+    | none => id
+    | some a => Classical.choose (refine_subseq_at_index c B hBound ψ hψ a)
+
+lemma diagStep_mono [Encodable α]
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a)
+    (ψ : ℕ → ℕ) (hψ : StrictMono ψ) (k : ℕ) :
+    StrictMono (diagStep c B hBound ψ hψ k) := by
+  classical
+  unfold diagStep
+  cases h : Encodable.decode (α := α) k with
+  | none => exact strictMono_id
+  | some a =>
+    exact (Classical.choose_spec
+      (refine_subseq_at_index c B hBound ψ hψ a)).1
+
+/-- **§B.18.c — iterated refinement.**
+
+Recursively builds the subsequence at stage `k`.  Returns a dependent
+pair `⟨ψ, hψ⟩` with `ψ 0 = id` and `ψ (k+1) = ψ k ∘ diagStep k`. -/
+noncomputable def diagIter [Encodable α]
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a) :
+    ℕ → { ψ : ℕ → ℕ // StrictMono ψ }
+  | 0 => ⟨id, strictMono_id⟩
+  | k + 1 =>
+    let prev := diagIter c B hBound k
+    ⟨prev.1 ∘ diagStep c B hBound prev.1 prev.2 k,
+      prev.2.comp (diagStep_mono c B hBound prev.1 prev.2 k)⟩
+
+/-- **§B.18 — Countable diagonal extraction, capstone.**
+
+The classical Cantor-diagonal theorem: from countably-many pointwise-
+bounded `ℂ`-valued sequences, extract a single strict-mono subsequence
+`φ` such that `c (φ n) a` converges for every `a : α`. -/
+theorem countable_diagonal_bounded_sequences [Encodable α]
+    (c : ℕ → α → ℂ) (B : α → ℝ)
+    (hBound : ∀ n a, ‖c n a‖ ≤ B a) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧
+      ∃ cInf : α → ℂ,
+        ∀ a : α, Tendsto (fun n => c (φ n) a) atTop (𝓝 (cInf a)) := by
+  classical
+  -- Shorthand.
+  set D : ℕ → { ψ : ℕ → ℕ // StrictMono ψ } := diagIter c B hBound with hD_def
+  let ψ : ℕ → ℕ → ℕ := fun k => (D k).1
+  have hψ_mono : ∀ k, StrictMono (ψ k) := fun k => (D k).2
+  -- Key algebraic fact about ψ.
+  have ψ_succ : ∀ k, ψ (k + 1) =
+      ψ k ∘ diagStep c B hBound (ψ k) (hψ_mono k) k := by
+    intro k; rfl
+  -- For any m ≥ n, ψ m = ψ n ∘ σ for some strict-mono σ.
+  have chain : ∀ n m, n ≤ m → ∃ σ : ℕ → ℕ, StrictMono σ ∧ ψ m = ψ n ∘ σ := by
+    intro n m hnm
+    induction m, hnm using Nat.le_induction with
+    | base => exact ⟨id, strictMono_id, by simp [ψ, Function.comp]⟩
+    | succ m _hm ih =>
+      obtain ⟨σ, hσ_mono, hσ_eq⟩ := ih
+      refine ⟨σ ∘ diagStep c B hBound (ψ m) (hψ_mono m) m,
+        hσ_mono.comp (diagStep_mono c B hBound _ _ m), ?_⟩
+      -- ψ (m+1) = ψ m ∘ diagStep (by ψ_succ m), and ψ m = ψ n ∘ σ (by hσ_eq).
+      -- So ψ (m+1) = (ψ n ∘ σ) ∘ diagStep = ψ n ∘ (σ ∘ diagStep).
+      show ψ (m + 1) = ψ n ∘ (σ ∘ diagStep c B hBound (ψ m) (hψ_mono m) m)
+      have e1 : ψ (m + 1) = ψ m ∘ diagStep c B hBound (ψ m) (hψ_mono m) m :=
+        ψ_succ m
+      calc ψ (m + 1)
+          = ψ m ∘ diagStep c B hBound (ψ m) (hψ_mono m) m := e1
+        _ = (ψ n ∘ σ) ∘ diagStep c B hBound (ψ m) (hψ_mono m) m := by
+              rw [← hσ_eq]
+        _ = ψ n ∘ (σ ∘ diagStep c B hBound (ψ m) (hψ_mono m) m) := rfl
+  -- Diagonal.
+  let φ : ℕ → ℕ := fun n => ψ n n
+  -- φ strict-mono.
+  have hφ_mono : StrictMono φ := by
+    apply strictMono_nat_of_lt_succ
+    intro n
+    -- φ (n+1) = ψ (n+1) (n+1) = ψ n (step (n+1)); step (n+1) > n so > ψ n n.
+    have h1 : φ (n + 1) = ψ n (diagStep c B hBound (ψ n) (hψ_mono n) n (n + 1)) := by
+      simp [φ, ψ_succ, Function.comp]
+    rw [h1]
+    apply hψ_mono n
+    -- need: n < diagStep … (n+1).  strict-mono ℕ→ℕ ⇒ id_le.
+    have := (diagStep_mono c B hBound (ψ n) (hψ_mono n) n).id_le (n + 1)
+    exact Nat.lt_of_lt_of_le (Nat.lt_succ_self n) this
+  refine ⟨φ, hφ_mono, ?_⟩
+  -- Pointwise convergence: show for each a, ∃ L, Tendsto (c ∘ φ · a) atTop (𝓝 L).
+  have convAt : ∀ a : α, ∃ L : ℂ, Tendsto (fun n => c (φ n) a) atTop (𝓝 L) := by
+    intro a
+    let k := Encodable.encode a
+    have hdec : Encodable.decode (α := α) k = some a :=
+      Encodable.encodek a
+    -- Extract L from step k.
+    have hstepEq : diagStep c B hBound (ψ k) (hψ_mono k) k =
+        Classical.choose
+          (refine_subseq_at_index c B hBound (ψ k) (hψ_mono k) a) := by
+      unfold diagStep
+      rw [hdec]
+    obtain ⟨L, hL⟩ :=
+      (Classical.choose_spec
+        (refine_subseq_at_index c B hBound (ψ k) (hψ_mono k) a)).2
+    -- hL : Tendsto (fun n => c (ψ k (chosen n)) a) atTop (𝓝 L).
+    -- Rewrite: fun n => c (ψ (k+1) n) a = fun n => c (ψ k (diagStep n)) a.
+    have hL' : Tendsto (fun n => c (ψ (k + 1) n) a) atTop (𝓝 L) := by
+      have : (fun n => c (ψ (k + 1) n) a) =
+          (fun n => c (ψ k
+            (Classical.choose
+              (refine_subseq_at_index c B hBound (ψ k) (hψ_mono k) a) n)) a) := by
+        funext n
+        simp [ψ_succ, hstepEq, Function.comp]
+      rw [this]; exact hL
+    refine ⟨L, ?_⟩
+    -- Compare c ∘ φ to c ∘ ψ (k+1) via chain.
+    -- For n ≥ k+1: ψ n = ψ (k+1) ∘ σ_n for strict-mono σ_n, so
+    -- φ n = ψ n n = ψ (k+1) (σ_n n).  Use shift n ↦ n+(k+1).
+    -- Define ρ : ℕ → ℕ via chain at m = n + (k+1).
+    have ρ_exists : ∀ n, ∃ m, ψ (n + (k + 1)) (n + (k + 1)) = ψ (k + 1) m ∧ m ≥ n := by
+      intro n
+      obtain ⟨σ, hσ_mono, hσ_eq⟩ := chain (k + 1) (n + (k + 1)) (Nat.le_add_left _ _)
+      refine ⟨σ (n + (k + 1)), ?_, ?_⟩
+      · rw [hσ_eq]; rfl
+      · have h1 : n ≤ n + (k + 1) := Nat.le_add_right _ _
+        have h2 : n + (k + 1) ≤ σ (n + (k + 1)) := hσ_mono.id_le _
+        exact h1.trans h2
+    -- Use Classical.choose to define ρ : ℕ → ℕ.
+    let ρ : ℕ → ℕ := fun n => Classical.choose (ρ_exists n)
+    have ρ_spec : ∀ n,
+        ψ (n + (k + 1)) (n + (k + 1)) = ψ (k + 1) (ρ n) ∧ ρ n ≥ n := fun n =>
+      Classical.choose_spec (ρ_exists n)
+    have hρ_tend : Tendsto ρ atTop atTop := by
+      refine tendsto_atTop_mono (fun n => (ρ_spec n).2) ?_
+      exact tendsto_id
+    -- shift: Tendsto (fun n => c (φ (n+(k+1))) a) atTop (𝓝 L).
+    have hshift : Tendsto (fun n => c (φ (n + (k + 1))) a) atTop (𝓝 L) := by
+      have hcomp : Tendsto (fun n => c (ψ (k + 1) (ρ n)) a) atTop (𝓝 L) :=
+        hL'.comp hρ_tend
+      refine hcomp.congr' (Filter.Eventually.of_forall (fun n => ?_))
+      simp only [φ]
+      rw [(ρ_spec n).1]
+    exact (Filter.tendsto_add_atTop_iff_nat (k + 1)).mp hshift
+  refine ⟨fun a => Classical.choose (convAt a), fun a => ?_⟩
+  exact Classical.choose_spec (convAt a)
+
+end DiagonalExtraction
+
+/-! ### §B.19 Assembly: `fourier_rellich_kondrachov`
+
+Assembles §B.16 (tail + single-mode bounds) with §B.18
+(countable diagonal extraction) into the full Rellich–Kondrachov
+oracle `FourierRellichKondrachovHolds`.
+
+The proof has four stages:
+
+1. **Diagonal extraction.** §B.18 applied with
+   `B k = √(M / (1 + (lInfNorm k)²))` produces a subsequence `φ`
+   and pointwise limit `cInf : (Fin 2 → ℤ) → ℂ`.  The per-mode bound
+   `‖c n k‖ ≤ B k` comes from §B.16.a composed with `Real.sqrt_le_sqrt`.
+
+2. **Fatou H¹ bound on `cInf`.**  Pointwise convergence + continuity
+   of finite sums + `Real.tsum_le_of_sum_le` lifts the uniform `H¹`
+   bound on the sequence to the limit.
+
+3. **Tail bound on `cInf`.**  Same argument as §B.16.c applied with
+   the Fatou bound as input.
+
+4. **ε/3 split.**  Given ε, pick `R` making the tail < ε/4 uniformly
+   in `n`.  Pointwise convergence on the finite set `lInfBall (R+1)`
+   closes the low-frequency part; the `(a-b)² ≤ 2(a² + b²)` split
+   handles the high-frequency tail.
+-/
+
+open Filter Topology
+
+/-- `Encodable (Fin 2 → ℤ)` via `Encodable.finArrow` on `Encodable ℤ`. -/
+instance : Encodable (Fin 2 → ℤ) := Encodable.finArrow
+
+/-- **§B.19 — Fourier Rellich–Kondrachov on `𝕋²`.**
+
+Full discharge of the `FourierRellichKondrachovHolds` oracle.  The
+proof assembles the countable diagonal extraction (§B.18), the
+uniform tail bound (§B.16), and a finite-ball / tail ε/3 argument. -/
+theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
+  intro c M hSumN hBoundN
+  classical
+  -- Per-mode supremum bound from §B.16.a.
+  set B : (Fin 2 → ℤ) → ℝ := fun k => Real.sqrt M with hB_def
+  have hB_nonneg : ∀ k, 0 ≤ B k := fun _ => Real.sqrt_nonneg _
+  have hB_bound : ∀ n k, ‖c n k‖ ≤ B k := by
+    intro n k
+    have h2 : ‖c n k‖ ^ 2 ≤ M :=
+      rellich_single_mode_le (c n) M (hSumN n) (hBoundN n) k
+    have hnn : (0 : ℝ) ≤ ‖c n k‖ := norm_nonneg _
+    have hM_nn : (0 : ℝ) ≤ M := le_trans (sq_nonneg _) h2
+    have := Real.sqrt_le_sqrt h2
+    rw [Real.sqrt_sq hnn] at this
+    exact this
+  -- Step 1: diagonal extraction.
+  obtain ⟨φ, hφ_mono, cInf, hPt⟩ :=
+    countable_diagonal_bounded_sequences (α := Fin 2 → ℤ) c B hB_bound
+  -- Abbreviations.
+  set w : (Fin 2 → ℤ) → ℝ := fun k =>
+    1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 with hw_def
+  have hw_nonneg : ∀ k, 0 ≤ w k := by
+    intro k; have : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 :=
+      sq_nonneg _
+    simp [hw_def]; linarith
+  have hw_one : ∀ k, (1 : ℝ) ≤ w k := by
+    intro k
+    have h0 : (0 : ℝ) ≤ ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2 :=
+      sq_nonneg _
+    show (1 : ℝ) ≤ 1 + ((FourierAnalysis.lInfNorm k : ℕ) : ℝ) ^ 2
+    linarith
+  -- Step 2: Fatou H¹ bound on cInf.
+  -- Pointwise continuity: for each k, (c (φ n) k) → cInf k in ℂ, hence
+  -- ‖c (φ n) k‖² → ‖cInf k‖².
+  have hSqPt : ∀ k, Tendsto (fun n => ‖c (φ n) k‖ ^ 2) atTop (𝓝 (‖cInf k‖ ^ 2)) := by
+    intro k
+    have h1 : Tendsto (fun n => ‖c (φ n) k‖) atTop (𝓝 (‖cInf k‖)) :=
+      (continuous_norm.tendsto _).comp (hPt k)
+    simpa using h1.pow 2
+  have hWSqPt : ∀ k, Tendsto (fun n => w k * ‖c (φ n) k‖ ^ 2) atTop
+      (𝓝 (w k * ‖cInf k‖ ^ 2)) := fun k =>
+    (hSqPt k).const_mul (w k)
+  -- Finite-sum convergence.
+  have hFinPt : ∀ F : Finset (Fin 2 → ℤ),
+      Tendsto (fun n => ∑ k ∈ F, w k * ‖c (φ n) k‖ ^ 2) atTop
+        (𝓝 (∑ k ∈ F, w k * ‖cInf k‖ ^ 2)) := by
+    intro F
+    exact tendsto_finset_sum F (fun k _ => hWSqPt k)
+  -- Each finite sum ≤ M.
+  have hFinLeM : ∀ F : Finset (Fin 2 → ℤ),
+      ∑ k ∈ F, w k * ‖cInf k‖ ^ 2 ≤ M := by
+    intro F
+    have hEv : ∀ n, ∑ k ∈ F, w k * ‖c (φ n) k‖ ^ 2 ≤ M := by
+      intro n
+      have hNonneg : ∀ k, 0 ≤ w k * ‖c (φ n) k‖ ^ 2 := fun k =>
+        mul_nonneg (hw_nonneg k) (sq_nonneg _)
+      have hSub : ∑ k ∈ F, w k * ‖c (φ n) k‖ ^ 2
+          ≤ ∑' k, w k * ‖c (φ n) k‖ ^ 2 :=
+        (hSumN (φ n)).sum_le_tsum F (fun k _ => hNonneg k)
+      exact hSub.trans (hBoundN (φ n))
+    exact le_of_tendsto' (hFinPt F) hEv
+  -- Nonnegativity of limit terms.
+  have hLimNonneg : ∀ k, 0 ≤ w k * ‖cInf k‖ ^ 2 := fun k =>
+    mul_nonneg (hw_nonneg k) (sq_nonneg _)
+  -- Summable and tsum ≤ M.
+  have hSumLim : Summable (fun k => w k * ‖cInf k‖ ^ 2) :=
+    summable_of_sum_le hLimNonneg hFinLeM
+  have hTsumLim : ∑' k, w k * ‖cInf k‖ ^ 2 ≤ M :=
+    Real.tsum_le_of_sum_le hLimNonneg hFinLeM
+  -- Step 3: tail bound on cInf.  Same proof as §B.16.c but inlined.
+  have hTailLim : ∀ R : ℕ,
+      ∑' k : {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2
+        ≤ M / (1 + (R : ℝ) ^ 2) :=
+    fun R => rellich_H1_tail_bound cInf M R hSumLim hTsumLim
+  -- §B.16.c-style tail bound on each c (φ n).
+  have hTailSeq : ∀ n R,
+      ∑' k : {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2
+        ≤ M / (1 + (R : ℝ) ^ 2) :=
+    fun n R => rellich_H1_tail_bound (c (φ n)) M R (hSumN (φ n)) (hBoundN (φ n))
+  -- Unweighted summability.
+  have hUnwSeq : ∀ n, Summable (fun k => ‖c (φ n) k‖ ^ 2) :=
+    fun n => rellich_unweighted_summable (c (φ n)) (hSumN (φ n))
+  have hUnwLim : Summable (fun k => ‖cInf k‖ ^ 2) :=
+    rellich_unweighted_summable cInf hSumLim
+  -- Step 4: ε/3 argument for ℓ² Cauchy.
+  -- Goal: Tendsto (fun n => ∑' k, ‖c (φ n) k - cInf k‖²) atTop (𝓝 0).
+  -- First establish summability of the difference family.
+  have hM_nn : 0 ≤ M := by
+    have := hTsumLim
+    have hSum0 : 0 ≤ ∑' k, w k * ‖cInf k‖ ^ 2 := tsum_nonneg hLimNonneg
+    linarith
+  -- Elementary: ‖a - b‖² ≤ 2·(‖a‖² + ‖b‖²).
+  have hDiffBound : ∀ (a b : ℂ), ‖a - b‖ ^ 2 ≤ 2 * (‖a‖ ^ 2 + ‖b‖ ^ 2) := by
+    intro a b
+    have h1 : ‖a - b‖ ≤ ‖a‖ + ‖b‖ := norm_sub_le a b
+    have h2 : 0 ≤ ‖a - b‖ := norm_nonneg _
+    have h3 : ‖a - b‖ ^ 2 ≤ (‖a‖ + ‖b‖) ^ 2 := by
+      have h2' : 0 ≤ ‖a‖ + ‖b‖ := by positivity
+      nlinarith [h1, h2, h2']
+    have h4 : (‖a‖ + ‖b‖) ^ 2 ≤ 2 * (‖a‖ ^ 2 + ‖b‖ ^ 2) := by
+      have := sq_nonneg (‖a‖ - ‖b‖)
+      nlinarith [sq_nonneg (‖a‖ - ‖b‖), sq_nonneg (‖a‖ + ‖b‖)]
+    linarith
+  -- Summability of the difference family.
+  have hDiffSum : ∀ n, Summable (fun k => ‖c (φ n) k - cInf k‖ ^ 2) := by
+    intro n
+    refine Summable.of_nonneg_of_le (fun _ => sq_nonneg _)
+      (fun k => hDiffBound (c (φ n) k) (cInf k)) ?_
+    exact ((hUnwSeq n).add hUnwLim).mul_left 2
+  -- Supply the subsequence/limit witnesses, then reduce Tendsto → metric form.
+  refine ⟨φ, cInf, hφ_mono, ?_⟩
+  refine (Metric.tendsto_atTop (α := ℝ) (β := ℕ)).mpr ?_
+  intro ε hε
+  -- Pick radius R with M/(1+R²) < ε/8.
+  have hε8 : 0 < ε / 8 := by positivity
+  have hMε : ∃ R : ℕ, M / (1 + (R : ℝ) ^ 2) < ε / 8 := by
+    -- Choose R large enough: R ≥ √(8M/ε) suffices.
+    by_cases hM0 : M = 0
+    · refine ⟨0, ?_⟩
+      rw [hM0]
+      have : (0 : ℝ) / (1 + ((0 : ℕ) : ℝ) ^ 2) = 0 := by norm_num
+      rw [this]
+      exact hε8
+    · have hM_pos : 0 < M := lt_of_le_of_ne hM_nn (Ne.symm hM0)
+      -- R := ⌈√(8M/ε)⌉ + 1
+      obtain ⟨R, hR⟩ : ∃ R : ℕ, 8 * M / ε < 1 + (R : ℝ) ^ 2 := by
+        set Q := 8 * M / ε
+        have hQ_nn : 0 ≤ Q := by positivity
+        obtain ⟨R, hR⟩ := exists_nat_gt (Real.sqrt Q)
+        refine ⟨R, ?_⟩
+        have hsq : Q = (Real.sqrt Q) ^ 2 := by
+          rw [sq]; exact (Real.mul_self_sqrt hQ_nn).symm
+        have hR_nn : 0 ≤ (R : ℝ) := by exact_mod_cast (Nat.zero_le R)
+        have hsqrt_nn : 0 ≤ Real.sqrt Q := Real.sqrt_nonneg _
+        have hsqlt : (Real.sqrt Q) ^ 2 < (R : ℝ) ^ 2 := by
+          have := sq_lt_sq' (by linarith) hR
+          exact this
+        linarith [hsqlt, hsq ▸ (le_refl Q)]
+      refine ⟨R, ?_⟩
+      have hpos : 0 < 1 + (R : ℝ) ^ 2 := by
+        have : (0 : ℝ) ≤ (R : ℝ) ^ 2 := sq_nonneg _; linarith
+      rw [div_lt_iff₀ hpos]
+      have : 8 * M < ε * (1 + (R : ℝ) ^ 2) := by
+        have := (div_lt_iff₀ hε).mp hR
+        linarith
+      linarith
+  obtain ⟨R, hR_lt⟩ := hMε
+  -- Low-frequency finite set: `lInfBall (R + 1) = {k : lInfNorm k < R + 1} = {k : lInfNorm k ≤ R}`.
+  set F_R : Finset (Fin 2 → ℤ) := FourierAnalysis.lInfBall (R + 1) with hF_R
+  -- Pointwise convergence on the finite set.
+  have hLowConv :
+      Tendsto (fun n => ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 0) := by
+    have hPtDiff : ∀ k, Tendsto (fun n => ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 0) := by
+      intro k
+      have h1 : Tendsto (fun n => c (φ n) k - cInf k) atTop (𝓝 0) := by
+        have hconst : Tendsto (fun _ : ℕ => cInf k) atTop (𝓝 (cInf k)) :=
+          tendsto_const_nhds
+        have := (hPt k).sub hconst
+        simpa using this
+      have h2 : Tendsto (fun n => ‖c (φ n) k - cInf k‖) atTop (𝓝 0) := by
+        have := (continuous_norm.tendsto _).comp h1
+        simpa using this
+      have h3 : Tendsto (fun n => ‖c (φ n) k - cInf k‖ ^ 2) atTop (𝓝 (0 ^ 2)) :=
+        h2.pow 2
+      simpa using h3
+    have := tendsto_finset_sum F_R (fun k _ => hPtDiff k)
+    simpa using this
+  -- Get N such that ∀ n ≥ N, low-freq sum < ε/2.
+  have hε2 : 0 < ε / 2 := by positivity
+  have hLowEv :
+      ∀ᶠ n in (atTop : Filter ℕ),
+        dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) 0 < ε / 2 :=
+    (Metric.tendsto_nhds.mp hLowConv) (ε / 2) hε2
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp hLowEv
+  refine ⟨N, fun n hn => ?_⟩
+  specialize hN n hn
+  -- hN : dist (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖²) 0 < ε/2
+  have hNbound : ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 < ε / 2 := by
+    have hnn : 0 ≤ ∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2 :=
+      Finset.sum_nonneg (fun _ _ => sq_nonneg _)
+    have h := hN
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg hnn] at h
+    exact h
+  -- High-frequency tail: use hTailSeq and hTailLim.
+  -- Note: F_R = lInfBall (R+1), so k ∉ F_R ↔ R < lInfNorm k ↔ R + 1 ≤ lInfNorm k,
+  -- i.e. the complement subtype is {k // R < lInfNorm k}.
+  -- Split the tsum: low + high.
+  have hFR_iff : ∀ k, k ∈ F_R ↔ FourierAnalysis.lInfNorm k < R + 1 := by
+    intro k; simp [hF_R, FourierAnalysis.mem_lInfBall]
+  have hCompl_iff : ∀ k, k ∉ F_R ↔ R < FourierAnalysis.lInfNorm k := by
+    intro k; rw [hFR_iff]; omega
+  -- ∑' k, ‖diff k‖² = ∑ k ∈ F_R, … + ∑' (k : {k // k ∉ F_R}), …
+  have hSplit := (hDiffSum n).sum_add_tsum_subtype_compl F_R
+  -- hSplit : ∑ k ∈ F_R, ‖diff‖² + ∑' k : {k // k ∉ F_R}, ‖diff k.1‖² = ∑' k, ‖diff k‖²
+  -- Bound tail by 2(tail_seq + tail_lim).
+  have hTailDiff :
+      ∑' k : {k : Fin 2 → ℤ // k ∉ F_R}, ‖c (φ n) k.1 - cInf k.1‖ ^ 2
+        ≤ 2 * (M / (1 + (R : ℝ) ^ 2) + M / (1 + (R : ℝ) ^ 2)) := by
+    -- Convert subtype.
+    have hEq : (fun k : {k // k ∉ F_R} => ‖c (φ n) k.1 - cInf k.1‖ ^ 2)
+        = (fun k : {k // R < FourierAnalysis.lInfNorm k} =>
+            ‖c (φ n) k.1 - cInf k.1‖ ^ 2) ∘
+          (fun k : {k // k ∉ F_R} =>
+            (⟨k.1, (hCompl_iff k.1).mp k.2⟩ : {k // R < FourierAnalysis.lInfNorm k})) := by
+      funext k; rfl
+    -- Easier path: just bound directly.
+    -- Restricted summability (subtype of subtype).
+    have hSumRestr :
+        Summable (fun k : {k // k ∉ F_R} => ‖c (φ n) k.1 - cInf k.1‖ ^ 2) :=
+      (hDiffSum n).subtype _
+    -- Domination: ‖a - b‖² ≤ 2‖a‖² + 2‖b‖² pointwise.
+    have hDom : ∀ k : {k // k ∉ F_R},
+        ‖c (φ n) k.1 - cInf k.1‖ ^ 2
+          ≤ 2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2 := by
+      intro k
+      have := hDiffBound (c (φ n) k.1) (cInf k.1); linarith
+    have hSum_a : Summable (fun k : {k // k ∉ F_R} => ‖c (φ n) k.1‖ ^ 2) :=
+      (hUnwSeq n).subtype _
+    have hSum_b : Summable (fun k : {k // k ∉ F_R} => ‖cInf k.1‖ ^ 2) :=
+      hUnwLim.subtype _
+    have hSum_rhs :
+        Summable (fun k : {k // k ∉ F_R} =>
+          2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2) :=
+      (hSum_a.mul_left 2).add (hSum_b.mul_left 2)
+    have hTsumLe :
+        ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1 - cInf k.1‖ ^ 2
+          ≤ ∑' k : {k // k ∉ F_R},
+              (2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2) :=
+      hSumRestr.tsum_le_tsum hDom hSum_rhs
+    have hFactor :
+        ∑' k : {k // k ∉ F_R},
+            (2 * ‖c (φ n) k.1‖ ^ 2 + 2 * ‖cInf k.1‖ ^ 2)
+          = 2 * ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
+            + 2 * ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2 := by
+      rw [Summable.tsum_add (hSum_a.mul_left 2) (hSum_b.mul_left 2)]
+      rw [tsum_mul_left, tsum_mul_left]
+    rw [hFactor] at hTsumLe
+    -- Now convert subtype {k // k ∉ F_R} to {k // R < lInfNorm k}.
+    let eConv : {k : Fin 2 → ℤ // k ∉ F_R} ≃ {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k} := {
+      toFun := fun k => ⟨k.1, (hCompl_iff k.1).mp k.2⟩
+      invFun := fun k => ⟨k.1, (hCompl_iff k.1).mpr k.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+    -- Both subtypes have the same underlying set, so their tsum over the same
+    -- function agree.  We use the fact that `{k // k ∉ F_R}` and
+    -- `{k // R < lInfNorm k}` are equivalent via `eConv`.
+    have tsum_through_eConv : ∀ f : (Fin 2 → ℤ) → ℝ,
+        ∑' k : {k // k ∉ F_R}, f k.1
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, f k.1 := by
+      intro f
+      have h1 := Equiv.tsum_eq eConv
+        (fun k : {k // R < FourierAnalysis.lInfNorm k} => f k.1)
+      -- Simplify (eConv c).1 = c.1 inside h1.
+      simp only [eConv, Equiv.coe_fn_mk] at h1
+      exact h1
+    have hConv_a :
+        ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 :=
+      tsum_through_eConv (fun x => ‖c (φ n) x‖ ^ 2)
+    have hConv_b :
+        ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 :=
+      tsum_through_eConv (fun x => ‖cInf x‖ ^ 2)
+    rw [hConv_a, hConv_b] at hTsumLe
+    have := hTailSeq n R
+    have := hTailLim R
+    nlinarith [hTailSeq n R, hTailLim R, hTsumLe]
+  -- Assemble.
+  have hε_bound : 2 * (M / (1 + (R : ℝ) ^ 2) + M / (1 + (R : ℝ) ^ 2)) < ε / 2 := by
+    have : M / (1 + (R : ℝ) ^ 2) + M / (1 + (R : ℝ) ^ 2) < ε / 8 + ε / 8 := by linarith
+    linarith
+  have hTotal :
+      ∑' k, ‖c (φ n) k - cInf k‖ ^ 2 < ε := by
+    have := hSplit
+    -- ∑' = ∑ k ∈ F_R, … + ∑' k : {k // k ∉ F_R}, …
+    have heq : ∑' k, ‖c (φ n) k - cInf k‖ ^ 2 =
+        (∑ k ∈ F_R, ‖c (φ n) k - cInf k‖ ^ 2) +
+        ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1 - cInf k.1‖ ^ 2 := this.symm
+    rw [heq]
+    linarith [hNbound, hTailDiff, hε_bound]
+  -- Conclude.
+  rw [Real.dist_eq]
+  have hnn : 0 ≤ ∑' k, ‖c (φ n) k - cInf k‖ ^ 2 :=
+    tsum_nonneg (fun _ => sq_nonneg _)
+  rw [abs_of_nonneg (by linarith [hnn])]
+  linarith [hTotal]
+
 end SqgIdentity
