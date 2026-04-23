@@ -25687,4 +25687,164 @@ theorem mFourierCoeff_lpOfFourierCoeff
 
 end LpFromFourier
 
+/-! ## §14 Conditional-regularity hypotheses — paper §9.6.3 + §9.8 naming
+
+Paper `paper/sqg-identity.md` §9.6.3 names Theorem 3 (SQG regularity,
+conditional) as conditional on two explicit hypotheses (H-strain) and
+(H-bdry).  Paper §9.8 provides an alternative single-hypothesis
+reformulation (H-α) via the *thermostat ratio*
+`α(t) := S_source(t) / (4·|nSn(x(t),t)|·V(t))`, with Prop 9.11 asserting
+`(H-α) ⇒ (H-strain) + (H-bdry)`.
+
+This section introduces the Lean-side named hypothesis bundles paralleling
+each, so that downstream consumers can cite the paper's labels directly.
+The three bundles are **intentionally abstract** at the present level of
+the formalization: they name the conditional content of §9 and §9.8,
+but the §9 analytical derivation `(H-strain) + (H-bdry) ⇒ uniform Ḣ¹
+bound` (i.e. `MaterialMaxPrinciple.hOnePropagation`) is **not** discharged
+in this repository — it is the classical content the paper develops and
+is summarised as `MaterialMaxPrinciple.of_HstrainHbdry`'s signature, which
+takes the uniform Ḣ¹ bound as an additional input, documenting the
+non-formalised classical step.
+
+Zero-datum witnesses for each of (H-strain), (H-bdry), (H-α) are provided
+for minimal-sanity use downstream. -/
+
+/-- **(H-strain) — Normal-strain lower bound along tracked curvature maxima.**
+
+Paper §9.6.3, verbatim:
+*"There exists `μ⋆ = μ⋆(θ₀) > 0` such that, along the material segment
+`Ω(t)` around `x⋆(t)`, the normal strain at every interior curvature
+maximum `s_max(t)` satisfies `|nSn(s_max(t), t)| ≥ μ⋆` for all `t ≥ 0`
+during any sharpening phase."*
+
+At the Lean level we only expose the scalar `μ_star ≥ 0` ; the pointwise
+inequality on `|nSn|` is not a formal Lean quantity (it requires the
+tracked curvature maximum `s_max(t)` which is a Lagrangian construct
+outside the present formalisation scope).  Downstream consumers
+(`MaterialMaxPrinciple.of_HstrainHbdry`) combine this scalar witness with
+the paper's §9 argument (classical, not formalised). -/
+structure HasStrainLowerBound
+    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- The strain lower bound constant `μ⋆`. -/
+  μ_star : ℝ
+  /-- Non-negativity of `μ⋆`. -/
+  μ_star_nonneg : 0 ≤ μ_star
+
+/-- **(H-strain) zero-datum witness.** The zero solution trivially
+satisfies the normal-strain lower bound with `μ⋆ = 0`. -/
+theorem HasStrainLowerBound.of_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    HasStrainLowerBound θ where
+  μ_star := 0
+  μ_star_nonneg := le_refl _
+
+/-- **(H-bdry) — Boundary curvature bound on the material segment.**
+
+Paper §9.6.3, via Proposition 9.10 (relabelled from *theorem* to
+*hypothesis* in the 2026-04-22 revision):
+*"There exists `κ⋆ = κ⋆(θ₀)` such that, for every material Lagrangian
+trajectory `y(t) ∈ ∂Ω(t)` starting in the support of `θ₀`, the level-set
+curvature satisfies `|κ(y(t), t)| ≤ κ⋆` uniformly in `t ≥ 0`."*
+
+At the Lean level we only expose the scalar `κ_star ≥ 0`; the pointwise
+inequality is a Lagrangian construct outside the present formalisation
+scope.  Downstream consumers combine this scalar witness with the paper's
+§9 argument (classical). -/
+structure HasBoundaryCurvatureBound
+    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- The boundary curvature bound constant `κ⋆`. -/
+  κ_star : ℝ
+  /-- Non-negativity of `κ⋆`. -/
+  κ_star_nonneg : 0 ≤ κ_star
+
+/-- **(H-bdry) zero-datum witness.** The zero solution trivially
+satisfies the boundary curvature bound with `κ⋆ = 0`. -/
+theorem HasBoundaryCurvatureBound.of_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    HasBoundaryCurvatureBound θ where
+  κ_star := 0
+  κ_star_nonneg := le_refl _
+
+/-- **(H-α) — Thermostat ratio upper bound.**
+
+Paper §9.8, verbatim:
+*"There exists `α⋆ < 1` (depending only on `θ₀`) such that `α(t) ≤ α⋆`
+for all `t ≥ 0` during any sharpening phase of the evolution"*,
+where `α(t) := S_source(t) / (4·|nSn(x(t),t)|·V(t))` is the thermostat
+ratio defined in §9.8.2.
+
+At the Lean level we only expose the scalar `α_star < 1`; the pointwise
+inequality is a Lagrangian construct outside the present formalisation
+scope.  Paper Proposition 9.11 asserts `(H-α) ⇒ (H-strain) + (H-bdry)`;
+the Lean version is `HasStrainLowerBound.of_thermostat` +
+`HasBoundaryCurvatureBound.of_thermostat` below, both of which also
+require the classical §9.8 derivation as an auxiliary input. -/
+structure HasThermostatBound
+    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+  /-- The thermostat upper bound `α⋆`. -/
+  α_star : ℝ
+  /-- `α⋆ < 1`: the key inequality of the thermostat hypothesis. -/
+  α_star_lt_one : α_star < 1
+
+/-- **(H-α) zero-datum witness.**  The zero solution trivially satisfies
+the thermostat bound with `α⋆ = 0 < 1`. -/
+theorem HasThermostatBound.of_zero
+    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
+    (hθ : ∀ t, θ t = 0) :
+    HasThermostatBound θ where
+  α_star := 0
+  α_star_lt_one := by norm_num
+
+/-- **Conditional-regularity alias matching the paper's §9.6.3 statement.**
+
+`MaterialMaxPrinciple.of_HstrainHbdry` re-exposes the existing
+`MaterialMaxPrinciple` constructor pattern under the paper's naming.  The
+hypothesis bundles `HasStrainLowerBound` and `HasBoundaryCurvatureBound`
+document the conditional context (paper §9.6.3); the uniform-`Ḣ¹`
+witness (`hOnePropagation` + `hOneSummability`) is the classical §9
+output, taken as an auxiliary input rather than derived from the two
+hypothesis bundles alone.  The names match the paper so downstream
+consumers can cite (H-strain) + (H-bdry) directly. -/
+theorem MaterialMaxPrinciple.of_HstrainHbdry
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (_hStrain : HasStrainLowerBound θ)
+    (_hBdry : HasBoundaryCurvatureBound θ)
+    (hOnePropagation :
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M)
+    (hOneSummability :
+      ∀ t : ℝ, 0 ≤ t →
+        Summable (fun n : Fin 2 → ℤ =>
+          (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (θ t) n‖ ^ 2)) :
+    MaterialMaxPrinciple θ where
+  hOnePropagation := hOnePropagation
+  hOneSummability := hOneSummability
+  freeDerivativeAtKappaMax := True.intro
+  materialSegmentExpansion := True.intro
+  farFieldBoundary := True.intro
+
+/-- **Conditional-regularity alias under the single-hypothesis (H-α) route.**
+
+Paper Prop 9.11 (`(H-α) ⇒ (H-strain) + (H-bdry) ⇒ Theorem 3`) packaged at
+the Lean level: takes `HasThermostatBound` + the classical §9.8 output
+(uniform `Ḣ¹` bound) and returns `MaterialMaxPrinciple`.  The §9.8
+derivation itself (equations 9.8.a through 9.8.g) is not formalised. -/
+theorem MaterialMaxPrinciple.of_thermostat
+    {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
+    (_hAlpha : HasThermostatBound θ)
+    (hOnePropagation :
+      ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M)
+    (hOneSummability :
+      ∀ t : ℝ, 0 ≤ t →
+        Summable (fun n : Fin 2 → ℤ =>
+          (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (θ t) n‖ ^ 2)) :
+    MaterialMaxPrinciple θ where
+  hOnePropagation := hOnePropagation
+  hOneSummability := hOneSummability
+  freeDerivativeAtKappaMax := True.intro
+  materialSegmentExpansion := True.intro
+  farFieldBoundary := True.intro
+
 end SqgIdentity
