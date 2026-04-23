@@ -2453,8 +2453,11 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => f k.1)
       -- h1 : ∑' c, f (eConv c).1 = ∑' b, f b.1
-      -- (eConv c).1 = c.1 definitionally because eConv is { toFun := fun k => ⟨k.1, _⟩, ... }.
-      convert h1 using 2
+      -- (eConv c).1 = c.1 because eConv's toFun is `fun k => ⟨k.1, _⟩`.
+      have hfun : (fun k : {k // k ∉ F_R} => f k.1)
+                  = (fun c : {k // k ∉ F_R} => f (eConv c).1) := by
+        funext k; rfl
+      rw [hfun]; exact h1
     have hConv_a :
         ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
           = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 :=
