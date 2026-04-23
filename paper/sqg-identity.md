@@ -502,6 +502,22 @@ The Fourier multiplier (8) arises from the specific half-derivative relationship
 
 The identity suggests a diagnostic for SQG simulation quality: the residual $|S_{nt}-\omega/2|$ along fronts should decrease with increasing resolution (as the front becomes better resolved and more nearly one-dimensional at the grid scale). A large residual indicates under-resolution.
 
+### 7.4 Comparison with prior conditional regularity results
+
+To place the conditional statements (H-strain), (H-bdry), and (H-α) of §9.6.3 and §9.8 in context, I summarize the closest prior results on inviscid SQG regularity (conditional and unconditional) and identify what (H-strain)+(H-bdry) adds.
+
+**Constantin-Majda-Tabak 1994** [9] introduced the geometric non-blow-up criterion: *if the direction field $\nabla^\perp\theta / |\nabla^\perp\theta|$ is smooth in a neighborhood of the strong-gradient set, no finite-time singularity forms.* This is a continuum-field smoothness condition on the level-set normals. The present paper's (H-bdry) is a *Lagrangian* statement about the curvature of material-segment boundaries, not about the continuous direction field. The two hypotheses could be related — sufficiently strong CMT-type direction smoothness would imply bounded boundary curvature on material segments — but the converse is not obvious, and the present framework does not reduce to CMT's.
+
+**Córdoba 1998** [10] (arXiv:math/9811184) ruled out one specific blow-up mechanism for inviscid SQG: simple hyperbolic saddle breakdown. The saddle angle cannot close in finite time and cannot contract faster than a double exponential. Córdoba's exclusion is *narrower* than the present framework: it addresses one topological mechanism, while (H-strain)+(H-bdry) is a pair of *positive* sufficient conditions for regularity. The two are complementary — Córdoba removes one blow-up channel topologically; (H-strain)+(H-bdry) posit quantitative bounds that close BKM under their assumption.
+
+**He-Kiselev 2019/2021** [11] is the closest recent conditional result. They construct explicit initial data for the standard conservative inviscid $\alpha=1$ SQG equation whose solutions must *either* exhibit infinite-in-time growth of derivatives *or* blow up in finite time. This is a dichotomy result, not a one-sided theorem. The present paper's (H-strain)+(H-bdry) is a sufficient condition for *global smoothness*, so it is consistent with He-Kiselev only if their constructed initial data violate at least one of (H-strain) or (H-bdry). Whether the He-Kiselev examples satisfy both hypotheses is an open question that deserves explicit verification and should be taken up in follow-up work. Informally, the constructed He-Kiselev examples rely on strong small-scale interaction near the gradient maximum, which is precisely the regime in which the tracked-Lagrangian-maximum object of (H-strain) may be discontinuous or degenerate — so the heuristic expectation is that (H-strain) fails on their examples — but this is unverified at present.
+
+**Kiselev-Ryzhik-Yao-Zlatoš 2016** [12] proved finite-time singularity for the *modified SQG patch equation* on the half-plane, with parameter $\alpha \in [0, 1/2]$ in their convention (their $\alpha = 0$ is 2D Euler and their $\alpha = 1/2$ is standard SQG). They establish singularity for *sufficiently small* $\alpha > 0$ — i.e., just past Euler — and the standard SQG endpoint ($\alpha = 1/2$ in their convention, corresponding to $\alpha = 1$ in the generalized-SQG convention used in §10.2 of the present paper) is *not* covered by their theorem. This aligns with §10.2's observation that the material max-principle mechanism weakens in the near-Euler regime.
+
+**Strong ill-posedness at scaling-critical regularity** (APDE 2024, 17(1)) shows standard inviscid SQG is ill-posed in the scaling-critical Sobolev space $\dot H^{1/2}(\mathbb{T}^2)$, with norm inflation for smooth initial data in that critical norm. This imposes a lower bound on the regularity class in which well-posedness can be posed; the present paper operates in $C^\infty(\mathbb{T}^2)$, strictly above this ill-posedness threshold, so there is no conflict. A reader evaluating Theorem 3 should be aware that its conclusion concerns the *continuation* of smooth solutions, not well-posedness at scaling-critical regularity.
+
+**What (H-strain)+(H-bdry) and (H-α) add.** To the best of the author's knowledge, the quantitative pair (H-strain), i.e. a uniform positive lower bound on the normal strain $|nSn|$ at the tracked Lagrangian curvature maximum, paired with (H-bdry), the uniform boundedness of curvature on the boundary of a Lagrangian-transported material segment, is a *new* sufficient-condition pair for inviscid SQG regularity. The thermostat reformulation (H-α) — that a dimensionless ratio $\alpha(t)$ of nonlinear redistribution to normal-strain damping stays strictly below one — is also, to the author's knowledge, not present in the prior SQG regularity literature. Proposition 9.11 of this paper proves (H-α) $\Rightarrow$ (H-strain)+(H-bdry) $\Rightarrow$ regularity, collapsing the conditional content to a single scalar-valued normalized inequality.
+
 ---
 
 ## 8. Closed-Form Curvature Correction to the Identity
@@ -1059,6 +1075,8 @@ Sub-surface reconstruction via SQG (e.g., Sentinel-3/SWOT altimetry) relies on a
 8. Kiselev, A., Nazarov, F., Volberg, A. (2007). Global well-posedness for the critical 2D dissipative quasi-geostrophic equation. *Invent. Math.* 167, 445–453.
 9. Constantin, P., Majda, A.J., Tabak, E. (1994). Formation of strong fronts in the 2-D quasigeostrophic thermal active scalar. *Nonlinearity* 7, 1495–1533.
 10. Córdoba, D. (1998). Nonexistence of simple hyperbolic blow-up for the quasi-geostrophic equation. *Ann. Math.* 148, 1135–1152.
+11. He, S., Kiselev, A. (2021). Small-scale creation for solutions of the SQG equation. *Duke Math. J.* 170(5), 1027–1041. arXiv:1903.07485.
+12. Kiselev, A., Ryzhik, L., Yao, Y., Zlatoš, A. (2016). Finite time singularity for the modified SQG patch equation. *Ann. Math.* 184(3), 909–948. arXiv:1508.07613.
 
 ---
 
