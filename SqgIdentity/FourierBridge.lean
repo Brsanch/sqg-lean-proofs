@@ -2443,30 +2443,26 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       invFun := fun k => ⟨k.1, (hCompl_iff k.1).mpr k.2⟩
       left_inv := fun _ => rfl
       right_inv := fun _ => rfl }
+    -- Both subtypes have the same underlying set, so their tsum over the same
+    -- function agree.  We use the fact that `{k // k ∉ F_R}` and
+    -- `{k // R < lInfNorm k}` are equivalent via `eConv`.
+    have tsum_through_eConv : ∀ f : (Fin 2 → ℤ) → ℝ,
+        ∑' k : {k // k ∉ F_R}, f k.1
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, f k.1 := by
+      intro f
+      have h1 := Equiv.tsum_eq eConv
+        (fun k : {k // R < FourierAnalysis.lInfNorm k} => f k.1)
+      -- h1 : ∑' c, f (eConv c).1 = ∑' b, f b.1
+      -- (eConv c).1 = c.1 definitionally because eConv is { toFun := fun k => ⟨k.1, _⟩, ... }.
+      convert h1 using 2
     have hConv_a :
         ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
-          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 := by
-      -- eConv is identity on the underlying value, so the tsum over the
-      -- equiv image matches the underlying indexed tsum.
-      have h1 := Equiv.tsum_eq eConv
-        (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c (φ n) k.1‖ ^ 2)
-      have hLHS : ∀ x : {k // k ∉ F_R}, ‖c (φ n) x.1‖ ^ 2
-          = ‖c (φ n) (eConv x).1‖ ^ 2 := by
-        intro x
-        simp only [eConv, Equiv.coe_fn_mk]
-      rw [tsum_congr hLHS]
-      exact h1
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 :=
+      tsum_through_eConv (fun x => ‖c (φ n) x‖ ^ 2)
     have hConv_b :
         ∑' k : {k // k ∉ F_R}, ‖cInf k.1‖ ^ 2
-          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 := by
-      have h1 := Equiv.tsum_eq eConv
-        (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖cInf k.1‖ ^ 2)
-      have hLHS : ∀ x : {k // k ∉ F_R}, ‖cInf x.1‖ ^ 2
-          = ‖cInf (eConv x).1‖ ^ 2 := by
-        intro x
-        simp only [eConv, Equiv.coe_fn_mk]
-      rw [tsum_congr hLHS]
-      exact h1
+          = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖cInf k.1‖ ^ 2 :=
+      tsum_through_eConv (fun x => ‖cInf x‖ ^ 2)
     rw [hConv_a, hConv_b] at hTsumLe
     have := hTailSeq n R
     have := hTailLim R
