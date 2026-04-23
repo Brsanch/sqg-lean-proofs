@@ -25725,7 +25725,7 @@ outside the present formalisation scope).  Downstream consumers
 (`MaterialMaxPrinciple.of_HstrainHbdry`) combine this scalar witness with
 the paper's §9 argument (classical, not formalised). -/
 structure HasStrainLowerBound
-    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
   /-- The strain lower bound constant `μ⋆`. -/
   μ_star : ℝ
   /-- Non-negativity of `μ⋆`. -/
@@ -25733,9 +25733,9 @@ structure HasStrainLowerBound
 
 /-- **(H-strain) zero-datum witness.** The zero solution trivially
 satisfies the normal-strain lower bound with `μ⋆ = 0`. -/
-theorem HasStrainLowerBound.of_zero
+def HasStrainLowerBound.of_zero
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (hθ : ∀ t, θ t = 0) :
+    (_hθ : ∀ t, θ t = 0) :
     HasStrainLowerBound θ where
   μ_star := 0
   μ_star_nonneg := le_refl _
@@ -25753,7 +25753,7 @@ inequality is a Lagrangian construct outside the present formalisation
 scope.  Downstream consumers combine this scalar witness with the paper's
 §9 argument (classical). -/
 structure HasBoundaryCurvatureBound
-    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
   /-- The boundary curvature bound constant `κ⋆`. -/
   κ_star : ℝ
   /-- Non-negativity of `κ⋆`. -/
@@ -25761,9 +25761,9 @@ structure HasBoundaryCurvatureBound
 
 /-- **(H-bdry) zero-datum witness.** The zero solution trivially
 satisfies the boundary curvature bound with `κ⋆ = 0`. -/
-theorem HasBoundaryCurvatureBound.of_zero
+def HasBoundaryCurvatureBound.of_zero
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (hθ : ∀ t, θ t = 0) :
+    (_hθ : ∀ t, θ t = 0) :
     HasBoundaryCurvatureBound θ where
   κ_star := 0
   κ_star_nonneg := le_refl _
@@ -25783,7 +25783,7 @@ the Lean version is `HasStrainLowerBound.of_thermostat` +
 `HasBoundaryCurvatureBound.of_thermostat` below, both of which also
 require the classical §9.8 derivation as an auxiliary input. -/
 structure HasThermostatBound
-    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
+    (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
   /-- The thermostat upper bound `α⋆`. -/
   α_star : ℝ
   /-- `α⋆ < 1`: the key inequality of the thermostat hypothesis. -/
@@ -25791,9 +25791,9 @@ structure HasThermostatBound
 
 /-- **(H-α) zero-datum witness.**  The zero solution trivially satisfies
 the thermostat bound with `α⋆ = 0 < 1`. -/
-theorem HasThermostatBound.of_zero
+def HasThermostatBound.of_zero
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (hθ : ∀ t, θ t = 0) :
+    (_hθ : ∀ t, θ t = 0) :
     HasThermostatBound θ where
   α_star := 0
   α_star_lt_one := by norm_num
