@@ -2438,7 +2438,7 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       rw [tsum_mul_left, tsum_mul_left]
     rw [hFactor] at hTsumLe
     -- Now convert subtype {k // k ∉ F_R} to {k // R < lInfNorm k}.
-    have eConv : {k : Fin 2 → ℤ // k ∉ F_R} ≃ {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k} := {
+    let eConv : {k : Fin 2 → ℤ // k ∉ F_R} ≃ {k : Fin 2 → ℤ // R < FourierAnalysis.lInfNorm k} := {
       toFun := fun k => ⟨k.1, (hCompl_iff k.1).mp k.2⟩
       invFun := fun k => ⟨k.1, (hCompl_iff k.1).mpr k.2⟩
       left_inv := fun _ => rfl
@@ -2452,12 +2452,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       intro f
       have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => f k.1)
-      -- h1 : ∑' c, f (eConv c).1 = ∑' b, f b.1
-      -- (eConv c).1 = c.1 because eConv's toFun is `fun k => ⟨k.1, _⟩`.
-      have hfun : (fun k : {k // k ∉ F_R} => f k.1)
-                  = (fun c : {k // k ∉ F_R} => f (eConv c).1) := by
-        funext k; rfl
-      rw [hfun]; exact h1
+      -- Simplify (eConv c).1 = c.1 inside h1.
+      simp only [eConv, Equiv.coe_fn_mk] at h1
+      exact h1
     have hConv_a :
         ∑' k : {k // k ∉ F_R}, ‖c (φ n) k.1‖ ^ 2
           = ∑' k : {k // R < FourierAnalysis.lInfNorm k}, ‖c (φ n) k.1‖ ^ 2 :=
