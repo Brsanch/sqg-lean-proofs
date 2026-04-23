@@ -2451,7 +2451,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖c (φ n) k.1‖ ^ 2)
       have hLHS : ∀ x : {k // k ∉ F_R}, ‖c (φ n) x.1‖ ^ 2
-          = ‖c (φ n) (eConv x).1‖ ^ 2 := fun _ => rfl
+          = ‖c (φ n) (eConv x).1‖ ^ 2 := by
+        intro x
+        simp only [eConv, Equiv.coe_fn_mk]
       rw [tsum_congr hLHS]
       exact h1
     have hConv_b :
@@ -2460,7 +2462,9 @@ theorem fourier_rellich_kondrachov : FourierRellichKondrachovHolds := by
       have h1 := Equiv.tsum_eq eConv
         (fun k : {k // R < FourierAnalysis.lInfNorm k} => ‖cInf k.1‖ ^ 2)
       have hLHS : ∀ x : {k // k ∉ F_R}, ‖cInf x.1‖ ^ 2
-          = ‖cInf (eConv x).1‖ ^ 2 := fun _ => rfl
+          = ‖cInf (eConv x).1‖ ^ 2 := by
+        intro x
+        simp only [eConv, Equiv.coe_fn_mk]
       rw [tsum_congr hLHS]
       exact h1
     rw [hConv_a, hConv_b] at hTsumLe
