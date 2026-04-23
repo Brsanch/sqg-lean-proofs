@@ -25552,4 +25552,71 @@ theorem IsSqgTestFormWeakSolution.zero
     rw [hfun]
     exact aestronglyMeasurable_const
 
+/-! ## §13 Lattice Sobolev: per-mode `Ḣˢ` sup bound
+
+`(fracDerivSymbol α m)² · ‖c m‖² ≤ trigPolyEnergyHs s S c` for every `α ≤ s`
+and every `m ∈ S`.  Direct consequence of (i) the definition of
+`trigPolyEnergyHs` as a sum of non-negative terms, and (ii) monotonicity
+`latticeNorm^α ≤ latticeNorm^s` at `latticeNorm ≥ 1` when `α ≤ s`.
+
+Discrete analogue of the classical inequality `‖u‖²_{Ḣ^α} ≤ ‖u‖²_{Ḣˢ}`
+applied pointwise at each Fourier mode.  Closes the Sobolev-embedding
+leg of Gap A on the lattice side.  Uniform in `S` (independent of the
+Galerkin level `n` when `S = sqgBox n`). -/
+
+set_option diagnostics true in
+set_option diagnostics.threshold 100 in
+/-- **§13.1 — Monotone comparison of `fracDerivSymbol` in the exponent
+at a nonzero mode.**  For `α ≤ s` and `m ≠ 0` in the lattice,
+`fracDerivSymbol α m ≤ fracDerivSymbol s m`. -/
+lemma fracDerivSymbol_mono_of_le_exp
+    {d : Type*} [Fintype d] {α s : ℝ} (hαs : α ≤ s)
+    {n : d → ℤ} (hn : n ≠ 0) :
+    fracDerivSymbol α n ≤ fracDerivSymbol s n := by
+  rw [fracDerivSymbol_of_ne_zero α hn, fracDerivSymbol_of_ne_zero s hn]
+  have hL : 1 ≤ latticeNorm n := latticeNorm_ge_one_of_ne_zero hn
+  exact Real.rpow_le_rpow_of_exponent_le hL hαs
+
+set_option diagnostics true in
+set_option diagnostics.threshold 100 in
+/-- **§13.2 — `fracDerivSymbol` squared, monotone in exponent.**  For
+`0 ≤ α ≤ s` and every `n`, `(fracDerivSymbol α n)² ≤ (fracDerivSymbol s n)²`. -/
+lemma fracDerivSymbol_sq_mono_exp
+    {d : Type*} [Fintype d] {α s : ℝ} (hα : 0 ≤ α) (hαs : α ≤ s)
+    (n : d → ℤ) :
+    (fracDerivSymbol α n) ^ 2 ≤ (fracDerivSymbol s n) ^ 2 := by
+  by_cases hn : n = 0
+  · rw [hn, fracDerivSymbol_zero, fracDerivSymbol_zero]
+  · have h := fracDerivSymbol_mono_of_le_exp hαs hn
+    have hαnn : 0 ≤ fracDerivSymbol α n := fracDerivSymbol_nonneg α n
+    exact pow_le_pow_left₀ hαnn h 2
+
+set_option diagnostics true in
+set_option diagnostics.threshold 100 in
+/-- **§13.3 — Per-mode Sobolev embedding bound.**  For `0 ≤ α ≤ s` and
+every `m ∈ S`,
+`(fracDerivSymbol α m.val)² · ‖c m‖² ≤ trigPolyEnergyHs s S c`.
+
+Keystone of the lattice Sobolev sup bound: bounds every individual mode
+contribution to `Ḣ^α` by the total `Ḣˢ` energy, uniformly in the mode
+and uniformly in the ambient lattice `S`. -/
+theorem fracDerivSymbol_sq_mul_norm_sq_le_trigPolyEnergyHs
+    {α s : ℝ} (hα : 0 ≤ α) (hαs : α ≤ s)
+    {S : Finset (Fin 2 → ℤ)} [DecidableEq (Fin 2 → ℤ)]
+    (c : ↥S → ℂ) (m : ↥S) :
+    (fracDerivSymbol α m.val) ^ 2 * ‖c m‖ ^ 2 ≤ trigPolyEnergyHs s S c := by
+  -- Step 1: bound LHS by (fracDerivSymbol s m.val)² · ‖c m‖² via §13.2.
+  have hstep :
+      (fracDerivSymbol α m.val) ^ 2 * ‖c m‖ ^ 2
+        ≤ (fracDerivSymbol s m.val) ^ 2 * ‖c m‖ ^ 2 :=
+    mul_le_mul_of_nonneg_right (fracDerivSymbol_sq_mono_exp hα hαs m.val) (sq_nonneg _)
+  refine hstep.trans ?_
+  -- Step 2: isolate the single `m`-term of the energy sum and bound by the sum.
+  unfold trigPolyEnergyHs
+  refine Finset.single_le_sum
+    (f := fun k : ↥S => (fracDerivSymbol s k.val) ^ 2 * ‖c k‖ ^ 2)
+    ?_ (Finset.mem_univ m)
+  intro k _
+  exact mul_nonneg (sq_nonneg _) (sq_nonneg _)
+
 end SqgIdentity
