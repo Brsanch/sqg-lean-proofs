@@ -428,22 +428,33 @@ instance doesn't export across files).
 hypothesis-keyed with zero-data exemplars; all classical PDE content
 is labeled and isolated behind named hypotheses.
 
-### Path B: fully unconditional discharge
+### Path B: structural bridge to classical Fourier analysis
 
-The classical Fourier-analysis content that would discharge the
-`HasSqgGalerkinAllSBound` hypothesis unconditionally —
-Littlewood–Paley dyadic decomposition, Bony paraproducts, the
-Kato–Ponce commutator estimate `‖[Jˢ, u·∇]g‖_{L²} ≤ C·(‖∇u‖_{L∞}·‖g‖_{Ḣˢ} + ‖u‖_{Ḣˢ}·‖∇g‖_{L∞})`,
-and the Sobolev embedding `Ḣˢ ⊂ L∞` for `s > d/2 = 1` — lives in
-the companion package
+The classical Fourier-analysis content that feeds the Galerkin
+`Ḣˢ`-bound chain — Littlewood–Paley dyadic decomposition, Bony
+paraproducts, a quantitative uniform-in-`N` Kato–Ponce commutator
+bound of shape
+`‖[Jˢ, u·∇]g‖_{L²} ≤ C·(‖∇u‖_{L∞}·‖g‖_{Ḣˢ} + ‖u‖_{Ḣˢ}·‖∇g‖_{L∞})`,
+and the Sobolev embedding `Ḣˢ ⊂ L∞` for `s > d/2 = 1` — is in-tree
+in the companion package
 [`sqg-lean-proofs-fourier`](https://github.com/Brsanch/sqg-lean-proofs-fourier).
 That package is intended for reuse by future NS / Euler / MHD
-formalizations.
+formalizations.  The SQG-specific plumbing (energy identity, velocity
+Riesz-preservation, exponential Grönwall closure,
+`HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete`) is
+in-tree in `SqgIdentity/FourierBridge.lean`.
 
-Remaining work for Path B: ~1500 LOC of classical content in the
-companion package, plus ~500 LOC of SQG-specific plumbing in this
-repo (energy identity, velocity Riesz-preservation, BKM-integral
-Grönwall, `HasSqgGalerkinAllSBound.ofClassical` constructor).
+**What Path B does *not* do.**  The end-to-end Path B chain is
+verified conditional on the paper's (H-strain) + (H-bdry) hypotheses
+(paper §9.6.3), or equivalently on the thermostat reformulation
+(H-α) (paper §9.8). These hypotheses are named at the Lean level in
+`SqgIdentity/RieszTorus.lean` §14 as `HasStrainLowerBound`,
+`HasBoundaryCurvatureBound`, and `HasThermostatBound`, with the
+`MaterialMaxPrinciple.of_HstrainHbdry` and
+`MaterialMaxPrinciple.of_thermostat` constructors taking them as
+labeled inputs.  Deriving any of these three hypotheses from the SQG
+dynamics alone remains the open research problem the paper documents
+as conditional Theorem 3; this repository does not claim to close it.
 
 ### Other open items (see `OPEN.md`)
 

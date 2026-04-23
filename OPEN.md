@@ -5,11 +5,19 @@ Each item is linked to the tagged release that will close it.
 
 ## Status banner (2026-04-23)
 
-All six SQG-mathematics items below are **closed**: Items 1, 2, 3, 4, 6
-closed post-v0.4.39, Item 5 Path A structural closure via §11.34–§11.38
-and Path B unconditional closure via `SqgIdentity/FourierBridge.lean`
-(2,490 LOC, wires in the [companion](https://github.com/Brsanch/sqg-lean-proofs-fourier)
+All six SQG-mathematics items below are **closed** at the
+formalization-of-the-conditional-chain level: Items 1, 2, 3, 4, 6
+closed post-v0.4.39; Item 5 closed via Path A structural closure
+(§11.34–§11.38) plus Path B bridge-to-classical-Fourier via
+`SqgIdentity/FourierBridge.lean` (2,490 LOC, wires in the
+[companion](https://github.com/Brsanch/sqg-lean-proofs-fourier)
 package at 2,801 LOC, both zero `sorry` and CI green on `main`).
+"Closed" here means the Lean chain is complete *conditional on* the
+paper's (H-strain) + (H-bdry) (equivalently (H-α)) hypotheses; see
+`RieszTorus.lean` §14 for the labeled hypothesis structures.
+Deriving those hypotheses from the SQG dynamics themselves is the
+open research problem the paper states as conditional Theorem 3; the
+Lean formalization does not claim to close it.
 
 The companion Fourier package delivers the full classical chain
 (quantitative uniform-in-N Kato–Ponce commutator on `𝕋²`, Bony
@@ -615,8 +623,11 @@ Phase 8 (commutator) ───────────────┘         �
 
 ### Entry points for future development
 
-- Path A closure: in-tree via §11.34–§11.38.  Next natural step is
-  Path B unconditional discharge of `HasSqgGalerkinAllSBound`.
+- Path A closure: in-tree via §11.34–§11.38.  Path B
+  bridge-to-classical-Fourier: in-tree via
+  `SqgIdentity/FourierBridge.lean`.  Both are conditional on
+  (H-strain) + (H-bdry) / (H-α) at the paper level; deriving those
+  hypotheses from the SQG dynamics is open.
 - Path B classical content: see the companion package
   [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
   for the Littlewood-Paley + Kato-Ponce commutator development.
