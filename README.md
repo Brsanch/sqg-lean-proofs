@@ -19,21 +19,38 @@ The mathematical content is developed in the accompanying paper:
   shear-vorticity identity and spectral concentration in SQG front dynamics.*
   ([markdown source](./paper/sqg-identity.md))
 
-The formalization comprises over 25,290 lines of Lean 4 source in the
-`RieszTorus` module and 1,388 lines in the `FourierBridge` module
-(over 27,390 lines project-wide, wiring in the
+The formalization comprises over 25,850 lines of Lean 4 source in the
+`RieszTorus` module and 2,490 lines in the `FourierBridge` module
+(over 29,000 lines project-wide, wiring in the
 [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
 companion package for classical Littlewood–Paley / Bony paraproduct /
 quantitative uniform-in-N Kato–Ponce commutator content), with
 **zero `sorry` and no axioms beyond mathlib**.
 
-The Path-B regularity chain `HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete`
-in `SqgIdentity/FourierBridge.lean` composes concrete discharges of
-the L² conservation, Riesz velocity preservation, Ḣˢ energy identity,
-velocity Lipschitz bound, and exponential Grönwall closure — one
-narrow named classical gap remains (`HasGalerkinFluxBound α K L`, a
-finite-dim lattice adaptation of the fourier repo's quantitative
-uniform-in-N Kato–Ponce bound).
+**Scope of Theorem 3 (SQG regularity, conditional).** Following paper
+§9.6.3, Theorem 3 is stated as conditional on two explicit hypotheses,
+(H-strain) and (H-bdry), labeled and documented inline in the Lean
+source as `HasStrainLowerBound` and `HasBoundaryCurvatureBound`
+(`SqgIdentity/RieszTorus.lean` §14). Paper §9.8 provides the
+alternative single-hypothesis thermostat reformulation (H-α), labeled
+`HasThermostatBound` in Lean. Neither hypothesis is derived from the
+SQG dynamics alone in this repository — the §9 analytical argument
+that `(H-strain)+(H-bdry) ⇒ uniform Ḣ¹ bound` is classical content
+the paper develops and is taken as an auxiliary input in the
+`MaterialMaxPrinciple.of_HstrainHbdry` / `.of_thermostat`
+constructors. Everything downstream — BKM, interpolation, full-range
+Theorem 3, Path A Ḣˢ bootstrap, Path B Galerkin chain — is machine
+verified conditional on this analytical input.
+
+**Mathlib-adjacent infrastructure discharged in this repository** (each
+full proof, no axioms added):
+- §13 lattice Sobolev per-mode Ḣˢ sup bound (`RieszTorus.lean`).
+- §B.15 inverse Fourier transform `lpOfFourierCoeff` on `𝕋²` via
+  `mFourierBasis` (`RieszTorus.lean`).
+- §B.16–§B.19 Rellich–Kondrachov compact embedding `H¹(𝕋²) ⊂⊂ L²` in
+  Fourier form: `countable_diagonal_bounded_sequences` +
+  `fourier_rellich_kondrachov` (`FourierBridge.lean`), enabling
+  Aubin–Lions extraction on the Galerkin sequence.
 
 ## What is proven unconditionally
 
