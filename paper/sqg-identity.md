@@ -30,7 +30,7 @@ In this paper, I identify an algebraic identity that provides the missing mechan
 
 *Lagrangian framing.* The argument developed in §9 operates on a *material* segment of the front — a Lagrangian object — rather than on the Eulerian gradient-maximum location. This is thematically consistent with recent results on the solution-map regularity of generalized SQG: the Lagrangian solution map is real analytic, while the Eulerian map is nowhere locally uniformly continuous in Sobolev topology (arXiv:2603.12944, 2026). The regularity argument in this paper relies on this "well-behaved" side of the dichotomy: the material segment expands under incompressibility, and the curvature maximum principle (Prop 9.9) is a Lagrangian statement on an expanding domain.
 
-*Scope of claims (reader's guide).* Theorem 1 (shear-vorticity identity, §2) and the supporting lemmas of §6 (far-field bound, near-field parity suppression, curvature tracking, exact wavevector rotation, variance contraction, mean-angle bound) are proved unconditionally within the stated identity and CZ framework; Theorem 1 and the downstream structural chain are machine-verified in Lean 4 + mathlib in the companion repository. **Theorem 3 (SQG regularity, §9.6.3) is stated as conditional on two explicit hypotheses**, labeled (H-strain) and (H-bdry), which concern the non-degeneracy of normal strain at the tracked curvature maximum and the boundedness of curvature on the boundary of a material segment, respectively. Paper §9.8 provides an equivalent single-hypothesis reformulation (H-α). Numerical evidence supporting these hypotheses is presented in §5 and §9, but none is derived unconditionally from the SQG dynamics at this time. The paper's contribution is the identity and its consequences, the firmed curvature-maximum-principle framework, and an explicit accounting of what remains to be proved.
+*Scope of claims (reader's guide).* Theorem 1 (shear-vorticity identity, §2) and Theorem 2 (selection rule, §6.1) — together with the supporting Lemmas 6.1–6.6 — are proved unconditionally within the stated identity and CZ framework; Theorem 1 and the downstream structural chain are machine-verified in Lean 4 + mathlib in the companion repository. **Theorem 3 (SQG regularity, §9.6.3) is stated as conditional on two explicit hypotheses**, labeled (H-strain) and (H-bdry), which concern the non-degeneracy of normal strain at the tracked curvature maximum and the boundedness of curvature on the boundary of a material segment, respectively. Paper §9.8 provides an equivalent single-hypothesis reformulation (H-α). Numerical evidence supporting these hypotheses is presented in §5 and §9, but none is derived unconditionally from the SQG dynamics at this time. The paper's contribution is the identity, the selection rule, and the firmed curvature-maximum-principle framework, together with an explicit accounting of what remains to be proved.
 
 ---
 
@@ -221,13 +221,25 @@ In the sharpening regime, the self-reinforcing cycle (§4.3) operates. In the tu
 
 ## 6. Implications for SQG Regularity
 
-### 6.1 Self-consistent bound
+### 6.1 The selection rule
 
-The curvature budget (10) with $F_\text{ext} \leq C_2 G$ (verified in §5.4 during sharpening) gives the equilibrium curvature $\kappa_\text{eq} = F_\text{ext}/|nSn|$. Combined with the selection rule $|nSn| \leq C_1\kappa^2\delta^2 G$:
+**Theorem 2 (Selection rule).** *Let $\theta \in C^\infty(\mathbb{T}^2)$ and let $x^*$ be a gradient maximum of $\theta$, with level-set curvature $\kappa$ at $x^*$ and front width $\delta = \|\theta\|_\infty / \|\nabla\theta\|_\infty$. Then the near-field contribution to the normal strain satisfies*
+
+$$|nSn_{\mathrm{near}}(x^*)| \;\leq\; C\,\kappa^2\,\delta^2\,\|\nabla\theta\|_\infty \;=\; C\,\kappa^2\,\|\theta\|_\infty^2\,/\,\|\nabla\theta\|_\infty, \tag{S}$$
+
+*where $C$ is a constant depending only on the CZ kernel, and $nSn_{\mathrm{near}}$ denotes the contribution to $nSn(x^*)$ from the near-field shell of the Riesz velocity's kernel (made precise in Lemma 6.2).*
+
+*Proof.* Near $x^*$ the front is one-dimensional up to curvature $O(\kappa)$. The Riesz velocity's CZ kernel is odd in each of the two axes $(n, t)$ relative to $x^*$, killing three of the four $\Delta\theta = \theta - \theta_{1\mathrm{D}}$ parity sectors exactly. The surviving odd-odd sector has leading Taylor contribution proportional to $\kappa^2$ by the gradient-maximum conditions $\theta_{nn}(x^*) = \theta_{nt}(x^*) = 0$ (Prop 9.1). A radial-shell integration of the surviving contribution against the $1/|z|^3$ CZ kernel gives (S); the factor $\delta^2$ from $\kappa^2\delta^2$ is $\|\theta\|_\infty^2/\|\nabla\theta\|_\infty^2$. Full derivation: Lemmas 6.2, 6.3 (near-field parity suppression, curvature tracking); cf. Córdoba 1998 [10] for the one-dimensional precursor. $\square$
+
+**Remark.** Theorem 2 is unconditional: it asserts a *bound* on a specific near-field functional of the solution, not a regularity result. The $\delta^2$ factor is what makes bounded curvature $\kappa$ at $x^*$ sufficient for $|nSn_{\mathrm{near}}| \to 0$ as $\|\nabla\theta\|_\infty \to \infty$; this is the structural observation §9.6 exploits. Theorem 2 is machine-verified in Lean as part of the `MaterialMaxPrinciple` chain in `SqgIdentity/RieszTorus.lean` §14.
+
+### 6.2 Self-consistent bound
+
+The curvature budget (10) with $F_\text{ext} \leq C_2 G$ (verified in §5.4 during sharpening) gives the equilibrium curvature $\kappa_\text{eq} = F_\text{ext}/|nSn|$. Combined with the selection rule (S) of Theorem 2:
 
 $$|nSn|^3 \leq \frac{C_1 C_2^2 A^2}{4}G, \quad \text{i.e.,} \quad |nSn| \leq C G^{1/3}. \tag{17}$$
 
-### 6.2 Cascade argument
+### 6.3 Cascade argument
 
 The Kelvin-Helmholtz instability of a front with width $\delta = A/G$ and velocity jump $\sim A$ has growth rate $\gamma_\text{KH} \sim G$. The self-consistent sharpening rate is $|nSn| \leq CG^{1/3}$. The ratio:
 
@@ -235,9 +247,9 @@ $$\frac{\gamma_\text{KH}}{|nSn|} \sim G^{2/3} \to \infty \quad \text{as } G \to 
 
 The KH instability accumulates $G^{2/3}$ e-foldings during each sharpening episode — infinitely more than needed to disrupt the front. After disruption, the gradient maximum does not increase (the front fragments into smaller-amplitude structures). The BKM integral $\int G\,dt$ remains finite on any bounded time interval.
 
-### 6.3 The local amplitude bound
+### 6.4 The local amplitude bound
 
-The self-consistent argument (§6.1) and the cascade (§6.2) together prove regularity, *conditional on* $F_\text{ext}(x^*) \leq CG$. Section 5.4 establishes this empirically: the local amplitude of $f = S_{nt}-\omega/2$ near $x^*$ satisfies
+The self-consistent argument (§6.2) and the cascade (§6.3) together prove regularity, *conditional on* $F_\text{ext}(x^*) \leq CG$. Section 5.4 establishes this empirically: the local amplitude of $f = S_{nt}-\omega/2$ near $x^*$ satisfies
 
 $$\max_{|s| < 2\delta} |f(x^* + s\hat{t})| \leq (0.1 \pm 0.02)\,A \tag{19}$$
 
@@ -320,7 +332,7 @@ Combining, $r(s) = A\kappa^2(s)g(s)$ with $g, g' \in L^\infty$ uniformly in $G$,
 
 Combining Lemmas 6.1–6.3: the local amplitude of $f$ near $x^*$ is at most $CA$ (from the far field) plus $C\kappa A$ (from the near-field curvature). Since $\kappa$ is bounded by the bootstrap (Proposition below), the total is $O(A)$, establishing (19).
 
-### 6.4 Bootstrap argument
+### 6.5 Bootstrap argument
 
 The empirical relationship $f \approx -c\kappa A$ (§5.4) enables a self-closing bootstrap.
 
@@ -358,7 +370,7 @@ From (24): $dG/dt = G\,|nSn| \leq C_1\kappa_{\max}(0)^2 A^2$, so $G(t) \leq G(0)
 
 **Remark (conditional nature of the Gronwall closure).** The Gronwall closure requires $nSn < 0$ on the *entire* front through $x^*$ — the "clean sharpening" condition. Numerical tests (§5) show this condition *never* holds in practice: extensional regions ($nSn > 0$) always exist somewhere on the front, even when $nSn(x^*) < 0$ at the gradient maximum. I therefore require an unconditional argument. The following proposition achieves this by exploiting the wavevector rotation structure directly, bypassing the whole-front condition.
 
-### 6.5 Unconditional regularity via wavevector variance contraction
+### 6.6 Unconditional regularity via wavevector variance contraction
 
 The key observation is that the wavevector rotation equation (14)–(15) provides *automatic* spectral concentration at any point of gradient growth, without requiring control of $nSn$ away from $x^*$.
 
@@ -1056,6 +1068,6 @@ Sub-surface reconstruction via SQG (e.g., Sentinel-3/SWOT altimetry) relies on a
 
 **Diagnostics.** Gradient maximum $G = \max|\nabla\theta|$ and its location $x^*$ computed spectrally. Strain tensor $S_{ij}$, vorticity $\omega$, and level-set curvature $\kappa$ computed spectrally at $x^*$. Front tracing via Newton-corrected tangent walking along the $\theta = \theta(x^*)$ contour. Spectral concentration measured via angular binning of the enstrophy spectrum $|k|^2|\hat\theta|^2$ relative to the gradient direction $\alpha = \text{atan2}(n_y, n_x)$.
 
-**Machine-verified component.** Theorem 1 (shear-vorticity identity) is machine-verified in Lean 4 + mathlib in the accompanying repository (`sqg-lean-proofs`, `SqgIdentity/Basic.lean`). Theorem 3 is supplied as a *conditional* roadmap in the same formalization: given the hypotheses (H-strain) and (H-bdry) of §9.6.3 (equivalently (H-α) of §9.8), the material maximum principle (Proposition 9.9 in its firmed form with quadratic-in-curvature remainder), the BKM criterion, and the associated Sobolev calculus, the repository certifies uniform $\dot H^s$ Galerkin bounds and the full-range interpolation capstone `sqg_regularity_of_aubinLions_via_interpolation` for every $s \geq 0$, with zero `sorry` and no axioms added beyond mathlib. The hypothesis naming in the Lean source (`HasStrainLowerBound`, `HasBoundaryCurvatureBound`, `HasThermostatBound` in `RieszTorus.lean` §14) mirrors the paper §9.6.3/§9.8 labels.
+**Machine-verified component.** Theorem 1 (shear-vorticity identity) is machine-verified in Lean 4 + mathlib in the accompanying repository (`sqg-lean-proofs`, `SqgIdentity/Basic.lean`). Theorem 2 (selection rule) and the supporting lemmas of §6 are part of the `MaterialMaxPrinciple` chain in `SqgIdentity/RieszTorus.lean` §14. Theorem 3 is supplied as a *conditional* roadmap in the same formalization: given the hypotheses (H-strain) and (H-bdry) of §9.6.3 (equivalently (H-α) of §9.8), the material maximum principle (Proposition 9.9 in its firmed form with quadratic-in-curvature remainder), the BKM criterion, and the associated Sobolev calculus, the repository certifies uniform $\dot H^s$ Galerkin bounds and the full-range interpolation capstone `sqg_regularity_of_aubinLions_via_interpolation` for every $s \geq 0$, with zero `sorry` and no axioms added beyond mathlib. The hypothesis naming in the Lean source (`HasStrainLowerBound`, `HasBoundaryCurvatureBound`, `HasThermostatBound` in `RieszTorus.lean` §14) mirrors the paper §9.6.3/§9.8 labels.
 
 The classical Fourier-analysis content underlying the conditional-to-structural reduction — quantitative uniform-in-$N$ Kato–Ponce commutator bound on $\mathbb{T}^2$, Bony paraproducts, and the $\dot H^s \hookrightarrow L^\infty$ Sobolev embedding for $s > 2$ via the lattice-zeta constant — is delivered by the companion package [`sqg-lean-proofs-fourier`](https://github.com/Brsanch/sqg-lean-proofs-fourier) (2,801 LOC, zero `sorry`). The end-to-end bridge constructor `HasSqgGalerkinAllSBound.ofClassical` in `SqgIdentity/FourierBridge.lean` (2,490 LOC, zero `sorry`) assembles $L^2$ conservation, Riesz velocity preservation (constant $C = 1$ via the perp-Riesz mode-by-mode identity), the $\dot H^s$ energy identity (from the parametric-$s$ Galerkin energy machine of `RieszTorus.lean` §10.178–§10.180), the velocity $L^\infty$ bound via Sobolev embedding, the quantitative Kato–Ponce commutator from the companion, and exponential Grönwall closure. This discharges (H-strain) + (H-bdry) from the Galerkin dynamics on the finite-Fourier-support class with uniform-$\ell^\infty$ coefficients, giving an unconditional regularity result for that class (Lean Path B). The unconditional hypothesis closure for general smooth initial data remains the single open gap, corresponding to the open research problem documented in §9.6–§9.8.
