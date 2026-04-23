@@ -6,8 +6,8 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: Brsanch
-version: 0.5.0
-date-released: "2026-04-21"
+version: 0.6.0
+date-released: "2026-04-23"
 url: "https://github.com/Brsanch/sqg-lean-proofs"
 repository-code: "https://github.com/Brsanch/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -31,6 +31,10 @@ keywords:
   - Fourier analysis
   - Riesz transform
   - Sobolev spaces
+  - Littlewood-Paley
+  - Bony paraproducts
+  - Kato-Ponce commutator
+  - Rellich-Kondrachov
   - conditional regularity
 abstract: >
   A Lean 4 and mathlib formalization of Fourier-space identities for the
@@ -93,8 +97,40 @@ abstract: >
   This discharges the Galerkin-to-full-SQG-limit item on L-squared of
   the torus.
 
-  The release comprises 19,428 lines of Lean 4 source in the
-  RieszTorus module (20,137 lines project-wide), with zero `sorry`
-  occurrences and no axioms beyond mathlib. A machine-readable build
-  of the formalization is provided via a standard `lake build`
-  invocation against mathlib v4.29.0.
+  v0.6.0 additions. §14 introduces labeled hypothesis structures
+  matching the accompanying paper's §9.6.3 and §9.8:
+  HasStrainLowerBound, HasBoundaryCurvatureBound, and
+  HasThermostatBound bundle the paper's (H-strain), (H-bdry), and
+  (H-α) hypotheses respectively, with MaterialMaxPrinciple
+  constructors .of_HstrainHbdry and .of_thermostat taking them as
+  labeled inputs. §13 adds the lattice Sobolev per-mode `Ḣˢ` sup
+  bound fracDerivSymbol_sq_mul_norm_sq_le_trigPolyEnergyHs. §B.15
+  adds the inverse Fourier transform lpOfFourierCoeff on the
+  two-dimensional torus via mathlib's mFourierBasis. §B.16 through
+  §B.19 add a machine-verified Rellich-Kondrachov compact embedding
+  `H¹(𝕋²) ⊂⊂ L²` in Fourier form, including a from-scratch proof of
+  the countable-family Cantor diagonal extraction
+  (countable_diagonal_bounded_sequences) and the capstone theorem
+  fourier_rellich_kondrachov. SqgIdentity/FourierBridge.lean is a
+  new 2,490-line module that wires in the companion
+  sqg-lean-proofs-fourier package and delivers
+  HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete, an
+  end-to-end Path B chain composed of concrete discharges of L²
+  conservation, Riesz velocity preservation, Ḣˢ energy identity,
+  velocity Lipschitz-sup via Sobolev embedding, and exponential
+  Grönwall closure, verified conditional on the paper's (H-strain)
+  + (H-bdry) or equivalently (H-α). The accompanying paper is
+  revised to explicitly state Theorem 3 as conditional on these
+  hypotheses, with a new §7.4 comparing the hypothesis pair against
+  prior SQG conditional regularity results (Constantin-Majda-Tabak
+  1994, Córdoba 1998, He-Kiselev 2021, Kiselev-Ryzhik-Yao-Zlatoš
+  2016, Jeong-Kim 2024).
+
+  The v0.6.0 release comprises 29,049 lines of Lean 4 source project-wide
+  (25,850 lines in RieszTorus, 2,490 in FourierBridge, 709 in Basic,
+  plus aggregators) with zero `sorry` occurrences and no axioms beyond
+  mathlib. The formalization imports the companion package
+  sqg-lean-proofs-fourier at approximately 2,800 lines of classical
+  Littlewood-Paley, Bony paraproduct, quantitative uniform-in-N
+  Kato-Ponce commutator, and homogeneous Sobolev infrastructure. The
+  build is reproducible via `lake build` against mathlib v4.29.0.
