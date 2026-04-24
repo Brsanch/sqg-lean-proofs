@@ -4,6 +4,41 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.6.2 — 2026-04-24 (paper-quality patch, no Lean source changes)
+
+**Theorem 2 demoted to Proposition 6.1.** Following the internal adversarial
+review (see `paper/adversarial_review_2026_04_22.md`), the paper's pointwise
+parity-improved selection-rule bound `|nSn_near(x*)| ≤ C·κ²·δ²·G` at the
+gradient maximum — previously stated as "Theorem 2" — is demoted to
+Proposition 6.1 and explicitly flagged as a parity-based refinement of the
+universal Calderón–Zygmund precursor, with the proof operating at
+formal-Taylor-plus-parity level rather than theorem-grade rigor.
+
+The Lean source's *universal per-mode CZ bound*
+`‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` (machine-verified as `sqg_selection_rule_bound`
+and `sqg_selection_rule_Hs1` in `SqgIdentity/Basic.lean` and
+`SqgIdentity/RieszTorus.lean`) is the rigorous precursor that Proposition 6.1
+refines; docstrings in the Lean source relabeled accordingly to reflect that
+what is machine-verified is the universal per-mode bound, not the paper's
+parity-improved pointwise refinement.
+
+No changes to Lean proofs, theorem statements, or axiomatic footprint — only
+comment/docstring relabeling to remove the overclaim that the paper's
+Proposition 6.1 is machine-verified. `README.md` updated accordingly.
+
+## v0.6.1 — 2026-04-24 (paper-quality patch, no Lean source changes)
+
+Paper-only revisions to `paper/sqg-identity.md` per the internal adversarial
+self-review. A-class: §9.8.5 N-scan table corrected (N=128 ᾱ 1.23→0.914)
+with direct recomputation, N=512 row added; §9.8.3 pointwise-α table replaced
+with direct measurements (4/3 conversion factor removed); Proposition 9.11
+rewritten with explicit (B-spec) second hypothesis; Lemma 6.2 extended to
+derive κ²δ² bound via parity decomposition. B-class: abstract scaling,
+Lemma 6.5 remark, equation-number collisions, Lemma 9.13 Step 1 made
+conditional on (H-strain), §8.3 Test D relabeling, §9.8.5 LASSO caveat.
+C-class: duplicate references consolidated, Δt spec aligned to solver,
+Conjecture 9.4 vs (H-α) relation clarified.
+
 ## v0.5.0 — 2026-04-21
 
 **Route A Item 5 Path A closure.**  Item 5 is now closed at the same
