@@ -505,7 +505,7 @@ yields the integrated ℓ² bound
     `Σ_k ‖Ŝ_nt(k) − ω̂(k)/2‖² ≤ Σ_k |k|²·‖θ̂(k)‖²`
 which, by Parseval, is the statement
     `‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`
-needed for Theorem 3's regularity analysis.
+needed for Theorem 2's regularity analysis.
 
 The content below is the general squaring-and-summing step, with the
 concrete Fourier-basis packaging deferred to a future file.

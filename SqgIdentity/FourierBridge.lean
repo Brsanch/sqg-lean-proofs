@@ -444,7 +444,7 @@ and project to the bare `HasSqgGalerkinAllSBound` hypothesis consumed
 by §10.174 / §11.36.  The `ofClassical` constructor is how a caller
 armed with the four classical Fourier ingredients (+ SQG-specific
 energy identity) discharges the §11.34 hypothesis that feeds the
-full-range Theorem 3. -/
+full-range Theorem 2. -/
 
 /-- **§B.6 — `HasSqgGalerkinAllSBound.ofClassical` constructor.**
 Projects a `HasGalerkinGronwallClosure α` witness to the bare
@@ -513,7 +513,7 @@ constructors into the end-to-end discharge:
   quantitative commutator form).
 
 **Output:** `HasSqgGalerkinAllSBound α`, ready to feed `§11.36`'s
-`sqg_regularity_of_allSBound` for the full-range Theorem 3. -/
+`sqg_regularity_of_allSBound` for the full-range Theorem 2. -/
 noncomputable def HasSqgGalerkinAllSBound.ofGalerkin
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
     (hCoeff : ∀ n : ℕ, ∀ t : ℝ, 0 ≤ t →
@@ -1070,7 +1070,7 @@ that takes real Galerkin data and the six named classical inputs
 (ODE validity, ℓ² invariant, Kato–Ponce `K`, initial-data bounds,
 derivative-bound families, and the exponential amplification `E`),
 and produces the §11.34 hypothesis consumed by §10.174's full-range
-Theorem 3.
+Theorem 2.
 
 This is the Path B capstone: one constructor, six classical inputs,
 zero abstract-gap fields.  The **one remaining narrow classical gap**
@@ -1100,7 +1100,7 @@ Path B discharge of `HasSqgGalerkinAllSBound α` on real Galerkin data.
 7. Initial-data bounds `D₁, Dₛ` + exponential amplification `E`.
 
 **Output:** `HasSqgGalerkinAllSBound α` ready to feed §10.174 /
-§11.36 for the full-range Theorem 3.
+§11.36 for the full-range Theorem 2.
 
 **Chain:**
 ```
