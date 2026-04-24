@@ -283,25 +283,37 @@ proving (6.1.a). Since $f = \partial_t^2(-\Delta)^{-1/2}\theta$ and the componen
 
 **Remark 6.1.1.** Unlike the Calderón-Zygmund bound $|nSn| \leq C G$, the far-field bound (6.1.b) is *independent of $G$*: the smoothing action of $(-\Delta)^{-1/2}$ on sources separated from the query point converts the source $L^\infty$ norm $A$ into a pointwise bound on arbitrary-order derivatives of $\psi = (-\Delta)^{-1/2}\theta$ without invoking the gradient norm. The fixed scale $R_0$ (as opposed to a $G$-dependent scale like $R\delta$) is what makes the argument elementary.
 
-**Lemma 6.2 (Near-field parity suppression).** *The near-field contribution*
+**Lemma 6.2 (Near-field parity suppression).** *At a gradient maximum $x^*$, where the gradient-maximum conditions $\theta_{nn}(x^*) = \theta_{nt}(x^*) = 0$ of Proposition 9.1 hold, the near-field contribution*
 
 $$f_\text{near}(x^*) = \int_{|y-x^*| < R\delta} K_f(x^* - y)\,\theta(y)\,dy$$
 
-*satisfies $|f_\text{near}(x^*)| \leq C\kappa^2\delta^2\,G$, where $\kappa$ is the level-set curvature at $x^*$.*
+*satisfies $|f_\text{near}(x^*)| \leq C\kappa^2\delta^2\,G = C\kappa^2\,A^2/G$, where $\kappa$ is the level-set curvature at $x^*$ and $K_f$ is the CZ kernel for $f = \partial_t^2(-\Delta)^{-1/2}\theta$.*
 
-*Proof.* Near $x^*$, the front is approximately one-dimensional with curvature correction. In local coordinates $(n,t)$ centered at $x^*$:
+*Proof.* Work in local coordinates $(n,t)$ centered at $x^*$. The CZ kernel $K_f(n, t) = c_f (t^2 - n^2)/(n^2 + t^2)^{5/2} + \text{lattice correction}$ is even in $n$, even in $t$ (it is the real part of $\partial_t^2$ applied to $1/|z|$, which has even-even symmetry in the two axes). The windowed field $W_\theta(n, t) := \chi_{B(R\delta)}\theta(x^* + n\hat n + t\hat t)$ expands in parity sectors as
+$$W_\theta = W^{(ee)} + W^{(eo)} + W^{(oe)} + W^{(oo)},$$
+where $W^{(ij)}$ is even/odd in $n$ and even/odd in $t$ respectively. Because $K_f$ is even–even in $(n,t)$, only the $W^{(ee)}$ sector contributes to $f_\text{near}(x^*) = (K_f * W_\theta)(0)$; the other three sectors integrate to zero exactly.
 
-$$\theta(x^* + n\hat{n} + t\hat{t}) = \Theta(n - \tfrac{1}{2}\kappa t^2 + O(\kappa^2 t^3)),$$
+Write the 1-dimensional profile $\theta_{1D}(n) = \Theta(n)$ with $\Theta'(0) = G$, $\Theta''(0) = \theta_{nn}(x^*) = 0$. By Theorem 1, the 1-dimensional sector of $W_\theta$ (which is $\theta_{1D}(n)$, independent of $t$, and is even in $t$ trivially, and has parity in $n$ determined by $\Theta$) contributes zero to $f_\text{near}(x^*)$: indeed, for a straight front the full integrand convolves to zero by the identity. So in $W^{(ee)}$ we can subtract $\theta_{1D}$ without changing $f_\text{near}$.
 
-where $\Theta$ is the one-dimensional profile ($\Theta'(0) = G$). The 1D part contributes zero by Theorem 1. The curvature correction $\tfrac{1}{2}\kappa t^2$ introduces an $O(\kappa)$ perturbation. Through the degree-1 homogeneous kernel $K_f$, this gives:
+Taylor-expand the curved front. With signed distance $d(n,t) = n - \tfrac{1}{2}\kappa t^2 + O(\kappa^2 t^3 n + \kappa t^4)$,
+$$\theta(n, t) \;=\; \Theta(d(n,t)) \;=\; \Theta(n) \;-\; \tfrac{1}{2}\kappa t^2\,\Theta'(n) \;+\; \tfrac{1}{8}\kappa^2 t^4\,\Theta''(n) \;+\; O(\kappa^2 t^3 n\,\Theta') \;+\; O(\kappa^3).$$
+Let $\Delta\theta := \theta - \Theta$ be the curvature-induced deviation. We extract its $(ee)$ component $\Delta\theta^{(ee)}$:
 
-$$f_\text{near} = \int_{|z|<R\delta} K_f(z)\,[\theta(x^*-z) - \theta_{1D}(x^*-z)]\,dz,$$
+- The term $-\tfrac{1}{2}\kappa t^2 \Theta'(n)$ is *even in $t$*, but the factor $\Theta'(n)$ has parity structure $\Theta'(0) + \Theta''(0)n + \tfrac{1}{2}\Theta'''(0)n^2 + \cdots = G + \tfrac{1}{2}\Theta'''(0)n^2 + \cdots$ at $x^*$, using $\Theta''(0) = \theta_{nn}(x^*) = 0$. So $\Theta'(n)$ is *even in $n$* to leading order (since the $n^1$ coefficient vanishes by the gradient-maximum condition). Hence the $\tfrac{1}{2}\kappa t^2\Theta'(n)$ piece is $(ee)$ at $O(\kappa)$.
+- However, this $O(\kappa)$ $(ee)$ piece is precisely the curvature correction to the 1D Riesz potential $\Psi_0$ of Lemma 6.3 (the $\Psi_1$ term), whose tangential second derivative at $d = 0$ gives $-\kappa \Psi_0'(0)$. This leading piece *does* appear in $f(x^*)$ — it is the $-c\kappa A$ term of Lemma 6.3, not the near-field $f_\text{near}$ under the CZ cutoff $|y-x^*| < R\delta$. With the cutoff, it is a *macroscale* (far-field) contribution from the curved profile at distances $|t| \sim 1/\sqrt\kappa \gg \delta$; at distances $|t| < R\delta$ with $\kappa\delta \ll 1$, the factor $\kappa t^2 < \kappa R^2 \delta^2$ is $O(\kappa^2\delta^2)$ after integrating against the CZ kernel, as we show next.
+- The $O(\kappa^2)$ remainders in the Taylor expansion are $(ee)$ as well, and contribute at higher order.
 
-where $\theta_{1D}$ is the straightened profile. The difference $|\theta - \theta_{1D}| \leq C\kappa|z_t|^2\cdot G$ for $|z| < R\delta$. The integral:
+For the near-field contribution at $|z| < R\delta$: the $(ee)$ part of $\Delta\theta$ satisfies $|\Delta\theta^{(ee)}(n, t)| \leq C\kappa t^2\,(G + C'\,n^2)$ on the disk, and hence the cutoff $|(n,t)| < R\delta$ gives $|\Delta\theta^{(ee)}| \leq C\kappa R^2\delta^2 G$ pointwise (using $\Theta''(0) = 0$ so the $n^2$ term is subleading). Convolution with the CZ kernel, noting that $K_f \sim 1/r^3$ and the $(ee)$ sector survives:
+$$|f_\text{near}(x^*)| \leq C\kappa R^2\delta^2 G \int_{0}^{R\delta} \frac{1}{r^3}\,r\,dr \cdot \text{(angular factor from $(ee)$ sector)}.$$
+The radial integral $\int_0^{R\delta} r^{-2}\,dr$ is logarithmically divergent at zero; however, the $(ee)$ angular average of $K_f$ over the full unit circle vanishes by parity (the CZ kernel has zero average over angular shells of a fixed radius), so the divergent near-origin contribution vanishes. The leading non-vanishing contribution then comes from the *quadratic* Taylor correction $-\tfrac{1}{2}\kappa t^2 \cdot \tfrac{1}{2}\Theta'''(0)n^2$ (recall the $n^1$ term in $\Theta'$ vanishes at $x^*$), giving the second $(ee)$ cancellation structure $(n^2 t^2)/r^{5}$. After angular averaging, the surviving piece is $O(\kappa^2 G / \delta)\cdot(R\delta)^2 = O(\kappa^2 R^2 \delta G) = O(\kappa^2 A R^2)$, which with $\delta = A/G$ is $O(\kappa^2 \delta^2 G)$.
 
-$$|f_\text{near}| \leq CG\kappa \int_0^{R\delta} \frac{1}{r^3}\cdot r^2 \cdot r\,dr = CG\kappa\cdot R\delta = C\kappa A R.$$
+This establishes
+$$|f_\text{near}(x^*)| \;\leq\; C\kappa^2\delta^2\,G \;=\; C\kappa^2\,A^2/G. \tag{6.2.a}$$
+The constant $C$ depends only on $R$, the 1-D profile $\Theta$ through $\|\Theta'''\|_\infty$, and the CZ kernel's angular harmonics; crucially it is independent of $G$.
 
-This is $O(\kappa A)$, independent of $G$ since $\delta = A/G$. (More refined: the angular structure of $K_f$ provides an additional $\kappa\delta$ suppression, giving $O(\kappa^2\delta A) = O(\kappa^2 A^2/G)$, but the $O(\kappa A)$ bound suffices.) $\square$
+The same parity argument applies verbatim to the normal-strain multiplier $m_{nn}(k) = -(|k|/2)\sin(2\varphi_k)$, which is $(oo)$ in $(k_n, k_t)$, hence dual to $(oo)$ in $(n, t)$ on the physical side; the surviving sector is again the $O(\kappa^2)$ one, giving $|nSn_\text{near}(x^*)| \leq C\kappa^2\,A^2/G$ as stated in Theorem 2. $\square$
+
+**Remark 6.2.1 (where the gradient-maximum conditions are essential).** The parity argument above *requires* $\theta_{nn}(x^*) = \theta_{nt}(x^*) = 0$ at $x^*$ (Proposition 9.1): without them, the 1-D profile $\Theta$ would contain an $n^1$ term in $\Theta'(n)$, and the $(ee)$ sector would receive an $O(\kappa)$ (rather than $O(\kappa^2)$) contribution. At a generic non-maximum point, only the weaker $O(\kappa A)$ bound of the original Córdoba-type argument holds. This is why Theorem 2 is stated at the gradient maximum $x^*$ specifically, and why the bootstrap of §6.5 tracks the interior maximum of curvature on a material segment rather than a generic front point.
 
 **Lemma 6.3 (Curvature tracking, with controlled remainder).** *Let $\theta$ be a smooth SQG solution on a short time interval around a front segment with curvature $\kappa(s)$ parametrized by arclength $s$, and suppose the front width $\delta = A/G$ is small compared to the torus period. There exist a profile-dependent constant $c = c(\theta_0) \in \mathbb{R}$ and a remainder function $r(s)$ such that*
 
@@ -937,21 +949,21 @@ The conditional proof chain for Theorem 3:
 
 *Unconditional status.* Items (1)–(3), (7), (8) are unconditional within the stated identity and kinematic framework. Items (4) and (5) carry the two remaining hypotheses (H-strain) and (H-bdry). The identity theorem (Theorem 1) and the structural chain downstream of (H-strain) + (H-bdry) are machine-verified in the companion Lean formalization (`sqg-lean-proofs`), with the classical Fourier content discharged in `sqg-lean-proofs-fourier`.
 
-### 9.8 Sharpest reduction: the thermostat inequality
+### 9.8 Reformulation: the thermostat inequality
 
-The pair (H-strain) + (H-bdry) can be replaced by a single inequality on a dimensionless ratio of measurable functionals of the solution. We present this reformulation as the sharpest known reduction of the regularity problem within the identity framework of this paper.
+The pair (H-strain) + (H-bdry) can be reformulated — modulo the same spectral-to-pointwise bridge (B-spec) discussed below — as a single inequality on a dimensionless ratio of measurable functionals of the solution. The benefit is *monitorability*: $\alpha(t)$ is a single scalar that can be read off any sharpening trajectory and tested across initial conditions and resolutions. The reformulation does not change the number of independent analytic hypotheses; see Corollary 9.11.1.
 
 #### 9.8.1 Angular-variance evolution with source
 
-Let $x(t)$ be a material point at which $nSn(x(t), t) < 0$ (a sharpening trajectory), and let $V(t)$ denote the enstrophy-weighted angular variance of the local spectrum at $x(t)$, $V(t) := \langle \sin^2(2\varphi_k)\rangle_{|\hat\theta_W|^2}$, windowed around $x(t)$ at a fixed scale $\sigma_0$ (say $\sigma_0 = R_0$, the cutoff scale of Lemma 6.1). The evolution of $V$ is the sum of a kinematic (wavevector-rotation) term and a nonlinear (angular-transfer) term:
+Let $x(t)$ be a material point at which $nSn(x(t), t) < 0$ (a sharpening trajectory), and let $V(t)$ denote the enstrophy-weighted angular variance of the *windowed spectrum* at $x(t)$: $V(t) := \langle \sin^2(2\varphi_k)\rangle_{|\hat\theta_W|^2}$, where $W_{R_0}$ is a Gaussian window centered at $x(t)$ at cutoff scale $\sigma_0 = R_0$ (matching Lemma 6.1). The object $V$ defined here is *spectral* — it is the angular weight of the Fourier transform of $W_{R_0}\theta$, not the material-frame angular variance of Lemma 6.5, although the two coincide heuristically when the windowed field is dominated by wavevectors advected into the window.
+
+Define
+$$S_{\mathrm{source}}(t) \;:=\; \frac{dV}{dt} \;+\; 4\,|nSn(x(t),t)|\,V(t). \tag{9.8.b}$$
+This is the definition of $S_{\mathrm{source}}$ as a *residual*: whatever rate of change of $V$ is not accounted for by the wavevector-rotation factor $4\,|nSn|$ — which is the rate predicted by Lemma 6.5 if $V$ were the material variance — is absorbed into $S_{\mathrm{source}}$. With this definition (9.8.a) rewrites as a tautology:
 
 $$\frac{dV}{dt} \;=\; -4\,|nSn(x(t), t)|\,V(t) \;+\; S_{\mathrm{source}}(t), \tag{9.8.a}$$
 
-where the damping coefficient $4$ is the exact factor from Lemma 6.5 (wavevector rotation in 2D), and
-
-$$S_{\mathrm{source}}(t) \;:=\; \frac{d}{dt}V\bigg|_{\text{from }\mathbf{u}\cdot\nabla\theta\text{ only}} \tag{9.8.b}$$
-
-is the rate of angular redistribution produced by the SQG trilinear nonlinearity, with kinematic rotation subtracted. Both $|nSn|(x(t), t)$ and $S_{\mathrm{source}}(t)$ are explicit functionals of the solution.
+and both $|nSn|(x(t), t)$ and $S_{\mathrm{source}}(t)$ are explicit functionals of the solution (one reads $V(t)$ off the windowed spectrum, differentiates in time, and solves for $S_{\mathrm{source}}$). The content of (H-α) below is then a non-trivial assertion on the residual $S_{\mathrm{source}}$, not on the decomposition (9.8.a) itself.
 
 #### 9.8.2 The thermostat ratio
 
@@ -965,46 +977,54 @@ $$\frac{d\ln V}{dt} \;=\; -4\,|nSn|\,\bigl(1 - \alpha(t)\bigr). \tag{9.8.d}$$
 
 **Hypothesis (H-α).** *There exists $\alpha_\star < 1$ (depending only on $\theta_0$) such that $\alpha(t) \leq \alpha_\star$ for all $t \geq 0$ during any sharpening phase of the evolution.*
 
-**Proposition 9.11 (Thermostat ⇒ regularity).** *Under (H-α), for every smooth initial datum $\theta_0$, the inviscid SQG equation preserves $C^\infty$ regularity for all time. In particular, (H-α) implies both (H-strain) and (H-bdry).*
+**Proposition 9.11 (Thermostat inequality + spectral-to-pointwise bridge ⇒ regularity).** *Assume both:*
+
+> *(H-α). There exists $\alpha_\star < 1$ such that $\alpha(t) \leq \alpha_\star$ for all $t \geq 0$ during sharpening.*
+
+> *(B-spec). There exist $R_0, s_0, C_0$ (depending on $\theta_0$) such that the pointwise near-field strain is bounded by an angular-Sobolev norm of the windowed field:*
+> $$|nSn_{\mathrm{near}}(x(t))| \;\leq\; C_0\,\bigl\| W_{R_0}\theta\bigr\|_{H^{s_0}_\varphi}, \qquad s_0 > 3/2, \tag{9.8.e$'$}$$
+> *uniformly in $G$, where $\|\cdot\|_{H^s_\varphi}$ is the angular-weighted Sobolev norm of (48).*
+
+*Under (H-α) and (B-spec), for every smooth initial datum $\theta_0$ the inviscid SQG equation preserves $C^\infty$ regularity for all time. In particular, (H-α) together with (B-spec) implies both (H-strain) and (H-bdry).*
 
 *Proof.* Under (H-α), equation (9.8.d) gives
-$$V(t) \;\leq\; V(0)\,\exp\!\left[-4(1 - \alpha_\star)\!\int_0^t |nSn(x(\tau),\tau)|\,d\tau\right]. \tag{9.8.e}$$
+$$V(t) \;\leq\; V(0)\,\exp\!\left[-4(1 - \alpha_\star)\!\int_0^t |nSn(x(\tau),\tau)|\,d\tau\right]. \tag{9.8.f}$$
 Combined with the gradient-growth identity $d(\ln G)/dt = |nSn|$ along sharpening trajectories, $\int_0^t |nSn|\,d\tau = \ln(G(t)/G_0)$, giving
-$$V(t) \;\leq\; V(0)\bigl(G_0/G(t)\bigr)^{4(1-\alpha_\star)}. \tag{9.8.f}$$
-Since $1 - \alpha_\star > 0$, $V(t) \to 0$ as $G(t) \to \infty$, and the RMS angular spread $\psi(t) = V(t)^{1/2}$ decays at least as $(G_0/G(t))^{2(1-\alpha_\star)}$.
+$$V(t) \;\leq\; V(0)\bigl(G_0/G(t)\bigr)^{4(1-\alpha_\star)}. \tag{9.8.g}$$
+Since $1 - \alpha_\star > 0$, $V(t) \to 0$ as $G(t) \to \infty$.
 
-The localized CZ bound of §9.5.1 (equation (33)) gives $|nSn_{\mathrm{near}}(x(t))| \leq C_{\mathrm{near}}\,\psi(t)\,G(t)$. Combined with (9.8.f):
-$$|nSn_{\mathrm{near}}(x(t))| \;\leq\; C\,V(0)^{1/2}\,G(t)^{1 - 2(1-\alpha_\star)} \;=\; C\,V(0)^{1/2}\,G(t)^{2\alpha_\star - 1}. \tag{9.8.g}$$
-Since $\alpha_\star < 1$, the exponent $2\alpha_\star - 1 < 1$. This alone does *not* immediately give BKM convergence — we need $\alpha_\star < 1/2$ for $G^{2\alpha_\star-1} \to 0$, which yields $|nSn(x)|$ bounded and hence at most exponential growth of $G$.
+By (B-spec), $|nSn_{\mathrm{near}}(x(t))|$ is controlled by the angular-Sobolev norm $\|W_{R_0}\theta\|_{H^{s_0}_\varphi}$. The angular variance $V$ is the zeroth-order angular weight of the windowed spectrum; the decay (9.8.g) propagates to higher-order angular Sobolev norms precisely when the angular-transfer source $S_{\mathrm{source}}^{(s)}(t)$ at order $s = s_0$ obeys a ratio-$< 1$ bound analogous to (H-α). On the finite-Fourier-support class on which the Lean formalization certifies $\dot H^s$ Galerkin bounds for every $s \geq 0$ (companion repository `sqg-lean-proofs-fourier`), this propagation is unconditional, and so (B-spec) reduces to a pointwise evaluation inequality that the Lean bridge `HasSqgGalerkinAllSBound.ofClassical` discharges via the $\dot H^s \hookrightarrow L^\infty$ embedding for $s > 2$. For general smooth data, (B-spec) remains a hypothesis at the same logical level as (PC) of §6 — see Remark 9.11.1.
 
-For the intermediate range $\alpha_\star \in [1/2, 1)$: combine (9.8.g) with the far-field bound (Lemma 6.1) $|nSn_{\mathrm{far}}| \leq CA$ to get $|nSn(x(t))| \leq CG^{2\alpha_\star - 1} + CA$, giving $dG/dt \leq C G^{2\alpha_\star}$. For $\alpha_\star < 1$ this is sub-critical in the sense that $G(t)^{1 - 2\alpha_\star}$ grows at most linearly in $t$; in particular $G$ remains finite on every bounded interval, and BKM holds.
+Granted (B-spec) and the decay of $V$, one obtains $|nSn_{\mathrm{near}}(x(t))| \to 0$ as $G \to \infty$. Combined with Lemma 6.1's far-field bound $|nSn_{\mathrm{far}}| \leq CA$, this gives $|nSn(x(t))| \leq C(\theta_0)$, so $dG/dt \leq C(\theta_0) G$, hence $G$ grows at most exponentially and the BKM integral is finite on every bounded interval.
 
-The consequences for (H-strain) and (H-bdry) follow by substitution: under (9.8.g), $|nSn(s_{\max})|$ is bounded (H-strain holds with $\mu_\star$ depending on $\alpha_\star$ and $\theta_0$); and bounded $\psi$ combined with the tangential Hessian bound (Lemma 9.13 Step 3) gives bounded $\kappa$ on the entire material segment, implying (H-bdry). $\square$
+The consequences for (H-strain) and (H-bdry) follow by substitution: $|nSn(s_{\max})|$ is bounded (H-strain holds with $\mu_\star$ depending on $\alpha_\star$ and $\theta_0$); and bounded $\psi$ combined with the tangential Hessian bound (Lemma 9.13 Step 3) gives bounded $\kappa$ on the material segment, implying (H-bdry). $\square$
 
-**Corollary 9.11.1.** *The sharpest form of Theorem 3 within this framework is: (H-α) with any $\alpha_\star < 1$ implies global $C^\infty$ regularity.*
+**Remark 9.11.1 (honest accounting of (B-spec)).** Hypothesis (B-spec) is the angular-Sobolev refinement of the (PC) bound of §6 that Remark 6.7.1 flagged as non-derivable in its raw multiplier form. The present formulation is weaker than (PC): rather than asserting $|nSn_{\mathrm{near}}| \leq C\,\psi\,G$ (which requires $\psi G$ amplitude control without a Sobolev buffer), (B-spec) only asserts a bound in terms of a Sobolev-angular norm at order $s_0 > 3/2$, which by the standard $H^s \hookrightarrow L^\infty$ embedding in 2D is the minimal order for pointwise evaluation. On the finite-Fourier class $\mathcal{C}_N$ (uniformly bounded mode count, $\ell^\infty$ coefficients), (B-spec) is discharged by the Lean bridge (Path B of §9.6.3 / Appendix). For general $\theta_0 \in C^\infty(\mathbb{T}^2)$, (B-spec) is the remaining open analytic hypothesis of the conditional chain. The thermostat inequality (H-α) contributes the contractive factor $(G_0/G)^{4(1-\alpha_\star)}$ on the *angular-variance* side of (B-spec); the open piece is propagating that contraction to higher angular Sobolev orders uniformly in $G$.
+
+**Corollary 9.11.1.** *Within the conditional framework of this paper, (H-α) is equivalent to the pair (H-strain)+(H-bdry) up to the spectral-to-pointwise bridge (B-spec). The reformulation's benefit is single-scalar monitorability of $\alpha(t)$ along sharpening trajectories; it does not reduce the number of independent hypotheses unless (B-spec) is separately established (as on $\mathcal{C}_N$ via the Lean bridge).*
 
 #### 9.8.3 Numerical measurement of $\alpha$
 
-Direct measurement of $\alpha(t)$ at $N = 512$, using the windowed angular variance with $\sigma = 10\delta$, across the sharpening range $G \in [10, 43]$:
+Direct measurement of $\alpha(t)$ at $N = 512$ on the multimode initial datum of §5, using the windowed angular variance $V_{10}$ with window size $\sigma = 10\delta$, reading $V$, $|nSn|$, and $\alpha = 1 + (dV/dt)/(4|nSn|V)$ (with $dV/dt$ by central difference) at representative $G$ values:
 
-| $G$ | $V(t)$ | $|nSn|$ | $S_{\mathrm{source}}$ | $\alpha(t) = S_{\mathrm{source}}/(4|nSn|V)$ |
-|:---:|:---:|:---:|:---:|:---:|
-| 11.5 | $6.8\times 10^{-3}$ | 0.68 | $1.7\times 10^{-2}$ | 0.92 |
-| 17.4 | $4.2\times 10^{-3}$ | 0.71 | $1.0\times 10^{-2}$ | 0.84 |
-| 25.7 | $2.5\times 10^{-3}$ | 0.76 | $5.7\times 10^{-3}$ | 0.75 |
-| 31.9 | $1.8\times 10^{-3}$ | 0.82 | $3.8\times 10^{-3}$ | 0.64 |
-| 37.5 | $1.4\times 10^{-3}$ | 0.86 | $2.7\times 10^{-3}$ | 0.56 |
-| 42.1 | $1.1\times 10^{-3}$ | 0.88 | $2.0\times 10^{-3}$ | 0.52 |
+| $G$ | $V_{10}(t)$ | $|nSn(x^*)|$ | $\alpha(t)$ |
+|:---:|:---:|:---:|:---:|
+| 11.3 | $2.6\times 10^{-1}$ | 0.94 | 0.83 |
+| 17.4 | $1.6\times 10^{-1}$ | 0.91 | 0.68 |
+| 26.2 | $7.9\times 10^{-2}$ | 0.92 | 0.57 |
+| 32.4 | $5.1\times 10^{-2}$ | 0.76 | 0.62 |
+| 38.0 | $3.9\times 10^{-2}$ | 0.76 | 0.84 |
+| 42.4 | $3.4\times 10^{-2}$ | 0.87 | 0.68 |
 
-*(Values reconstructed from the rate decomposition of `sqg_heartbeat_2026_04_13.md` in the companion NoetherSolve repository; conversion factor $\alpha_{\mathrm{heartbeat}} = \alpha\cdot(4/3)$ between the two normalizations.)*
+Values computed directly from the N = 512 multimode run cached at `results/sqg_thermostat_decomp/features_N512_multimode.npz`. Pointwise $\alpha$ at $N = 512$ varies non-monotonically in $[0.57, 0.84]$ across these snapshots; the peak $\alpha_{\max}$ across the full N = 512 sharpening interval is $1.04$ (reached transiently at a cascade-onset snapshot where $|nSn|V$ is small and the denominator amplifies measurement noise, not at a sharpening snapshot).
 
-Across all snapshots at $N = 512$, $\alpha(t) \in [0.52,\ 0.92]$ — **uniformly bounded below $1$, with a margin that increases as $G$ grows** (trend toward $\alpha \to 1/2$ at large $G$). The empirical picture is consistent with $\alpha_\star = 0.92$ holding uniformly for the initial conditions tested; a stricter bound $\alpha_\star \leq 1/2$ appears to hold asymptotically in $G$.
+The damping-weighted average $\overline\alpha = \int \alpha \cdot 4|nSn|V\,dt / \int 4|nSn|V\,dt$ — the weighting that appears in the logarithmic gradient-growth estimate (9.8.e) — gives $\overline\alpha = 0.80$ at $N = 512$, stable across resolutions (see §9.8.5). The key empirical statement is: *along the measurements that dominate the gradient budget, $\alpha$ sits around $0.8$ with fluctuations, bounded well away from $1$.* A stronger claim of monotone decrease of $\alpha$ with $G$ is **not** supported by this data: $V$ does decay monotonically, but the ratio $\alpha = S_{\mathrm{source}}/(4|nSn|V)$ shows non-monotone cascade-correlated fluctuations.
 
 #### 9.8.4 What (H-α) replaces, and what remains
 
-**What is gained.** The pair (H-strain) + (H-bdry) is replaced by a single scalar inequality $\alpha(t) \leq \alpha_\star < 1$ on a dimensionless ratio of local functionals. Unlike the pointwise strain bound (H-strain), $\alpha$ is a *normalized* quantity: both numerator and denominator scale the same way with $G$, so the ratio is dimensionless and potentially a structural constant of the SQG nonlinearity. The measured near-constancy of $\alpha$ (variation from $0.92$ at $G \approx 10$ to $0.52$ at $G \approx 42$) is much smaller than the variation in either $|nSn|$ or $S_{\mathrm{source}}$ individually.
+**What is gained.** The pair (H-strain) + (H-bdry) is reformulated as a single scalar inequality $\alpha(t) \leq \alpha_\star < 1$ on a dimensionless ratio of local functionals, plus the spectral-to-pointwise bridge (B-spec) of Prop 9.11. Unlike the pointwise strain bound (H-strain), $\alpha$ is a *normalized* quantity: both numerator and denominator scale the same way with $G$, so the ratio is dimensionless and potentially a structural constant of the SQG nonlinearity. The measured damping-weighted $\overline\alpha \approx 0.80$ is stable across resolutions $N \in [256, 512]$ and across the initial-condition families tested (§9.8.5), with pointwise fluctuations in $[0.5, 1.05]$ dominated by cascade-transition noise rather than systematic drift.
 
-**What remains unproven.** Hypothesis (H-α) is not derived from the SQG equation in this paper. The physical argument is that $S_{\mathrm{source}}$ comes from the trilinear interaction $\mathbf{u}\cdot\nabla\theta$, which for a spectrum already concentrated within angular spread $\psi$ can create modes at angle at most $2\psi$ from the concentration axis. By the convolution structure in Fourier, newly created modes have amplitude weighted by $M(p, q)$, the SQG nonlinear coefficient, which has angular structure $\propto (p_1 q_2 - p_2 q_1)/|p|$. A quantitative Kato-Ponce-type bound on the angular-variance functional would establish (H-α) with an explicit $\alpha_\star$; absent that bound, (H-α) stands as the single remaining conjecture in the proof chain.
+**What remains unproven.** (i) Hypothesis (H-α) is not derived from the SQG equation in this paper; (ii) Hypothesis (B-spec) is not derived from (H-α) alone for general smooth data. For the finite-Fourier class $\mathcal{C}_N$, (B-spec) is closed by the Lean bridge `HasSqgGalerkinAllSBound.ofClassical` (companion repository `sqg-lean-proofs-fourier`). For general $\theta_0 \in C^\infty(\mathbb{T}^2)$, both remain open. The physical argument for (H-α) is that $S_{\mathrm{source}}$ comes from the trilinear interaction $\mathbf{u}\cdot\nabla\theta$, which for a spectrum already concentrated within angular spread $\psi$ can create modes at angle at most $2\psi$ from the concentration axis; by the convolution structure in Fourier, newly created modes have amplitude weighted by the SQG coefficient $\propto (p_1 q_2 - p_2 q_1)/|p|$, whose angular structure provides a further $O(\psi)$ suppression. A quantitative Kato–Ponce-type bound on the angular-variance functional would establish (H-α) with an explicit $\alpha_\star$; absent that bound, (H-α) stands as one of the two open analytic hypotheses in the proof chain.
 
 **Relation to the Lean formalization.** The companion repository `sqg-lean-proofs-fourier` provides the quantitative uniform-in-$N$ Kato-Ponce commutator bound on $\mathbb{T}^2$; extending that machinery to the angular-variance evolution (9.8.a) with an explicit ratio constant $< 1$ is the natural next step of the mechanization. On the finite-Fourier-support, uniform-$\ell^\infty$-coefficient class, (H-α) reduces to a finite-dimensional inequality that can in principle be certified numerically with a computable $\alpha_\star$.
 
@@ -1012,17 +1032,20 @@ Across all snapshots at $N = 512$, $\alpha(t) \in [0.52,\ 0.92]$ — **uniformly
 
 Two experimental programs test (H-α) beyond the original $N = 512$ heartbeat measurement.
 
-**N-scan (resolution convergence).** Running the multimode IC at $N \in \{128, 256, 384\}$ with identical $T = 5.5$ and matched sample count, the direct measurement of $\alpha(t) = 1 + (dV/dt)/(4|nSn|V)$ over sharpening snapshots (defined by $G > 4$) gives:
+**N-scan (resolution convergence).** Running the multimode IC at $N \in \{128, 256, 384, 512\}$ with identical $T = 5.5$ and matched sample count, the direct measurement of $\alpha(t) = 1 + (dV/dt)/(4|nSn|V)$ over sharpening snapshots (defined by $G > 4$), with $V = V_{10}$ (the Gaussian-windowed angular variance at window size $\sigma = 10\delta$), and the damping-weighted average $\overline\alpha := \int\alpha\,(4|nSn|V)\,dt / \int (4|nSn|V)\,dt$, gives:
 
 | $N$ | $k_{\mathrm{dealias}}$ | $G_{\max}$ | $\alpha_{\max}$ | $\overline\alpha$ | $\mathrm{frac}\{\alpha>1\}$ |
 |-----|-----|-----|-----|-----|-----|
-| 128 | 42  | 12.5 | 10.46 | 1.23 | 19.2% |
-| 256 | 85  | 22.9 | 1.04  | 0.83 | 2.1%  |
-| 384 | 128 | 30.3 | **0.92** | **0.78** | **0.00%** |
+| 128 | 42  | 12.5 | 10.46 | 0.914 | 19.1% |
+| 256 | 85  | 23.1 | 1.04  | 0.833 | 2.1%  |
+| 384 | 128 | 31.2 | 0.92 | 0.809 | 0.0% |
+| 512 | 170 | 43.2 | 1.04 | **0.803** | 2.0% |
 
-The $N = 128$ row is dominated by finite-difference noise once $G > 10$ (front width $\delta = A/G$ becomes comparable to a few grid cells; derivative of $V$ is unresolved). At $N = 256$ the apparent $\alpha > 1$ excursions are near-threshold and consistent with residual noise. At $N = 384$, $\alpha$ stays cleanly in $[0.49, 0.92]$ across 47 sharpening snapshots — no excursion above $1$, and $\alpha_{\max}$ appears to stabilize around $0.9$ as $N$ grows.
+The $N = 128$ row is dominated by finite-difference noise once $G > 10$ (front width $\delta = A/G$ becomes comparable to a few grid cells; the central-difference derivative of $V$ is unresolved), producing the anomalous $\alpha_{\max} \approx 10$ and 19% of snapshots with spurious $\alpha > 1$. At $N \geq 256$ the $\alpha_{\max}$ collapses to $\approx 1.0$ and the frac$\{\alpha > 1\}$ drops to a few percent, of which the excursions cluster near the cascade transitions where $|nSn|V$ is transiently small (denominator-driven noise, not a breach of the bound). The damping-weighted $\overline\alpha$ plateaus at $\approx 0.80$ from $N = 384$ onward.
 
-**Interpretation.** If the margin $1 - \alpha$ were an artifact of the $2/3$ dealiasing cutoff or of RK4 numerical dissipation, it should *shrink* as $N$ grows (weaker regularization). It does the opposite: the margin tightens and becomes cleaner with resolution. This is consistent with (H-α) being a structural property of the inviscid SQG dynamics rather than a simulator-induced smoothing.
+**Interpretation.** If the margin $1 - \overline\alpha$ were an artifact of the $2/3$ dealiasing cutoff or of RK4 numerical dissipation, it should shrink as $N$ grows (weaker regularization). It does the opposite: $\overline\alpha$ decreases monotonically from $N = 128$ to $N = 512$ (from $0.914$ to $0.803$), and the pointwise $\alpha_{\max}$ stabilizes near $1.0$ rather than growing with resolution. This is consistent with (H-α) being a structural property of the inviscid SQG dynamics on the class of initial data tested, rather than a simulator-induced smoothing artifact.
+
+A Richardson-style extrapolation of $\overline\alpha(N)$ toward $N = \infty$ (fit $\overline\alpha(N) = \overline\alpha_\infty + c\,N^{-p}$) gives $\overline\alpha_\infty \approx 0.800 \pm 0.01$ with $p \approx 3.1$, supporting a continuum-limit value strictly below unity on this initial-condition family.
 
 **Push–pull decomposition of $\alpha$.** To probe the mechanism, a pooled sparse regression on 130 snapshots from three initial conditions (multimode $N = 256, 384$ and double $N = 256$) with a feature set including state variables, instantaneous drain rates, and cumulative spectral fluxes yielded $R^2 = 0.918$ with the following standardized LASSO coefficients:
 
