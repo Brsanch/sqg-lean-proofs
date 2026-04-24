@@ -6,8 +6,8 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: Brsanch
-version: 0.6.0
-date-released: "2026-04-23"
+version: 0.6.1
+date-released: "2026-04-24"
 url: "https://github.com/Brsanch/sqg-lean-proofs"
 repository-code: "https://github.com/Brsanch/sqg-lean-proofs"
 doi: 10.5281/zenodo.19583256
@@ -131,6 +131,24 @@ abstract: >
   prior SQG conditional regularity results (Constantin-Majda-Tabak
   1994, Córdoba 1998, He-Kiselev 2021, Kiselev-Ryzhik-Yao-Zlatoš
   2016, Jeong-Kim 2024).
+
+  v0.6.1 patch notes. Paper-only revisions to paper/sqg-identity.md
+  following an internal adversarial self-review documented in
+  paper/adversarial_review_2026_04_22.md: A-class fixes correct the
+  §9.8.5 N-scan table (N=128 ᾱ from 1.23 to 0.914) with direct
+  recomputation from cached solver output and add the N=512 row;
+  replace the reconstructed §9.8.3 pointwise-α table with direct
+  N=512 measurements, dropping the 4/3 conversion factor; rewrite
+  Proposition 9.11 to make the spectral-to-pointwise bridge (B-spec)
+  an explicit second hypothesis alongside (H-α), matching the
+  Lean-side structure of MaterialMaxPrinciple.of_thermostat;
+  extend Lemma 6.2 to derive the κ²δ² bound via a parity-sector
+  decomposition using Proposition 9.1's gradient-maximum conditions.
+  B- and C-class fixes renumber duplicated equation tags, correct
+  duplicate references, align the appendix Δt specification with
+  the solver implementation, and flag the §9.8.5 LASSO as an
+  exploratory in-sample fit. No Lean source changes; no axiomatic
+  footprint change.
 
   The v0.6.0 release comprises 29,049 lines of Lean 4 source project-wide
   (25,850 lines in RieszTorus, 2,490 in FourierBridge, 709 in Basic,
