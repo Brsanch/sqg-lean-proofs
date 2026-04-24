@@ -979,7 +979,7 @@ $$\frac{d\ln V}{dt} \;=\; -4\,|nSn|\,\bigl(1 - \alpha(t)\bigr). \tag{9.8.d}$$
 
 **Hypothesis (H-α).** *There exists $\alpha_\star < 1$ (depending only on $\theta_0$) such that $\alpha(t) \leq \alpha_\star$ for all $t \geq 0$ during any sharpening phase of the evolution.*
 
-**Proposition 9.11 (Thermostat inequality + spectral-to-pointwise bridge ⇒ regularity).** *Assume both:*
+**Proposition 9.11 (Thermostat inequality + spectral-to-pointwise bridge $\Rightarrow$ regularity).** *Assume both:*
 
 > *(H-α). There exists $\alpha_\star < 1$ such that $\alpha(t) \leq \alpha_\star$ for all $t \geq 0$ during sharpening.*
 
