@@ -29,18 +29,10 @@ jobs:
           sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended \
             texlive-fonts-extra texlive-latex-extra fonts-stix fonts-liberation
 
-      - name: Build PDF with Liberation Serif (Ubuntu substitute for Times New Roman)
+      - name: Build PDF (via scripts/build-paper.sh)
         run: |
           cd "$GITHUB_WORKSPACE"
-          pandoc paper/sqg-identity.md \
-            -o paper/sqg-identity.pdf \
-            --pdf-engine=xelatex \
-            -V geometry:margin=1in \
-            -V fontsize=11pt \
-            -V mainfont="Liberation Serif" \
-            -V mathfont="STIX Two Math" \
-            --toc --toc-depth=3 \
-            --number-sections
+          bash scripts/build-paper.sh
 
       - name: Check whether PDF changed
         id: diff

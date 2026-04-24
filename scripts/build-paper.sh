@@ -36,8 +36,9 @@ pandoc "$IN" \
   --pdf-engine=xelatex \
   -V geometry:margin=1in \
   -V fontsize=11pt \
-  -V mainfont="Times New Roman" \
-  -V mathfont="STIX Two Math" \
+  -V mainfont="texgyretermes-regular.otf" \
+  -V mainfontoptions="BoldFont=texgyretermes-bold.otf, ItalicFont=texgyretermes-italic.otf, BoldItalicFont=texgyretermes-bolditalic.otf" \
+  -V mathfont="texgyretermes-math.otf" \
   --toc --toc-depth=3 \
   --number-sections
 
