@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: Brsanch
-version: 0.6.2
+version: 0.6.3
 date-released: "2026-04-24"
 url: "https://github.com/Brsanch/sqg-lean-proofs"
 repository-code: "https://github.com/Brsanch/sqg-lean-proofs"
@@ -136,6 +136,19 @@ abstract: >
   prior SQG conditional regularity results (Constantin-Majda-Tabak
   1994, Córdoba 1998, He-Kiselev 2021, Kiselev-Ryzhik-Yao-Zlatoš
   2016, Jeong-Kim 2024).
+
+  v0.6.3 patch notes. After the v0.6.2 demotion of the paper's
+  "Theorem 2 (Selection rule)" to "Proposition 6.1", the remaining
+  theorem "Theorem 3 (SQG regularity, conditional)" is renumbered to
+  "Theorem 2" to close the numbering gap. The paper now has Theorem 1
+  (shear-vorticity identity, §2), Proposition 6.1 (selection rule
+  refinement, §6.1), and Theorem 2 (SQG regularity, conditional,
+  §9.6.3). The rename is applied across paper/sqg-identity.md,
+  README.md, and all Lean docstrings in SqgIdentity/Basic.lean,
+  SqgIdentity/FourierBridge.lean, and SqgIdentity/RieszTorus.lean.
+  No Lean function names, proofs, theorem statements, or axiomatic
+  footprint changed. CHANGELOG historical entries are left as-is
+  since they describe what was true at each release time.
 
   v0.6.2 patch notes. The paper's "Theorem 2 (Selection rule)" is demoted
   to Proposition 6.1 and explicitly flagged as a parity-based refinement

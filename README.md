@@ -27,8 +27,8 @@ companion package for classical Littlewood–Paley / Bony paraproduct /
 quantitative uniform-in-N Kato–Ponce commutator content), with
 **zero `sorry` and no axioms beyond mathlib**.
 
-**Scope of Theorem 3 (SQG regularity, conditional).** Following paper
-§9.6.3, Theorem 3 is stated as conditional on two explicit hypotheses,
+**Scope of Theorem 2 (SQG regularity, conditional).** Following paper
+§9.6.3, Theorem 2 is stated as conditional on two explicit hypotheses,
 (H-strain) and (H-bdry), labeled and documented inline in the Lean
 source as `HasStrainLowerBound` and `HasBoundaryCurvatureBound`
 (`SqgIdentity/RieszTorus.lean` §14). Paper §9.8 provides the
@@ -39,7 +39,7 @@ that `(H-strain)+(H-bdry) ⇒ uniform Ḣ¹ bound` is classical content
 the paper develops and is taken as an auxiliary input in the
 `MaterialMaxPrinciple.of_HstrainHbdry` / `.of_thermostat`
 constructors. Everything downstream — BKM, interpolation, full-range
-Theorem 3, Path A Ḣˢ bootstrap, Path B Galerkin chain — is machine
+Theorem 2, Path A Ḣˢ bootstrap, Path B Galerkin chain — is machine
 verified conditional on this analytical input.
 
 **Mathlib-adjacent infrastructure discharged in this repository** (each
@@ -97,7 +97,7 @@ for the classical heat semigroup. All bounds are established without
 general Calderón–Zygmund singular-integral theory: they follow from Parseval
 plus explicit Fourier-symbol inequalities.
 
-## What is proven conditionally (Theorem 3 roadmap)
+## What is proven conditionally (Theorem 2 roadmap)
 
 `RieszTorus.lean` §10 formalizes a conditional form of the regularity
 theorem: given a named set of analytic hypotheses, uniform `Ḣˢ` bounds
@@ -289,24 +289,24 @@ class, regularity is unconditional:
       §10.167, both `MaterialMaxPrinciple` and `BKMCriterionS2` lift
       off the finite-support class from uniform `Ḣˢ` control on the
       Galerkin approximation alone.
-- **Theorem 3 on the Aubin–Lions limit (post-v0.4.39, §10.169).**
+- **Theorem 2 on the Aubin–Lions limit (post-v0.4.39, §10.169).**
   Capstone composition of §10.167.C + §10.168.B +
   `sqg_regularity_via_s2_bootstrap`.  Delivers the conditional
-  Theorem 3 conclusion `∀ s ∈ [0, 2], ∃ M', ∀ t ≥ 0,
+  Theorem 2 conclusion `∀ s ∈ [0, 2], ∃ M', ∀ t ≥ 0,
   hsSeminormSq s (ext.θ_lim t) ≤ M'` from exactly the uniform-in-
   `n`-and-`t` `Ḣˢ` bounds on the Galerkin approximation at `s = 1`
   and `s ∈ (1, 2]`.  No finite-support restriction on `θ_lim`; no
   axiom beyond mathlib.  This is the maximally-closed form of
-  Theorem 3 reachable from the current infrastructure.
+  Theorem 2 reachable from the current infrastructure.
   **§10.170** exercises the composition unconditionally on the zero
   Aubin–Lions extraction (`HasAubinLionsExtraction.ofZero`), giving
   `sqg_regularity_of_aubinLions_ofZero`.
   **§10.171 `sqg_solution_and_regularity_via_RouteB_uniform_Hs`** —
   end-to-end capstone combining §10.148 (`SqgSolution` producer)
-  with §10.169 (Theorem 3 on the limit).  From an Aubin–Lions
+  with §10.169 (Theorem 2 on the limit).  From an Aubin–Lions
   extraction + per-level energy conservation + velocity witness +
   smooth initial data + uniform `Ḣˢ` bounds, produces both a genuine
-  `SqgSolution` on `𝕋²` and the full Theorem 3 regularity conclusion
+  `SqgSolution` on `𝕋²` and the full Theorem 2 regularity conclusion
   on `s ∈ [0, 2]` for that solution.
 - **Item 1 `hH2` structural closure (post-v0.4.39, §10.172).**
   The final Item 1 analytic input — the uniform `H⁻²` bound on
@@ -327,7 +327,7 @@ class, regularity is unconditional:
   **fails** on `𝕋²` due to the log-divergence of `∑_{m≠0} |m|⁻²`
   in 2D; §10.172 sidesteps this entirely by never passing through
   a Sobolev product estimate.
-- **Full-range Theorem 3 via `BKMCriterionHighFreq`
+- **Full-range Theorem 2 via `BKMCriterionHighFreq`
   (post-v0.4.39, §10.173–§10.175).**  Lifts the `s ≤ 2` restriction
   of §10.168/§10.169/§10.171 to the full Sobolev scale `s ≥ 0`.
   §10.167.A's LSC lemma is generic in `s`, so the high-frequency
@@ -336,7 +336,7 @@ class, regularity is unconditional:
       / `.of_aubinLions_uniform_Hs_all_s`** — generic-`s` BKM from
       uniform `Ḣˢ` bounds at every `s > 1`.
     - **§10.174 `sqg_regularity_of_aubinLions_via_interpolation`** —
-      full-range Theorem 3.  Composes §10.167.C + §10.173.B +
+      full-range Theorem 2.  Composes §10.167.C + §10.173.B +
       `sqg_regularity_via_interpolation`.  Delivers uniform `Ḣˢ`
       bounds on every `s ≥ 0` given uniform Galerkin `Ḣˢ` bounds at
       `s = 1` and every `s > 1` plus `SqgEvolutionAxioms`.
@@ -433,7 +433,7 @@ instance doesn't export across files).
   Galerkin `Ḣ¹` + `Ḣˢ` bounds at every `s > 1`; `.ofZero` witness;
   `sqg_regularity_of_allSBound` capstone composing with §10.174's
   full-range interpolation; end-to-end `SqgSolution` variant;
-  zero-datum unconditional full-range Theorem 3.
+  zero-datum unconditional full-range Theorem 2.
 
 **Item 5 Path A closure** is at the same standard as Items 3/4:
 hypothesis-keyed with zero-data exemplars; all classical PDE content
@@ -465,7 +465,7 @@ verified conditional on the paper's (H-strain) + (H-bdry) hypotheses
 `MaterialMaxPrinciple.of_thermostat` constructors taking them as
 labeled inputs.  Deriving any of these three hypotheses from the SQG
 dynamics alone remains the open research problem the paper documents
-as conditional Theorem 3; this repository does not claim to close it.
+as conditional Theorem 2; this repository does not claim to close it.
 
 ### Other open items (see `OPEN.md`)
 
@@ -501,11 +501,13 @@ builds are fast. Continuous integration runs the same command on every push.
 ```
 SqgIdentity.lean             -- root module
 SqgIdentity/
-  Basic.lean                 -- Theorems 1 and 2: polar + Cartesian forms,
-                                ℓ² lift, SqgFourierData bundle, Parseval bridge
+  Basic.lean                 -- Theorem 1 + per-mode selection-rule bound
+                                (universal CZ form; paper Prop 6.1 precursor):
+                                polar + Cartesian forms, ℓ² lift,
+                                SqgFourierData bundle, Parseval bridge
   RieszTorus.lean            -- Riesz-transform symbols on 𝕋ᵈ, Leray–Helmholtz,
                                 fractional Sobolev scale, fractional + classical
-                                heat semigroup suites, §10 Theorem 3 roadmap
+                                heat semigroup suites, §10 Theorem 2 roadmap
 paper/
   sqg-identity.md            -- paper source (markdown)
   sqg-identity.pdf           -- paper PDF

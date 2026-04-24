@@ -4,6 +4,29 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## v0.6.3 — 2026-04-24 (paper-quality patch, no Lean source changes)
+
+**Theorem numbering gap closed.** Following v0.6.2's demotion of the paper's
+"Theorem 2 (Selection rule)" to "Proposition 6.1", the remaining theorem
+"Theorem 3 (SQG regularity, conditional)" is renumbered to "Theorem 2" so
+the paper no longer has a numbering gap. The paper now reads:
+
+- **Theorem 1** (shear-vorticity identity, §2) — machine-verified.
+- **Proposition 6.1** (selection rule, parity-based refinement, §6.1) —
+  parity-heuristic proof; not machine-verified.
+- **Theorem 2** (SQG regularity, conditional, §9.6.3; previously
+  Theorem 3) — conditional on (H-strain)+(H-bdry) or (H-α)+(B-spec);
+  machine-verified conditional chain in `RieszTorus.lean` §10 and
+  `FourierBridge.lean`.
+
+Rename applied across `paper/sqg-identity.md`, `README.md`, and all Lean
+docstrings in `SqgIdentity/Basic.lean`, `SqgIdentity/FourierBridge.lean`,
+and `SqgIdentity/RieszTorus.lean`. No Lean function names, proofs,
+theorem statements, or axiomatic footprint changed. Historical CHANGELOG
+entries below and the v0.6.0 patch-note section in CITATION.cff retain
+the original "Theorem 3" label since they describe what was true at
+release time.
+
 ## v0.6.2 — 2026-04-24 (paper-quality patch, no Lean source changes)
 
 **Theorem 2 demoted to Proposition 6.1.** Following the internal adversarial

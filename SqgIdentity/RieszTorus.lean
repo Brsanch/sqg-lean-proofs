@@ -6442,15 +6442,17 @@ The library now provides a complete Fourier-space curvature budget:
 - Strain-rotation, Hessian-strain, Biot-Savart-like factorisations
 -/
 
-/-! ## §10 Roadmap to conditional Theorem 3 (SQG regularity)
+/-! ## §10 Roadmap to conditional Theorem 2 (SQG regularity)
 
-This section states **Theorem 3 conditionally**. The goal is to pin
+This section states **Theorem 2 conditionally**. The goal is to pin
 down *exactly* which analytic facts are load-bearing for the regularity
 argument of the paper, by making them explicit hypotheses in the Lean
 statement.
 
-The current repository proves the Fourier-algebraic spine (Theorems 1
-and 2 of the paper) unconditionally. It does **not** prove Theorem 3. The
+The current repository proves the Fourier-algebraic spine (Theorem 1
+of the paper, plus the universal per-mode selection-rule bound that
+Proposition 6.1 refines) unconditionally. It does **not** prove
+the paper's Theorem 2 (conditional SQG regularity). The
 three analytic hypotheses below are the pieces the paper argument
 borrows from outside the algebraic layer; they are stated here as
 abstract propositions and will be replaced by concrete theorems as
@@ -6585,7 +6587,7 @@ theorem FracSobolevCalculus.ofMathlib
   hsMonotone := fun _s _t hst τ hsum => hsSeminormSq_mono hst (θ τ) hsum
   fracLaplacianIsSelfAdjointFourierMultiplier := trivial
 
-/-- **Conditional Theorem 3 — SQG global regularity (Sobolev form).**
+/-- **Conditional Theorem 2 — SQG global regularity (Sobolev form).**
 
 Given the three analytic hypotheses below — `MaterialMaxPrinciple`
 and `BKMCriterion` now carry real mathematical content;
@@ -6876,13 +6878,13 @@ namespace SqgSolution
 variable (S : SqgSolution)
 
 /-- **Sobolev bounds conclusion.** Uniform Ḣˢ bounds at every order,
-for all forward time — the conclusion of conditional Theorem 3 stated
+for all forward time — the conclusion of conditional Theorem 2 stated
 on an `SqgSolution`. -/
 def SobolevBounds : Prop :=
   ∀ s : ℝ, 0 ≤ s →
     ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (S.θ t) ≤ M
 
-/-- **Conditional Theorem 3 (structured form).**
+/-- **Conditional Theorem 2 (structured form).**
 
 Any `SqgSolution` satisfying the three analytic hypotheses
 — `MaterialMaxPrinciple`, `BKMCriterion`, `FracSobolevCalculus` — has
@@ -7026,13 +7028,13 @@ structure SqgWellPosedness : Prop where
           (fracDerivSymbol s n) ^ 2 * ‖mFourierCoeff θ₀ n‖ ^ 2)) →
       ∃ S : SqgSolution, S.θ 0 = θ₀
 
-/-- **Conditional Theorem 3 for smooth initial data.**
+/-- **Conditional Theorem 2 for smooth initial data.**
 
 Combines well-posedness with the three analytic hypotheses (required
 to hold for every solution) and concludes: every smooth initial datum
 `θ₀` evolves into a solution with uniform Sobolev bounds at every order.
 
-This is the "user-facing" form of Theorem 3: it takes initial data,
+This is the "user-facing" form of Theorem 2: it takes initial data,
 not a pre-baked solution. -/
 theorem sqg_regularity_for_smooth_data
     (hWP : SqgWellPosedness)
@@ -7097,7 +7099,7 @@ every nonzero mode, so `‖n‖^{2s} ≤ ‖n‖²` for `s ≤ 1`, giving
 `hsSeminormSq_mono_of_le`).
 
 So we can replace the "all `s ≥ 0`" bootstrap by one that only covers
-`s > 1`, without weakening Theorem 3. This subsection:
+`s > 1`, without weakening Theorem 2. This subsection:
 
 * Introduces `BKMCriterionHighFreq`, the refined hypothesis covering
   only `s > 1`.
@@ -7145,7 +7147,7 @@ theorem BKMCriterionHighFreq.of_identically_zero
     (hθ : ∀ t, θ t = 0) : BKMCriterionHighFreq θ :=
   (BKMCriterion.of_identically_zero θ hθ).toHighFreq
 
-/-- **Interpolation reduction: Theorem 3 from weakened BKM.**
+/-- **Interpolation reduction: Theorem 2 from weakened BKM.**
 
 Discharges the full Sobolev-scale regularity conclusion using the
 reduced axiomatic footprint:
@@ -7158,7 +7160,7 @@ For `s ∈ [0, 1]`, interpolation delivers the bound from MMP directly
 (no BKM needed; summability comes from `hMMP.hOneSummability`). For
 `s > 1`, the refined BKM supplies it.
 
-This makes the axiomatic content of Theorem 3 more precise: BKM is
+This makes the axiomatic content of Theorem 2 more precise: BKM is
 only needed for `s > 1`, not the full `s ≥ 0` range. -/
 theorem sqg_regularity_via_interpolation
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
@@ -7197,7 +7199,7 @@ Consequence of the internalized `hOneSummability` in
 discharged by MMP without any BKM hypothesis. This is the cleanest
 statement of the interpolation reduction — it says MMP's "uniform
 Ḣ¹ bound + summability" is a self-contained piece of content
-sufficient for a substantial fragment of Theorem 3 on its own.
+sufficient for a substantial fragment of Theorem 2 on its own.
 -/
 
 /-- **MMP alone ⟹ uniform Ḣˢ bound for `s ∈ [0, 1]`.**
@@ -7208,7 +7210,7 @@ at any `s ∈ [0, 1]` is achieved with `M = M₁` from `hOnePropagation`
 (the same constant across the whole intermediate range).
 
 This is a real (non-trivial, non-circular) theorem showing that
-MMP is a self-contained piece of the Theorem 3 puzzle — it handles
+MMP is a self-contained piece of the Theorem 2 puzzle — it handles
 a 50% sub-range of Sobolev indices entirely. -/
 theorem MaterialMaxPrinciple.uniform_hs_intermediate
     {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
@@ -7248,15 +7250,15 @@ Littlewood–Paley decomposition required.
 This subsection introduces `BKMCriterionS2`, a strict weakening of
 `BKMCriterionHighFreq` that only covers `s ∈ (1, 2]`. Combined with
 the §10.6 / §10.7 interpolation from `MaterialMaxPrinciple` on
-`s ∈ [0, 1]`, it delivers **a conditional Theorem 3 on the full
+`s ∈ [0, 1]`, it delivers **a conditional Theorem 2 on the full
 Sobolev range `[0, 2]` from an axiomatic footprint that targets only
 integer-order regularity**.
 
 Significance: `BKMCriterionS2` is the most restricted BKM-type
-hypothesis against which the conditional Theorem 3 can still cover
+hypothesis against which the conditional Theorem 2 can still cover
 a non-trivial Sobolev range above the critical index `s = 1`. A
 future discharge via a genuine Ḣ² energy estimate — integer-order,
-no fractional calculus — would make Theorem 3 unconditional on
+no fractional calculus — would make Theorem 2 unconditional on
 `s ∈ [0, 2]`. The `s > 2` tail remains an explicit open axiom.
 
 Provided here:
@@ -7278,7 +7280,7 @@ fractional Sobolev calculus.
 
 This is strictly weaker than `BKMCriterionHighFreq`
 (`BKMCriterionHighFreq.toS2` below). Exactly what the combined
-conditional Theorem 3 on `s ∈ [0, 2]` requires. -/
+conditional Theorem 2 on `s ∈ [0, 2]` requires. -/
 structure BKMCriterionS2
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
   /-- Uniform Ḣ¹ bound propagates to uniform Ḣˢ bound for every
@@ -7310,7 +7312,7 @@ theorem BKMCriterionS2.of_identically_zero
     (hθ : ∀ t, θ t = 0) : BKMCriterionS2 θ :=
   (BKMCriterion.of_identically_zero θ hθ).toS2
 
-/-- **s=2 bootstrap reduction: Theorem 3 on `s ∈ [0, 2]`.**
+/-- **s=2 bootstrap reduction: Theorem 2 on `s ∈ [0, 2]`.**
 
 Discharges the conditional regularity conclusion on the range `[0, 2]`
 from a strictly weaker axiomatic footprint than
@@ -7326,7 +7328,7 @@ directly (same argument as §10.6 / §10.7). For `s ∈ (1, 2]`,
 
 **The top of the range, `s > 2`, is not covered.** That is the
 explicit remaining open axiom. This is the honest partial-win: the
-conditional Theorem 3 now holds over `[0, 2]` from an axiomatic
+conditional Theorem 2 now holds over `[0, 2]` from an axiomatic
 footprint that targets only integer-order Sobolev regularity. -/
 theorem sqg_regularity_via_s2_bootstrap
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
@@ -7784,7 +7786,7 @@ against this specific flux, under two natural ℓ² control
 hypotheses (uniform ℓ² bound on velocity coefficients and on
 gradient coefficients in time).
 
-After §10.12, the remaining open content of conditional Theorem 3 on
+After §10.12, the remaining open content of conditional Theorem 2 on
 `s ∈ [0, 2]` collapses to:
 
 * `MaterialMaxPrinciple.hOnePropagation` — the §9 of the paper geometric
@@ -8259,7 +8261,7 @@ structure IsSqgWeakSolution
 /-- **MMP-keyed promotion from `IsSqgWeakSolution`.** The one-line
 wrapper over `of_sqgDuhamelIdentity_via_MMP` that consumes the
 structural weak-solution witness. This is the entry point the repo's
-final conditional Theorem 3 layer is meant to sit on: any analytic
+final conditional Theorem 2 layer is meant to sit on: any analytic
 construction that delivers `IsSqgWeakSolution` plus `MMP` plus the
 velocity-component witness closes the full `[0, 2]` bootstrap. -/
 theorem SqgEvolutionAxioms_strong.of_IsSqgWeakSolution_via_MMP
@@ -9662,7 +9664,7 @@ This section delivers two building blocks and a capstone:
    enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]`.
 
 Together these give the first **non-zero** concrete SQG solution class that
-the conditional Theorem 3 chain certifies unconditionally. -/
+the conditional Theorem 2 chain certifies unconditionally. -/
 
 /-- **Nonlinear flux with zero velocity vanishes.**
 
@@ -9740,7 +9742,7 @@ theorem BKMCriterionS2.of_const
 For any `θ₀ ∈ Lp ℂ 2 𝕋²` with Ḣ¹ summability, the constant-in-time
 evolution `θ(τ) = θ₀` (paired with the zero velocity) enjoys uniform
 Ḣˢ bounds for every `s ∈ [0, 2]`. This is the first non-trivial
-concrete discharge of conditional Theorem 3, layered over §10.22. -/
+concrete discharge of conditional Theorem 2, layered over §10.22. -/
 theorem sqg_regularity_const
     (θ₀ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hSumm : Summable (fun n : Fin 2 → ℤ =>
@@ -9755,7 +9757,7 @@ theorem sqg_regularity_const
 /-! ### §10.24 Scaled time-varying witness class
 
 This section delivers the **first time-varying** discharge of the conditional
-Theorem 3 chain. §10.23 closed the constant case `θ(τ) = θ₀`; here we allow
+Theorem 2 chain. §10.23 closed the constant case `θ(τ) = θ₀`; here we allow
 
   `θ(τ) = c(τ) • θ₀`
 
@@ -9899,7 +9901,7 @@ For any `θ₀ ∈ Lp ℂ 2 (𝕋²)` with Ḣ¹-summable Fourier data and any
   `θ(τ) = c(τ) • θ₀`
 
 enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]`. This is the **first
-time-evolving** concrete discharge of conditional Theorem 3 along the
+time-evolving** concrete discharge of conditional Theorem 2 along the
 `sqg_regularity_via_s2_bootstrap` chain.
 
 Specializations:
@@ -12155,7 +12157,7 @@ coefficient bound `M`, `BKMCriterionS2` holds unconditionally: every
 Ḣˢ seminorm (s ∈ (1, 2]) is bounded by `M² · ∑_{n∈S} (fracDerivSymbol s n)²`.
 
 Together §10.56 + §10.57 discharge BOTH remaining analytic axioms of
-the conditional Theorem 3 chain (`MaterialMaxPrinciple` + `BKMCriterionS2`)
+the conditional Theorem 2 chain (`MaterialMaxPrinciple` + `BKMCriterionS2`)
 for the class of finite-Fourier-support trajectories with uniform
 coefficient bound. Consequence: `sqg_regularity_via_s2_bootstrap`
 applied to this class gives an **unconditional** Ḣˢ bound on `[0, 2]`
@@ -12199,7 +12201,7 @@ coefficient-bound class:
    strong-axiom discharge for such θ that is also a weak solution.
 
 These are the strongest results shipped in this repo: the conditional
-Theorem 3 chain becomes **unconditional** for the entire finite-
+Theorem 2 chain becomes **unconditional** for the entire finite-
 Fourier-support trajectory class. Covers constant-in-time, radial-
 shell, collinear, axis-aligned, and every time-varying trajectory on
 a fixed finite support with controlled coefficients. -/
@@ -17411,7 +17413,7 @@ initial coefficient vector `c₀ : ↥S → ℂ` on a symmetric Fourier support
 `SqgSolution` whose underlying `L²(𝕋²)` trajectory is
 `t ↦ galerkinToLp S (α t)`, where `α` is the §10.116 capstone.
 
-Bridge to the structured-form Theorem 3 of §10.2:
+Bridge to the structured-form Theorem 2 of §10.2:
 
 * **Initial data** — `θ 0 = galerkinToLp S c₀` is a finite-support
   trigonometric polynomial on `𝕋²`. `smoothInitialData` is discharged
@@ -21340,20 +21342,20 @@ theorem BKMCriterionS2.of_aubinLions_uniform_Hs
   · intro k t ht s hs1 hs2
     exact hBound (ext.nsub k) t ht s hs1 hs2
 
-/-! ### §10.169 Theorem 3 on the Aubin–Lions limit
+/-! ### §10.169 Theorem 2 on the Aubin–Lions limit
 
 Capstone composing §10.167 + §10.168 + §10.7's
 `sqg_regularity_via_s2_bootstrap` into a single theorem: conditional
-Theorem 3 on `s ∈ [0, 2]` for the `L²`-limit of a Galerkin sequence
+Theorem 2 on `s ∈ [0, 2]` for the `L²`-limit of a Galerkin sequence
 with uniform `Ḣˢ` control across `s ∈ [1, 2]`.
 
-This is the **maximally-closed form** of the conditional Theorem 3
+This is the **maximally-closed form** of the conditional Theorem 2
 reachable from the current infrastructure: the hypotheses are exactly
 the uniform `Ḣˢ` bounds on the Galerkin approximation (which classical
 Galerkin energy theory supplies).  No finite-support assumption on
 `θ_lim`; no axiom beyond mathlib. -/
 
-/-- **§10.169  Theorem 3 on `s ∈ [0, 2]` for the Aubin–Lions limit.**
+/-- **§10.169  Theorem 2 on `s ∈ [0, 2]` for the Aubin–Lions limit.**
 
 Composes:
 
@@ -21406,7 +21408,7 @@ theorem hsSeminormSq_zero_galerkin_of_trinary_zero
   rw [zero_trinary_apply_eq_zero n t, galerkinToLp_zero]
   exact hsSeminormSq_of_zero s
 
-/-- **§10.170  Theorem 3 on the zero Aubin–Lions extraction.**
+/-- **§10.170  Theorem 2 on the zero Aubin–Lions extraction.**
 
 Unconditional application of §10.169 to
 `HasAubinLionsExtraction.ofZero`.  Both `Ḣ¹` and `Ḣˢ` bounds on the
@@ -21422,7 +21424,7 @@ theorem sqg_regularity_of_aubinLions_ofZero :
     (fun n t _ => (hsSeminormSq_zero_galerkin_of_trinary_zero 1 n t).le)
     (fun n t _ s _ _ => (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le)
 
-/-! ### §10.171 End-to-end capstone: `SqgSolution` + Theorem 3
+/-! ### §10.171 End-to-end capstone: `SqgSolution` + Theorem 2
 
 Composes the two §10.169 + §10.148 capstones into a single end-to-end
 theorem:  from a `HasAubinLionsExtraction` witness plus the classical
@@ -21442,13 +21444,13 @@ caller who supplies:
   and `s ∈ (1, 2]`
 
 obtains both a genuine SQG solution on `𝕋²` and the full conditional
-Theorem 3 conclusion on `s ∈ [0, 2]` for that solution. -/
+Theorem 2 conclusion on `s ∈ [0, 2]` for that solution. -/
 
-/-- **§10.171  End-to-end SQG + Theorem 3 from Aubin–Lions +
+/-- **§10.171  End-to-end SQG + Theorem 2 from Aubin–Lions +
 uniform `Ḣˢ` bounds.**
 
 Delivers an `SqgSolution` whose `θ`-field equals `ext.θ_lim` and
-satisfies the Theorem 3 regularity conclusion on `s ∈ [0, 2]`. -/
+satisfies the Theorem 2 regularity conclusion on `s ∈ [0, 2]`. -/
 theorem sqg_solution_and_regularity_via_RouteB_uniform_Hs
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
@@ -21969,7 +21971,7 @@ The call-site must supply uniform `Ḣˢ` bounds at every `s > 1`
 (not just `s ∈ (1, 2]`).  This is the **extension path** for Item 5
 of `OPEN.md`: with high-`s` uniform Galerkin bounds supplied (either
 unconditionally via a smooth initial data argument + Kato–Ponce, or
-axiomatically for a specific problem), conditional Theorem 3 extends
+axiomatically for a specific problem), conditional Theorem 2 extends
 to every `s ≥ 0`. -/
 
 /-- **§10.173.A  `BKMCriterionHighFreq` from an `L²`-limit sequence
@@ -22019,14 +22021,14 @@ theorem BKMCriterionHighFreq.of_aubinLions_uniform_Hs_all_s
   · intro k t ht s hs1
     exact hBound (ext.nsub k) t ht s hs1
 
-/-! ### §10.174 Full-range Theorem 3 on the Aubin–Lions limit
+/-! ### §10.174 Full-range Theorem 2 on the Aubin–Lions limit
 
 Capstone composing §10.167.C + §10.173.B + `sqg_regularity_via_interpolation`
-into a single theorem delivering Theorem 3 on the **full** range `s ≥ 0`
+into a single theorem delivering Theorem 2 on the **full** range `s ≥ 0`
 (not just `[0, 2]`).  Requires `SqgEvolutionAxioms` on `θ_lim` (which
 §10.144 supplies structurally for the Aubin–Lions class). -/
 
-/-- **§10.174  Full-range Theorem 3 on `s ≥ 0` for the Aubin–Lions limit.**
+/-- **§10.174  Full-range Theorem 2 on `s ≥ 0` for the Aubin–Lions limit.**
 
 Composes:
 
@@ -22042,7 +22044,7 @@ Composes:
 must supply `Ms : ℝ → ℝ` valid for every `s > 1` (not just
 `s ∈ (1, 2]`).  This is the **structural path to Item 5** from
 `OPEN.md`: with fractional Kato–Ponce / Galerkin high-`s` analysis
-supplied (classical content), the conditional Theorem 3 holds on the
+supplied (classical content), the conditional Theorem 2 holds on the
 full Sobolev scale. -/
 theorem sqg_regularity_of_aubinLions_via_interpolation
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
@@ -22061,17 +22063,17 @@ theorem sqg_regularity_of_aubinLions_via_interpolation
     (BKMCriterionHighFreq.of_aubinLions_uniform_Hs_all_s ext Ms hBoundS)
     hE
 
-/-! ### §10.175 End-to-end full-range Theorem 3 + `SqgSolution`
+/-! ### §10.175 End-to-end full-range Theorem 2 + `SqgSolution`
 
 Parallel to §10.171 but uses §10.174's interpolation capstone
 (full `s ≥ 0`) in place of §10.169's `s ≤ 2` bootstrap. -/
 
-/-- **§10.175  End-to-end SQG + full-range Theorem 3.**
+/-- **§10.175  End-to-end SQG + full-range Theorem 2.**
 
 From a `HasAubinLionsExtraction` witness + per-level Galerkin `L²`
 conservation + velocity witness + smooth initial data + uniform `Ḣˢ`
 bounds on Galerkin at `s = 1` and every `s > 1`, delivers both a
-genuine `SqgSolution` and the Theorem 3 regularity conclusion on
+genuine `SqgSolution` and the Theorem 2 regularity conclusion on
 **every** `s ≥ 0` for its `θ`-field. -/
 theorem sqg_solution_and_regularity_via_RouteB_interpolation
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
@@ -22111,7 +22113,7 @@ Unconditional application of §10.174 to
 and `SqgEvolutionAxioms` on the zero trajectory is in-tree.
 Parallel to §10.170 but covers every `s ≥ 0`, not just `s ∈ [0, 2]`. -/
 
-/-- **§10.176 Theorem 3 on the zero Aubin–Lions extraction (full range).**
+/-- **§10.176 Theorem 2 on the zero Aubin–Lions extraction (full range).**
 Exercises the §10.174 composition end-to-end on the zero datum.
 Both `Ḣ¹` and `Ḣˢ` bounds on the Galerkin family are `0`.
 `SqgEvolutionAxioms` on the zero trajectory comes from
@@ -25186,18 +25188,18 @@ noncomputable def HasSqgGalerkinAllSBound.ofZero :
   hBoundS := fun n t _ s _ =>
     (hsSeminormSq_zero_galerkin_of_trinary_zero s n t).le
 
-/-! ### §11.36 Full-range Theorem 3 from `HasSqgGalerkinAllSBound`
+/-! ### §11.36 Full-range Theorem 2 from `HasSqgGalerkinAllSBound`
 
 Structural capstone: given a `HasSqgGalerkinAllSBound α` hypothesis
 + an Aubin-Lions extraction + `SqgEvolutionAxioms` on the limit,
-the full-range Theorem 3 conclusion follows via §10.174.
+the full-range Theorem 2 conclusion follows via §10.174.
 This is the "Path A" structural closure of Item 5: hypothesis-
 keyed at the level of a global Galerkin `Ḣˢ` bound, which
 discharges unconditionally on zero data (§11.35) and classically
 via commutator Kato–Ponce + BKM-integral + Grönwall for general
 data (the remaining Path B classical content). -/
 
-/-- **§11.36 — Full-range Theorem 3 via `HasSqgGalerkinAllSBound`.** -/
+/-- **§11.36 — Full-range Theorem 2 via `HasSqgGalerkinAllSBound`.** -/
 theorem sqg_regularity_of_allSBound
     {θ : Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     {α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ)}
@@ -25209,7 +25211,7 @@ theorem sqg_regularity_of_allSBound
   sqg_regularity_of_aubinLions_via_interpolation
     ext hAllS.M₁ hAllS.Ms hAllS.hBoundOne hAllS.hBoundS hE
 
-/-! ### §11.37 End-to-end `SqgSolution` + Theorem 3 via
+/-! ### §11.37 End-to-end `SqgSolution` + Theorem 2 via
 `HasSqgGalerkinAllSBound`
 
 Parallel to §10.175 but packaged with the single
@@ -25235,14 +25237,14 @@ theorem sqg_solution_and_regularity_via_allSBound
   sqg_solution_and_regularity_via_RouteB_interpolation
     ext hLevel hu hSmooth hAllS.M₁ hAllS.Ms hAllS.hBoundOne hAllS.hBoundS
 
-/-! ### §11.38 Unconditional zero-datum end-to-end full-range Theorem 3
+/-! ### §11.38 Unconditional zero-datum end-to-end full-range Theorem 2
 
 Composes §11.35 (zero `HasSqgGalerkinAllSBound`) with §11.36 on the
 zero Aubin–Lions extraction.  Delivers a fully unconditional form
-of Theorem 3 on the zero solution, at every `s ≥ 0`, from zero
+of Theorem 2 on the zero solution, at every `s ≥ 0`, from zero
 classical content via the Path A structural chain. -/
 
-/-- **§11.38 — Unconditional full-range Theorem 3 on zero data
+/-- **§11.38 — Unconditional full-range Theorem 2 on zero data
 via `HasSqgGalerkinAllSBound`.** -/
 theorem sqg_regularity_ofZero_via_allSBound :
     ∀ s : ℝ, 0 ≤ s →
@@ -25457,7 +25459,7 @@ analytic construction delivering the distributional weak form
 (plus MMP, velocity-component witnesses, and
 `SqgEvolutionAxioms`) yields the strong axioms. This is the
 closure of the model-correctness loop: the repo's final
-conditional Theorem 3 now sits on a predicate that is — modulo the
+conditional Theorem 2 now sits on a predicate that is — modulo the
 absorbed density step — the textbook definition of an SQG weak
 solution. -/
 theorem SqgEvolutionAxioms_strong.of_testFormWeakSolution_via_MMP
@@ -25689,7 +25691,7 @@ end LpFromFourier
 
 /-! ## §14 Conditional-regularity hypotheses — paper §9.6.3 + §9.8 naming
 
-Paper `paper/sqg-identity.md` §9.6.3 names Theorem 3 (SQG regularity,
+Paper `paper/sqg-identity.md` §9.6.3 names Theorem 2 (SQG regularity,
 conditional) as conditional on two explicit hypotheses (H-strain) and
 (H-bdry).  Paper §9.8 provides an alternative single-hypothesis
 reformulation (H-α) via the *thermostat ratio*
@@ -25827,7 +25829,7 @@ theorem MaterialMaxPrinciple.of_HstrainHbdry
 
 /-- **Conditional-regularity alias under the single-hypothesis (H-α) route.**
 
-Paper Prop 9.11 (`(H-α) ⇒ (H-strain) + (H-bdry) ⇒ Theorem 3`) packaged at
+Paper Prop 9.11 (`(H-α) ⇒ (H-strain) + (H-bdry) ⇒ Theorem 2`) packaged at
 the Lean level: takes `HasThermostatBound` + the classical §9.8 output
 (uniform `Ḣ¹` bound) and returns `MaterialMaxPrinciple`.  The §9.8
 derivation itself (equations 9.8.a through 9.8.g) is not formalised. -/
