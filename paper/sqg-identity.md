@@ -4,7 +4,7 @@
 
 ## Abstract
 
-I report an algebraic identity for the inviscid Surface Quasi-Geostrophic (SQG) equation: the combination $S_{nt} - \omega/2$ — shear strain minus half the vorticity — vanishes identically for any one-dimensional front configuration. In Fourier space, this combination has the multiplier $|k|\sin^2\varphi$, where $\varphi$ is the angle from the front-normal axis. The identity has three consequences for the regularity problem. First, the curvature forcing $F_\text{ext} = \partial(S_{nt}-\omega/2)/\partial s$ in the level-set curvature budget vanishes for straight fronts, reducing the budget to pure kinematic straightening. Second, the material wavevector rotation near a compressive front takes the form $d\varphi/dt = 2(nSn)\varphi$ (no constant forcing), driving spectral concentration toward the front-normal axis. Third, the normal strain $nSn$ at the gradient maximum — the quantity controlling potential blowup — is suppressed by the same angular concentration that the identity creates. Pseudospectral simulations at $N = 512$ confirm all three predictions: during front sharpening ($G = 12 \to 44$), the angular spread narrows as $\Delta\varphi_{50} \sim G^{-1.0}$, the enstrophy concentration ratio increases as $\rho(10°) \sim G^{0.38}$ ($R^2 = 0.98$), and $|nSn|$ decreases as $G^{-0.17}$ — the gradient maximum decelerates as the front sharpens. I further derive a closed-form expression for the residual $S_{nt}-\omega/2$ on a front with small perturbation $y_f(x) = \eta(x)$: $\mathrm{residual}(x) = \mathcal{F}^{-1}[-k^2 \cdot I(|k|\delta) \cdot \hat\eta(k)](x)$, where $I(q) = \int_0^\infty u/[\sinh(\pi u/2)\sqrt{q^2+u^2}]\,du$ has small-$q$ expansion $I(q) = -(2/\pi)\ln q + 0.5951 + O(q^2)$. This formula is verified to <0.2% amplitude accuracy and >0.9995 correlation across four independent tests (analytic, static arbitrary shapes, dynamical evolution, independent clean-room solver).
+I report an algebraic identity for the inviscid Surface Quasi-Geostrophic (SQG) equation: the combination $S_{nt} - \omega/2$ — shear strain minus half the vorticity — vanishes identically for any one-dimensional front configuration. In Fourier space, this combination has the multiplier $|k|\sin^2\varphi$, where $\varphi$ is the angle from the front-normal axis. The identity has three consequences for the regularity problem. First, the curvature forcing $F_\text{ext} = \partial(S_{nt}-\omega/2)/\partial s$ in the level-set curvature budget vanishes for straight fronts, reducing the budget to pure kinematic straightening. Second, the material wavevector rotation near a compressive front takes the form $d\varphi/dt = 2(nSn)\varphi$ (no constant forcing), driving spectral concentration toward the front-normal axis. Third, the normal strain $nSn$ at the gradient maximum — the quantity controlling potential blowup — is suppressed by the same angular concentration that the identity creates. Pseudospectral simulations at $N = 512$ confirm all three predictions: during front sharpening ($G = 12 \to 44$), the angular spread narrows as $\Delta\varphi_{50} \sim G^{-1.0}$, the enstrophy concentration ratio increases as $\rho(10°) \sim G^{0.38}$ ($R^2 = 0.98$), and $|nSn(x^*)|$ stays bounded in $[0.17, 0.97]$ across all snapshots — $O(1)$, $G$-independent — with a weak scaling exponent of $-0.15 \pm 0.05$ inside the clean sharpening interval (both Eulerian and fit-window protocols agree at this precision; see §9.5). I further derive a closed-form expression for the residual $S_{nt}-\omega/2$ on a front with small perturbation $y_f(x) = \eta(x)$: $\mathrm{residual}(x) = \mathcal{F}^{-1}[-k^2 \cdot I(|k|\delta) \cdot \hat\eta(k)](x)$, where $I(q) = \int_0^\infty u/[\sinh(\pi u/2)\sqrt{q^2+u^2}]\,du$ has small-$q$ expansion $I(q) = -(2/\pi)\ln q + 0.5951 + O(q^2)$. This formula is verified to <0.2% amplitude accuracy and >0.9995 correlation across four independent tests (analytic, static arbitrary shapes, dynamical evolution, independent clean-room solver).
 
 **Keywords:** Surface Quasi-Geostrophic equation, finite-time singularity, spectral concentration, vorticity-strain cancellation, front dynamics
 
@@ -200,7 +200,7 @@ At the pre-cascade transition ($G \approx 42$), the local amplitude begins to gr
 
 This establishes the key bound: the local amplitude of $f = S_{nt}-\omega/2$ near $x^*$ is $O(A)$, not $O(G)$. Since $f$ passes through zero at $x^*$ (from the identity) with local oscillation amplitude $\approx 0.1A$ and half-wavelength $\approx \delta$:
 
-$$|F_\text{ext}(x^*)| = \left|\frac{\partial f}{\partial s}\right|_{x^*} \approx \frac{0.1A}{\delta} = 0.1G. \tag{13}$$
+$$|F_\text{ext}(x^*)| = \left|\frac{\partial f}{\partial s}\right|_{x^*} \approx \frac{0.1A}{\delta} = 0.1G. \tag{5.4.a}$$
 
 This confirms $F_\text{ext} \leq CG$ with $C \approx 0.1$ during the sharpening phase.
 
@@ -428,7 +428,7 @@ $$\frac{dV}{dt} = [4(nSn) + O(G\psi_\text{max})]\,V.$$
 
 For the variance contraction to dominate, I need $4|nSn| \gg CG\psi_\text{max}$. Since $|nSn| \leq CG\psi$ (from the multiplier structure, §4), this requires $4CG\psi \gg CG\psi$, which holds with margin. More precisely, the nonlinear term makes the contraction *faster* (since $|\sin(2\varphi)| < 2|\varphi|$ for $\varphi \neq 0$, the exact equation contracts the angular spread MORE than the linearized one). Therefore (30) is an *upper bound* on the variance. $\square$
 
-**Remark (factor of 2 is geometric).** The factor of $4$ in (26) — equivalently, the exponent $4$ in (27) — arises because the *material gradient equation* rotates wavevectors at rate $2|nSn|$ (not $|nSn|$). Geometrically: under a strain of rate $\sigma$, a line element rotates at rate $\sigma$ but a wavevector (normal to the line element) rotates at rate $2\sigma$ in the frame co-rotating with the material. The factor of 2 in angular rate becomes a factor of 4 in the variance. This is the reason spectral concentration outpaces the forcing that would disrupt it: the forcing from the identity residual creates angular deviation at rate proportional to $\psi^2 G$ (from the $|k|\cos^2\varphi$ multiplier), while the damping removes it at rate $4|nSn|\psi^2 \geq 4C\psi\,G\,\psi^2$. The damping has an extra factor of $\psi$ — so for $\psi > 0$, it always dominates.
+**Remark (factor of 4 in the variance).** The exponent $4$ in (27) arises from two compounding factors of $2$: (a) the material gradient equation $d\hat k/dt = -(\nabla\mathbf{u})^T\hat k$ projected to the angular component gives the strain contribution to $d\varphi/dt$ as $a\sin(2\varphi)$, where the $\sin(2\varphi)$ (rather than $\sin\varphi$) is the tensor-algebraic signature of a symmetric traceless 2×2 strain in the angular representation; (b) squaring $d\varphi/dt$ to get $dV/dt$ contributes another factor of $2$ through the identity $d(\varphi^2)/dt = 2\varphi\,d\varphi/dt$. The product $2 \times 2 = 4$ is the exponent in $V(t) = V_0(G_0/G)^4$. The proportionality $d\varphi/dt \supset 2a\varphi = 2(nSn)\varphi$ at small $\varphi$ linearizes the exact ODE (25); the factor of 2 there is the $\sin(2\varphi) \to 2\varphi$ Taylor expansion. This is the reason spectral concentration outpaces the forcing that would disrupt it: the forcing from the identity residual creates angular deviation at rate proportional to $\psi^2 G$ (from the $|k|\cos^2\varphi$ multiplier), while the damping removes it at rate $4|nSn|\psi^2$. For $\psi > 0$ in the concentration regime, the damping dominates the source.
 
 **Lemma 6.6 (Mean angle bound).** *The mean wavevector angle $\bar\varphi(t)$ satisfies*
 
@@ -540,27 +540,27 @@ The identity (Theorem 1) states that $S_{nt} - \omega/2 = 0$ for a straight fron
 
 Consider a one-dimensional tanh front perturbed by a sinusoidal shape displacement:
 
-$$\theta(x, y) = \tanh\!\left(\frac{y - \eta(x)}{\delta}\right), \quad \eta(x) = A\sin(kx), \quad A \ll \delta. \tag{25}$$
+$$\theta(x, y) = \tanh\!\left(\frac{y - \eta(x)}{\delta}\right), \quad \eta(x) = A\sin(kx), \quad A \ll \delta. \tag{8.1}$$
 
 Linearizing to $O(A)$, the perturbation is $\delta\theta(x, y) = -A\sin(kx)\,\theta_0'(y)$ with $\theta_0'(y) = \delta^{-1}\,\mathrm{sech}^2(y/\delta)$. The Riesz velocity recovery $\mathbf{u} = \nabla^\perp(-\Delta)^{-1/2}\theta$ acts on this perturbation mode-by-mode. Writing the linearized velocity via a potential $\delta\psi = (-\Delta)^{-1/2}\delta\theta = -A\sin(kx)\,h(y; k)$ with $(k^2 - \partial_y^2)^{1/2} h = \theta_0'$, one obtains at the leading-order turning point $(x_*, y_*) = (\pi/(2k), 0)$:
 
-$$\delta S_{12}\big|_* = \tfrac{A}{2}(h'' + k^2 h), \quad \delta\omega\big|_* = A(k^2 h - h''). \tag{26}$$
+$$\delta S_{12}\big|_* = \tfrac{A}{2}(h'' + k^2 h), \quad \delta\omega\big|_* = A(k^2 h - h''). \tag{8.2}$$
 
 The residual combines these:
 
-$$\delta(S_{nt} - \omega/2)\big|_* = -\delta S_{12}\big|_* - \tfrac{1}{2}\delta\omega\big|_* = -A k^2 h(0; k). \tag{27}$$
+$$\delta(S_{nt} - \omega/2)\big|_* = -\delta S_{12}\big|_* - \tfrac{1}{2}\delta\omega\big|_* = -A k^2 h(0; k). \tag{8.3}$$
 
 The function $h(0;k)$ is obtained by a 1D Fourier inversion. Using $\int_0^\infty \mathrm{sech}^2(u)e^{-inu}\,du$-type identities and the substitution $n = u/\delta$:
 
-$$h(0; k) = \int_0^\infty \frac{u}{\sinh(\pi u/2)\sqrt{(k\delta)^2 + u^2}}\,du \equiv I(k\delta). \tag{28}$$
+$$h(0; k) = \int_0^\infty \frac{u}{\sinh(\pi u/2)\sqrt{(k\delta)^2 + u^2}}\,du \equiv I(k\delta). \tag{8.4}$$
 
 **Main result (SQG curvature correction).** *For a straight tanh front of width $\delta$ perturbed by $\eta(x) = A\sin(kx)$ with $A \ll \delta$, the shear-vorticity residual at the turning point is*
 
-$$\boxed{\;(S_{nt} - \omega/2)\big|_{x_*} = -A k^2\, I(k\delta)\;} \tag{29}$$
+$$\boxed{\;(S_{nt} - \omega/2)\big|_{x_*} = -A k^2\, I(k\delta)\;} \tag{8.5}$$
 
 *where the integral $I(q)$ has the small-$q$ expansion*
 
-$$I(q) = -\frac{2}{\pi}\ln q + 0.5951 + O(q^2\ln q). \tag{30}$$
+$$I(q) = -\frac{2}{\pi}\ln q + 0.5951 + O(q^2\ln q). \tag{8.6}$$
 
 The leading-order scaling is therefore $|S_{nt} - \omega/2| \sim A k^2 \ln(1/(k\delta))$ — power 2 in $k$ with a logarithmic enhancement. Local log-log slopes range from $\alpha_{\text{eff}}(k\delta=0.01) \approx 1.82$ to $\alpha_{\text{eff}}(k\delta=0.5) \approx 1.48$. There is no single power-law exponent: the apparent $\alpha$ drifts slowly with $k\delta$ as the log correction changes.
 
@@ -568,7 +568,7 @@ The leading-order scaling is therefore $|S_{nt} - \omega/2| \sim A k^2 \ln(1/(k\
 
 For any small perturbation $\eta(x)$ (not necessarily sinusoidal), linearity gives a convolution formula:
 
-$$\boxed{\;(S_{nt} - \omega/2)(x)\big|_{y=0} = \mathcal{F}^{-1}\!\left[-k^2\, I(|k|\delta)\, \hat\eta(k)\right](x)\;} \tag{31}$$
+$$\boxed{\;(S_{nt} - \omega/2)(x)\big|_{y=0} = \mathcal{F}^{-1}\!\left[-k^2\, I(|k|\delta)\, \hat\eta(k)\right](x)\;} \tag{8.7}$$
 
 This is the shape-independent form of the curvature correction: Fourier-transform the front displacement $\eta(x)$, multiply mode-by-mode by $-k^2 I(|k|\delta)$, inverse-transform.
 
@@ -581,9 +581,9 @@ The formula was tested through four independent pathways:
 | A | Single-front analytic (11 trials, $k\delta \in [0.02, 0.5]$) | analytic | $1.0000 \pm 0.02\%$ | — |
 | B | Arbitrary shape (Gaussian bump, 3-mode sum, broadband random) | constructed | $0.99912$–$0.99996$ | — |
 | C | Dynamical SQG evolution ($T=0.3$, ETDRK4) | SQG solver | $1.00311$ | $0.99955$ |
-| D | Clean-room solver (scipy.fft, FD grad, forward Euler) | independent code | $1.00188$ | $0.99980$ |
+| D | Algebraic cross-check on static test fields (independent FFT backend) | independent code | $1.00188$ | $0.99980$ |
 
-Tests A–B check the static formula on hand-constructed perturbations of varying shape. Test C evolves an initially-perturbed tanh front through the full SQG dynamics and tests the formula on the dynamically-shaped snapshot. Test D repeats this with a clean-room implementation using different conventions at every layer (scipy's FFT instead of numpy's, manually-constructed wavenumber arrays, finite-difference gradients, forward Euler time stepping, different random seed, no dealiasing). All four pathways give amplitude accuracy better than 0.4% and (where applicable) shape correlation above 0.9995.
+Tests A–B check the static formula on hand-constructed perturbations of varying shape. Test C evolves an initially-perturbed tanh front through the full SQG dynamics and tests the formula on the dynamically-shaped snapshot. Test D is a cross-check of the algebraic rearrangement of the Fourier multiplier on the same static test fields as A–B, using a different FFT backend (scipy vs. numpy), manually-constructed wavenumber arrays, finite-difference gradients, and a different random seed; it is *not* a dynamical verification, because the test fields are static and dealiasing is not applied. What Test D rules out is a convention-dependent error in the multiplier evaluation (FFT sign, normalization, wavenumber ordering); it does not rule out a solver-dependent error shared between C and the reference. All four pathways give amplitude accuracy better than 0.4% and (where applicable) shape correlation above 0.9995.
 
 A fifth attempted path — evaluating the formula on an external semi-geostrophic turbulence snapshot (Zenodo DOI 10.5281/zenodo.10431740) — gave low correlation. The failure is not in the formula but in the applicability: the external snapshot has $\sigma_\eta / \delta \approx 3$, placing it far outside the linearized regime, and multiple superposed fronts prevent the "isolated front" assumption from holding. The linearized formula describes what a small curvature perturbation does to an isolated front; a fully-developed turbulent field is neither small nor isolated.
 
@@ -591,7 +591,7 @@ A fifth attempted path — evaluating the formula on an external semi-geostrophi
 
 The analogous derivation for the 2D Euler equation (with the full inverse Laplacian velocity recovery $\mathbf{u} = \nabla^\perp\Delta^{-1}(-\omega)$) yields
 
-$$(S_{nt} - \omega/2)\big|_{x_*} = +A k^2 \delta\, J(k\delta), \quad J(q) = \int_0^\infty \frac{u}{\sinh(\pi u/2)(q^2 + u^2)}\,du. \tag{32}$$
+$$(S_{nt} - \omega/2)\big|_{x_*} = +A k^2 \delta\, J(k\delta), \quad J(q) = \int_0^\infty \frac{u}{\sinh(\pi u/2)(q^2 + u^2)}\,du. \tag{8.8}$$
 
 The small-$q$ behavior is $J(q) \sim 2/(\pi q)$, so the residual scales as $\sim A k$ — **power 1, pure linear, no logarithm**. Verified independently to $1.0010 \pm 0.17\%$ across the same 11 trials.
 
@@ -831,7 +831,7 @@ $$V(x,t) \leq V_0(x)\left(\frac{G_0(x)}{G(t)}\right)^4 + C(\theta_0)\,\frac{|s|}
 
 *Proof.* Three steps.
 
-**Step 1 (Compression along the front segment).** By continuity of $nSn$ and the fact that $nSn(x^*) < 0$: there exists $R > 0$ such that $nSn(x) < 0$ for all $x$ within $R\delta$ of $x^*$ along the front. *Rigorous bound on $R$:* The strain $nSn$ is a CZ operator on $\theta$, hence Lipschitz in space with constant $\leq C\|\nabla^2 u\|_\infty \leq C'G/\delta$ (CZ bound on second derivatives of velocity). Along the front, $|(nSn)_\tau| \leq C'G/\delta$. Starting from $nSn(x^*) < 0$ with $|nSn(x^*)| \geq |nSn_\text{far}| - |nSn_\text{near}| \geq cA - C\kappa^2\delta^2 G$ (Lemma 6.1 minus selection rule): $nSn$ stays negative on a segment of arclength $\geq |nSn(x^*)|/(C'G/\delta) = |nSn(x^*)|\delta/(C'G) = |nSn|A/(C'G^2)$. In the material frame (Proposition 9.8), this segment grows by the factor $G/G_0$, giving material segment length $\geq |nSn|A/(C'G_0^2)$ — a fixed positive constant independent of $G$.
+**Step 1 (Compression along the front segment).** By continuity of $nSn$ and the fact that $nSn(x^*) < 0$: there exists $R > 0$ such that $nSn(x) < 0$ for all $x$ within $R\delta$ of $x^*$ along the front. *Rigorous bound on $R$, conditional on (H-strain).* The strain $nSn$ is a CZ operator on $\theta$, hence Lipschitz in space with constant $\leq C\|\nabla^2 u\|_\infty \leq C'G/\delta$ (CZ bound on second derivatives of velocity). Along the front, $|(nSn)_\tau| \leq C'G/\delta$. Starting from $nSn(x^*) < 0$ with the hypothesis (H-strain) providing $|nSn(x^*)| \geq \mu_\star > 0$: $nSn$ stays negative on a segment of arclength $\geq |nSn(x^*)|/(C'G/\delta) \geq \mu_\star \delta/(C'G) = \mu_\star A/(C'G^2)$. In the material frame (Proposition 9.8), this segment grows by the factor $G/G_0$, giving material segment length $\geq \mu_\star A/(C'G_0 G)$. The fixed lower bound $\mu_\star$ on the normal strain is the input from (H-strain) — Lemma 6.1 supplies only an *upper* bound $|nSn_{\mathrm{far}}| \leq CA$, not a sign-definite lower bound, so the positivity-on-segment claim rests on (H-strain) rather than on the identity apparatus alone.
 
 **Step 2 (Pointwise variance contraction).** At each point $x = x^* + s\hat\tau$ with $nSn(x) < 0$: Lemma 6.5 gives $V(x,t) \leq V_0(x)(G_0(x)/G(x,t))^4$. Since $|G(x) - G(x^*)| \leq CG|s|/\delta$ (from the Hessian bound, Proposition 9.8) and $|s| \leq R\delta$: $G(x) \geq G(1 - CR)$ on the segment. The variance contracts at each point independently.
 
@@ -1047,26 +1047,18 @@ The $N = 128$ row is dominated by finite-difference noise once $G > 10$ (front w
 
 A Richardson-style extrapolation of $\overline\alpha(N)$ toward $N = \infty$ (fit $\overline\alpha(N) = \overline\alpha_\infty + c\,N^{-p}$) gives $\overline\alpha_\infty \approx 0.800 \pm 0.01$ with $p \approx 3.1$, supporting a continuum-limit value strictly below unity on this initial-condition family.
 
-**Push–pull decomposition of $\alpha$.** To probe the mechanism, a pooled sparse regression on 130 snapshots from three initial conditions (multimode $N = 256, 384$ and double $N = 256$) with a feature set including state variables, instantaneous drain rates, and cumulative spectral fluxes yielded $R^2 = 0.918$ with the following standardized LASSO coefficients:
+**Push–pull decomposition of $\alpha$ (exploratory).** To probe the mechanism heuristically, a pooled sparse regression on 130 snapshots from three initial conditions (multimode $N = 256, 384$ and double $N = 256$) with a feature set including state variables, instantaneous drain rates, and cumulative spectral fluxes was fit by LASSO with standardized predictors. The in-sample $R^2 = 0.918$ is reported below with the caveat that it is an in-sample fit on auto-correlated features (cumulative integrals and state variables across a trajectory), not an out-of-sample predictive test; the coefficients are interpretive rather than quantitative.
 
-| Feature | Std. coef | Role |
+| Feature | Std. coef (in-sample) | Heuristic role |
 |---|---|---|
-| drain_20 ($= H_{\mathrm{loc}, 20}(0) - H_{\mathrm{loc}, 20}(t)$) | **+2.29** | state (time-arc of evolution) |
-| $dH_{\mathrm{loc}, 10}/dt$ | **−1.47** | instantaneous drain rate |
-| $V_{10}$ | +1.28 | angular variance (state) |
-| drain_5 (tight-window drain) | **−0.89** | localized push-through |
-| cum_flux_{k > 15} (cumulative high-$k$ cascade) | **−0.63** | irrevocable exit |
-| $G$ | +0.63 | sharpness (state) |
+| drain_20 ($= H_{\mathrm{loc}, 20}(0) - H_{\mathrm{loc}, 20}(t)$) | $+2.29$ | state |
+| $dH_{\mathrm{loc}, 10}/dt$ | $-1.47$ | instantaneous drain rate |
+| $V_{10}$ | $+1.28$ | angular variance (state) |
+| drain_5 | $-0.89$ | localized push-through |
+| cum_flux_{k>15} | $-0.63$ | cumulative cascade exit |
+| $G$ | $+0.63$ | sharpness (state) |
 
-The state variables $(G, V, \text{drain}_{20})$ describe *where* the evolution is; they correlate positively with $\alpha$ because both $\alpha$ and these state variables rise as the front develops. Controlling for state, the *rate* and *cumulative* features enter with negative coefficients: faster local Hamiltonian drain, tighter push-through, and cumulative cascade past shell $k = 15$ all *reduce* $\alpha$. This is the quantitative signature of a push–pull mechanism in which (i) the rotation damping pulls wavevectors toward the front-normal axis, and (ii) the cascade simultaneously evacuates them to irrevocable high-$k$ shells where they no longer contribute to the angular source.
-
-**Structural claim (refinement of H-α).** The combination of the $N$-scan's resolution-independence and the push–pull decomposition's large $R^2$ suggests that (H-α) admits a sharper form:
-
-> **(H-α*, refined).** *There exists $\alpha_\star < 1$ such that the thermostat ratio satisfies*
-> $$\alpha(t) \;\leq\; \alpha_\star \;-\; c_1\,\|dH_{\mathrm{loc}}/dt\| \;-\; c_2\,\Pi_{\mathrm{exit}}(t) \;+\; c_3\,\mathcal{S}(t)$$
-> *where $\Pi_{\mathrm{exit}}$ is the cumulative spectral flux past a fixed high-$k$ shell, $\mathcal{S}$ is a state functional of $(G, V, H_{\mathrm{loc}})$, and the coefficients $c_i > 0$ are structural constants of the SQG nonlinearity.*
-
-This is the cleanest reduction of the regularity problem within the identity framework: a linear inequality in measurable functionals of the solution, with empirically-tight coefficients across multiple initial conditions and resolutions. Its rigorous derivation remains open.
+The qualitative picture is that, controlling for trajectory state, the *rate* and *cumulative-cascade* features enter with negative coefficients, consistent with a push–pull mechanism in which (i) the rotation damping pulls wavevectors toward the front-normal axis, and (ii) the cascade simultaneously evacuates spectral mass to high-$k$ shells. The fit does not have out-of-sample validation on held-out initial conditions, so the sign pattern is a mechanistic hint rather than a tested quantitative model. A sharper rigorous form of (H-α) incorporating spectral-flux terms would be a natural next step; the present paper records this only as a numerical observation, not as a named hypothesis.
 
 ---
 
