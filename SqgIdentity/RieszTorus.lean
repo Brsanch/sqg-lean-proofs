@@ -9,7 +9,7 @@ import SqgIdentity.Basic
 # Riesz transforms on the unit torus `𝕋ᵈ` via Fourier multipliers
 
 This file develops the part of the Riesz-transform library needed for the
-integrated form of Theorem 2 of the paper on the torus, bypassing general
+integrated per-mode selection-rule bound (paper Prop 6.1 precursor) on the torus, bypassing general
 Calderón–Zygmund singular-integral theory. The key observation is that on
 the torus the Riesz transform `R_j` has a bounded Fourier multiplier
 symbol
@@ -34,7 +34,7 @@ so its L²-theory falls out of Parseval.
 * `hsSeminormSq s f = Σ ‖n‖^{2s}·‖f̂(n)‖²` — the homogeneous Ḣˢ seminorm
   squared on `L²(𝕋ᵈ)`, identified with `‖(-Δ)^{s/2} f‖²_{L²}` via
   the Fourier multiplier.
-* `sqg_selection_rule_Hs1` — Ḣ¹ form of Theorem 2 on the torus.
+* `sqg_selection_rule_Hs1` — Ḣ¹ form of the per-mode selection-rule bound on the torus.
 
 All statements are driven by `hasSum_sq_mFourierCoeff` (Parseval); no
 singular-integral machinery is invoked.
@@ -1931,7 +1931,7 @@ theorem hess_tangential_vanishes_T2 (n : Fin 2 → ℤ) :
 The shear–vorticity identity tells us that for SQG, the normal-tangential strain
 `S_nt` decomposes as `ω/2 + residual`, where the residual vanishes when
 wavevector and front normal are aligned. The residual norm is controlled
-by the Ḣ¹ norm of θ (from the selection rule, Theorem 2).
+by the Ḣ¹ norm of θ (from the per-mode selection-rule bound; paper Prop 6.1 precursor).
 
 We formalize:
 1. The residual symbol (difference between full strain contraction and ω/2)
@@ -1991,7 +1991,7 @@ theorem sqgResidualSymbol_eq_zero {n : Fin 2 → ℤ} (hn : n ≠ 0) :
 
 Even though the residual `S_nt - ω/2` vanishes identically for SQG
 (the identity is exact, not approximate), the *components* of the strain
-individually have nontrivial Sobolev norms. The selection rule (Theorem 2)
+individually have nontrivial Sobolev norms. The per-mode selection-rule bound (paper Prop 6.1 precursor)
 tells us that if we perturb the identity — e.g. for generalized SQG (gSQG)
 or for the curvature correction at finite front width — the residual
 satisfies `|residual| ≤ C · ‖n‖ · |θ̂(n)|`, giving Ḣˢ→Ḣˢ⁺¹ control.

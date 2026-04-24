@@ -6,7 +6,7 @@ authors:
   - family-names: Sanchez
     given-names: Bryan
     alias: Brsanch
-version: 0.6.1
+version: 0.6.2
 date-released: "2026-04-24"
 url: "https://github.com/Brsanch/sqg-lean-proofs"
 repository-code: "https://github.com/Brsanch/sqg-lean-proofs"
@@ -47,12 +47,17 @@ abstract: >
   inviscid Surface Quasi-Geostrophic equation on the two-dimensional torus,
   together with a conditional regularity roadmap.
 
-  Two theorems are machine-verified unconditionally. The shear-vorticity
-  identity states that the combination of shear strain and half the
-  vorticity has Fourier multiplier |k|·sin²(α − β), and vanishes identically
-  for one-dimensional fronts. The selection-rule bound provides a pointwise
+  Two items are machine-verified unconditionally. The shear-vorticity
+  identity (paper Theorem 1) states that the combination of shear strain
+  and half the vorticity has Fourier multiplier |k|·sin²(α − β), and
+  vanishes identically for one-dimensional fronts. The universal per-mode
+  selection-rule bound ‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖ provides a pointwise
   mode-level inequality with equality characterization, lifted to an
-  integrated Sobolev-seminorm form via Parseval.
+  integrated Sobolev-seminorm form via Parseval. The paper's
+  parity-improved pointwise κ²δ² refinement at the gradient maximum
+  (Proposition 6.1) is a refinement of this bound that uses
+  gradient-maximum parity cancellation; its proof operates at formal
+  Taylor-expansion-plus-parity level and is not itself machine-verified.
 
   The accompanying Riesz and Sobolev infrastructure is also machine-verified:
   Riesz transforms on the torus via Fourier multipliers, Leray–Helmholtz
@@ -131,6 +136,16 @@ abstract: >
   prior SQG conditional regularity results (Constantin-Majda-Tabak
   1994, Córdoba 1998, He-Kiselev 2021, Kiselev-Ryzhik-Yao-Zlatoš
   2016, Jeong-Kim 2024).
+
+  v0.6.2 patch notes. The paper's "Theorem 2 (Selection rule)" is demoted
+  to Proposition 6.1 and explicitly flagged as a parity-based refinement
+  of the universal Calderón-Zygmund precursor, with the proof at
+  formal-Taylor-plus-parity level rather than theorem-grade rigor. The
+  Lean source's universal per-mode bound (sqg_selection_rule_bound and
+  sqg_selection_rule_Hs1) is the rigorous precursor that Proposition 6.1
+  refines; docstrings relabeled accordingly. The previous CITATION.cff
+  overclaim that "Theorem 2" is machine-verified is removed. No changes
+  to Lean proofs, theorem statements, or axiomatic footprint.
 
   v0.6.1 patch notes. Paper-only revisions to paper/sqg-identity.md
   following an internal adversarial self-review documented in

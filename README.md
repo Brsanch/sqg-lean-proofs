@@ -69,12 +69,23 @@ In particular, `S_nt − ½ω ≡ 0` for any one-dimensional front.
 Lean statement: `sqg_shear_vorticity_identity` in
 [`SqgIdentity/Basic.lean`](./SqgIdentity/Basic.lean).
 
-### Theorem 2 (Selection-Rule Bound)
+### Per-mode selection-rule bound (universal CZ form)
 
-Pointwise mode-level bound with equality characterization, integrated form
-via Parseval on `L²(𝕋ᵈ)` and restated as an `Ḣ¹`-seminorm inequality.
-Lives in `SqgIdentity/Basic.lean` (mode-level) and
-[`SqgIdentity/RieszTorus.lean`](./SqgIdentity/RieszTorus.lean) (integrated).
+Pointwise mode-level bound `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` with equality
+characterization, integrated via Parseval on `L²(𝕋ᵈ)` and restated as an
+`Ḣ¹`-seminorm inequality. Lives in `SqgIdentity/Basic.lean` (mode-level,
+`sqg_selection_rule_bound`) and
+[`SqgIdentity/RieszTorus.lean`](./SqgIdentity/RieszTorus.lean) (integrated
+via `sqg_selection_rule_Hs1`).
+
+This is the universal Calderón–Zygmund bound. The accompanying paper's
+Proposition 6.1 — the *pointwise parity-improved* bound
+`|nSn_near(x*)| ≤ C·κ²·δ²·G` at the gradient maximum — is a **refinement
+of** this Lean-verified bound using gradient-maximum parity cancellation;
+its proof in `paper/sqg-identity.md` §6.1 operates at formal Taylor-expansion
++ parity-sector-cancellation level, is tighter than Córdoba's O(κA) form,
+and is **not itself machine-verified**. Lean verifies the universal CZ
+precursor that the paper's parity argument refines.
 
 ### Supporting infrastructure
 

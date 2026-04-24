@@ -199,7 +199,7 @@ theorem sqg_shear_perpendicular
   simp only [] at h ⊢
   rw [h]
 
-/-- **Theorem 2 — Selection rule (bound form)**:
+/-- **Selection-rule bound (universal per-mode CZ form; paper Proposition 6.1's precursor) (bound form)**:
     over every choice of front-normal angle β, the shear-vorticity
     combination obeys
         `‖Ŝ_nt - ω̂/2‖ ≤ |k| · ‖θ̂‖`.
@@ -271,7 +271,7 @@ theorem sqg_shear_vorticity_norm
   rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
       abs_of_nonneg (by positivity : (0 : ℝ) ≤ absk * (Real.sin (α - β))^2)]
 
-/-- **Theorem 2, equality case**: the selection-rule bound
+/-- **Selection-rule equality case (per-mode CZ form)**: the selection-rule bound
     `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` is saturated if and only if either
     `sin²(α−β) = 1` (i.e., `α − β ≡ π/2 mod π`, the wavevector is
     perpendicular to the front normal) or `θ̂ = 0` (trivial case).
@@ -419,7 +419,7 @@ theorem sqg_shear_perpendicular_cartesian
   push_cast
   field_simp
 
-/-- **Theorem 2 — Selection rule bound (Cartesian form)**:
+/-- **Selection-rule bound (universal per-mode CZ form; paper Proposition 6.1's precursor) bound (Cartesian form)**:
     `‖Ŝ_nt − ω̂/2‖ ≤ |k|·‖θ̂‖` for arbitrary Cartesian wavevector
     `k = (k₁, k₂) ≠ 0` and unit front normal `n̂`. -/
 theorem sqg_selection_rule_bound_cartesian
@@ -450,7 +450,7 @@ theorem sqg_selection_rule_bound_cartesian
     nlinarith [hsq]
   exact mul_le_mul_of_nonneg_right hbound (norm_nonneg θ)
 
-/-- **Theorem 2, equality case (Cartesian form)**: the selection-rule
+/-- **Selection-rule equality case (Cartesian; per-mode CZ form)**: the selection-rule
     bound is saturated iff `k · n̂ = 0` (wavevector perpendicular to
     front normal) or `θ̂ = 0` (trivial). -/
 theorem sqg_selection_rule_saturated_iff_cartesian
@@ -518,7 +518,7 @@ concrete Fourier-basis packaging deferred to a future file.
 
     Applied to `x i = Ŝ_nt(kᵢ) − ω̂(kᵢ)/2`, `r i = |kᵢ|`, `y i = θ̂(kᵢ)`,
     together with `sqg_selection_rule_bound_cartesian`, this yields
-    Theorem 2 in ℓ² form. -/
+    ℓ² form of the per-mode selection-rule bound. -/
 theorem pointwise_bound_to_ell2 {ι : Type*}
     (x y : ι → ℂ) (r : ι → ℝ)
     (hr : ∀ i, 0 ≤ r i)
@@ -540,7 +540,7 @@ theorem pointwise_bound_to_ell2 {ι : Type*}
     hsum.of_nonneg_of_le hnn hsq
   exact ⟨hsumm, hsumm.tsum_le_tsum hsq hsum⟩
 
-/-- **Theorem 2 (ℓ² form)**: Concrete specialization — given a family of
+/-- **Selection-rule bound (ℓ² form)**: Concrete specialization — given a family of
     SQG Fourier modes indexed by `ι`, where at each index `i` the
     pointwise selection-rule bound is given, and the weighted amplitudes
     `|kᵢ|²·‖θ̂ᵢ‖²` are summable, the shear-vorticity excess is ℓ²
@@ -634,7 +634,7 @@ theorem w_norm_le (i : ι) : ‖D.w i‖ ≤ D.absk i * ‖D.θ i‖ := by
         `Σᵢ ‖ŵᵢ‖² ≤ Σᵢ |kᵢ|² · ‖θ̂ᵢ‖²`.
 
     Under Plancherel this reads `‖S_nt − ω/2‖_{L²} ≤ ‖∇θ‖_{L²}`, the
-    form of Theorem 2 consumed by §9's regularity argument. -/
+    form of the per-mode selection-rule bound consumed by §9's regularity argument. -/
 theorem ell2_bound
     (hsum : Summable fun i => (D.absk i) ^ 2 * ‖D.θ i‖ ^ 2) :
     Summable (fun i => ‖D.w i‖ ^ 2) ∧
@@ -680,7 +680,7 @@ unit torus whose Fourier coefficients satisfy the pointwise bound
     ∫ ‖w_fn(t)‖² dt ≤ ∑ₙ r(n)² · ‖θ̂(n)‖².
 
 Specialising `r(n) = ‖n‖` makes the RHS `‖∇θ‖²_{L²(𝕋ᵈ)}` via another
-Parseval identity, recovering the integrated form of Theorem 2:
+Parseval identity, recovering the integrated form of the per-mode selection-rule bound:
 
     ‖w_fn‖_{L²} ≤ ‖∇θ‖_{L²}.
 
