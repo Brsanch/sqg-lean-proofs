@@ -1,0 +1,75 @@
+name: Build paper PDF
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "paper/sqg-identity.md"
+      - "scripts/build-paper.sh"
+      - ".github/workflows/build-paper.yml"
+  pull_request:
+    paths:
+      - "paper/sqg-identity.md"
+      - "scripts/build-paper.sh"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pandoc + TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended \
+            texlive-fonts-extra texlive-latex-extra fonts-stix fonts-liberation
+
+      - name: Build PDF with Liberation Serif (Ubuntu substitute for Times New Roman)
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          pandoc paper/sqg-identity.md \
+            -o paper/sqg-identity.pdf \
+            --pdf-engine=xelatex \
+            -V geometry:margin=1in \
+            -V fontsize=11pt \
+            -V mainfont="Liberation Serif" \
+            -V mathfont="STIX Two Math" \
+            --toc --toc-depth=3 \
+            --number-sections
+
+      - name: Check whether PDF changed
+        id: diff
+        run: |
+          if git diff --quiet -- paper/sqg-identity.pdf; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit rebuilt PDF
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper/sqg-identity.pdf
+          git commit -m "paper: auto-rebuild PDF from updated markdown"
+          git push
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqg-identity.pdf
+          path: paper/sqg-identity.pdf
+          retention-days: 30
+
+      - name: Fail PR if PDF out of sync
+        if: github.event_name == 'pull_request' && steps.diff.outputs.changed == 'true'
+        run: |
+          echo "::error::paper/sqg-identity.pdf is out of sync with paper/sqg-identity.md."
+          echo "Run scripts/build-paper.sh locally and commit the regenerated PDF."
+          exit 1

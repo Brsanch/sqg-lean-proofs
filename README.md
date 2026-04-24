@@ -496,6 +496,25 @@ lake build
 A cold build with cache takes roughly five to ten minutes; incremental
 builds are fast. Continuous integration runs the same command on every push.
 
+### Paper
+
+The paper is written in `paper/sqg-identity.md` and compiled to PDF via
+pandoc + xelatex:
+
+```bash
+scripts/build-paper.sh
+```
+
+GitHub Actions rebuilds the PDF automatically on pushes to `main` that
+touch `paper/sqg-identity.md`; pull requests that modify the markdown
+without updating the PDF fail CI.
+
+## Contributing
+
+Bug reports, mathematical error reports, Lean proof improvements, and
+typo fixes are welcome. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for
+scope, local setup, and issue templates.
+
 ## Layout
 
 ```
