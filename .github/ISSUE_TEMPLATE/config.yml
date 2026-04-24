@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Read the paper first
+    url: https://github.com/Brsanch/sqg-lean-proofs/blob/main/paper/sqg-identity.pdf
+    about: The paper (PDF) is the authoritative statement of what is proved, what is conjectured, and what is conditional.
+  - name: Open-items tracker
+    url: https://github.com/Brsanch/sqg-lean-proofs/blob/main/OPEN.md
+    about: Known-open items in the formalization are tracked in OPEN.md.

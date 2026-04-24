@@ -1,2 +1,25 @@
 /.lake
 .metadata_never_index
+
+# Internal review / audit / working artifacts — not public-facing
+paper/adversarial_review*.md
+paper/*_review*.md
+paper/*_audit*.md
+paper/_*.md
+paper/scratch/
+paper/drafts/
+**/TODO*.md
+**/NOTES*.md
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# LaTeX/pandoc intermediates from paper builds
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
