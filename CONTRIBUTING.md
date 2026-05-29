@@ -37,12 +37,23 @@ lake build            # build the formalization
 A full build takes roughly 20–40 minutes on a modern laptop once the
 mathlib cache is populated.
 
-On Apple Silicon, if `lake build` crashes with a SoC-level error or hangs,
-set `LEAN_NUM_THREADS=1` and build single-file:
+On Apple Silicon (M-series), an unthrottled `lake build` — and
+`lake exe cache get` — can saturate the APFS daemon (`apfsd`) and trigger a
+SoC-watchdog crash during the `.olean` write/finalization burst. Two safe
+alternatives:
 
 ```bash
+# Per-file iteration (no-write; type-checks against the existing cache, ~seconds):
 LEAN_NUM_THREADS=1 lake env lean SqgIdentity/Basic.lean
+
+# Full-graph build, panic-safe (throttled to background I/O priority):
+taskpolicy -b nice -n 19 env LEAN_NUM_THREADS=1 lake build
 ```
+
+The throttled full build is the local **merge gate**: it elaborates every file
+fresh, so it catches cross-file duplicate-name conflicts that the single-file
+check cannot — making a green local build a sufficient pre-merge check without
+depending on CI.
 
 ### Paper
 
