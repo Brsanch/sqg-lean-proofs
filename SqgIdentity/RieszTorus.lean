@@ -6442,65 +6442,74 @@ The library now provides a complete Fourier-space curvature budget:
 - Strain-rotation, Hessian-strain, Biot-Savart-like factorisations
 -/
 
-/-! ## §10 Roadmap to conditional Theorem 2 (SQG regularity)
+/-! ## §10 — WITHDRAWN conditional-regularity roadmap (found CIRCULAR 2026-05-29)
 
-This section states **Theorem 2 conditionally**. The goal is to pin
-down *exactly* which analytic facts are load-bearing for the regularity
-argument of the paper, by making them explicit hypotheses in the Lean
-statement.
+⚠️ **This entire section is a withdrawn conditional-regularity roadmap.**
+An audit on 2026-05-29 found the chain **circular and substantively
+hollow**. None of the `sqg_regularity_*` / `sqg_uniformHs_*` theorems
+below proves SQG global regularity — conditionally or otherwise. Read
+this banner before citing anything in §10.
 
-The current repository proves the Fourier-algebraic spine (Theorem 1
-of the paper, plus the universal per-mode selection-rule bound that
-Proposition 6.1 refines) unconditionally. It does **not** prove
-the paper's Theorem 2 (conditional SQG regularity). The
-three analytic hypotheses below are the pieces the paper argument
-borrows from outside the algebraic layer; they are stated here as
-abstract propositions and will be replaced by concrete theorems as
-the infrastructure for them appears (in mathlib or in this repo).
+**Why it is circular.** Every capstone reduces to applying
+`BKMCriterion.hsPropagation` to `MaterialMaxPrinciple.hOnePropagation`.
+`hOnePropagation` is a *uniform-in-time Ḣ¹ (enstrophy) bound, taken as a
+hypothesis*. But a uniform Ḣ¹ bound already implies regularity by
+elementary subcritical continuation, so assuming it is ≈ assuming the
+conclusion. The capstone `sqg_uniformHs_conditional` is therefore modus
+ponens: `(assumed uniform Ḣ¹) + (assumed Ḣ¹ ⇒ Ḣˢ bootstrap) ⇒ uniform Ḣˢ`.
+This is the same failure mode as the NS Seregin-closure route.
 
-Current status of each hypothesis:
+**The conditioning hypotheses are vacuous.** The named bundles in §14
+— `HasStrainLowerBound` (H-strain), `HasBoundaryCurvatureBound` (H-bdry),
+`HasThermostatBound` (H-α) — have content `∃ c ≥ 0` / `∃ α < 1`, which is
+logically equivalent to `True`. They condition on nothing. The geometric
+"§9" content of the argument (the free-derivative property at κ-maxima,
+material-segment expansion, far-field control) was **never formalized**;
+it lived in `True`-valued placeholder fields that have since been
+**removed** (they previously read `freeDerivativeAtKappaMax : True`, etc.).
+"Zero `sorry`, no axioms" remains literally true but does **not** mean the
+regularity content is real — the gaps were hidden in `True`, not `sorry`.
 
-* `MaterialMaxPrinciple` — placeholder. Needs: DiPerna–Lions-level
-  flow theory for a divergence-free velocity with `θ ∈ L²`, plus the
-  "free-derivative" property of the shear–vorticity identity at κ-maxima.
-* `BKMCriterion` — placeholder. Needs: the SQG analogue of the
-  Beale–Kato–Majda criterion: `∫₀^T ‖∇θ‖_{L^∞} dt < ∞` ⇒ smooth on
-  `[0, T]`.
-* `FracSobolevCalculus` — placeholder. Needs: fractional powers of
-  `(-Δ)` on `L²(𝕋²)` as self-adjoint operators commuting with the
-  Fourier transform. The torus-mode symbols are already in this file;
-  the operator-level theory is what is missing.
+**The classical argument these structures encode is falsified** by the
+project's own numerics: the "free derivative" step needs `f = −cκA`, but
+the measured `corr(f, −κ) = 0.44` gives `κ_max ~ G` (unbounded); and the
+depletion mechanism is provably one order short (parity kills `nSn(x*)`
+through 3rd order including curvature, so it needs `κ'`, measured `~G^{1.2}`
+→ finite-time blow-up of the `dG/dt = G|nSn|` bound). Full account:
+`sqg_material_max_principle_falsified_2026_05_29.md` (NoetherSolve repo).
 
-Each hypothesis is currently a `True`-valued `Prop` — a placeholder
-that will be refined as the corresponding infrastructure is formalized.
-The point of the current skeleton is to fix the *shape* of the
-conditional theorem so every future PR aligns against it. No `sorry`
-is used; the placeholders are honest stubs rather than hidden gaps.
+**What stands (unconditional, genuine):** Theorem 1 — the shear–vorticity
+identity (`SqgIdentity/Basic.lean`) — and the universal per-mode CZ
+selection-rule bound. The mathlib-adjacent infrastructure developed below
+(torus Riesz transforms, the fractional Sobolev scale, heat-semigroup
+bounds, Rellich–Kondrachov in Fourier form) is also genuinely proved and
+reusable. It is only the *regularity-chain framing* on top of it that is
+withdrawn.
 
-When each placeholder is replaced by a concrete proposition and the
-skeleton proof body consumes it, `sqg_regularity_conditional` will
-carry real mathematical content. When each hypothesis is replaced by
-a proved theorem, the result becomes unconditional.
+The structures and theorems below are retained, with honest docstrings, as
+a precise record of exactly which analytic facts the paper's argument would
+need — i.e. what is load-bearing and unproven — not as a proof of anything.
 -/
 
-/-- **Material max-principle hypothesis.**
+/-- **`MaterialMaxPrinciple` — despite the name, this is just "assume a
+uniform Ḣ¹ (enstrophy) bound".**
 
-Packages the analytic output of the §9 of the paper bounded-κ argument:
-if the material max-principle for front curvature holds (the
-"free-derivative" property at κ-maxima, incompressibility-driven
-material-segment expansion, and far-field control combine to bound
-κ globally), then the Ḣ¹ seminorm of `θ(t)` stays bounded for all
-time by the initial data.
+⚠️ Withdrawn-chain structure (see §10 banner). The name refers to the
+paper's §9 bounded-κ argument, but **none of that geometric content is
+encoded here.** The only fields are `hOnePropagation` — a uniform-in-time
+Ḣ¹ bound *taken as a hypothesis* — and its summability companion. The §9
+"free-derivative / material-segment / far-field" steps were `True`-valued
+placeholder fields and have been removed.
 
-The `hOnePropagation` field is the real mathematical content: it
-asserts the existence of a uniform-in-time Ḣ¹ bound. The three
-`True`-valued fields are structural placeholders tracking the three
-steps of the §9 argument, to be refined one at a time as the
-material-derivative infrastructure is formalized. -/
+Assuming `hOnePropagation` is ≈ assuming the conclusion: a uniform Ḣ¹
+bound implies regularity by subcritical continuation. So this structure is
+**circular** as a regularity hypothesis. It is retained only to mark, in
+the type, exactly which analytic fact the paper's argument borrows. -/
 structure MaterialMaxPrinciple
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
-  /-- Uniform-in-time Ḣ¹ bound — the consolidated output of the §9
-  argument, consumed by `BKMCriterion.hsPropagation`. -/
+  /-- Uniform-in-time Ḣ¹ bound, **taken as a hypothesis** (not derived from
+  the SQG dynamics here). Consumed by `BKMCriterion.hsPropagation`. This is
+  ≈ the conclusion — see the §10 banner on circularity. -/
   hOnePropagation :
     ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M
   /-- Ḣ¹ summability at every forward time. Makes the Ḣ¹ bound in
@@ -6512,53 +6521,34 @@ structure MaterialMaxPrinciple
     ∀ t : ℝ, 0 ≤ t →
       Summable (fun n : Fin 2 → ℤ =>
         (fracDerivSymbol 1 n) ^ 2 * ‖mFourierCoeff (θ t) n‖ ^ 2)
-  /-- `F_ext = 0` at any curvature maximum of a level set of `θ(·, t)`
-  (placeholder; contributes to the proof of `hOnePropagation`). -/
-  freeDerivativeAtKappaMax : True
-  /-- Incompressibility expands the material segment bounding the front
-  (placeholder; contributes to the proof of `hOnePropagation`). -/
-  materialSegmentExpansion : True
-  /-- Far-field bounds on the level-set geometry control the boundary
-  term (placeholder; contributes to the proof of `hOnePropagation`). -/
-  farFieldBoundary : True
 
-/-- **BKM-type blow-up criterion (Sobolev-scale form).**
+/-- **`BKMCriterion` — assume the Ḣ¹ ⇒ Ḣˢ bootstrap.**
 
-A Fourier/Sobolev form of the SQG analogue of the Beale–Kato–Majda
-criterion: a uniform-in-time Ḣ¹ bound propagates to a uniform-in-time
-Ḣˢ bound for every `s ≥ 0`. This is the composite statement that
-classical SQG BKM + fractional Sobolev bootstrap gives.
-
-The `hsPropagation` field is the real mathematical content. The
-placeholder field tracks the original time-integrated ∇θ form that
-the sharper literature criterion uses. -/
+⚠️ Withdrawn-chain structure (see §10 banner). Its single field
+`hsPropagation` *assumes* the implication "a uniform Ḣ¹ bound propagates
+to a uniform Ḣˢ bound for every `s ≥ 0`". That implication (classical SQG
+BKM + fractional Sobolev bootstrap) is **taken as a hypothesis here, not
+derived**. The placeholder `True` field tracking the time-integrated ∇θ
+form has been removed. -/
 structure BKMCriterion
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
   /-- Uniform Ḣ¹ bound propagates to uniform Ḣˢ bound for every
-  `s ≥ 0`. This is the BKM + bootstrap package consumed by
-  `sqg_regularity_conditional`. -/
+  `s ≥ 0`. The BKM + bootstrap package, **taken as a hypothesis** and
+  consumed by `sqg_uniformHs_conditional`. -/
   hsPropagation :
     (∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq 1 (θ t) ≤ M) →
       ∀ s : ℝ, 0 ≤ s →
         ∃ M' : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (θ t) ≤ M'
-  /-- Finite `L¹_t L∞_x` gradient integral implies smoothness on
-  `[0, T]` (placeholder; the sharper form literature uses). -/
-  boundedGradIntegralImpliesSmooth : True
 
 /-- **Fractional Sobolev operator calculus.**
 
 The fractional derivative symbols `fracDerivSymbol s n = ‖n‖^s` are
-Fourier multipliers. This structure packages their mode-level content
-into a form the regularity argument can consume.
-
-`hsMonotone` is the real mathematical content — the mode-level
-Ḣˢ-monotonicity lemma (a direct re-export of `hsSeminormSq_mono`).
-
-`fracLaplacianIsSelfAdjointFourierMultiplier` remains a placeholder
-for the upgrade to self-adjoint operators on `L²(𝕋²)` commuting with
-the Fourier transform — the operator calculus needed to run the energy
-argument that proves `MaterialMaxPrinciple.hOnePropagation` and feeds
-`BKMCriterion.hsPropagation` at full rigor. -/
+Fourier multipliers. Its single field `hsMonotone` is **genuine** — the
+mode-level Ḣˢ-monotonicity lemma, a direct re-export of `hsSeminormSq_mono`
+(so `FracSobolevCalculus.ofMathlib` discharges it unconditionally). The
+`fracLaplacianIsSelfAdjointFourierMultiplier` placeholder `True` field —
+the missing self-adjoint operator calculus on `L²(𝕋²)` — has been removed.
+In the withdrawn capstone this hypothesis is unused regardless. -/
 structure FracSobolevCalculus
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) : Prop where
   /-- Ḣˢ-monotonicity (mode level): for `s ≤ t`, `‖·‖_{Ḣˢ} ≤ ‖·‖_{Ḣᵗ}`
@@ -6568,52 +6558,40 @@ structure FracSobolevCalculus
       Summable (fun n : Fin 2 → ℤ =>
         (fracDerivSymbol t n) ^ 2 * ‖mFourierCoeff (θ τ) n‖ ^ 2) →
       hsSeminormSq s (θ τ) ≤ hsSeminormSq t (θ τ)
-  /-- `(-Δ)^s` is a self-adjoint operator commuting with `𝓕`. Placeholder. -/
-  fracLaplacianIsSelfAdjointFourierMultiplier : True
 
 /-- **`FracSobolevCalculus` is unconditionally satisfied.**
 
-The `hsMonotone` field is directly provided by `hsSeminormSq_mono`, and
-the remaining placeholder field is `True`. So every time-evolution `θ`
-admits a `FracSobolevCalculus` proof — this hypothesis was chosen
-specifically to be mode-level content already in the repo.
+The `hsMonotone` field is directly provided by `hsSeminormSq_mono`. So
+every time-evolution `θ` admits a `FracSobolevCalculus` proof — this
+hypothesis was chosen specifically to be mode-level content already in
+the repo.
 
 This theorem lets callers supply `FracSobolevCalculus.ofMathlib θ` as
-the `hFSC` argument to `sqg_regularity_conditional`, discharging one
-of the three hypotheses unconditionally. -/
+the `hFSC` argument to `sqg_uniformHs_conditional` (where it is in fact
+unused). -/
 theorem FracSobolevCalculus.ofMathlib
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) :
     FracSobolevCalculus θ where
   hsMonotone := fun _s _t hst τ hsum => hsSeminormSq_mono hst (θ τ) hsum
-  fracLaplacianIsSelfAdjointFourierMultiplier := trivial
 
-/-- **Conditional Theorem 2 — SQG global regularity (Sobolev form).**
+/-- **`sqg_uniformHs_conditional` — uniform Ḣˢ from an *assumed* uniform Ḣ¹
+bound (CIRCULAR; not a regularity proof). See the §10 banner.**
 
-Given the three analytic hypotheses below — `MaterialMaxPrinciple`
-and `BKMCriterion` now carry real mathematical content;
-`FracSobolevCalculus` remains a structural placeholder that both
-refined hypotheses depend on internally — the solution `θ` to SQG
-stays bounded in every Sobolev space `Ḣˢ` uniformly in time.
+This is the flagship of the withdrawn chain. Its proof body is literally
+`hBKM.hsPropagation hMMP.hOnePropagation` — modus ponens:
 
-The conclusion `∀ s ≥ 0, ∃ M, ∀ t ≥ 0, hsSeminormSq s (θ t) ≤ M` is
-the Sobolev-scale form of global regularity: all fractional derivatives
-of `θ` remain in `L²` for all time, with a uniform bound.
+  (assumed uniform Ḣ¹ bound, `hMMP.hOnePropagation`)
+    applied to (assumed Ḣ¹ ⇒ Ḣˢ bootstrap, `hBKM.hsPropagation`)
+    ⇒ uniform Ḣˢ for every `s ≥ 0`.
 
-**Proof sketch (informal, to be formalized):**
-1. `sqg_shear_vorticity_identity` (Basic.lean) gives the mode-level
-   identity `Ŝ_nt − ω̂/2 = |k|·sin²(α−β)·θ̂`.
-2. `MaterialMaxPrinciple.{freeDerivativeAtKappaMax,
-   materialSegmentExpansion, farFieldBoundary}` combine to prove
-   `hOnePropagation` (uniform Ḣ¹ bound).
-3. `BKMCriterion.hsPropagation` bootstraps the Ḣ¹ bound to every Ḣˢ.
-4. `FracSobolevCalculus` licenses the operator calculus used at
-   both (2) and (3).
-
-The current proof body consumes `hOnePropagation` and `hsPropagation`
-directly. The two remaining placeholders (`freeDerivativeAtKappaMax`
-et al., `fracLaplacianIsSelfAdjointFourierMultiplier`) stay as
-structural markers of the unproved internal content. -/
-theorem sqg_regularity_conditional
+The `FracSobolevCalculus` argument is unused (`_hFSC`). The conclusion
+`∀ s ≥ 0, ∃ M, ∀ t ≥ 0, hsSeminormSq s (θ t) ≤ M` would be the
+Sobolev-scale form of global regularity **if** its hypotheses were
+discharged from the SQG dynamics — but they are not. Assuming a uniform
+Ḣ¹ bound is ≈ assuming the conclusion (subcritical continuation), so this
+theorem does **not** prove SQG regularity. Renamed from the former
+`sqg_regularity_conditional`, which falsely advertised "regularity". -/
+theorem sqg_uniformHs_conditional
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
     (hMMP : MaterialMaxPrinciple θ)
     (hBKM : BKMCriterion θ)
@@ -6840,7 +6818,7 @@ theorem SqgEvolutionAxioms.of_identically_zero
 
 /-! ### §10.2 `SqgSolution` wrapper
 
-The Sobolev-bound conclusion of `sqg_regularity_conditional` is stated
+The Sobolev-bound conclusion of `sqg_uniformHs_conditional` is stated
 about a bare time-indexed family `θ : ℝ → L²(𝕋²)`. For compositional
 proofs it is cleaner to package a solution with its defining data.
 
@@ -6855,7 +6833,8 @@ proofs it is cleaner to package a solution with its defining data.
    full PDE statement.
 
 `SqgSolution.regularity_conditional` then restates
-`sqg_regularity_conditional` in the structured form.
+`sqg_uniformHs_conditional` in the structured form — the same circular
+statement (see the §10 banner), not a regularity proof.
 -/
 
 /-- **SQG solution.** Bundles a time-evolution `θ`, a smooth-initial-data
@@ -6878,29 +6857,28 @@ namespace SqgSolution
 variable (S : SqgSolution)
 
 /-- **Sobolev bounds conclusion.** Uniform Ḣˢ bounds at every order,
-for all forward time — the conclusion of conditional Theorem 2 stated
-on an `SqgSolution`. -/
+for all forward time — the (would-be) conclusion of the withdrawn
+conditional chain, stated on an `SqgSolution`. -/
 def SobolevBounds : Prop :=
   ∀ s : ℝ, 0 ≤ s →
     ∃ M : ℝ, ∀ t : ℝ, 0 ≤ t → hsSeminormSq s (S.θ t) ≤ M
 
-/-- **Conditional Theorem 2 (structured form).**
+/-- **Structured form of `sqg_uniformHs_conditional` (CIRCULAR; see §10 banner).**
 
-Any `SqgSolution` satisfying the three analytic hypotheses
-— `MaterialMaxPrinciple`, `BKMCriterion`, `FracSobolevCalculus` — has
-uniform Sobolev bounds at every order.
+Any `SqgSolution` satisfying the assumed inputs — `MaterialMaxPrinciple`
+(an *assumed* uniform Ḣ¹ bound), `BKMCriterion` (an *assumed* bootstrap),
+`FracSobolevCalculus` (unused) — has uniform Sobolev bounds at every order.
 
-Proof is direct delegation to `sqg_regularity_conditional`. The
-`smoothInitialData` and `solvesSqgEvolution` fields of `S` are not
-yet consumed by the proof, because the three analytic hypotheses
-currently supply (via `hOnePropagation` and `hsPropagation`) the
-content those fields will eventually establish from first principles. -/
+This is the same modus ponens as `sqg_uniformHs_conditional`, repackaged on
+an `SqgSolution`. The `smoothInitialData` and `solvesSqgEvolution` fields of
+`S` are not consumed: the assumed Ḣ¹ bound already ≈ the conclusion, so the
+statement is circular and proves nothing about SQG regularity. -/
 theorem regularity_conditional
     (hMMP : MaterialMaxPrinciple S.θ)
     (hBKM : BKMCriterion S.θ)
     (hFSC : FracSobolevCalculus S.θ) :
     S.SobolevBounds :=
-  sqg_regularity_conditional S.θ hMMP hBKM hFSC
+  sqg_uniformHs_conditional S.θ hMMP hBKM hFSC
 
 end SqgSolution
 
@@ -6987,10 +6965,6 @@ theorem MaterialMaxPrinciple.of_identically_zero
       ext n; exact h_each n
     rw [this]
     exact summable_zero
-  freeDerivativeAtKappaMax := trivial
-  materialSegmentExpansion := trivial
-  farFieldBoundary := trivial
-
 /-- **BKMCriterion holds for the identically-zero evolution.** -/
 theorem BKMCriterion.of_identically_zero
     (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
@@ -6998,7 +6972,6 @@ theorem BKMCriterion.of_identically_zero
     BKMCriterion θ where
   hsPropagation := fun _ s _ => ⟨0, fun t _ => by
     rw [hθ t, hsSeminormSq_of_zero]⟩
-  boundedGradIntegralImpliesSmooth := trivial
 
 /-! ### §10.4 Well-posedness hypothesis + packaged regularity
 
@@ -7058,13 +7031,12 @@ all time by its initial value.
 
 This is **not** enough to discharge `hOnePropagation` itself (which is
 about `s=1`, i.e. `Ḣ¹`) — L² conservation doesn't control gradients.
-But it does demonstrate that once the SQG PDE content is real (as
-`SqgEvolutionAxioms.l2Conservation`, `meanConservation`, and
-`velocityIsRieszTransform` now are, via `SqgSolution`), a genuine
-chain of reasoning produces genuine regularity output. This is the
-pattern the full `hOnePropagation` discharge will follow once the
-integer-order energy estimate formalized in §10.8 is carried out in
-detail: PDE property → conserved quantity → uniform bound.
+It does show the *shape* a real discharge would take — PDE property →
+conserved quantity → uniform bound — but only at `s = 0`, where the bound
+(L² conservation) is genuine and trivial. It is **not** a regularity result
+and is **not** evidence that the `s = 1` (`hOnePropagation`) discharge is
+within reach; that step is exactly the unproven, ≈-conclusion content the
+§10 banner describes.
 -/
 
 /-- **Uniform L² bound from L² conservation.** The "s=0 degenerate
@@ -7250,16 +7222,16 @@ Littlewood–Paley decomposition required.
 This subsection introduces `BKMCriterionS2`, a strict weakening of
 `BKMCriterionHighFreq` that only covers `s ∈ (1, 2]`. Combined with
 the §10.6 / §10.7 interpolation from `MaterialMaxPrinciple` on
-`s ∈ [0, 1]`, it delivers **a conditional Theorem 2 on the full
-Sobolev range `[0, 2]` from an axiomatic footprint that targets only
-integer-order regularity**.
+`s ∈ [0, 1]`, it extends the (circular) conditional `Ḣˢ` statement to the
+range `[0, 2]` — still conditional on the assumed uniform `Ḣ¹` bound, so
+still not a regularity proof (see the §10 banner).
 
-Significance: `BKMCriterionS2` is the most restricted BKM-type
-hypothesis against which the conditional Theorem 2 can still cover
-a non-trivial Sobolev range above the critical index `s = 1`. A
-future discharge via a genuine Ḣ² energy estimate — integer-order,
-no fractional calculus — would make Theorem 2 unconditional on
-`s ∈ [0, 2]`. The `s > 2` tail remains an explicit open axiom.
+`BKMCriterionS2` is the most restricted BKM-type hypothesis that still
+covers a Sobolev range above the critical index `s = 1`. Even a future
+genuine `Ḣ²` energy estimate would discharge only the *bootstrap*
+(`BKMCriterion`) half; the load-bearing `MaterialMaxPrinciple` half (the
+assumed uniform `Ḣ¹` bound ≈ the conclusion) would remain, so the chain
+would stay circular. The `s > 2` tail is an explicit open axiom regardless.
 
 Provided here:
 
@@ -9663,8 +9635,10 @@ This section delivers two building blocks and a capstone:
    `θ₀` with `Summable (fun n => (fracDerivSymbol 1 n)² * ‖θ̂₀(n)‖²)`
    enjoys uniform Ḣˢ bounds for every `s ∈ [0, 2]`.
 
-Together these give the first **non-zero** concrete SQG solution class that
-the conditional Theorem 2 chain certifies unconditionally. -/
+Together these handle the constant-in-time class — a trivial solution class
+(nothing evolves), where uniform `Ḣˢ` bounds are immediate. It is a sanity
+check on the plumbing, not progress toward regularity for genuine SQG
+dynamics (see the §10 banner). -/
 
 /-- **Nonlinear flux with zero velocity vanishes.**
 
@@ -9723,10 +9697,6 @@ theorem MaterialMaxPrinciple.of_const
     MaterialMaxPrinciple (fun _ : ℝ => θ₀) where
   hOnePropagation := ⟨hsSeminormSq 1 θ₀, fun _ _ => le_refl _⟩
   hOneSummability := fun _ _ => hSumm
-  freeDerivativeAtKappaMax := trivial
-  materialSegmentExpansion := trivial
-  farFieldBoundary := trivial
-
 /-- **BKMCriterionS2 discharge for a constant-in-time scalar field.**
 For a constant `θ₀`, `hsSeminormSq s (θ t) = hsSeminormSq s θ₀` for every
 `t`, so the propagation hypothesis is closed by `le_refl`. No fractional
@@ -9865,10 +9835,6 @@ theorem MaterialMaxPrinciple.of_scaled
       funext hcoeff
     rw [heq]
     exact hSumm.mul_left _
-  freeDerivativeAtKappaMax := trivial
-  materialSegmentExpansion := trivial
-  farFieldBoundary := trivial
-
 /-- **BKMCriterionS2 discharge for the scaled class.** With `‖c(τ)‖ ≤ 1`
 for `τ ≥ 0`, every Ḣˢ seminorm of `θ(τ) = c(τ) • θ₀` is bounded by the
 corresponding seminorm of `θ₀` via `hsSeminormSq_const_smul` and `‖c(τ)‖² ≤ 1`.
@@ -12106,10 +12072,6 @@ theorem MaterialMaxPrinciple.of_finite_support_uniform
           intros n _; ring
   hOneSummability := fun t _ =>
     hsSeminormSq_summable_of_finite_support 1 (θ t) S (hSupport t)
-  freeDerivativeAtKappaMax := trivial
-  materialSegmentExpansion := trivial
-  farFieldBoundary := trivial
-
 /-! ### §10.55 Mode-wise FTC for Galerkin trajectories
 
 Given a Galerkin solution `α : ℝ → (↥S → ℂ)` satisfying
@@ -21185,10 +21147,6 @@ theorem MaterialMaxPrinciple.of_L2_limit_uniform_H1
   hOneSummability := fun t ht =>
     (hsSeminormSq_le_of_L2_limit_uniform_bound (s := 1) (M := M)
       (hConv t ht) (fun n => hSumm_fn n t ht) (fun n => hBound n t ht)).1
-  freeDerivativeAtKappaMax := trivial
-  materialSegmentExpansion := trivial
-  farFieldBoundary := trivial
-
 /-! ### §10.167.C `MaterialMaxPrinciple` for the Aubin–Lions limit
 
 Specializes §10.167.B to the `HasAubinLionsExtraction` witness from
@@ -25699,18 +25657,17 @@ reformulation (H-α) via the *thermostat ratio*
 `(H-α) ⇒ (H-strain) + (H-bdry)`.
 
 This section introduces the Lean-side named hypothesis bundles paralleling
-each, so that downstream consumers can cite the paper's labels directly.
-The three bundles are **intentionally abstract** at the present level of
-the formalization: they name the conditional content of §9 and §9.8,
-but the §9 analytical derivation `(H-strain) + (H-bdry) ⇒ uniform Ḣ¹
-bound` (i.e. `MaterialMaxPrinciple.hOnePropagation`) is **not** discharged
-in this repository — it is the classical content the paper develops and
-is summarised as `MaterialMaxPrinciple.of_HstrainHbdry`'s signature, which
-takes the uniform Ḣ¹ bound as an additional input, documenting the
-non-formalised classical step.
+each. ⚠️ **They are logically vacuous** (see the §10 banner): their content
+is `∃ μ⋆ ≥ 0` / `∃ κ⋆ ≥ 0` / `∃ α⋆ < 1`, each equivalent to `True`. They
+carry the paper's labels but condition on nothing. The §9 / §9.8 analytical
+derivations (`(H-strain) + (H-bdry) ⇒ uniform Ḣ¹`, and `(H-α) ⇒ …`) are
+**not** discharged here; the constructors `MaterialMaxPrinciple.of_HstrainHbdry`
+and `.of_thermostat` take the uniform Ḣ¹ bound as an *additional* input —
+which is where the real, unproven content sits (and it is ≈ the conclusion).
 
-Zero-datum witnesses for each of (H-strain), (H-bdry), (H-α) are provided
-for minimal-sanity use downstream. -/
+The former zero-datum `.of_zero` witnesses (which "satisfied" each bundle
+with `μ⋆ = 0` etc.) have been removed: exhibiting that a `True`-equivalent
+bundle is inhabited demonstrates nothing. -/
 
 /-- **(H-strain) — Normal-strain lower bound along tracked curvature maxima.**
 
@@ -25725,22 +25682,15 @@ inequality on `|nSn|` is not a formal Lean quantity (it requires the
 tracked curvature maximum `s_max(t)` which is a Lagrangian construct
 outside the present formalisation scope).  Downstream consumers
 (`MaterialMaxPrinciple.of_HstrainHbdry`) combine this scalar witness with
-the paper's §9 argument (classical, not formalised). -/
+the paper's §9 argument (classical, not formalised).
+
+⚠️ **Logically vacuous: content `∃ μ⋆ ≥ 0` ≡ `True`.** See the §10 banner. -/
 structure HasStrainLowerBound
     (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
   /-- The strain lower bound constant `μ⋆`. -/
   μ_star : ℝ
   /-- Non-negativity of `μ⋆`. -/
   μ_star_nonneg : 0 ≤ μ_star
-
-/-- **(H-strain) zero-datum witness.** The zero solution trivially
-satisfies the normal-strain lower bound with `μ⋆ = 0`. -/
-def HasStrainLowerBound.of_zero
-    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (_hθ : ∀ t, θ t = 0) :
-    HasStrainLowerBound θ where
-  μ_star := 0
-  μ_star_nonneg := le_refl _
 
 /-- **(H-bdry) — Boundary curvature bound on the material segment.**
 
@@ -25753,22 +25703,15 @@ curvature satisfies `|κ(y(t), t)| ≤ κ⋆` uniformly in `t ≥ 0`."*
 At the Lean level we only expose the scalar `κ_star ≥ 0`; the pointwise
 inequality is a Lagrangian construct outside the present formalisation
 scope.  Downstream consumers combine this scalar witness with the paper's
-§9 argument (classical). -/
+§9 argument (classical).
+
+⚠️ **Logically vacuous: content `∃ κ⋆ ≥ 0` ≡ `True`.** See the §10 banner. -/
 structure HasBoundaryCurvatureBound
     (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
   /-- The boundary curvature bound constant `κ⋆`. -/
   κ_star : ℝ
   /-- Non-negativity of `κ⋆`. -/
   κ_star_nonneg : 0 ≤ κ_star
-
-/-- **(H-bdry) zero-datum witness.** The zero solution trivially
-satisfies the boundary curvature bound with `κ⋆ = 0`. -/
-def HasBoundaryCurvatureBound.of_zero
-    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (_hθ : ∀ t, θ t = 0) :
-    HasBoundaryCurvatureBound θ where
-  κ_star := 0
-  κ_star_nonneg := le_refl _
 
 /-- **(H-α) — Thermostat ratio upper bound.**
 
@@ -25783,7 +25726,9 @@ inequality is a Lagrangian construct outside the present formalisation
 scope.  Paper Proposition 9.11 asserts `(H-α) ⇒ (H-strain) + (H-bdry)`;
 the Lean version is `HasStrainLowerBound.of_thermostat` +
 `HasBoundaryCurvatureBound.of_thermostat` below, both of which also
-require the classical §9.8 derivation as an auxiliary input. -/
+require the classical §9.8 derivation as an auxiliary input.
+
+⚠️ **Logically vacuous: content `∃ α⋆ < 1` ≡ `True`.** See the §10 banner. -/
 structure HasThermostatBound
     (_θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))) where
   /-- The thermostat upper bound `α⋆`. -/
@@ -25791,25 +25736,14 @@ structure HasThermostatBound
   /-- `α⋆ < 1`: the key inequality of the thermostat hypothesis. -/
   α_star_lt_one : α_star < 1
 
-/-- **(H-α) zero-datum witness.**  The zero solution trivially satisfies
-the thermostat bound with `α⋆ = 0 < 1`. -/
-def HasThermostatBound.of_zero
-    (θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2))))
-    (_hθ : ∀ t, θ t = 0) :
-    HasThermostatBound θ where
-  α_star := 0
-  α_star_lt_one := by norm_num
+/-- **`MaterialMaxPrinciple.of_HstrainHbdry` — paper §9.6.3 naming alias (CIRCULAR).**
 
-/-- **Conditional-regularity alias matching the paper's §9.6.3 statement.**
-
-`MaterialMaxPrinciple.of_HstrainHbdry` re-exposes the existing
-`MaterialMaxPrinciple` constructor pattern under the paper's naming.  The
-hypothesis bundles `HasStrainLowerBound` and `HasBoundaryCurvatureBound`
-document the conditional context (paper §9.6.3); the uniform-`Ḣ¹`
-witness (`hOnePropagation` + `hOneSummability`) is the classical §9
-output, taken as an auxiliary input rather than derived from the two
-hypothesis bundles alone.  The names match the paper so downstream
-consumers can cite (H-strain) + (H-bdry) directly. -/
+Builds a `MaterialMaxPrinciple` from the two named bundles plus a uniform-`Ḣ¹`
+witness (`hOnePropagation` + `hOneSummability`). ⚠️ The bundle arguments
+`_hStrain`, `_hBdry` are **unused** (they are `True`-equivalent, see §14 head):
+all content comes from the uniform-`Ḣ¹` input, which is *taken as a hypothesis*
+and ≈ the conclusion. So this constructor derives nothing from (H-strain) +
+(H-bdry); it relabels an assumed enstrophy bound. -/
 theorem MaterialMaxPrinciple.of_HstrainHbdry
     {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     (_hStrain : HasStrainLowerBound θ)
@@ -25823,16 +25757,12 @@ theorem MaterialMaxPrinciple.of_HstrainHbdry
     MaterialMaxPrinciple θ where
   hOnePropagation := hOnePropagation
   hOneSummability := hOneSummability
-  freeDerivativeAtKappaMax := True.intro
-  materialSegmentExpansion := True.intro
-  farFieldBoundary := True.intro
+/-- **`MaterialMaxPrinciple.of_thermostat` — paper §9.8 (H-α) naming alias (CIRCULAR).**
 
-/-- **Conditional-regularity alias under the single-hypothesis (H-α) route.**
-
-Paper Prop 9.11 (`(H-α) ⇒ (H-strain) + (H-bdry) ⇒ Theorem 2`) packaged at
-the Lean level: takes `HasThermostatBound` + the classical §9.8 output
-(uniform `Ḣ¹` bound) and returns `MaterialMaxPrinciple`.  The §9.8
-derivation itself (equations 9.8.a through 9.8.g) is not formalised. -/
+Takes `HasThermostatBound` (`True`-equivalent, unused as `_hAlpha`) + a
+uniform-`Ḣ¹` witness and returns `MaterialMaxPrinciple`. As with
+`of_HstrainHbdry`, the only real input is the assumed uniform-`Ḣ¹` bound
+(≈ the conclusion); the §9.8 derivation `(H-α) ⇒ …` is not formalised. -/
 theorem MaterialMaxPrinciple.of_thermostat
     {θ : ℝ → Lp ℂ 2 (volume : Measure (UnitAddTorus (Fin 2)))}
     (_hAlpha : HasThermostatBound θ)
@@ -25845,8 +25775,4 @@ theorem MaterialMaxPrinciple.of_thermostat
     MaterialMaxPrinciple θ where
   hOnePropagation := hOnePropagation
   hOneSummability := hOneSummability
-  freeDerivativeAtKappaMax := True.intro
-  materialSegmentExpansion := True.intro
-  farFieldBoundary := True.intro
-
 end SqgIdentity
