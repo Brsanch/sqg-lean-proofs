@@ -4,6 +4,23 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## Unreleased — 2026-05-29 (audit; documentation/honesty, no Lean changes)
+
+**SQG regularity claim withdrawn.** An audit found the
+`MaterialMaxPrinciple` → regularity chain to be **circular**: the
+conditioning hypotheses `HasStrainLowerBound` / `HasBoundaryCurvatureBound`
+/ `HasThermostatBound` are logically vacuous structures (`∃ c ≥ 0`,
+`∃ α < 1` ≡ `True`, `RieszTorus.lean:25729–25801`); the §9 geometric core is
+`True.intro`-stubbed (`RieszTorus.lean:6515–6523`); the only real antecedent
+is a uniform `Ḣ¹` bound ≈ the conclusion. "Zero sorry, no axioms" was
+technically true but hid the gaps in `True`-valued fields. The classical §9
+material-maximum-principle argument is **falsified by the project's own
+numerics** (`corr(f,−κ)=0.44` defeats the free-derivative step ⟹ `κ_max ~ G`;
+depletion one order short, needs `κ' ~ G^{1.2}` ⟹ blow-up of `dG/dt=G|nSn|`).
+Updated `README.md`, `OPEN.md`, `paper/sqg-identity.md`. **Still solid:**
+Theorem 1 (identity, `SqgIdentity/Basic.lean`) and §8 curvature correction.
+Full account: NoetherSolve `docs/findings/sqg_material_max_principle_falsified_2026_05_29.md`.
+
 ## v0.6.3 — 2026-04-24 (paper-quality patch, no Lean source changes)
 
 **Theorem numbering gap closed.** Following v0.6.2's demotion of the paper's

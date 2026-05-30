@@ -3,7 +3,40 @@
 Canonical list of everything remaining before the project is closed.
 Each item is linked to the tagged release that will close it.
 
-## Status banner (2026-04-23)
+## ⚠️ Status banner (2026-05-29) — conditional chain is circular; regularity NOT closed
+
+**This supersedes the 2026-04-23 banner below.** An audit on 2026-05-29
+found that "closed at the formalization-of-the-conditional-chain level"
+overstates what exists:
+
+- The conditioning hypotheses `HasStrainLowerBound` (H-strain),
+  `HasBoundaryCurvatureBound` (H-bdry), `HasThermostatBound` (H-α) are
+  **logically vacuous** structures — content `∃ c ≥ 0` / `∃ α < 1` ≡ `True`
+  (`RieszTorus.lean:25729–25801`). They condition on nothing.
+- The geometric core of `MaterialMaxPrinciple` is **`True.intro`-stubbed**
+  (`RieszTorus.lean:6515–6523`).
+- The only real antecedent is a uniform-in-time `Ḣ¹` (enstrophy) bound
+  (`hOnePropagation`), which ≈ the conclusion. The chain is therefore
+  **circular** ("uniform enstrophy ⟹ regularity"), the same failure mode
+  as the NS Seregin-closure route.
+- The classical §9 material-maximum-principle argument these structures are
+  meant to encode is **falsified by the project's own numerics**: the
+  "free derivative" step needs `f = −cκA` but `corr(f,−κ)=0.44`, giving
+  `κ_max ~ G` (unbounded); and the depletion mechanism is provably one
+  order short (parity kills `nSn(x*)` through 3rd order incl. curvature),
+  so it needs `κ'`, measured `~G^{1.2}` → blow-up of the `dG/dt=G|nSn|`
+  bound.
+
+What stands: **Theorem 1 (the identity)** is genuinely verified, and the
+**§8 closed-form curvature correction** is correct and numerically
+verified. Items 1–6 below remain accurate as descriptions of *structural
+plumbing*, but that plumbing does not constitute a regularity proof,
+conditional or otherwise. Full account:
+`sqg_material_max_principle_falsified_2026_05_29.md` and
+`sqg_salvage_identity_and_curvature_correction_2026_05_29.md` in the
+NoetherSolve repo (`docs/findings/`).
+
+## Status banner (2026-04-23) — SUPERSEDED, see above
 
 All six SQG-mathematics items below are **closed** at the
 formalization-of-the-conditional-chain level: Items 1, 2, 3, 4, 6
