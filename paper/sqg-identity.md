@@ -2,6 +2,23 @@
 
 **Bryan Sanchez** *(Independent)*
 
+> **Status (revised 2026-05-29).** §2 (the shear–vorticity identity) and §8
+> (the closed-form curvature correction) are correct, verified, and stand.
+> **The regularity material (§§3–6, 9: selection rule, "material maximum
+> principle", Theorem 2, "three converging routes") is WITHDRAWN.** Audit
+> found the Lean "conditional Theorem 2" to be circular (the hypotheses
+> (H-strain)/(H-bdry)/(H-α) are logically vacuous Lean structures and the §9
+> geometric core is `True`-stubbed; the only real antecedent is a uniform
+> `Ḣ¹` bound ≈ the conclusion), and the §9 material-maximum-principle
+> argument to be contradicted by this paper's own numerics
+> (`corr(f,−κ)=0.44` defeats the free-derivative step ⟹ `κ_max ~ G`; the
+> depletion mechanism is provably one order short, needing `κ' ~ G^{1.2}` ⟹
+> blow-up of the `dG/dt=G|nSn|` bound). The genuine obstruction is the
+> log-criticality `‖S‖_∞ ≲ G log G`. Read §§3–6, 9 as heuristic mechanism,
+> not proof. Full account + salvage scope: NoetherSolve `docs/findings/`
+> `sqg_material_max_principle_falsified_2026_05_29.md` and
+> `sqg_salvage_identity_and_curvature_correction_2026_05_29.md`.
+
 ## Abstract
 
 I report an algebraic identity for the inviscid Surface Quasi-Geostrophic (SQG) equation: the combination $S_{nt} - \omega/2$ — shear strain minus half the vorticity — vanishes identically for any one-dimensional front configuration. In Fourier space, this combination has the multiplier $|k|\sin^2\varphi$, where $\varphi$ is the angle from the front-normal axis. The identity has three consequences for the regularity problem. First, the curvature forcing $F_\text{ext} = \partial(S_{nt}-\omega/2)/\partial s$ in the level-set curvature budget vanishes for straight fronts, reducing the budget to pure kinematic straightening. Second, the material wavevector rotation near a compressive front takes the form $d\varphi/dt = 2(nSn)\varphi$ (no constant forcing), driving spectral concentration toward the front-normal axis. Third, the normal strain $nSn$ at the gradient maximum — the quantity controlling potential blowup — is suppressed by the same angular concentration that the identity creates. Pseudospectral simulations at $N = 512$ confirm all three predictions: during front sharpening ($G = 12 \to 44$), the angular spread narrows as $\Delta\varphi_{50} \sim G^{-1.0}$, the enstrophy concentration ratio increases as $\rho(10°) \sim G^{0.38}$ ($R^2 = 0.98$), and $|nSn(x^*)|$ stays bounded in $[0.17, 0.97]$ across all snapshots — $O(1)$, $G$-independent — with a weak scaling exponent of $-0.15 \pm 0.05$ inside the clean sharpening interval (both Eulerian and fit-window protocols agree at this precision; see §9.5). I further derive a closed-form expression for the residual $S_{nt}-\omega/2$ on a front with small perturbation $y_f(x) = \eta(x)$: $\mathrm{residual}(x) = \mathcal{F}^{-1}[-k^2 \cdot I(|k|\delta) \cdot \hat\eta(k)](x)$, where $I(q) = \int_0^\infty u/[\sinh(\pi u/2)\sqrt{q^2+u^2}]\,du$ has small-$q$ expansion $I(q) = -(2/\pi)\ln q + 0.5951 + O(q^2)$. This formula is verified to <0.2% amplitude accuracy and >0.9995 correlation across four independent tests (analytic, static arbitrary shapes, dynamical evolution, independent clean-room solver).
