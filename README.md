@@ -8,10 +8,11 @@ A Lean 4 + mathlib formalization of Fourier-space identities for the inviscid
 Surface Quasi-Geostrophic (SQG) equation on the 2-torus, together with a
 conditional regularity roadmap.
 
-Two algebraic theorems are fully machine-verified. A third (global regularity)
-is supplied as a conditional result: a named, closed set of analytic
-hypotheses, each of which is either discharged unconditionally in this
-repository or scoped to a precise open problem.
+Two algebraic theorems are fully machine-verified (the shear–vorticity
+identity, and the per-mode CZ bound). A third item, a "conditional global
+regularity" chain, was **withdrawn on 2026-05-29**: an audit found it
+circular and substantively hollow — see the boxed status note below. The
+repository does **not** prove SQG regularity in any non-circular sense.
 
 The mathematical content is developed in the accompanying paper:
 
@@ -25,9 +26,24 @@ The formalization comprises over 25,850 lines of Lean 4 source in the
 [sqg-lean-proofs-fourier](https://github.com/Brsanch/sqg-lean-proofs-fourier)
 companion package for classical Littlewood–Paley / Bony paraproduct /
 quantitative uniform-in-N Kato–Ponce commutator content), with
-**zero `sorry` and no axioms beyond mathlib**.
+**zero `sorry` and no axioms beyond mathlib** — but note (2026-05-29) the
+regularity-chain gaps are hidden in vacuous `True`-equivalent hypothesis
+structures and `True`-stubbed fields, so "zero sorry, no axioms" does **not**
+mean the regularity content is real. See the status note below.
 
-**Scope of Theorem 2 (SQG regularity, conditional).** Following paper
+**⚠️ Status note (2026-05-29) — the conditional regularity claim below is
+WITHDRAWN (circular).** The named hypotheses `HasStrainLowerBound` (H-strain),
+`HasBoundaryCurvatureBound` (H-bdry), `HasThermostatBound` (H-α) are
+**logically vacuous** structures — content `∃ c ≥ 0` / `∃ α < 1` ≡ `True`
+(`SqgIdentity/RieszTorus.lean:25729–25801`); the `MaterialMaxPrinciple`
+geometric core is **`True.intro`-stubbed** (`RieszTorus.lean:6515–6523`); the
+only real antecedent (`hOnePropagation`) is a uniform-in-time `Ḣ¹` bound,
+which ≈ the conclusion. So the chain reduces to "uniform enstrophy ⟹
+regularity" — circular, same as the NS Seregin route. The §9 argument behind
+it is falsified by the paper's own numerics (`corr(f,−κ)=0.44`). The original
+(now-superseded) scope description follows.
+
+**Scope of Theorem 2 (SQG regularity, conditional) — SUPERSEDED.** Following paper
 §9.6.3, Theorem 2 is stated as conditional on two explicit hypotheses,
 (H-strain) and (H-bdry), labeled and documented inline in the Lean
 source as `HasStrainLowerBound` and `HasBoundaryCurvatureBound`
