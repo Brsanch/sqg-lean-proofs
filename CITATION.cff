@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this formalization, please cite it as below."
 type: software
-title: "SQG Identity: A Lean 4 Formalization of Fourier-Space Identities for the Surface Quasi-Geostrophic Equation with Conditional Regularity Roadmap"
+title: "SQG Identity: A Lean 4 Formalization of Fourier-Space Identities for the Surface Quasi-Geostrophic Equation"
 authors:
   - family-names: Sanchez
     given-names: Bryan
@@ -44,8 +44,17 @@ keywords:
   - conditional regularity
 abstract: >
   A Lean 4 and mathlib formalization of Fourier-space identities for the
-  inviscid Surface Quasi-Geostrophic equation on the two-dimensional torus,
-  together with a conditional regularity roadmap.
+  inviscid Surface Quasi-Geostrophic equation on the two-dimensional torus.
+
+  WITHDRAWN-CLAIM NOTICE (2026-05-29): the "conditional regularity roadmap"
+  described below (paper Theorem 2 / Lean sections 10-14) was found CIRCULAR
+  and is withdrawn. This work does NOT prove SQG regularity, conditionally or
+  otherwise: the named hypotheses are logically vacuous (content equivalent to
+  True) and the only real antecedent is a uniform Ḣ¹ bound, which already
+  implies regularity. Genuinely machine-verified: the shear-vorticity identity
+  (Theorem 1) and the universal per-mode Calderón-Zygmund selection-rule bound,
+  plus reusable mathlib-adjacent infrastructure (see README.md / OPEN.md). The
+  historical abstract follows.
 
   Two items are machine-verified unconditionally. The shear-vorticity
   identity (paper Theorem 1) states that the combination of shear strain
