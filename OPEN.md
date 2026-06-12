@@ -101,3 +101,24 @@ The detailed item-by-item and §-by-§ history is in `CHANGELOG.md` and git.
   duplicate-declaration errors that single-file `lake env lean` cannot (see
   `CONTRIBUTING.md`). CI is optional final confirmation.
 - "What's left" answers come from this file.
+
+## Ledger discipline for any future arc (adopted 2026-06-12)
+
+Any new proof arc here tracks obligations as a per-claim ledger (one file per
+claim, DAG of `dependencies`/`supports`), not by growing this file. Full
+schema: `../references/proof_obligation_ledger_schema.md` (local shared refs
+dir). The three load-bearing rules, self-contained:
+
+1. **No self-certification.** `verified` = Lean-proved, zero sorry, zero
+   external axiom, *per entry*. The central claim never carries more than
+   `speculative` + a confidence number until external review. The §10–§14
+   failure documented above — vacuous hypothesis structures under a true
+   "no sorry, no axioms" headline — is exactly what this rule blocks: the
+   headline is a per-entry status, never a theorem-level claim.
+2. **No paraphrase nodes.** An entry whose dependencies and supports match an
+   existing entry's is a reformulation, not progress; `supersedes` is for
+   corrections only, never parallel routes.
+3. **Dead ends become AK entries** (approach / obstruction-with-mechanism /
+   history + named fix) and citation errors become CORR entries (including
+   phantom-citation audits of our own bibliography) — machine-checkable
+   claims, not prose.
