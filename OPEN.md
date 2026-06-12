@@ -1,5 +1,8 @@
 # Open items — sqg-lean-proofs
 
+> **Before any new Lean work: read `CHIP_GATES.md` (repo root)** — vacuity
+> lint gate (mechanical, baseline-ratcheted) + the 7 anti-paraphrase gates.
+
 ## ⚠️ Status banner (2026-05-29, source aligned 2026-05-30) — conditional chain is circular; regularity NOT closed
 
 An audit on 2026-05-29 found that "closed at the formalization-of-the-
