@@ -75,6 +75,14 @@ Before you claim that something is "proven" or "verified," check
 [`README.md`](./README.md) and [`OPEN.md`](./OPEN.md) for the current
 authoritative state:
 
+> **Note (2026-06-12):** the bullets below predate the 2026-05-29
+> circularity audit and are superseded by the `OPEN.md` status banner:
+> `HasStrainLowerBound`/`HasBoundaryCurvatureBound`/`HasThermostatBound`
+> were found **logically vacuous** (≡ `True`), so the "conditional
+> Theorem 2 chain" they parameterize conditions on nothing, and the
+> former "open research hypotheses" framing is withdrawn. Theorem 1 and
+> the per-mode selection-rule bound stand.
+
 - **Machine-verified:** Theorem 1 (shear-vorticity identity), the
   universal per-mode selection-rule bound, the conditional Theorem 2
   chain parameterized by `HasStrainLowerBound` + `HasBoundaryCurvatureBound`
@@ -84,6 +92,36 @@ authoritative state:
   Proposition 6.1's pointwise κ²δ² refinement at the gradient maximum.
 - **Open research hypotheses:** (H-strain), (H-bdry), (H-α), (B-spec)
   for general smooth initial data.
+
+## Anti-vacuity audit probes (adopted 2026-06-12)
+
+Run these against every new Prop-carrying structure or conditional-theorem
+target before claiming it has content. Ported from
+`eric-wieser/navier-stokes-misformalization` (Olšák/Wieser/Skřivan, which
+formally refuted the lean-dojo NS Millennium statement with exactly these
+two moves, against their pinned rev `aca048ef`); the same audit class found
+the H-strain/H-bdry/H-α vacuity here.
+
+1. **Degenerate instantiation.** Instantiate every field of the structure
+   with degenerate data (`∅`, `0`, `default`, trivial witnesses) and try to
+   discharge all Prop fields with `simp`/`trivial`. If it compiles, the
+   hypothesis is vacuous — it conditions on nothing, and every theorem
+   "conditional" on it is unconditional-but-empty.
+2. **Bounded refutation.** Attempt `¬ P` via `nofun`/`simp`/`decide` on each
+   top-level target Prop. Catches type-level unsatisfiability (their case:
+   `Solution.T : ℝ` while the existence branch demands `T = (⊤ : WithTop ℝ)`).
+
+Anti-patterns to grep for (defects, not style):
+
+- `:=`-defaults on load-bearing structure fields (e.g.
+  `domain : Set _ := {x | …}`) — defaults are overridable, never
+  constraints; state the equation as a separate Prop field `domain_eq`.
+- `A ∨ B` dichotomy targets — state and attack the branches separately.
+- `∃ c ≥ 0, …`-shaped hypothesis content where any `c` works (≡ `True`).
+- Keep the axiom ledger CI-checked: `#guard_msgs in #print axioms`.
+
+A permanent `VacuityProbes.lean` regression file encoding probe 1 against the
+known-vacuous §10–§14 structures is the natural follow-up (build-gated).
 
 ## Style
 
