@@ -19,7 +19,7 @@ Run, from the NoetherSolve repo:
 
 ```
 python3 "/Volumes/4TB SD/ClaudeCode/noethersolve/scripts/lean_vacuity_lint.py" \
-  "/Volumes/4TB SD/ClaudeCode/sqg-lean-proofs" --no-color --max-findings 27
+  "/Volumes/4TB SD/ClaudeCode/sqg-lean-proofs" --no-color --max-findings 18
 ```
 
 Rules (each is a mechanical signature from the 2026-05-29 audit): `True`-typed
@@ -29,15 +29,22 @@ mention their parameters (`∃ α⋆ < 1` ≡ `True` pattern); theorems with
 underscore-unused named hypotheses (the `MaterialMaxPrinciple.of_thermostat`
 relabeling pattern).
 
-**Baseline = 27 findings (audited 2026-06-12).** Six are the deliberately
-retained, banner-annotated §14 circular-chain declarations
+**Baseline = 18 findings (ratcheted 2026-06-13 from 27).** The 2026-06-13
+cleanup cleared the 9 withdrawn-chain findings: the 6 vacuous §14 bundles
 (`HasStrainLowerBound`, `HasBoundaryCurvatureBound`, `HasThermostatBound`,
-`MaterialMaxPrinciple.of_HstrainHbdry` ×2, `.of_thermostat`); the rest are
-unused-hypothesis findings, including three that deserve suspicion on any
-future touch: `sqg_uniformHs_conditional` (ignores `_hFSC`),
-`sqg_regularity_via_interpolation` (ignores `_hE`),
-`sqg_regularity_via_stationaryShape` (ignores `_hS`) — a "regularity via X"
-theorem that does not use X is the relabeling pattern by construction.
+`MaterialMaxPrinciple.of_HstrainHbdry` ×2, `.of_thermostat`) were **deleted**
+(pure leaves, never consumed — §10 banner reworded to past tense);
+`sqg_regularity_via_stationaryShape` was **deleted** (a no-caller duplicate of
+`sqg_regularity_shellMode_const`; dropping `_hS` would have made it an exact
+parallel route); `sqg_uniformHs_conditional`'s `_hFSC` thread was
+**unravelled** end-to-end (the decorative `FracSobolevCalculus` structure +
+`ofMathlib` removed, `regularity_conditional` / `sqg_regularity_for_smooth_data`
+updated); and `sqg_regularity_via_interpolation`'s `_hE` was **waived** inline
+(genuine `SqgEvolutionAxioms` footprint threaded through ~8 §10.174–§11.37
+Aubin–Lions capstones — full removal is a large cascade, deferred) with its
+misleading docstring corrected to admit the proof never consumes it. The
+remaining 18 are unused-hypothesis findings on genuine reusable infrastructure
+(Group C), deliberately left as-is this pass.
 
 **The count must never increase.** New code adds zero findings; if a finding
 is deliberate, waive it inline with `-- vacuity-ok: <reason>` (greppable) and
