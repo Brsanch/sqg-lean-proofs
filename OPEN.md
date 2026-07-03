@@ -60,11 +60,11 @@ record:
    only when `K.K*Lip.L = 0`, i.e. zero nonlinear flux. So the §B.13/§B.15
    prose ("once Kato–Ponce lands, the fully unconditional Path B chain
    follows") is FALSE: a completed Kato–Ponce gives `K > 0` and the
-   hypothesis stays unsatisfiable. **Named follow-up (docstring-only Lean
-   edit, needs the throttled build gate):** rewrite the §B.13/§B.15
-   docstrings to state this; the honest statement is that Path B yields
-   `exp(CT)`-in-time bounds on `[0,T]`, never the time-global `Ms` that
-   §11.34 consumes. Also note `HasVelocityRieszPreservation`,
+   hypothesis stays unsatisfiable. **DONE 2026-07-02** (commit `865dec2`,
+   merge gate green, vacuity lint at baseline 18): the §B.13/§B.15
+   docstrings now state this — Path B yields `exp(CT)`-in-time bounds on
+   `[0,T]`, never the time-global `Ms` that §11.34 consumes. Also note
+   `HasVelocityRieszPreservation`,
    `FourierKatoPonceConst`, `HasVelocityLipSupBound` (FourierBridge :160,
    :296, :790) are `∃ c ≥ 0`-class shells that escape the linter's
    subject-free rule (zero-parameter structures); they gate nothing alone
