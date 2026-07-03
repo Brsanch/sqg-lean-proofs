@@ -941,39 +941,43 @@ The constructor chooses `M₁ = D₁·exp((2·K·L)·T)` and
 initial-data bound at Sobolev level `s`.  Gronwall (§B.11.uniform)
 discharges both `hBoundOne` and `hBoundS` on `[0, T]`.
 
-This is **not** the final fully-unconditional closure — the three
-bundle inputs (energy identity at `s = 1` and at each `s > 1`, plus
-`HasVelocityLipSupBound`) still carry classical content.  But it
-reduces the §B.5 four-field abstract-constant discharge to three
-named classical inputs + their Gronwall integration, which is the
-promised sub-500 LOC final step once the fourier repo's
-quantitative Kato–Ponce lands. -/
+⚠️ **This is not a fully-unconditional closure (2026-07-02 audit).**
+Beyond the three bundle inputs (energy identity at `s = 1` and at each
+`s > 1`, plus `HasVelocityLipSupBound`), the capstone's `hExpBound`
+argument — a *fixed* `E` bounding `exp((2·K·L)·t)` for **all** `t ≥ 0` —
+is satisfiable **only when `K·L = 0`** (zero nonlinear flux; `exp` of a
+positive rate is unbounded on `[0, ∞)`).  A completed quantitative
+Kato–Ponce delivers `K > 0`, which makes `hExpBound` *unsatisfiable*,
+not discharged — so it does **not** turn this into an unconditional
+closure.  Grönwall here yields only the `exp(CT)` bound on `[0, T]`,
+never a time-global bound.  See the `ofGronwallODE` docstring below and
+`OPEN.md`'s "2026-07-02 independent adversarial audit" (item 3). -/
 
 /-- **§B.12 — `HasGalerkinGronwallClosure.ofGronwallODE` capstone.**
 
+⚠️ **`hExpBound` is satisfiable only when `K.K · Lip.L = 0`
+(2026-07-02 audit).**  The consumer `HasGalerkinGronwallClosure`
+requires its uniform bound **for all `t ≥ 0`**, so the `hExpBound`
+argument demands a *fixed* `E` with `exp((2·(K.K·Lip.L))·t) ≤ E` on all
+of `[0, ∞)`.  That is impossible unless the rate `K.K · Lip.L = 0`
+(zero nonlinear flux): for any positive rate `exp` is unbounded on
+`[0, ∞)`.  So on genuine nonlinear data this constructor is
+**uninhabitable**, and it is **not** a route to a time-global bound —
+Grönwall (§B.11) only ever yields the `exp(CT)` bound on `[0, T]`.  A
+finite-horizon choice `E = exp((2C)·T_max)` would satisfy `hExpBound`
+only against a *bounded-horizon* consumer, which
+`HasGalerkinGronwallClosure` (`∀ t ≥ 0`) is not.  See `OPEN.md`'s
+"2026-07-02 independent adversarial audit" (item 3).
+
 Concrete constructor producing `M₁, Ms, hBoundOne, hBoundS` by
 Gronwall-integrating an `Ḣˢ` energy identity at each Sobolev level,
-using rate `C = K.K · Lip.L`.
-
-The consumer `HasGalerkinGronwallClosure` requires the uniform
-bound to hold **for all `t ≥ 0`**, so we consume an energy-identity
-bundle parametrised by the time horizon `T` — a family of bundles
-`hE1Fam T` and `hEsFam s T`, one per horizon.  At each time `t`, we
-pick horizon `T = t` and invoke Gronwall on `[0, t]`.
-
-To have a **single** scalar bound `M₁` that dominates the
-time-dependent Gronwall output `D₁ · exp((2C)·t)`, the caller must
-supply a uniform-over-horizons amplification bound `E : ℝ` with
-`D · exp((2C)·T) ≤ D · E` for every `T` of interest.  Operationally
-this corresponds to adopting a finite-time-horizon supremum of
-interest (e.g. `t ∈ [0, T_max]` for some fixed `T_max`) and
-absorbing `exp((2C)·T_max)` into `E`.
-
-**Two-parameter shape:** the caller supplies both the initial-data
-bound `D` and the exponential amplification `E`, and claims
-`hBoundOne ≤ D · E` — i.e., that `E ≥ exp((2C)·t)` for all `t` of
-interest.  On bounded horizons this reduces to the concrete
-`E = exp((2C)·T_max)`. -/
+using rate `C = K.K · Lip.L`.  We consume an energy-identity bundle
+parametrised by the horizon `T` (`hE1Fam T`, `hEsFam s T`); at each
+time `t` we pick `T = t` and invoke Gronwall on `[0, t]`, giving the
+`t`-dependent output `D · exp((2C)·t)`.  The `hExpBound` argument is
+what would collapse that `t`-dependent output to the single time-global
+scalar `D · E` the consumer requires — and, per the banner, only
+`K·L = 0` supplies it. -/
 noncomputable def HasGalerkinGronwallClosure.ofGronwallODE
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
     (hL2 : HasGalerkinL2Conservation α)
@@ -1064,28 +1068,54 @@ noncomputable def HasGalerkinGronwallClosure.ofGronwallODE_zero :
 
 /-! ### §B.13 Path B capstone on non-zero data
 
-Composition of all §B.1–§B.12 concrete constructors into a single
-end-to-end `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` constructor
-that takes real Galerkin data and the six named classical inputs
-(ODE validity, ℓ² invariant, Kato–Ponce `K`, initial-data bounds,
-derivative-bound families, and the exponential amplification `E`),
-and produces the §11.34 hypothesis consumed by §10.174's full-range
-Theorem 2.
+⚠️ **Path B is not a route to time-global bounds (2026-07-02 audit).**
+This section composes §B.1–§B.12 into a single end-to-end
+`HasSqgGalerkinAllSBound.ofGalerkin_nonZero` constructor.  Its output —
+the §11.34 `HasSqgGalerkinAllSBound` hypothesis consumed by §10.174 /
+§11.36 — carries a **time-global** (`∀ t ≥ 0`) uniform `Ḣˢ` bound.  But
+the honest input the constructor forces is
+`hExpBound : ∀ t ≥ 0, Real.exp ((2·(K·L))·t) ≤ E` for a *fixed* `E`,
+and that hypothesis is **satisfiable only when `K·L = 0`** (zero
+nonlinear flux): for any `K·L > 0`, `exp((2·K·L)·t) → ∞` as `t → ∞`, so
+no finite `E` dominates it on all of `[0, ∞)`.
 
-This is the Path B capstone: one constructor, six classical inputs,
-zero abstract-gap fields.  The **one remaining narrow classical gap**
-(codified as a hypothesis input) is the Kato–Ponce + Sobolev-embedding
-derivative bound
-`|galerkinHsFlux s (α n x)| ≤ 2·(K·L) · trigPolyEnergyHs s (sqgBox n) (α n x)`
-which lives in the companion `sqg-lean-proofs-fourier` repo's
-commutator module.  When that module's quantitative form lands, this
-input hypothesis is discharged automatically, giving the fully
-unconditional Path B chain. -/
+**Why the "Kato–Ponce lands ⟹ unconditional Path B" claim was FALSE.**
+The old prose here read: *"When the fourier repo's quantitative
+Kato–Ponce lands, this input hypothesis is discharged automatically,
+giving the fully unconditional Path B chain."*  Kato–Ponce discharges
+the **flux** bound (`hFluxH1` / `hFluxHs`) — and it delivers a *positive*
+constant `K > 0`.  A positive `K` leaves the *separate* `hExpBound`
+argument **unsatisfiable**; Kato–Ponce says nothing about the
+time-global exponential-amplification gate.  So a completed Kato–Ponce
+does **not** close Path B — it makes the load-bearing `hExpBound`
+strictly harder.
+
+**What Path B honestly yields.** Grönwall (§B.11) gives
+`E(t) ≤ E₀ · exp((2·K·L)·t)` on `[0, T]` — an `exp(CT)`-in-time bound,
+`T`-dependent.  It never produces the *time-global* `M₁`, `Ms` that
+§11.34 consumes (those need `∀ t ≥ 0`, i.e. `K·L = 0`, or an
+independently-supplied global bound — cf. §11.34's own docstring).
+Path B was therefore **never** a route to time-global `Ḣˢ` control.
+
+Full record: `OPEN.md`, "2026-07-02 independent adversarial audit"
+(item 3); see also the §10 banner in `RieszTorus.lean`. -/
 
 /-- **§B.13 — Path B end-to-end `HasSqgGalerkinAllSBound.ofGalerkin_nonZero`.**
 
-One-shot constructor chaining all §B.1–§B.12 pieces into the full
-Path B discharge of `HasSqgGalerkinAllSBound α` on real Galerkin data.
+⚠️ **Inhabited only in the degenerate `K·L = 0` case (2026-07-02
+audit).**  The `hExpBound : ∀ t ≥ 0, Real.exp ((2·(K·L))·t) ≤ E`
+argument below fixes a single `E` bounding `exp((2·K·L)·t)` for *all*
+`t ≥ 0`; that is possible only when `K·L = 0` (zero nonlinear flux),
+since `exp` of a positive rate is unbounded on `[0, ∞)`.  With genuine
+nonlinear flux (`K·L > 0`) this constructor cannot be invoked, so it is
+**not** a route to a time-global bound — Grönwall only ever gives the
+`exp(CT)` bound on `[0, T]`, never the `∀ t ≥ 0` `M₁`/`Ms` that §11.34
+wants.  Discharging the flux bound via Kato–Ponce yields `K > 0`, which
+makes `hExpBound` *harder*, not automatic.  See the §B.13 section banner
+and `OPEN.md`'s "2026-07-02 independent adversarial audit" (item 3).
+
+One-shot constructor chaining all §B.1–§B.12 pieces into the Path B
+discharge of `HasSqgGalerkinAllSBound α` on real Galerkin data.
 
 **Inputs (six classical content + scalars):**
 
@@ -1099,8 +1129,10 @@ Path B discharge of `HasSqgGalerkinAllSBound α` on real Galerkin data.
    and at each `s > 1` — the pointwise Kato–Ponce + Sobolev bound.
 7. Initial-data bounds `D₁, Dₛ` + exponential amplification `E`.
 
-**Output:** `HasSqgGalerkinAllSBound α` ready to feed §10.174 /
-§11.36 for the full-range Theorem 2.
+**Output (only when inhabited, i.e. `K·L = 0`):**
+`HasSqgGalerkinAllSBound α` feeding §10.174 / §11.36's full-range
+Theorem 2.  For `K·L > 0` the `hExpBound` argument is unsatisfiable, so
+there is no output (see the banner above).
 
 **Chain:**
 ```
@@ -1552,38 +1584,57 @@ theorem HasGalerkinFluxBound.ofVectorFieldBound
 
 /-! ### §B.15 Fully-concrete Path B capstone via `HasGalerkinFluxBound`
 
-Upgrade of §B.13's `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` that
-consumes a single `HasGalerkinFluxBound` bundle instead of two raw
-hypothesis functions.
+⚠️ **Same degeneracy as §B.13 — inhabited only when `K·L = 0`
+(2026-07-02 audit).**  This "fully-concrete" upgrade of §B.13's
+`ofGalerkin_nonZero` still takes the time-global
+`hExpBound : ∀ t ≥ 0, Real.exp ((2·(K·L))·t) ≤ E` argument, which is
+satisfiable only when `K·L = 0` (zero nonlinear flux; `exp` of a
+positive rate is unbounded on `[0, ∞)`).  Folding the two raw flux
+hypotheses into a single `HasGalerkinFluxBound` bundle does not touch
+`hExpBound`, so "fully concrete" does **not** mean "unconditional": with
+genuine flux (`K·L > 0`) the constructor is uninhabitable, and it never
+produces the time-global `Ms` that §11.34 consumes — only the
+`exp(CT)`-on-`[0, T]` Grönwall output.  See the §B.13 banner and
+`OPEN.md`'s "2026-07-02 independent adversarial audit" (item 3).
 
-**Input change:** the six-argument signature `(hFluxH1, hFluxHs, K, Lip,
-hExpBound, ...)` collapses to `(flux : HasGalerkinFluxBound α K L,
-hExpBound, ...)`.  The Kato–Ponce constant `K` and the Lipschitz bound
-`L` are extracted from the structure; the two per-level flux bounds are
-extracted from `flux.fluxH1` / `flux.fluxHs`.
+**Input change (from §B.13):** the two raw per-level flux hypotheses
+`(hFluxH1, hFluxHs)` collapse to `(flux : HasGalerkinFluxBound α K L)`;
+`K`, `L` and the per-level bounds are extracted from the structure's
+`K_nonneg` / `L_nonneg` / `fluxH1` / `fluxHs`.  The load-bearing
+`hExpBound` is unchanged.
 
-**Named remaining gap:** `HasGalerkinFluxBound α K L` is the one narrow
-classical input — precisely the pointwise Kato–Ponce + Sobolev-embedding
-commutator estimate on the Galerkin flux.  Its discharge via the
-companion fourier repo's `norm_partialCommutator_le_hs_fully_uniform`
-requires a lattice↔continuous translation not yet present in-tree.  All
-other Path B fields (`HasGalerkinL2Conservation`, `HasVelocityRieszPreservation`,
-`HasGalerkinHsEnergyIdentity`, `HasVelocityLipSupBound` via `.ofSobolev`)
-are either concrete or discharged structurally from the structure's
-own `K_nonneg` / `L_nonneg`. -/
+**Classical input `HasGalerkinFluxBound α K L`** is the pointwise
+Kato–Ponce + Sobolev-embedding commutator estimate on the Galerkin
+flux; its in-tree discharge via the companion fourier repo's
+`norm_partialCommutator_le_hs_fully_uniform` needs a lattice↔continuous
+translation not yet present.  But discharging it gives `K > 0`, which —
+per the banner — makes `hExpBound` *unsatisfiable*, not discharged: it
+is not the gate to a time-global bound. -/
 
 /-- **§B.15 — Fully-concrete Path B capstone on non-zero data.**
+
+⚠️ **Inhabited only in the degenerate `K·L = 0` case (2026-07-02
+audit).**  Input 4's `hExpBound : ∀ t ≥ 0, Real.exp ((2·(K·L))·t) ≤ E`
+fixes a single `E` bounding `exp((2·K·L)·t)` on all of `[0, ∞)`, so it
+holds only when `K·L = 0` (zero nonlinear flux).  With `K·L > 0` this
+constructor is uninhabitable; it does **not** yield the time-global
+`M₁`/`Ms` that §11.34 consumes — Grönwall gives only the `exp(CT)`
+bound on `[0, T]`.  "Fully concrete" refers to the flux packaging, not
+to unconditionality.  See the §B.15 / §B.13 banners and `OPEN.md`'s
+"2026-07-02 independent adversarial audit" (item 3).
 
 End-to-end constructor chaining §B.1–§B.12 into `HasSqgGalerkinAllSBound α`
 consuming:
 
 1. `α`, `hODE`, `hCoeff` — Galerkin ODE + ℓ² invariant (as in §B.13).
-2. `flux : HasGalerkinFluxBound α K L` — the **single named classical
-   input** packaging the Kato–Ponce + Sobolev flux estimate.
+2. `flux : HasGalerkinFluxBound α K L` — the named classical input
+   packaging the Kato–Ponce + Sobolev flux estimate.
 3. `D₁, Dₛ, hD₁_init, hDₛ_init` — initial-data Ḣˢ bounds.
-4. `E, hE_nn, hExpBound` — exponential amplification on bounded horizon.
+4. `E, hE_nn, hExpBound` — the time-global exponential-amplification
+   gate (only `K·L = 0` satisfies it; see banner).
 
-Returns a `HasSqgGalerkinAllSBound α` ready for §10.174 / §11.36. -/
+Returns a `HasSqgGalerkinAllSBound α` **only when `K·L = 0`**; then it
+feeds §10.174 / §11.36. -/
 noncomputable def HasSqgGalerkinAllSBound.ofGalerkin_nonZero_fullyConcrete
     (α : ∀ n : ℕ, ℝ → (↥(sqgBox n) → ℂ))
     (hODE : ∀ n : ℕ, ∀ t : ℝ,
