@@ -2,10 +2,15 @@
 
 **Bryan Sanchez** *(Independent)*
 
-> **Status (revised 2026-05-29).** §2 (the shear–vorticity identity) and §8
+> **Status (revised 2026-05-29; scope extended and CV escape closed 2026-07-03).**
+> §2 (the shear–vorticity identity) and §8
 > (the closed-form curvature correction) are correct, verified, and stand.
 > **The regularity material (§§3–6, 9: selection rule, "material maximum
-> principle", Theorem 2, "three converging routes") is WITHDRAWN.** Audit
+> principle", Theorem 2, "three converging routes" — together with the
+> downstream discussion that treats those hypotheses as live in §7.4 ("what
+> (H-strain)+(H-bdry) and (H-α) add") and §10.1–10.3 ("numerical certification
+> of the material max principle", the gSQG-extension conjecture, and "C
+> proven")) is WITHDRAWN.** Audit
 > found the Lean "conditional Theorem 2" to be circular (the hypotheses
 > (H-strain)/(H-bdry)/(H-α) are logically vacuous Lean structures and the §9
 > geometric core is `True`-stubbed; the only real antecedent is a uniform
@@ -18,11 +23,25 @@
 > found the once-quoted `corr(f,−κ)=0.44` (§6.5) and `κ' ~ G^{1.2}` (§9)
 > figures to be unreproducible single-run contour-FD values with no
 > surviving artifact. The genuine obstruction is the
-> log-criticality `‖S‖_∞ ≲ G log G`. Read §§3–6, 9 as heuristic mechanism,
+> log-criticality `‖S‖_∞ ≲ G log G`, for which no upper bound of any kind on
+> `‖∇θ‖_∞` is proven for smooth SQG (realized growth is exponential,
+> He–Kiselev, *Duke* 2021). **Last escape closed (2026-07-03):** the one
+> reserved geometric-Lyapunov hunt — a Constantin–Vicol nonlinear-maximum-
+> principle on the front-curvature field `κ` — is now certified dead. CV is
+> structurally a *dissipative* tool (authors' own scope, arXiv:1110.0179:
+> "cannot apply to non-dissipative systems … without additional dissipation
+> structure"); inviscid SQG has no dissipation operator. The exact §8
+> production is `f(x*) = −I(kδ)·κ` — *linear* in `κ` with the coefficient tied
+> to the scale and equal to the log-criticality coefficient
+> `I(kδ) → (2/π)ln(1/kδ)`, not the superlinear self-coercion CV needs; and
+> `nSn` depends on `κ′` (order 4), a derivative above what any `κ`-bound
+> controls. So no CV-type front-geometry functional removes the log.
+> Read §§3–6, 7.4, 9, 10.1–10.3 as heuristic mechanism,
 > not proof. Full account + salvage scope: NoetherSolve `docs/findings/`
 > `sqg_material_max_principle_falsified_2026_05_29.md`,
-> `sqg_salvage_identity_and_curvature_correction_2026_05_29.md`, and
-> `sqg_dead_end_independent_audit_2026_07_02.md`.
+> `sqg_salvage_identity_and_curvature_correction_2026_05_29.md`,
+> `sqg_dead_end_independent_audit_2026_07_02.md`, and
+> `sqg_cv_curvature_negative_cert_2026_07_02.md`.
 
 ## Abstract
 
@@ -460,7 +479,7 @@ $$|\bar\varphi(t)| \leq \frac{|S_{nt} - \omega/2|}{2|nSn|} + O(\psi^2), \tag{31}
 
 *Proof.* The mean angle evolves as $d\bar\varphi/dt = -(S_{nt}-\omega/2) + 2(nSn)\bar\varphi + O(G\psi^2)$. Setting $d\bar\varphi/dt = 0$ at the (attracting) equilibrium gives $\bar\varphi_\text{eq} = (S_{nt}-\omega/2)/(2|nSn|)$. By the identity residual bound (Lemma 6.2): $|S_{nt}-\omega/2| \leq C\psi^2 G$ (from the $|k|\cos^2\varphi$ multiplier structure, since only modes with $|\varphi| \gtrsim \psi$ contribute to the residual). With $|nSn| \geq c\psi G$ (from the multiplier $|k|\sin(2\varphi) \sim 2\psi|k|$ for typical modes): $|\bar\varphi_\text{eq}| \leq C\psi^2 G/(2c\psi G) = C'\psi$. That is, the mean shift is bounded by a constant times the RMS spread. $\square$
 
-**Proposition 6.7 (Preliminary conditional regularity — superseded by Theorem 2 of §9.6.3).** *For smooth initial data $\theta_0 \in C^\infty(\mathbb{T}^2)$, assume the near-field spectral concentration bound*
+**Proposition 6.7 (Preliminary conditional regularity — superseded by the §9.6.3 chain, which is itself WITHDRAWN; see Status banner).** *For smooth initial data $\theta_0 \in C^\infty(\mathbb{T}^2)$, assume the near-field spectral concentration bound*
 
 $$|nSn_{\mathrm{near}}(x(t))| \leq C_{\mathrm{near}}\,\psi(t)\,|\nabla\theta|(x(t)) \tag{PC}$$
 
@@ -538,7 +557,15 @@ The identity suggests a diagnostic for SQG simulation quality: the residual $|S_
 
 ### 7.4 Comparison with prior conditional regularity results
 
-To place the conditional statements (H-strain), (H-bdry), and (H-α) of §9.6.3 and §9.8 in context, I summarize the closest prior results on inviscid SQG regularity (conditional and unconditional) and identify what (H-strain)+(H-bdry) adds.
+> **Withdrawn (see Status banner).** The hypotheses (H-strain), (H-bdry), (H-α)
+> discussed below are the withdrawn conditional chain of §9.6.3/§9.8 — the chain
+> is circular (its only real antecedent is a uniform `Ḣ¹` bound ≈ the
+> conclusion) and the mechanism meant to discharge it is unsupported. This
+> literature comparison is retained for the record — to document what was
+> claimed and how it sits against prior work — **not** as a live contribution.
+> Read the novelty claim in the closing paragraph accordingly.
+
+To place the conditional statements (H-strain), (H-bdry), and (H-α) of §9.6.3 and §9.8 in context, I summarize the closest prior results on inviscid SQG regularity (conditional and unconditional) and identify what (H-strain)+(H-bdry) was claimed to add.
 
 **Constantin-Majda-Tabak 1994** [1] introduced the geometric non-blow-up criterion: *if the direction field $\nabla^\perp\theta / |\nabla^\perp\theta|$ is smooth in a neighborhood of the strong-gradient set, no finite-time singularity forms.* This is a continuum-field smoothness condition on the level-set normals. The present paper's (H-bdry) is a *Lagrangian* statement about the curvature of material-segment boundaries, not about the continuous direction field. The two hypotheses could be related — sufficiently strong CMT-type direction smoothness would imply bounded boundary curvature on material segments — but the converse is not obvious, and the present framework does not reduce to CMT's.
 
@@ -550,7 +577,7 @@ To place the conditional statements (H-strain), (H-bdry), and (H-α) of §9.6.3 
 
 **Strong ill-posedness at critical regularity** [11] (Jeong–Kim, *Analysis & PDE* 17, 2024) shows standard inviscid SQG is strongly ill-posed in the critical Sobolev space $H^2(\mathbb{T}^2)$ — the borderline regularity at which the embedding $\|\nabla u\|_{L^\infty} \lesssim \|\theta\|_{H^2}$ fails. Specifically, there exist initial data in $H^2$ with no solutions in $L^\infty_t H^2$, and smooth initial data produces $H^2$ norm inflation. This imposes a lower bound on the regularity class in which local well-posedness can be posed; the present paper operates in $C^\infty(\mathbb{T}^2) \subset H^s$ for every $s$, strictly above this ill-posedness threshold, so there is no conflict. A reader evaluating Theorem 2 should be aware that its conclusion concerns the *continuation* of smooth ($C^\infty$) solutions, not well-posedness at the $H^2$ ill-posedness threshold.
 
-**What (H-strain)+(H-bdry) and (H-α) add.** To the best of the author's knowledge, the quantitative pair (H-strain), i.e. a uniform positive lower bound on the normal strain $|nSn|$ at the tracked Lagrangian curvature maximum, paired with (H-bdry), the uniform boundedness of curvature on the boundary of a Lagrangian-transported material segment, is a *new* sufficient-condition pair for inviscid SQG regularity. The thermostat reformulation (H-α) — that a dimensionless ratio $\alpha(t)$ of nonlinear redistribution to normal-strain damping stays strictly below one — is also, to the author's knowledge, not present in the prior SQG regularity literature. Proposition 9.11 of this paper proves (H-α) $\Rightarrow$ (H-strain)+(H-bdry) $\Rightarrow$ regularity, collapsing the conditional content to a single scalar-valued normalized inequality.
+**What (H-strain)+(H-bdry) and (H-α) were claimed to add — and why the claim is withdrawn.** The quantitative pair (H-strain), i.e. a uniform positive lower bound on the normal strain $|nSn|$ at the tracked Lagrangian curvature maximum, paired with (H-bdry), the uniform boundedness of curvature on the boundary of a Lagrangian-transported material segment, was presented as a *new* sufficient-condition pair for inviscid SQG regularity, with the thermostat reformulation (H-α) collapsing the pair to a single scalar inequality. This novelty framing **does not survive audit**: Proposition 9.11 assembles (H-α) $\Rightarrow$ (H-strain)+(H-bdry) $\Rightarrow$ regularity as modus ponens on *assumed* inputs, and those inputs are equivalent to (or above) the conclusion — a uniform-in-time $\dot H^1$ bound already implies regularity by subcritical continuation. The "collapse to a single normalized inequality" therefore relabels the regularity problem rather than reducing it; it is withdrawn (Status banner). The comparison above stands only as a map of where such hypotheses *would* sit relative to CMT, Córdoba, He–Kiselev, and KRYZ, had they been independently established.
 
 ---
 
@@ -1088,17 +1115,24 @@ The qualitative picture is that, controlling for trajectory state, the *rate* an
 
 ## 10. Discussion and Open Extensions
 
-### 10.1 Numerical certification of the material max principle
+> **Withdrawn (see Status banner).** §§10.1–10.3 discuss extensions of the
+> material maximum principle and its conditional regularity conclusion, both
+> withdrawn. They are retained for the record; the "certification",
+> "proof extends", and "C proven" language below refers to the withdrawn
+> mechanism and does not assert established results. The diagnostics reported
+> remain valid as finite-window consistency checks only.
+
+### 10.1 A finite-window consistency diagnostic for the (withdrawn) material max principle
 
 A numerical scheme faithful to the continuum SQG dynamics should preserve the hypothesis (H-bdry) of Proposition 9.10 along a Lagrangian-tracked material segment. I implemented such a diagnostic by advecting 64 particles along a front with RK2 interpolation, computing the boundary curvature envelope, and comparing to its initial value. At $N = 192$, $T = 1.5$, the envelope ratio $\max_t |\kappa_{\mathrm{bdry}}|/|\kappa_{\mathrm{bdry}}(0)|$ is $0.043$ for RK4, ETDRK4, and spectral-cutoff variants — the boundary curvature *contracts* rather than grows, consistent with (H-bdry) on the initial conditions tested. This is a structural consistency check (not merely conservation-based): a scheme whose dynamics violated (H-bdry) would produce a field inconsistent with the conditional conclusion of Theorem 2 independent of energy or $L^p$ conservation. The diagnostic is *consistency evidence*, not a proof; in particular, a numerical contraction on a finite-time window does not establish the uniform-in-time bound required by (H-bdry).
 
 ### 10.2 Extension to the generalized SQG family
 
-The generalized SQG equation (gSQG) replaces the Riesz transform $(-\Delta)^{-1/2}$ in the velocity recovery with $(-\Delta)^{-(1-\alpha/2)}$, giving a family parameterized by $\alpha \in [0, 1]$: $\alpha=0$ recovers 2D Euler, $\alpha=1$ is the classical SQG studied here. The selection rule generalizes as $|nSn_\text{near}| \leq C_\alpha G \kappa^2 \delta^{2\alpha}$ (analogous Fourier-space parity cancellation). For $\alpha \in (0, 1]$, bounded $\kappa$ continues to give $|nSn_\text{near}| \to 0$ as $G \to \infty$. The material segment expansion (Prop 9.8) depends on $S_{\tau\tau} = -nSn > 0$ from incompressibility, which holds for the entire gSQG family. The boundary control (Prop 9.10) invokes far-field elliptic regularity on $\psi = (-\Delta)^{-(1-\alpha/2)}\theta$; the smoothing strength weakens as $\alpha \to 0$, and at $\alpha = 0$ (Euler) it reduces to the Biot-Savart relation, where the fold-energy and backward-Lagrangian obstructions absent in SQG become relevant. The natural conjecture: *the material max principle proof extends continuously for $\alpha \in (\alpha_*, 1]$ where $\alpha_*$ marks the boundary where far-field elliptic regularity of $\psi$ becomes insufficient.* This extends the dichotomy identified in arXiv:2603.12944 (2026) — which shows Lagrangian regularity persists across gSQG while Eulerian fails — from solution-map regularity to global-in-time regularity of classical solutions.
+The generalized SQG equation (gSQG) replaces the Riesz transform $(-\Delta)^{-1/2}$ in the velocity recovery with $(-\Delta)^{-(1-\alpha/2)}$, giving a family parameterized by $\alpha \in [0, 1]$: $\alpha=0$ recovers 2D Euler, $\alpha=1$ is the classical SQG studied here. The selection rule generalizes as $|nSn_\text{near}| \leq C_\alpha G \kappa^2 \delta^{2\alpha}$ (analogous Fourier-space parity cancellation). For $\alpha \in (0, 1]$, bounded $\kappa$ continues to give $|nSn_\text{near}| \to 0$ as $G \to \infty$. The material segment expansion (Prop 9.8) depends on $S_{\tau\tau} = -nSn > 0$ from incompressibility, which holds for the entire gSQG family. The boundary control (Prop 9.10) invokes far-field elliptic regularity on $\psi = (-\Delta)^{-(1-\alpha/2)}\theta$; the smoothing strength weakens as $\alpha \to 0$, and at $\alpha = 0$ (Euler) it reduces to the Biot-Savart relation, where the fold-energy and backward-Lagrangian obstructions absent in SQG become relevant. The conjecture *as originally stated* — that the material max principle argument extends continuously for $\alpha \in (\alpha_*, 1]$ where $\alpha_*$ marks the boundary where far-field elliptic regularity of $\psi$ becomes insufficient — is moot, since the $\alpha = 1$ argument it would extend is itself withdrawn; it is recorded only as the shape the extension question took. Any such conjecture would extend the dichotomy identified in arXiv:2603.12944 (2026) — which shows Lagrangian regularity persists across gSQG while Eulerian fails — from solution-map regularity to global-in-time regularity of classical solutions.
 
 ### 10.3 Implications for ocean reconstruction
 
-Sub-surface reconstruction via SQG (e.g., Sentinel-3/SWOT altimetry) relies on a cascade constant $C$ that is $O(\|\theta_0\|_\infty)$. Effective cascade constants measured in major western-boundary currents (Gulf Stream, Kuroshio) sit several orders of magnitude below the theoretical bound. With $C$ proven rather than conjectural, the ratio $C_\text{eff}/C$ becomes a rigorous regional diagnostic of the distance from the inviscid SQG regime, identifying where additional physics (dissipation, mixed-layer dynamics, non-QG terms) dominates.
+Sub-surface reconstruction via SQG (e.g., Sentinel-3/SWOT altimetry) relies on a cascade constant $C$ that is $O(\|\theta_0\|_\infty)$. Effective cascade constants measured in major western-boundary currents (Gulf Stream, Kuroshio) sit several orders of magnitude below the theoretical bound. The regularity route that would have upgraded $C$ from conjectural to proven is withdrawn, so this remains a *conditional* observation: *were* $C$ established, the ratio $C_\text{eff}/C$ would be a rigorous regional diagnostic of the distance from the inviscid SQG regime, identifying where additional physics (dissipation, mixed-layer dynamics, non-QG terms) dominates.
 
 ---
 
