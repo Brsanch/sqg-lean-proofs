@@ -10,14 +10,19 @@
 > (H-strain)/(H-bdry)/(H-α) are logically vacuous Lean structures and the §9
 > geometric core is `True`-stubbed; the only real antecedent is a uniform
 > `Ḣ¹` bound ≈ the conclusion), and the §9 material-maximum-principle
-> argument to be contradicted by this paper's own numerics
-> (`corr(f,−κ)=0.44` defeats the free-derivative step ⟹ `κ_max ~ G`; the
-> depletion mechanism is provably one order short, needing `κ' ~ G^{1.2}` ⟹
-> blow-up of the `dG/dt=G|nSn|` bound). The genuine obstruction is the
+> argument to be unsupported: the depletion mechanism is provably one order
+> short (parity kills `nSn(x*)` through 3rd order incl. curvature, so the
+> bound needs the curvature derivative `κ'`; independently re-derived
+> 2026-07-02), and the free-derivative step (`f = −cκA`) was never
+> supported by this paper's measurements — a 2026-07-02 provenance audit
+> found the once-quoted `corr(f,−κ)=0.44` (§6.5) and `κ' ~ G^{1.2}` (§9)
+> figures to be unreproducible single-run contour-FD values with no
+> surviving artifact. The genuine obstruction is the
 > log-criticality `‖S‖_∞ ≲ G log G`. Read §§3–6, 9 as heuristic mechanism,
 > not proof. Full account + salvage scope: NoetherSolve `docs/findings/`
-> `sqg_material_max_principle_falsified_2026_05_29.md` and
-> `sqg_salvage_identity_and_curvature_correction_2026_05_29.md`.
+> `sqg_material_max_principle_falsified_2026_05_29.md`,
+> `sqg_salvage_identity_and_curvature_correction_2026_05_29.md`, and
+> `sqg_dead_end_independent_audit_2026_07_02.md`.
 
 ## Abstract
 
