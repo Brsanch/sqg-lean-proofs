@@ -77,6 +77,18 @@ Full account: `sqg_material_max_principle_falsified_2026_05_29.md`,
 `sqg_salvage_identity_and_curvature_correction_2026_05_29.md` in the
 NoetherSolve repo (`docs/findings/`).
 
+**Last analysis-side entry point retired (2026-07-03).** The one qualitatively
+open geometric-Lyapunov hunt reserved by the 2026-07-02 audit (§5) — a
+Constantin–Vicol nonlinear-maximum-principle on the front-curvature field `κ` —
+is now **certified dead** (adversarially verified against the CV primary source
+arXiv:1110.0179): CV is structurally a *dissipative* tool and inviscid SQG has
+no dissipation operator; the exact §8 production is linear in `κ` with the
+log-criticality coefficient, and `nSn` depends on `κ′` (a derivative above what
+any `κ`-bound controls). Full account: NoetherSolve
+`docs/findings/sqg_cv_curvature_negative_cert_2026_07_02.md`; LEAP_QUEUE §2. The
+paper's withdrawal was completed to match (`paper/sqg-identity.md`, commit
+`f20959f`: §7.4 + §10 brought under the withdrawal banner, CV closure folded in).
+
 ## Status of the former "open items" (all were conditional-chain plumbing)
 
 The 2026-04-23 banner and the item-by-item tracker that used to fill this file
