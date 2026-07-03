@@ -35,6 +35,41 @@ placeholder fields and the vacuous `.of_zero` witnesses were removed; and every
 `sorry`, no axioms" remains literally true — and, per the banner, does not mean
 the regularity content is real. Start at the §10 banner in `RieszTorus.lean`.
 
+**2026-07-02 independent adversarial audit** (four independent refutation
+passes; full record: NoetherSolve
+`docs/findings/sqg_dead_end_independent_audit_2026_07_02.md`). The dead-end
+verdict **stands**: exhaustive antecedent→conclusion mapping found no theorem
+deriving Ḣˢ (s>1) — or even Ḣ¹ — control from the SQG dynamics; the vacuity
+lint sits exactly at its ratcheted baseline (18). Three corrections to the
+record:
+
+1. **Banner numbers de-weighted.** The `corr(f,−κ)=0.44` and `κ' ~ G^{1.2}`
+   figures quoted above are prose-only residue of a single noisy contour-FD
+   run (no generating script or data survives; the one surviving PNG embeds a
+   contradictory garbage fit). Honest phrasing: the §9 argument's needed
+   inputs were **never supported** by the project's measurements, not
+   "falsified by" them. Dead either way — burden of proof. The parity
+   derivation (mechanism one order short) was independently re-derived and is
+   CONFIRMED.
+2. **"Córdoba–Fefferman ceiling" phrasing corrected** (see below).
+3. **NEW: the FourierBridge Path-B non-zero capstones are uninhabitable on
+   nonlinear data.** `HasSqgGalerkinAllSBound.ofGalerkin_nonZero` (:1117),
+   `ofGalerkin_nonZero_fullyConcrete` (:1587) and
+   `HasGalerkinGronwallClosure.ofGronwallODE` (:977) require
+   `∀ t ≥ 0, Real.exp ((2*(K.K*Lip.L))*t) ≤ E` for a fixed `E` — satisfiable
+   only when `K.K*Lip.L = 0`, i.e. zero nonlinear flux. So the §B.13/§B.15
+   prose ("once Kato–Ponce lands, the fully unconditional Path B chain
+   follows") is FALSE: a completed Kato–Ponce gives `K > 0` and the
+   hypothesis stays unsatisfiable. **Named follow-up (docstring-only Lean
+   edit, needs the throttled build gate):** rewrite the §B.13/§B.15
+   docstrings to state this; the honest statement is that Path B yields
+   `exp(CT)`-in-time bounds on `[0,T]`, never the time-global `Ms` that
+   §11.34 consumes. Also note `HasVelocityRieszPreservation`,
+   `FourierKatoPonceConst`, `HasVelocityLipSupBound` (FourierBridge :160,
+   :296, :790) are `∃ c ≥ 0`-class shells that escape the linter's
+   subject-free rule (zero-parameter structures); they gate nothing alone
+   but the "four classical inputs" framing of §B is decorative.
+
 What stands: **Theorem 1 (the identity)** is genuinely verified, and the
 **§8 closed-form curvature correction** is correct and numerically verified.
 Full account: `sqg_material_max_principle_falsified_2026_05_29.md`,
@@ -66,10 +101,17 @@ problem with remaining steps:
 
 - The conditional chain is circular (above): it funnels through an *assumed*
   uniform `Ḣ¹` bound ≈ the conclusion.
-- The geometric-depletion mechanism it was meant to encode is, by the project's
-  own numerics, one order short, and gives at most **double-exponential**
-  gradient growth — the known Córdoba–Fefferman ceiling. Genuine obstruction:
-  log-criticality (`‖S‖_∞ ≲ G log G`).
+- The geometric-depletion mechanism it was meant to encode is one order short
+  (analytic parity result, independently re-verified 2026-07-02). Genuine
+  obstruction: log-criticality (`‖S‖_∞ ≲ G log G`). *Framing corrected
+  2026-07-02:* the earlier "double-exponential Córdoba–Fefferman ceiling"
+  phrasing was imprecise — Córdoba 1998 / Córdoba–Fefferman 2002 are
+  scenario-restricted collapse-rate *floors* (saddle / semi-uniform front
+  collapse), not an upper bound on `‖∇θ‖_∞`; for smooth SQG **no a priori
+  upper bound of any kind is proven** (double-exp-as-ceiling is a 2D-Euler
+  theorem needing `‖ω‖_∞` conservation; realized SQG record is exponential
+  growth, He–Kiselev Duke 2021). The wall is worse than the old phrasing
+  suggested, not better.
 - Full account in the NoetherSolve repo (`docs/findings/`):
   `sqg_material_max_principle_falsified_2026_05_29.md`,
   `sqg_pathC_resolution_artifact_no_missed_path_2026_05_30.md`.
