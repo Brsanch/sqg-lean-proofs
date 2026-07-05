@@ -24397,221 +24397,18 @@ theorem HasLatticeZetaBound.mono
   nonneg := le_trans hC.nonneg hCC'
   bound := fun A hA => le_trans (hC.bound A hA) hCC'
 
-/-! ### §11.26 Prerequisites for the concrete lattice zeta bound
+/-! ### §11.26 Concrete lattice-zeta constant and bound
 
-Building up the ingredients needed for an explicit `HasLatticeZetaBound
-s C` witness at `s > 1` (i.e., `s > d/2 = 1` on `𝕋²`).
-
-**Strategy:** partition `ℤ² \ {0}` by `ℓ∞`-radius into annular shells.
-On shell `k` (radius-k `ℓ∞`-boundary), `|shell| ≤ 8k` and `‖a‖_{ℓ²} ≥ k`,
-so `∑_{a ∈ shell_k} ‖a‖^{-2s} ≤ 8k · k^{-2s} = 8 k^{1-2s}`.  Sum over
-`k ≥ 1`: `8 ∑_{k ≥ 1} k^{1-2s}`, summable for `s > 1` via mathlib's
-`Real.summable_one_div_nat_rpow` at `p = 2s - 1`. -/
-
-/-- **§11.26.A — 1D p-series for shell-weighted lattice zeta.**
-`Summable (fun n : ℕ => 1 / (n : ℝ) ^ (2 * s - 1))` for `s > 1`.
-Direct application of mathlib's `Real.summable_one_div_nat_rpow` at
-`p = 2s - 1`.  Used in §11.26 downstream for the annular-shell
-lattice-zeta bound. -/
-theorem summable_one_div_nat_rpow_at_two_s_sub_one
-    {s : ℝ} (hs : 1 < s) :
-    Summable (fun n : ℕ => 1 / (n : ℝ) ^ (2 * s - 1)) := by
-  rw [Real.summable_one_div_nat_rpow]
-  linarith
-
-/-- **§11.26.B — Coordinate absolute value bounded by lattice norm.**
-For every index `j`, `|(n j : ℝ)| ≤ latticeNorm n`.  Follows from
-`sq_le_latticeNorm_sq` (componentwise square bound) by taking sqrt. -/
-lemma abs_coord_le_latticeNorm {d : Type*} [Fintype d]
-    (n : d → ℤ) (j : d) :
-    |(n j : ℝ)| ≤ latticeNorm n := by
-  have h_sq := sq_le_latticeNorm_sq n j
-  have h_nn : 0 ≤ latticeNorm n := latticeNorm_nonneg n
-  rw [show |(n j : ℝ)| = Real.sqrt ((n j : ℝ) ^ 2) from (Real.sqrt_sq_eq_abs _).symm]
-  calc Real.sqrt ((n j : ℝ) ^ 2)
-      ≤ Real.sqrt ((latticeNorm n) ^ 2) := Real.sqrt_le_sqrt h_sq
-    _ = latticeNorm n := Real.sqrt_sq h_nn
-
-/-- **§11.26.B₂ — `ℓ∞` ≤ `ℓ²` on `Fin 2 → ℤ`.**  The maximum of
-`|m 0|` and `|m 1|` is bounded by `latticeNorm m`. -/
-lemma max_abs_coord_le_latticeNorm (m : Fin 2 → ℤ) :
-    max (|(m 0 : ℝ)|) (|(m 1 : ℝ)|) ≤ latticeNorm m :=
-  max_le (abs_coord_le_latticeNorm m 0) (abs_coord_le_latticeNorm m 1)
-
-/-! ### §11.26.C Annular shell on `ℤ²` -/
-
-/-- **§11.26.C — Annular shell at `ℓ∞`-radius `k`.**  Subset of `ℤ²`
-with `max |m 0| |m 1| = k` and `m ≠ 0`.  For `k = 0` this is empty
-(only `m = 0` has `max = 0`, excluded by nonzero constraint).  For
-`k ≥ 1`, contains at most `8k + 4` points. -/
-noncomputable def annularShell (k : ℕ) : Finset (Fin 2 → ℤ) :=
-  (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)).filter
-    (fun m => m ≠ 0 ∧ (|m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ)))
-
-/-- **§11.26.C₁ — Shell membership characterization.** -/
-lemma mem_annularShell_iff (k : ℕ) (m : Fin 2 → ℤ) :
-    m ∈ annularShell k ↔
-      (∀ i : Fin 2, |m i| ≤ (k : ℤ)) ∧ m ≠ 0
-        ∧ (|m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ)) := by
-  unfold annularShell
-  simp only [Finset.mem_filter, Fintype.mem_piFinset, Finset.mem_Icc]
-  constructor
-  · rintro ⟨h_Icc, h_ne, h_max⟩
-    refine ⟨fun i => abs_le.mpr (h_Icc i), h_ne, h_max⟩
-  · rintro ⟨h_max, h_ne, h_eq⟩
-    refine ⟨fun i => ?_, h_ne, h_eq⟩
-    have := h_max i
-    exact ⟨(abs_le.mp this).1, (abs_le.mp this).2⟩
-
-/-- **§11.26.C₂ — On shell at level `k`, `latticeNorm m ≥ k`.**  Each
-shell member has one coordinate with `|m i| = k`, so by §11.26.B
-`latticeNorm m ≥ |m i| = k`. -/
-lemma latticeNorm_ge_of_mem_annularShell (k : ℕ) (m : Fin 2 → ℤ)
-    (hm : m ∈ annularShell k) :
-    (k : ℝ) ≤ latticeNorm m := by
-  rw [mem_annularShell_iff] at hm
-  rcases hm.2.2 with h0 | h1
-  · have h_abs : |(m 0 : ℝ)| = (k : ℝ) := by
-      have h_cast : ((|m 0| : ℤ) : ℝ) = ((k : ℤ) : ℝ) := by exact_mod_cast h0
-      simpa [Int.cast_abs] using h_cast
-    calc (k : ℝ) = |(m 0 : ℝ)| := h_abs.symm
-      _ ≤ latticeNorm m := abs_coord_le_latticeNorm m 0
-  · have h_abs : |(m 1 : ℝ)| = (k : ℝ) := by
-      have h_cast : ((|m 1| : ℤ) : ℝ) = ((k : ℤ) : ℝ) := by exact_mod_cast h1
-      simpa [Int.cast_abs] using h_cast
-    calc (k : ℝ) = |(m 1 : ℝ)| := h_abs.symm
-      _ ≤ latticeNorm m := abs_coord_le_latticeNorm m 1
-
-/-- **§11.26.C₃ — Shell at level `0` is empty.**  Only `m = 0` has
-`max |m 0| |m 1| = 0`, and the shell definition excludes `m = 0`.
-Sanity check on the annular shell partition. -/
-lemma annularShell_zero : annularShell 0 = ∅ := by
-  unfold annularShell
-  apply Finset.eq_empty_of_forall_notMem
-  intros m hm
-  rw [Finset.mem_filter, Fintype.mem_piFinset] at hm
-  obtain ⟨h_Icc, h_ne, _⟩ := hm
-  apply h_ne
-  funext i
-  have h := h_Icc i
-  rw [Finset.mem_Icc, Nat.cast_zero, neg_zero] at h
-  exact le_antisymm h.2 h.1
-
-/-- **§11.26.D — Cardinality bound: `|shell k| ≤ 8k + 4`.**
-
-Bound via the union-of-filters decomposition:
-`annularShell k ⊆ {m | |m 0| = k} ∪ {m | |m 1| = k}` in the piFinset.
-Each side has cardinality `≤ 2 · (2k+1) = 4k+2` via
-`Fintype.card_filter_piFinset_eq_of_mem` + `abs_eq`-split into
-`m i = k` and `m i = -k`.  Sum: `(4k+2) + (4k+2) = 8k+4`.
-
-Tight bound (`8k` exact) requires inclusion-exclusion; the loose
-`8k+4` bound suffices for lattice zeta summability at `s > 1`. -/
-lemma card_annularShell_le (k : ℕ) :
-    (annularShell k).card ≤ 8 * k + 4 := by
-  classical
-  unfold annularShell
-  -- Step 1: drop m ≠ 0 (enlarges set)
-  have h_sub :
-      (Finset.filter (fun m : Fin 2 → ℤ => m ≠ 0 ∧ (|m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ)))
-        (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card
-      ≤ (Finset.filter (fun m : Fin 2 → ℤ => |m 0| = (k : ℤ) ∨ |m 1| = (k : ℤ))
-          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card := by
-    apply Finset.card_le_card
-    intro m hm
-    simp only [Finset.mem_filter] at hm ⊢
-    exact ⟨hm.1, hm.2.2⟩
-  refine le_trans h_sub ?_
-  -- Step 2: split (P ∨ Q) filter via filter_or
-  rw [Finset.filter_or]
-  refine le_trans (Finset.card_union_le _ _) ?_
-  -- Step 3: each sub-filter ≤ 4k+2
-  have h_each : ∀ (i : Fin 2),
-      (Finset.filter (fun m : Fin 2 → ℤ => |m i| = (k : ℤ))
-        (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card
-        ≤ 4 * k + 2 := by
-    intro i
-    -- |m i| = k ↔ m i = k ∨ m i = -k (since k ≥ 0)
-    have h_filter_split :
-        Finset.filter (fun m : Fin 2 → ℤ => |m i| = (k : ℤ))
-          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))
-        = Finset.filter (fun m : Fin 2 → ℤ => m i = (k : ℤ) ∨ m i = -(k : ℤ))
-          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) := by
-      apply Finset.filter_congr
-      intros m _
-      rw [abs_eq (by positivity : (0 : ℤ) ≤ (k : ℤ))]
-    rw [h_filter_split, Finset.filter_or]
-    refine le_trans (Finset.card_union_le _ _) ?_
-    -- Each inner (m i = a) filter: card ≤ 2k+1 via card_filter_piFinset_eq_of_mem
-    have h_card_pt : ∀ a : ℤ,
-        (Finset.filter (fun m : Fin 2 → ℤ => m i = a)
-          (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ))).card
-          ≤ 2 * k + 1 := by
-      intro a
-      by_cases ha : a ∈ Finset.Icc (-(k : ℤ)) (k : ℤ)
-      · rw [Fintype.card_filter_piFinset_eq_of_mem
-          (s := fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) i ha]
-        rw [Finset.prod_const]
-        have h_erase_card : ((Finset.univ : Finset (Fin 2)).erase i).card = 1 := by
-          rw [Finset.card_erase_of_mem (Finset.mem_univ i), Finset.card_univ,
-              Fintype.card_fin]
-        rw [h_erase_card, pow_one, Int.card_Icc]
-        omega
-      · have h_empty : Finset.filter (fun m : Fin 2 → ℤ => m i = a)
-            (Fintype.piFinset fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) = ∅ :=
-          Fintype.filter_piFinset_of_notMem
-            (fun _ : Fin 2 => Finset.Icc (-(k : ℤ)) (k : ℤ)) i a ha
-        rw [h_empty, Finset.card_empty]
-        omega
-    have h_k := h_card_pt (k : ℤ)
-    have h_neg_k := h_card_pt (-(k : ℤ))
-    linarith
-  linarith [h_each 0, h_each 1]
-
-/-- **§11.26.E — Shell-sum bound.**  For `k ≥ 1` and `s > 0`:
-`∑_{m ∈ annularShell k} ‖m‖^{-2s} ≤ (8k + 4) · k^{-2s}`.  Combines
-`latticeNorm_ge_of_mem_annularShell` (`‖m‖ ≥ k`) with the cardinality
-bound (`|shell| ≤ 8k + 4`).  Sum over `k ≥ 1`: `(8k+4) · k^{-2s} =
-8 k^{1-2s} + 4 k^{-2s}`, both summable for `s > 1` via
-`Real.summable_one_div_nat_rpow`. -/
-lemma sum_annularShell_rpow_le {s : ℝ} (hs_pos : 0 < s) {k : ℕ} (hk : 1 ≤ k) :
-    ∑ m ∈ annularShell k, (latticeNorm m) ^ (-(2 * s))
-      ≤ ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) := by
-  have h_k_pos : 0 < (k : ℝ) := by exact_mod_cast hk
-  have h_k_nn : 0 ≤ (k : ℝ) := le_of_lt h_k_pos
-  have h_2s_nn : 0 ≤ 2 * s := by linarith
-  -- Pointwise bound: for m ∈ shell k, (latticeNorm m)^{-2s} ≤ k^{-2s}
-  have h_pointwise : ∀ m ∈ annularShell k,
-      (latticeNorm m) ^ (-(2 * s)) ≤ ((k : ℝ) ^ (-(2 * s))) := by
-    intros m hm
-    have h_lb : (k : ℝ) ≤ latticeNorm m := latticeNorm_ge_of_mem_annularShell k m hm
-    have h_m_pos : 0 < latticeNorm m := lt_of_lt_of_le h_k_pos h_lb
-    -- latticeNorm m ≥ k > 0, so (latticeNorm m)^{2s} ≥ k^{2s}, hence
-    -- (latticeNorm m)^{-2s} = 1/(latticeNorm m)^{2s} ≤ 1/k^{2s} = k^{-2s}
-    rw [Real.rpow_neg h_k_nn, Real.rpow_neg (le_of_lt h_m_pos)]
-    apply inv_anti₀ (Real.rpow_pos_of_pos h_k_pos _)
-    exact Real.rpow_le_rpow h_k_nn h_lb h_2s_nn
-  -- Sum over shell.
-  calc ∑ m ∈ annularShell k, (latticeNorm m) ^ (-(2 * s))
-      ≤ ∑ _ ∈ annularShell k, ((k : ℝ) ^ (-(2 * s))) := Finset.sum_le_sum h_pointwise
-    _ = (annularShell k).card * ((k : ℝ) ^ (-(2 * s))) := by
-        rw [Finset.sum_const, nsmul_eq_mul]
-    _ ≤ ((8 * k + 4 : ℕ) : ℝ) * ((k : ℝ) ^ (-(2 * s))) := by
-        apply mul_le_mul_of_nonneg_right
-        · exact_mod_cast card_annularShell_le k
-        · exact Real.rpow_nonneg h_k_nn _
+An explicit `HasLatticeZetaBound s C` witness at `s > 1` (i.e. `s > d/2 = 1`
+on `𝕋²`), obtained as the `d = 2` instance of the shared arbitrary-dimension
+lattice-sum theorem `FourierAnalysis.latticeSum_le_latticeZetaConstD`
+(fourier_analysis package).  §11.26.F defines the constant, §11.26.H the
+witness. -/
 
 /-! ### §11.26.F Concrete lattice-zeta constant
 
-Define the ambient lattice-zeta constant as the tsum of the shell-
-bounded series over `k ≥ 1`:
-`latticeZetaConst s := 8·∑_{k ≥ 1} k^{1-2s} + 4·∑_{k ≥ 1} k^{-2s}`.
-
-For `s > 1`, both tsums are finite via `Real.summable_one_div_nat_rpow`.
-The full `HasLatticeZetaBound s (latticeZetaConst s)` proof is deferred
-(requires shell-partition of arbitrary `A ⊆ ℤ² \ {0}` + disjoint
-biUnion + partial-sum ≤ tsum bookkeeping; see §11.26.F next-session
-entry).  Infrastructure in-tree for downstream use. -/
+The ambient lattice-zeta constant `latticeZetaConst s`, defined below as the
+`d = 2, p = 2s` instance of the shared `FourierAnalysis.latticeZetaConstD`. -/
 
 /-- **§11.26.F₁ — Lattice-zeta constant `latticeZetaConst s`.**
 The `d = 2, p = 2s` instance of the shared arbitrary-dimension constant
@@ -24627,88 +24424,11 @@ noncomputable def latticeZetaConst (s : ℝ) : ℝ :=
 lemma latticeZetaConst_nonneg (s : ℝ) : 0 ≤ latticeZetaConst s :=
   FourierAnalysis.latticeZetaConstD_nonneg 2 (2 * s)
 
-/-! ### §11.26.G Shell-index preliminaries
-
-The `ℓ∞`-radius `shellOf m := max(|m 0|.toNat, |m 1|.toNat)` gives
-the annular-shell level of `m ≠ 0`.  Three facts for the main bound:
-1. `shellOf m ≥ 1` for `m ≠ 0` (§11.26.G₁).
-2. `m ∈ annularShell (shellOf m)` for `m ≠ 0` (§11.26.G₂).
-3. Distinct shells are disjoint (§11.26.G₃). -/
-
-/-- **§11.26.G — Shell-index function.** -/
-def shellOf (m : Fin 2 → ℤ) : ℕ := max (|m 0|).toNat (|m 1|).toNat
-
-/-- **§11.26.G₁ — Positivity of `shellOf` on nonzero lattice points.** -/
-lemma shellOf_pos_of_ne_zero (m : Fin 2 → ℤ) (hm : m ≠ 0) :
-    1 ≤ shellOf m := by
-  unfold shellOf
-  by_cases h0 : m 0 = 0
-  · by_cases h1 : m 1 = 0
-    · exact absurd (funext fun i => by fin_cases i <;> [exact h0; exact h1]) hm
-    · have ha : 0 < |m 1| := abs_pos.mpr h1
-      have hb : 1 ≤ (|m 1|).toNat := by omega
-      exact le_trans hb (le_max_right _ _)
-  · have ha : 0 < |m 0| := abs_pos.mpr h0
-    have hb : 1 ≤ (|m 0|).toNat := by omega
-    exact le_trans hb (le_max_left _ _)
-
-/-- **§11.26.G₂ — Each `m ≠ 0` lies in `annularShell (shellOf m)`.** -/
-lemma mem_annularShell_shellOf (m : Fin 2 → ℤ) (hm : m ≠ 0) :
-    m ∈ annularShell (shellOf m) := by
-  rw [mem_annularShell_iff]
-  refine ⟨?_, hm, ?_⟩
-  · intro i
-    fin_cases i
-    · have h_cast : ((|m 0|).toNat : ℤ) = |m 0| :=
-        Int.toNat_of_nonneg (abs_nonneg _)
-      have h_le : (|m 0|).toNat ≤ shellOf m := le_max_left _ _
-      calc |m 0| = ((|m 0|).toNat : ℤ) := h_cast.symm
-        _ ≤ ((shellOf m : ℕ) : ℤ) := by exact_mod_cast h_le
-    · have h_cast : ((|m 1|).toNat : ℤ) = |m 1| :=
-        Int.toNat_of_nonneg (abs_nonneg _)
-      have h_le : (|m 1|).toNat ≤ shellOf m := le_max_right _ _
-      calc |m 1| = ((|m 1|).toNat : ℤ) := h_cast.symm
-        _ ≤ ((shellOf m : ℕ) : ℤ) := by exact_mod_cast h_le
-  · rcases max_choice (|m 0|).toNat (|m 1|).toNat with h | h
-    · left
-      have h_cast : ((|m 0|).toNat : ℤ) = |m 0| :=
-        Int.toNat_of_nonneg (abs_nonneg _)
-      unfold shellOf
-      calc |m 0| = ((|m 0|).toNat : ℤ) := h_cast.symm
-        _ = ((max (|m 0|).toNat (|m 1|).toNat : ℕ) : ℤ) := by
-            exact_mod_cast h.symm
-    · right
-      have h_cast : ((|m 1|).toNat : ℤ) = |m 1| :=
-        Int.toNat_of_nonneg (abs_nonneg _)
-      unfold shellOf
-      calc |m 1| = ((|m 1|).toNat : ℤ) := h_cast.symm
-        _ = ((max (|m 0|).toNat (|m 1|).toNat : ℕ) : ℤ) := by
-            exact_mod_cast h.symm
-
-/-- **§11.26.G₃ — Annular shells at distinct indices are disjoint.** -/
-lemma annularShell_disjoint {k₁ k₂ : ℕ} (hne : k₁ ≠ k₂) :
-    Disjoint (annularShell k₁) (annularShell k₂) := by
-  rw [Finset.disjoint_left]
-  intros m hm1 hm2
-  rw [mem_annularShell_iff] at hm1 hm2
-  obtain ⟨h_Icc1, _, h_max1⟩ := hm1
-  obtain ⟨h_Icc2, _, h_max2⟩ := hm2
-  apply hne
-  have h1_0 : |m 0| ≤ (k₁ : ℤ) := h_Icc1 0
-  have h1_1 : |m 1| ≤ (k₁ : ℤ) := h_Icc1 1
-  have h2_0 : |m 0| ≤ (k₂ : ℤ) := h_Icc2 0
-  have h2_1 : |m 1| ≤ (k₂ : ℤ) := h_Icc2 1
-  rcases h_max1 with h₁ | h₁ <;> rcases h_max2 with h₂ | h₂ <;>
-    · have h_int : (k₁ : ℤ) = (k₂ : ℤ) := by omega
-      exact_mod_cast h_int
-
 /-! ### §11.26.H Concrete lattice-zeta bound
 
-Unconditional witness of `HasLatticeZetaBound s (latticeZetaConst s)`
-for `s > 1`.  Partition any finite `A ⊆ ℤ² \ {0}` by `shellOf`,
-decompose via disjoint `biUnion`, bound each shell sum via §11.26.E,
-then bridge the finite shell sum to the `tsum` defining
-`latticeZetaConst` via `Summable.sum_le_tsum` on the two p-series. -/
+Unconditional witness of `HasLatticeZetaBound s (latticeZetaConst s)` for
+`s > 1`, obtained as the `d = 2` instance of the shared
+`FourierAnalysis.latticeSum_le_latticeZetaConstD`. -/
 
 /-- **§11.26.H — Concrete `HasLatticeZetaBound s (latticeZetaConst s)`
 for `s > 1`.**  Now the `d = 2, p = 2s` instance of the shared
@@ -24717,10 +24437,10 @@ is definitionally `FourierAnalysis.latticeNormD`, and `1 < s ↔ (2 : ℝ) < 2*s
 Closes the lattice-zeta leg of Route A Item 5.A (§11.25.F/F₁/G/G₁ composed with
 this witness gives the full support-independent Banach-algebra `Ḣˢ` bound).
 
-The former ~115-line bespoke `ℤ²` shell proof (the §11.26.A–E/G lemmas above) is
-superseded by this instantiation and now unused; both `sqg-lean-proofs` (d = 2)
-and `ns-lean-proofs` (d = 3) derive their lattice-sum witness from the one shared
-theorem. -/
+The former ~115-line bespoke `ℤ²` annular-shell proof (the §11.26.A–E/G lemmas)
+was superseded by this instantiation and has been removed; both `sqg-lean-proofs`
+(d = 2) and `ns-lean-proofs` (d = 3) derive their lattice-sum witness from the one
+shared theorem. -/
 theorem hasLatticeZetaBound_latticeZetaConst {s : ℝ} (hs : 1 < s) :
     HasLatticeZetaBound s (latticeZetaConst s) :=
   ⟨latticeZetaConst_nonneg s,
