@@ -140,13 +140,17 @@ chain, which would not make the chain non-circular (the load-bearing
 - **§8 closed-form curvature correction** (paper) — verified <0.2% across four
   independent pathways.
 - **Reusable infrastructure** (mathlib-adjacent, no axioms): the §11.26–§11.27
-  concrete Banach-algebra `Ḣˢ` product bound (explicit lattice-zeta constant,
-  every `s > 1`); the Galerkin ODE well-posedness (§10.116); Fourier-form
-  Rellich–Kondrachov (`FourierBridge.lean`); the torus Riesz / heat-semigroup
-  multiplier machinery; and the companion package
+  concrete Banach-algebra `Ḣˢ` product bound (as of `fe4a420`/`361eee0` the
+  lattice-zeta constant is the `d = 2, p = 2s` instance of
+  `FourierAnalysis.latticeSum_le_latticeZetaConstD` in the shared package — the
+  bespoke ℤ² shell proof was pruned); the Galerkin ODE well-posedness (§10.116);
+  Fourier-form Rellich–Kondrachov (`FourierBridge.lean`); the torus Riesz /
+  heat-semigroup multiplier machinery; and the companion package
   [`sqg-lean-proofs-fourier`](https://github.com/Brsanch/sqg-lean-proofs-fourier)
-  (Littlewood–Paley / Bony paraproduct / Kato–Ponce commutator), intended for
-  reuse by future NS / Euler / MHD work.
+  (Littlewood–Paley / Bony paraproduct / Kato–Ponce commutator, plus the shared
+  domain-polymorphic argmax and arbitrary-`d` lattice-zeta primitives) — now
+  consumed by **both** this repo (`d = 2`) and `ns-lean-proofs` (`d = 3`), not
+  just planned future work.
 
 The detailed item-by-item and §-by-§ history is in `CHANGELOG.md` and git.
 
