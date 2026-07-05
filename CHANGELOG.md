@@ -4,6 +4,20 @@ All releases are archived on Zenodo; the concept DOI
 [10.5281/zenodo.19583256](https://doi.org/10.5281/zenodo.19583256) resolves
 to the latest version.
 
+## Unreleased — 2026-07-04 (share lattice-zeta bound with ns-lean-proofs)
+
+**§11.26 lattice-zeta bound now derives from the shared `fourier_analysis`
+package.** `hasLatticeZetaBound_latticeZetaConst` (the load-bearing witness
+consumed by the §11.27 Banach-algebra `Ḣˢ` bound) is re-proved as the
+`d = 2, p = 2s` instance of the arbitrary-dimension
+`FourierAnalysis.latticeSum_le_latticeZetaConstD` (`latticeNorm` on `Fin 2 → ℤ`
+is definitionally `FourierAnalysis.latticeNormD`). `latticeZetaConst s` is now
+`latticeZetaConstD 2 (2·s)` — a looser but sufficient upper bound. The former
+~115-LOC bespoke ℤ² shell proof (§11.26.A–E/G: `annularShell` / `shellOf` /
+`card_annularShell_le` / …) was pruned. Axiom-clean, full merge-gate build green.
+Both `sqg-lean-proofs` (`d = 2`) and `ns-lean-proofs` (`d = 3`) now derive their
+lattice-sum witness from one shared theorem. Commits `fe4a420`, `361eee0`.
+
 ## Unreleased — 2026-05-29 (audit; documentation/honesty, no Lean changes)
 
 **SQG regularity claim withdrawn.** An audit found the
